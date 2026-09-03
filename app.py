@@ -392,14 +392,17 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
-        with db() as conn:
-            user = conn.execute("SELECT * FROM users WHERE lower(username)=lower(?) AND (active=1 OR active IS TRUE)", (username,)).fetchone()
-        if user and user["password_hash"] == hash_password(password):
-            session.permanent = True
-            session["user_id"] = user["id"]
-            flash(f"Bem-vindo, {user['name']}.", "success")
-            return redirect(url_for("dashboard"))
-        flash("Usuário ou senha inválidos.", "danger")
+        try:
+            with db() as conn:
+                user = conn.execute("SELECT * FROM users WHERE lower(username)=lower(?) AND (active=1 OR active IS TRUE)", (username,)).fetchone()
+            if user and user["password_hash"] == hash_password(password):
+                session.permanent = True
+                session["user_id"] = user["id"]
+                flash(f"Bem-vindo, {user['name']}.", "success")
+                return redirect(url_for("dashboard"))
+            flash("Usuário ou senha inválidos.", "danger")
+        except Exception as e:
+            flash(f"Erro de conexão com o banco de dados: {str(e)}", "danger")
     return render_template("login.html")
 
 
@@ -1016,12 +1019,22 @@ def delete_user(uid):
     if uid == session.get("user_id"):
         flash("Você não pode excluir a sua própria conta logada.", "danger")
         return redirect(url_for("users"))
-    with db() as conn:
-        conn.execute("DELETE FROM users WHERE id=?", (uid,))
-        conn.commit()
-    audit("user.deleted", f"user_id={uid}")
-    flash("Usuário excluído com sucesso.", "success")
+    try:
+        with db() as conn:
+            # Desvincula o usuário dos registros vinculados mantendo o histórico de vendas/importações intacto
+            conn.execute("UPDATE imports SET created_by=NULL WHERE created_by=?", (uid,))
+            conn.execute("UPDATE sales SET created_by=NULL WHERE created_by=?", (uid,))
+            conn.execute("UPDATE payments SET created_by=NULL WHERE created_by=?", (uid,))
+            conn.execute("UPDATE audit_log SET user_id=NULL WHERE user_id=?", (uid,))
+            conn.execute("DELETE FROM users WHERE id=?", (uid,))
+            conn.commit()
+        audit("user.deleted", f"user_id={uid}")
+        flash("Usuário excluído com sucesso.", "success")
+    except Exception as e:
+        flash(f"Erro ao excluir usuário: {str(e)}", "danger")
     return redirect(url_for("users"))
+
+
 
 
 @app.route("/change-password", methods=["POST"])
@@ -1153,4 +1166,5 @@ def too_large(_):
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5001")), debug=True)
+
