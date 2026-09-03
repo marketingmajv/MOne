@@ -36,7 +36,8 @@
         </td>
         {% if me.role == 'admin' %}
           <td>
-            <div class="action-row-compact">
+            <div class="action-row-compact" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <button class="btn small" onclick="openModal('editUser_{{ u.id }}')">Editar</button>
               <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
                 <button class="btn small {{ 'warn-btn' if u.active else 'good-btn' }}">
                   {{ 'Desativar' if u.active else 'Ativar' }}
@@ -45,10 +46,52 @@
               <form method="post" action="{{ url_for('reset_user_password', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Resetar a senha deste usuário para MOne2026!?');">
                 <button class="btn small">Resetar Senha</button>
               </form>
+              {% if u.id != me.id %}
+                <form method="post" action="{{ url_for('delete_user', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja EXCLUIR permanentemente o usuário {{ u.name }}? Esta ação não pode ser desfeita.');">
+                  <button class="btn small danger-btn">Excluir</button>
+                </form>
+              {% endif %}
             </div>
           </td>
         {% endif %}
       </tr>
+
+      <!-- Edit User Modal for {{ u.name }} -->
+      {% if me.role == 'admin' %}
+      <div class="modal" id="editUser_{{ u.id }}">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h3>Editar Usuário: {{ u.name }}</h3>
+            <button onclick="closeModal('editUser_{{ u.id }}')">×</button>
+          </div>
+          <form method="post" action="{{ url_for('edit_user', uid=u.id) }}" class="form-grid">
+            <label>Nome completo
+              <input name="name" required value="{{ u.name }}">
+            </label>
+            <label>Usuário de acesso
+              <input name="username" required value="{{ u.username }}">
+            </label>
+            <label class="span-2">Perfil de acesso
+              <select name="role">
+                <option value="sales" {% if u.role == 'sales' %}selected{% endif %}>Vendas (vendas, estoque, produtos)</option>
+                <option value="stock" {% if u.role == 'stock' %}selected{% endif %}>Estoque (estoque, produtos, importar chassis)</option>
+                <option value="finance" {% if u.role == 'finance' %}selected{% endif %}>Financeiro (vendas, pagamentos, estoque, produtos)</option>
+                <option value="support" {% if u.role == 'support' %}selected{% endif %}>Suporte Técnico (suporte e chamados)</option>
+                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
+              </select>
+            </label>
+            <label class="span-2">Nova Senha (deixe em branco para não alterar)
+              <input type="password" name="password" placeholder="Nova senha (opcional)">
+            </label>
+            <div class="form-actions span-2">
+              <button type="button" class="btn" onclick="closeModal('editUser_{{ u.id }}')">Cancelar</button>
+              <button class="btn primary">Salvar Alterações</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
     {% else %}
       <tr><td colspan="5" class="empty">Nenhum usuário cadastrado.</td></tr>
     {% endfor %}
@@ -75,6 +118,7 @@
           <option value="sales">Vendas (vendas, estoque, produtos)</option>
           <option value="stock">Estoque (estoque, produtos, importar chassis)</option>
           <option value="finance">Financeiro (vendas, pagamentos, estoque, produtos)</option>
+          <option value="support">Suporte Técnico (suporte e chamados)</option>
           <option value="admin">Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
         </select>
       </label>

@@ -123,6 +123,7 @@ ROLE_LABELS = {
     "finance": "Financeiro",
     "stock": "Estoque",
     "sales": "Vendas",
+    "support": "Suporte Técnico",
 }
 
 
@@ -958,6 +959,70 @@ def users():
         rows = conn.execute("SELECT * FROM users ORDER BY name").fetchall()
     return render_template("users.html", users=rows)
 
+@app.route("/users/<int:uid>/toggle", methods=["POST"])
+@login_required
+@roles_required("admin")
+def toggle_user(uid):
+    with db() as conn:
+        u = conn.execute("SELECT active FROM users WHERE id=?", (uid,)).fetchone()
+        if u:
+            new_val = 0 if u["active"] else 1
+            conn.execute("UPDATE users SET active=? WHERE id=?", (new_val, uid))
+            conn.commit()
+            flash("Status do usuário alterado.", "success")
+    return redirect(url_for("users"))
+
+
+@app.route("/users/<int:uid>/reset-password", methods=["POST"])
+@login_required
+@roles_required("admin")
+def reset_user_password(uid):
+    with db() as conn:
+        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password("MOne2026!"), uid))
+        conn.commit()
+        flash("Senha resetada para MOne2026!.", "success")
+    return redirect(url_for("users"))
+
+
+@app.route("/users/<int:uid>/edit", methods=["POST"])
+@login_required
+@roles_required("admin")
+def edit_user(uid):
+    name = request.form.get("name", "").strip()
+    username = request.form.get("username", "").strip().lower()
+    role = request.form.get("role", "sales")
+    new_password = request.form.get("password", "").strip()
+    with db() as conn:
+        if new_password:
+            conn.execute(
+                "UPDATE users SET name=?, username=?, role=?, password_hash=? WHERE id=?",
+                (name, username, role, hash_password(new_password), uid)
+            )
+        else:
+            conn.execute(
+                "UPDATE users SET name=?, username=?, role=? WHERE id=?",
+                (name, username, role, uid)
+            )
+        conn.commit()
+    audit("user.edited", f"user_id={uid}; username={username}; role={role}")
+    flash("Usuário atualizado com sucesso.", "success")
+    return redirect(url_for("users"))
+
+
+@app.route("/users/<int:uid>/delete", methods=["POST"])
+@login_required
+@roles_required("admin")
+def delete_user(uid):
+    if uid == session.get("user_id"):
+        flash("Você não pode excluir a sua própria conta logada.", "danger")
+        return redirect(url_for("users"))
+    with db() as conn:
+        conn.execute("DELETE FROM users WHERE id=?", (uid,))
+        conn.commit()
+    audit("user.deleted", f"user_id={uid}")
+    flash("Usuário excluído com sucesso.", "success")
+    return redirect(url_for("users"))
+
 
 @app.route("/change-password", methods=["POST"])
 @login_required
@@ -1021,36 +1086,6 @@ def add_stock_unit():
     audit("stock.unit_added", f"chassis={chassis}")
     flash("Unidade adicionada ao estoque com sucesso.", "success")
     return redirect(url_for("stock"))
-
-
-@app.route("/users/<int:uid>/toggle", methods=["POST"])
-@login_required
-@roles_required("admin")
-def toggle_user(uid):
-    with db() as conn:
-        u = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-        if u:
-            new_active = 0 if u["active"] else 1
-            conn.execute("UPDATE users SET active=? WHERE id=?", (new_active, uid))
-            conn.commit()
-            audit("user.toggle", f"uid={uid}; active={new_active}")
-            flash(f"Status do usuário {u['username']} atualizado.", "success")
-    return redirect(url_for("users"))
-
-
-@app.route("/users/<int:uid>/reset-password", methods=["POST"])
-@login_required
-@roles_required("admin")
-def reset_user_password(uid):
-    default_pass = "MOne2026!"
-    with db() as conn:
-        u = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-        if u:
-            conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(default_pass), uid))
-            conn.commit()
-            audit("user.reset_password", f"uid={uid}")
-            flash(f"Senha do usuário {u['username']} resetada para MOne2026!.", "success")
-    return redirect(url_for("users"))
 
 
 @app.route("/stock/export")
