@@ -570,6 +570,174 @@ def edit_product(pid):
     return redirect(url_for("products"))
 
 
+def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"):
+    rows = []
+    all_rows = []
+    if text_content:
+        text = text_content
+        sample = text[:2048]
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        except Exception:
+            dialect = csv.excel
+            dialect.delimiter = ";"
+        reader = csv.reader(io.StringIO(text), dialect)
+        all_rows = list(reader)
+    elif data_bytes:
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "csv"
+        if ext == "xlsx":
+            if load_workbook is None:
+                raise ValueError("Suporte a XLSX indisponível. Instale openpyxl.")
+            wb = load_workbook(io.BytesIO(data_bytes), read_only=True, data_only=True)
+            ws = wb.active
+            all_rows = [[cell for cell in row] for row in ws.iter_rows(values_only=True)]
+        else:
+            text = data_bytes.decode("utf-8-sig", errors="replace")
+            sample = text[:2048]
+            try:
+                dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+            except Exception:
+                dialect = csv.excel
+                dialect.delimiter = ";"
+            reader = csv.reader(io.StringIO(text), dialect)
+            all_rows = list(reader)
+
+    if not all_rows:
+        return []
+
+    headers = normalize_headers(all_rows[0])
+    def idx(candidates):
+        for c in candidates:
+            if c in headers:
+                return headers.index(c)
+        return None
+
+    i_name = idx(["produto", "product", "modelo", "model", "nome", "name", "descricao", "description"])
+    i_sku = idx(["sku", "codigo", "code"])
+    i_category = idx(["categoria", "category", "tipo", "type"])
+    i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo"])
+    i_wholesale = idx(["atacado", "wholesale", "wholesale_price", "preco atacado", "valor atacado"])
+    i_retail = idx(["varejo", "retail", "retail_price", "preco varejo", "valor varejo", "preco", "price"])
+    i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
+
+    if i_name is None and i_sku is None:
+        raise ValueError("A planilha precisa conter ao menos a coluna 'PRODUTO' ou 'SKU'.")
+
+    def parse_float(val):
+        if val is None:
+            return 0.0
+        s = str(val).strip().replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+        try:
+            return float(s)
+        except Exception:
+            try:
+                return float(str(val).strip().replace(",", "."))
+            except Exception:
+                return 0.0
+
+    for raw in all_rows[1:]:
+        name = str(raw[i_name] or "").strip() if i_name is not None and i_name < len(raw) else ""
+        sku = str(raw[i_sku] or "").strip() if i_sku is not None and i_sku < len(raw) else ""
+        category = str(raw[i_category] or "").strip() if i_category is not None and i_category < len(raw) else ""
+        unit_cost = parse_float(raw[i_cost]) if i_cost is not None and i_cost < len(raw) else 0.0
+        wholesale_price = parse_float(raw[i_wholesale]) if i_wholesale is not None and i_wholesale < len(raw) else 0.0
+        retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
+        
+        promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
+        promo_eligible = 1 if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else 0
+
+        if name or sku:
+            rows.append({
+                "name": name or sku,
+                "sku": sku or None,
+                "category": category or None,
+                "unit_cost": unit_cost,
+                "wholesale_price": wholesale_price,
+                "retail_price": retail_price,
+                "promo_eligible": promo_eligible
+            })
+    return rows
+
+
+@app.route("/products/import", methods=["POST"])
+@login_required
+@roles_required("admin", "finance", "stock")
+def import_products():
+    import urllib.request
+    sheets_url = request.form.get("sheets_url", "").strip()
+    file_storage = request.files.get("products_file")
+
+    parsed_rows = []
+
+    if sheets_url:
+        export_url = sheets_url
+        if "docs.google.com/spreadsheets" in export_url and "/export" not in export_url:
+            export_url = export_url.split("/edit")[0].rstrip("/") + "/export?format=csv"
+            gid = None
+            if "#gid=" in sheets_url:
+                gid = sheets_url.split("#gid=")[1].split("&")[0]
+            elif "gid=" in sheets_url:
+                gid = sheets_url.split("gid=")[1].split("&")[0]
+            if gid:
+                export_url += f"&gid={gid}"
+
+        try:
+            req = urllib.request.Request(export_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                csv_text = resp.read().decode("utf-8-sig", errors="replace")
+                parsed_rows = parse_products_rows(text_content=csv_text)
+        except Exception as e:
+            flash(f"Falha ao carregar a planilha do Google Sheets pelo link. Verifique se a permissão do link está como 'Qualquer pessoa com o link pode ver'. Erro: {str(e)}", "danger")
+            return redirect(url_for("products"))
+
+    elif file_storage and file_storage.filename:
+        data = file_storage.read()
+        try:
+            parsed_rows = parse_products_rows(data_bytes=data, filename=file_storage.filename)
+        except Exception as e:
+            flash(f"Erro ao processar arquivo: {str(e)}", "danger")
+            return redirect(url_for("products"))
+    else:
+        flash("Selecione um arquivo CSV/XLSX ou informe a URL do Google Sheets.", "danger")
+        return redirect(url_for("products"))
+
+    if not parsed_rows:
+        flash("Nenhum produto válido encontrado na planilha.", "warning")
+        return redirect(url_for("products"))
+
+    created_count = 0
+    updated_count = 0
+
+    with db() as conn:
+        for r in parsed_rows:
+            existing = None
+            if r["sku"]:
+                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(?)", (r["sku"],)).fetchone()
+            if not existing and r["name"]:
+                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (r["name"],)).fetchone()
+
+            if existing:
+                conn.execute(
+                    """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
+                       unit_cost=?, wholesale_price=?, retail_price=?, promo_eligible=? WHERE id=?""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"], existing["id"])
+                )
+                updated_count += 1
+            else:
+                conn.execute(
+                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, promo_eligible)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"])
+                )
+                created_count += 1
+        conn.commit()
+
+    audit("products.imported", f"created={created_count}; updated={updated_count}")
+    flash(f"Planilha de produtos processada! {created_count} novos produtos cadastrados, {updated_count} atualizados.", "success")
+    return redirect(url_for("products"))
+
+
+
 @app.route("/imports", methods=["GET", "POST"])
 @login_required
 @roles_required("admin")

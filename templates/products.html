@@ -4,6 +4,7 @@
 {% block page_subtitle %}Modelo é o produto; cor é variação.{% endblock %}
 {% block top_actions %}
   {% if me.role in ['admin', 'finance', 'stock'] %}
+    <button class="btn" onclick="openModal('importProductsModal')">📊 Importar Planilha de Preços</button>
     <button class="btn primary" onclick="openModal('newProduct')">+ Novo produto</button>
   {% endif %}
 {% endblock %}
@@ -128,4 +129,33 @@
     </form>
   </div>
 </div>
+
+<!-- Import Products Modal -->
+<div class="modal" id="importProductsModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>📊 Importar / Sincronizar Tabela de Preços</h3>
+      <button onclick="closeModal('importProductsModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('import_products') }}" enctype="multipart/form-data" class="form-grid">
+      <label class="span-2">Link da Planilha (Google Sheets)
+        <input name="sheets_url" placeholder="https://docs.google.com/spreadsheets/d/1xtZaD.../edit#gid=494760175">
+        <small class="muted">A planilha no Google Sheets precisa estar configurada como "Qualquer pessoa com o link pode ver".</small>
+      </label>
+      <div class="span-2 text-center muted" style="margin: 4px 0;">— OU FAÇA UPLOAD DO ARQUIVO —</div>
+      <label class="span-2">Arquivo de Planilha (CSV ou XLSX)
+        <input type="file" name="products_file" accept=".csv, .xlsx, .xls">
+      </label>
+      <div class="span-2 muted-box" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem;">
+        <strong>Colunas reconhecidas automaticamente:</strong><br>
+        <code>PRODUTO / MODELO</code> | <code>SKU</code> | <code>CATEGORIA</code> | <code>CUSTO</code> | <code>ATACADO</code> | <code>VAREJO</code> | <code>PROMO</code>
+      </div>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('importProductsModal')">Cancelar</button>
+        <button class="btn primary">Importar e Atualizar Preços</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
+
