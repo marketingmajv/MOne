@@ -14,7 +14,6 @@
     <thead>
       <tr>
         <th>Produto</th>
-        <th>SKU</th>
         <th>Categoria</th>
         <th>Custo</th>
         <th>Atacado</th>
@@ -33,7 +32,6 @@
     {% for p in products %}
       <tr>
         <td><b>{{ p.name }}</b></td>
-        <td><small class="mono">{{ p.sku or '—' }}</small></td>
         <td>{{ p.category or '—' }}</td>
         <td>
           {% if me.role in ['admin', 'finance'] %}
@@ -62,7 +60,7 @@
         {% endif %}
       </tr>
     {% else %}
-      <tr><td colspan="12" class="empty">Nenhum produto cadastrado.</td></tr>
+      <tr><td colspan="11" class="empty">Nenhum produto cadastrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -78,11 +76,8 @@
       <button onclick="closeModal('editProduct{{ p.id }}')">×</button>
     </div>
     <form method="post" action="{{ url_for('edit_product', pid=p.id) }}" class="form-grid">
-      <label>Modelo / Nome
+      <label class="span-2">Modelo / Nome
         <input name="name" value="{{ p.name }}" required>
-      </label>
-      <label>SKU
-        <input name="sku" value="{{ p.sku or '' }}">
       </label>
       <label>Categoria
         <input name="category" value="{{ p.category or '' }}" placeholder="Scooter, triciclo...">
@@ -123,8 +118,7 @@
       <button onclick="closeModal('newProduct')">×</button>
     </div>
     <form method="post" class="form-grid">
-      <label>Modelo / nome<input name="name" required placeholder="Ex.: Scooter V80 PRO"></label>
-      <label>SKU<input name="sku" placeholder="Ex.: V80PRO-01"></label>
+      <label class="span-2">Modelo / nome<input name="name" required placeholder="Ex.: Scooter V80 PRO"></label>
       <label>Categoria<input name="category" placeholder="Scooter, triciclo..."></label>
       <label>Custo unitário<input type="number" step="0.01" name="unit_cost" value="0"></label>
       <label>Preço atacado<input type="number" step="0.01" name="wholesale_price" value="0"></label>
@@ -170,5 +164,6 @@
   </div>
 </div>
 {% endblock %}
+
 
 
