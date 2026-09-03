@@ -25,6 +25,30 @@ O agente DEVE executar imediatamente o **Protocolo START** em 3 etapas sequencia
 
 ---
 
+## Protocolo Especial: [deploy]
+Sempre que o usuário digitar `[deploy]` ou `deploy`:
+O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenciais:
+
+1. **Passo 01 — Varredura e Validação de Integridade do Código**:
+   - Executar compilação estática (`.venv/bin/python3 -m py_compile app.py api/index.py`).
+   - Validar sintaxe de todos os templates Jinja2 em `templates/*.html`.
+   - Testar instanciação da aplicação Flask e rota `/login` (`app.test_client()`).
+   - Checar integridade da conexão Supabase IPv4 Pooler.
+   - **Trava de Segurança**: Se houver qualquer erro de sintaxe, importação ou tipagem que prejudique o deploy, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
+
+2. **Passo 02 — Git Commit e Push Automático**:
+   - Verificar arquivos alterados ou pendentes (`git status -sb`).
+   - Fazer `git add .` dos arquivos alterados na sessão (respeitando `.gitignore`).
+   - Criar commit objetivo descrevendo as alterações da sessão.
+   - Executar `git push origin main` para acionar o deploy automático na Vercel.
+
+3. **Passo 03 — Relatório de Publicação e Confirmação Online**:
+   - Resumo da varredura (status das validações).
+   - Detalhes do commit enviado e lista de arquivos atualizados.
+   - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br`
+
+---
+
 ## Regras de Negócio e Desenvolvimento
 - **Porta Local**: Usar sempre a porta `5001` (a porta 5000 do macOS é ocupada pelo AirPlay / ControlCenter).
 - **Banco de Dados**: Usar sempre o pooler IPv4 oficial do Supabase:

@@ -135,14 +135,20 @@ O script iniciará:
 - Servidor Flask na porta `5001` com recarregamento automático a cada alteração de código.
 - Túnel Cloudflare fornecendo uma URL pública HTTPS instantânea para testar no celular.
 
-### 6.3. Como Fazer Deploy de Novas Versões para Produção:
-O repositório está configurado com push autenticado no GitHub:
-```bash
-git add .
-git commit -m "Descricao da alteracao"
-git push origin main
-```
-A **Vercel** detecta o commit no branch `main` e publica a nova versão em produção automaticamente em menos de 1 minuto em **`https://m-one.majmobilidade.com.br`**.
+### 6.3. Protocolos Automatizados do Assistente:
+
+#### 🟢 Protocolo `[start]` (Inicialização da Sessão de Trabalho)
+Ao digitar `[start]` ou `start`:
+1. Executa `git fetch origin` e compara status de sincronização (commits pendentes de push/pull).
+2. Inicializa o servidor local na porta `5001` e o túnel Cloudflare online se não estiverem ativos.
+3. Exibe relatório da sincronização e entrega links de teste (local, túnel e produção).
+
+#### 🚀 Protocolo `[deploy]` (Validação e Publicação em Produção)
+Ao digitar `[deploy]` ou `deploy`:
+1. **Varredura de Integridade**: Executa verificação de sintaxe Python, compilação de templates Jinja2, inicialização de rotas Flask e validação do pooler Supabase IPv4 via [`scripts/validate.py`](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/scripts/validate.py).
+2. **Trava de Segurança**: Se qualquer erro de tipagem/sintaxe for detectado, o deploy é abortado imediatamente.
+3. **Deploy Automático**: Se aprovado, faz `git add .`, `git commit` com resumo das alterações da sessão e `git push origin main` para acionar a publicação imediata na Vercel em **`https://m-one.majmobilidade.com.br`**.
+4. **Relatório**: Entrega o resumo do que foi publicado e confirmação do ambiente.
 
 ---
 
