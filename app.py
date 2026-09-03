@@ -7,10 +7,33 @@ import sqlite3
 import secrets
 import hashlib
 import base64
+import unicodedata
 from datetime import datetime, date, timedelta
 from functools import wraps
 from pathlib import Path
 from urllib.parse import urlparse, unquote
+
+def normalize_headers(row):
+    headers = []
+    for c in row:
+        val = str(c or "").strip()
+        val = unicodedata.normalize('NFKD', val).encode('ASCII', 'ignore').decode('utf-8')
+        headers.append(val.lower())
+    return headers
+
+def find_header_and_data_rows(all_rows):
+    if not all_rows:
+        return 0, [], []
+    candidate_keywords = ["produto", "product", "modelo", "model", "nome", "name", "sku", "codigo", "code", "varejo", "retail", "atacado", "wholesale"]
+    header_idx = 0
+    for idx, row in enumerate(all_rows[:10]):
+        norm = normalize_headers(row)
+        if any(kw in norm for kw in candidate_keywords) or any(any(kw in cell for kw in candidate_keywords) for cell in norm):
+            header_idx = idx
+            break
+    headers = normalize_headers(all_rows[header_idx])
+    return header_idx, headers, all_rows[header_idx + 1:]
+
 
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, jsonify
@@ -605,7 +628,7 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     if not all_rows:
         return []
 
-    headers = normalize_headers(all_rows[0])
+    h_idx, headers, data_rows = find_header_and_data_rows(all_rows)
     def idx(candidates):
         for c in candidates:
             if c in headers:
@@ -621,7 +644,7 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
 
     if i_name is None and i_sku is None:
-        raise ValueError("A planilha precisa conter ao menos a coluna 'PRODUTO' ou 'SKU'.")
+        raise ValueError("A planilha precisa conter ao menos a coluna 'PRODUTO', 'MODELO' ou 'SKU'.")
 
     def parse_float(val):
         if val is None:
@@ -635,7 +658,7 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
             except Exception:
                 return 0.0
 
-    for raw in all_rows[1:]:
+    for raw in data_rows:
         name = str(raw[i_name] or "").strip() if i_name is not None and i_name < len(raw) else ""
         sku = str(raw[i_sku] or "").strip() if i_sku is not None and i_sku < len(raw) else ""
         category = str(raw[i_category] or "").strip() if i_category is not None and i_category < len(raw) else ""
@@ -769,7 +792,7 @@ def api_sync_prices():
 
     parsed_rows = []
     if isinstance(all_rows[0], list):
-        headers = normalize_headers(all_rows[0])
+        h_idx, headers, data_rows = find_header_and_data_rows(all_rows)
         def idx(candidates):
             for c in candidates:
                 if c in headers:
@@ -796,7 +819,8 @@ def api_sync_prices():
                 except Exception:
                     return 0.0
 
-        for raw in all_rows[1:]:
+        for raw in data_rows:
+
             name = str(raw[i_name] or "").strip() if i_name is not None and i_name < len(raw) else ""
             sku = str(raw[i_sku] or "").strip() if i_sku is not None and i_sku < len(raw) else ""
             category = str(raw[i_category] or "").strip() if i_category is not None and i_category < len(raw) else ""
