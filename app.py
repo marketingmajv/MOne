@@ -548,11 +548,13 @@ def products():
         unit_cost = float(request.form.get("unit_cost") or 0)
         retail_price = float(request.form.get("retail_price") or 0)
         wholesale_price = float(request.form.get("wholesale_price") or 0)
+        installment_12x = float(request.form.get("installment_12x") or 0)
+        installment_18x = float(request.form.get("installment_18x") or 0)
         promo_eligible = 1 if request.form.get("promo_eligible") else 0
         with db() as conn:
             conn.execute(
-                "INSERT INTO products(name,sku,category,unit_cost,retail_price,wholesale_price,promo_eligible) VALUES(?,?,?,?,?,?,?)",
-                (name, sku, category, unit_cost, retail_price, wholesale_price, promo_eligible),
+                "INSERT INTO products(name,sku,category,unit_cost,retail_price,wholesale_price,installment_12x,installment_18x,promo_eligible) VALUES(?,?,?,?,?,?,?,?,?)",
+                (name, sku, category, unit_cost, retail_price, wholesale_price, installment_12x, installment_18x, promo_eligible),
             )
             conn.commit()
         audit("product.created", name)
@@ -582,11 +584,13 @@ def edit_product(pid):
         float(request.form.get("unit_cost") or 0),
         float(request.form.get("retail_price") or 0),
         float(request.form.get("wholesale_price") or 0),
+        float(request.form.get("installment_12x") or 0),
+        float(request.form.get("installment_18x") or 0),
         1 if request.form.get("promo_eligible") else 0,
         pid,
     )
     with db() as conn:
-        conn.execute("UPDATE products SET name=?,sku=?,category=?,unit_cost=?,retail_price=?,wholesale_price=?,promo_eligible=? WHERE id=?", fields)
+        conn.execute("UPDATE products SET name=?,sku=?,category=?,unit_cost=?,retail_price=?,wholesale_price=?,installment_12x=?,installment_18x=?,promo_eligible=? WHERE id=?", fields)
         conn.commit()
     audit("product.updated", f"product_id={pid}")
     flash("Produto atualizado.", "success")
@@ -641,6 +645,8 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo"])
     i_wholesale = idx(["atacado", "wholesale", "wholesale_price", "preco atacado", "valor atacado"])
     i_retail = idx(["varejo", "retail", "retail_price", "preco varejo", "valor varejo", "preco", "price"])
+    i_inst_12x = idx(["12x varejo", "12x", "12x (parcela)", "parcela 12x", "12x varejo (parcela)"])
+    i_inst_18x = idx(["18x varejo", "18x", "18x (parcela)", "parcela 18x", "18x varejo (parcela)"])
     i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
 
     if i_name is None and i_sku is None:
@@ -665,6 +671,8 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
         unit_cost = parse_float(raw[i_cost]) if i_cost is not None and i_cost < len(raw) else 0.0
         wholesale_price = parse_float(raw[i_wholesale]) if i_wholesale is not None and i_wholesale < len(raw) else 0.0
         retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
+        installment_12x = parse_float(raw[i_inst_12x]) if i_inst_12x is not None and i_inst_12x < len(raw) else 0.0
+        installment_18x = parse_float(raw[i_inst_18x]) if i_inst_18x is not None and i_inst_18x < len(raw) else 0.0
         
         promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
         promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
@@ -677,6 +685,8 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
                 "unit_cost": unit_cost,
                 "wholesale_price": wholesale_price,
                 "retail_price": retail_price,
+                "installment_12x": installment_12x,
+                "installment_18x": installment_18x,
                 "promo_eligible": promo_eligible
             })
     return rows
@@ -742,15 +752,15 @@ def import_products():
             if existing:
                 conn.execute(
                     """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
-                       unit_cost=?, wholesale_price=?, retail_price=?, promo_eligible=? WHERE id=?""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"], existing["id"])
+                       unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
-                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, promo_eligible)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"])
+                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
                 )
                 created_count += 1
         conn.commit()
@@ -805,6 +815,8 @@ def api_sync_prices():
         i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo"])
         i_wholesale = idx(["atacado", "wholesale", "wholesale_price", "preco atacado", "valor atacado"])
         i_retail = idx(["varejo", "retail", "retail_price", "preco varejo", "valor varejo", "preco", "price"])
+        i_inst_12x = idx(["12x varejo", "12x", "12x (parcela)", "parcela 12x", "12x varejo (parcela)"])
+        i_inst_18x = idx(["18x varejo", "18x", "18x (parcela)", "parcela 18x", "18x varejo (parcela)"])
         i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
 
         def parse_float(val):
@@ -827,6 +839,8 @@ def api_sync_prices():
             unit_cost = parse_float(raw[i_cost]) if i_cost is not None and i_cost < len(raw) else 0.0
             wholesale_price = parse_float(raw[i_wholesale]) if i_wholesale is not None and i_wholesale < len(raw) else 0.0
             retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
+            installment_12x = parse_float(raw[i_inst_12x]) if i_inst_12x is not None and i_inst_12x < len(raw) else 0.0
+            installment_18x = parse_float(raw[i_inst_18x]) if i_inst_18x is not None and i_inst_18x < len(raw) else 0.0
             
             promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
             promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
@@ -839,6 +853,8 @@ def api_sync_prices():
                     "unit_cost": unit_cost,
                     "wholesale_price": wholesale_price,
                     "retail_price": retail_price,
+                    "installment_12x": installment_12x,
+                    "installment_18x": installment_18x,
                     "promo_eligible": promo_eligible
                 })
     elif isinstance(all_rows[0], dict):
@@ -849,6 +865,8 @@ def api_sync_prices():
             unit_cost = float(item.get("unit_cost") or item.get("custo") or 0)
             wholesale_price = float(item.get("wholesale_price") or item.get("atacado") or 0)
             retail_price = float(item.get("retail_price") or item.get("varejo") or 0)
+            installment_12x = float(item.get("installment_12x") or item.get("12x") or 0)
+            installment_18x = float(item.get("installment_18x") or item.get("18x") or 0)
             promo_eligible = bool(item.get("promo_eligible", True))
             if name or sku:
                 parsed_rows.append({
@@ -858,6 +876,8 @@ def api_sync_prices():
                     "unit_cost": unit_cost,
                     "wholesale_price": wholesale_price,
                     "retail_price": retail_price,
+                    "installment_12x": installment_12x,
+                    "installment_18x": installment_18x,
                     "promo_eligible": promo_eligible
                 })
 
@@ -876,15 +896,15 @@ def api_sync_prices():
             if existing:
                 conn.execute(
                     """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
-                       unit_cost=?, wholesale_price=?, retail_price=?, promo_eligible=? WHERE id=?""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"], existing["id"])
+                       unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
-                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, promo_eligible)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"])
+                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
                 )
                 created_count += 1
         conn.commit()

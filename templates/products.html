@@ -18,7 +18,9 @@
         <th>Categoria</th>
         <th>Custo</th>
         <th>Atacado</th>
-        <th>Varejo</th>
+        <th>Varejo à Vista</th>
+        <th>Parcela 12x</th>
+        <th>Parcela 18x</th>
         <th>Disponível</th>
         <th>Vendido</th>
         <th>Promo</th>
@@ -42,6 +44,8 @@
         </td>
         <td>{{ p.wholesale_price|money }}</td>
         <td><b>{{ p.retail_price|money }}</b></td>
+        <td>{{ p.installment_12x|money }}</td>
+        <td>{{ p.installment_18x|money }}</td>
         <td><span class="badge available">{{ p.available or 0 }}</span></td>
         <td><span class="badge muted">{{ p.sold or 0 }}</span></td>
         <td>
@@ -58,7 +62,7 @@
         {% endif %}
       </tr>
     {% else %}
-      <tr><td colspan="10" class="empty">Nenhum produto cadastrado.</td></tr>
+      <tr><td colspan="12" class="empty">Nenhum produto cadastrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -89,8 +93,14 @@
       <label>Preço atacado (R$)
         <input type="number" step="0.01" name="wholesale_price" value="{{ p.wholesale_price }}">
       </label>
-      <label>Preço varejo (R$)
+      <label>Preço varejo à vista (R$)
         <input type="number" step="0.01" name="retail_price" value="{{ p.retail_price }}">
+      </label>
+      <label>Parcela 12x (R$)
+        <input type="number" step="0.01" name="installment_12x" value="{{ p.installment_12x or 0 }}">
+      </label>
+      <label>Parcela 18x (R$)
+        <input type="number" step="0.01" name="installment_18x" value="{{ p.installment_18x or 0 }}">
       </label>
       <label class="check span-2">
         <input type="checkbox" name="promo_eligible" {{ 'checked' if p.promo_eligible }}> Elegível para produto de oportunidade (sugestão custo + 10%)
@@ -118,7 +128,9 @@
       <label>Categoria<input name="category" placeholder="Scooter, triciclo..."></label>
       <label>Custo unitário<input type="number" step="0.01" name="unit_cost" value="0"></label>
       <label>Preço atacado<input type="number" step="0.01" name="wholesale_price" value="0"></label>
-      <label>Preço varejo<input type="number" step="0.01" name="retail_price" value="0"></label>
+      <label>Preço varejo à vista<input type="number" step="0.01" name="retail_price" value="0"></label>
+      <label>Parcela 12x<input type="number" step="0.01" name="installment_12x" value="0"></label>
+      <label>Parcela 18x<input type="number" step="0.01" name="installment_18x" value="0"></label>
       <label class="check span-2">
         <input type="checkbox" name="promo_eligible" checked> Elegível para produto de oportunidade
       </label>
@@ -148,7 +160,7 @@
       </label>
       <div class="span-2 muted-box" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem;">
         <strong>Colunas reconhecidas automaticamente:</strong><br>
-        <code>PRODUTO / MODELO</code> | <code>SKU</code> | <code>CATEGORIA</code> | <code>CUSTO</code> | <code>ATACADO</code> | <code>VAREJO</code> | <code>PROMO</code>
+        <code>MODELO</code> | <code>ATACADO</code> | <code>VAREJO</code> | <code>12x VAREJO (parcela)</code> | <code>18x VAREJO (parcela)</code>
       </div>
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('importProductsModal')">Cancelar</button>
@@ -158,4 +170,5 @@
   </div>
 </div>
 {% endblock %}
+
 
