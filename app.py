@@ -127,19 +127,26 @@ ROLE_LABELS = {
 }
 
 
+DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres"
+
 def db():
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2:
         try:
-            conn = psycopg2.connect(db_url, connect_timeout=10)
+            conn = psycopg2.connect(db_url, sslmode="require", connect_timeout=10)
             return PGConnWrapper(conn)
         except Exception as e:
             print("Direct PG connection failed:", e)
 
-    conn = sqlite3.connect(DB_PATH)
+    if os.environ.get("VERCEL"):
+        tmp_db_path = Path("/tmp/m_one.db")
+        conn = sqlite3.connect(tmp_db_path)
+    else:
+        conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
+
 
 
 def hash_password(password: str) -> str:
