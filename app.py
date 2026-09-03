@@ -738,7 +738,9 @@ def import_products():
 
 
 @app.route("/api/sync-prices", methods=["POST"])
+@app.route("/sync-prices", methods=["POST"])
 def api_sync_prices():
+
     token = request.args.get("token") or request.headers.get("X-Sync-Token")
     expected_token = os.environ.get("SYNC_TOKEN") or "maj-m-one-sync-secret-2026"
     if not token or token != expected_token:
