@@ -111,7 +111,9 @@ else:
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("M_ONE_SECRET", "dev-" + secrets.token_hex(24))
+app.secret_key = os.environ.get("SECRET_KEY") or os.environ.get("M_ONE_SECRET") or "maj-m-one-production-fixed-secret-key-2026-v1"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp", "csv", "xlsx", "xls"}
@@ -392,6 +394,7 @@ def login():
         with db() as conn:
             user = conn.execute("SELECT * FROM users WHERE lower(username)=lower(?) AND (active=1 OR active IS TRUE)", (username,)).fetchone()
         if user and user["password_hash"] == hash_password(password):
+            session.permanent = True
             session["user_id"] = user["id"]
             flash(f"Bem-vindo, {user['name']}.", "success")
             return redirect(url_for("dashboard"))
