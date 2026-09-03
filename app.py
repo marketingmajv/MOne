@@ -130,12 +130,22 @@ ROLE_LABELS = {
 def db():
     pool = get_pg_pool()
     if pool:
-        conn = pool.getconn()
-        return PGConnWrapper(conn, pool=pool)
+        try:
+            conn = pool.getconn()
+            return PGConnWrapper(conn, pool=pool)
+        except Exception as e:
+            print("Pool getconn failed, falling back to direct connection:", e)
+            global pg_pool
+            pg_pool = None
+
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
     if db_url and psycopg2:
-        conn = psycopg2.connect(db_url)
-        return PGConnWrapper(conn)
+        try:
+            conn = psycopg2.connect(db_url, connect_timeout=10)
+            return PGConnWrapper(conn)
+        except Exception as e:
+            print("Direct PG connection failed:", e)
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
