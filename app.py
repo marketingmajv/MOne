@@ -951,7 +951,7 @@ def users():
                 conn.execute("INSERT INTO users(name,username,password_hash,role) VALUES(?,?,?,?)", (name, username, hash_password(password), role))
                 conn.commit()
                 flash("Usuário criado.", "success")
-            except sqlite3.IntegrityError:
+            except Exception:
                 flash("Esse nome de usuário já existe.", "danger")
         return redirect(url_for("users"))
     with db() as conn:
