@@ -4,8 +4,8 @@
 {% block page_subtitle %}O que merece sua decisão hoje.{% endblock %}
 {% block content %}
 <div class="metric-grid">
-  <div class="metric"><small>Vendas hoje</small><strong>{{ sales_today|money }}</strong><span>realizado</span></div>
-  <div class="metric"><small>Vendas no mês</small><strong>{{ sales_month|money }}</strong><span>realizado</span></div>
+  <div class="metric"><small>Vendas hoje (R$)</small><strong>{{ sales_today|money }}</strong><span>{{ sales_today_count or 0 }} pedido(s) hoje</span></div>
+  <div class="metric"><small>Vendas no mês</small><strong>{{ sales_month|money }}</strong><span>realizado no mês</span></div>
   <div class="metric"><small>Pagamentos no mês</small><strong>{{ payments_month|money }}</strong><span>já pagos</span></div>
   <div class="metric"><small>Unidades disponíveis</small><strong>{{ stock_available }}</strong><span>por chassi</span></div>
 </div>

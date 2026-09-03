@@ -480,7 +480,9 @@ def dashboard():
     ago30 = (today - timedelta(days=30)).isoformat()
 
     with db() as conn:
-        sales_today = conn.execute("SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at=?", (today_iso,)).fetchone()["v"]
+        st_row = conn.execute("SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=?", (today_iso,)).fetchone()
+        sales_today = st_row["v"]
+        sales_today_count = st_row["c"]
         sales_month = conn.execute("SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=?", (month_start,)).fetchone()["v"]
         payments_month = conn.execute("SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=?", (month_start,)).fetchone()["v"]
         stock_available = conn.execute("SELECT COUNT(*) c FROM stock_units WHERE status='available'").fetchone()["c"]
@@ -528,6 +530,7 @@ def dashboard():
     return render_template(
         "dashboard.html",
         sales_today=sales_today,
+        sales_today_count=sales_today_count,
         sales_month=sales_month,
         payments_month=payments_month,
         stock_available=stock_available,
