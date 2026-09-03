@@ -128,22 +128,10 @@ ROLE_LABELS = {
 
 
 def db():
-    pool = get_pg_pool()
-    if pool:
-        try:
-            conn = pool.getconn()
-            return PGConnWrapper(conn, pool=pool)
-        except Exception as e:
-            print("Pool getconn failed, falling back to direct connection:", e)
-            global pg_pool
-            pg_pool = None
-
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
     if db_url and psycopg2:
         try:
-            if "?" not in db_url:
-                db_url += "?sslmode=require"
-            conn = psycopg2.connect(db_url, connect_timeout=10, sslmode="require")
+            conn = psycopg2.connect(db_url, connect_timeout=10)
             return PGConnWrapper(conn)
         except Exception as e:
             print("Direct PG connection failed:", e)
