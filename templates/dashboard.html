@@ -37,8 +37,8 @@
 
 <div class="quick-grid">
   <a class="quick" href="{{ url_for('sales') }}"><span>＋</span><div><b>Registrar venda</b><small>Pedido + NF + chassis + recebimentos</small></div></a>
-  {% if me.role in ['admin','finance'] %}<a class="quick" href="{{ url_for('payments') }}"><span>↓</span><div><b>Registrar pagamento</b><small>Somente o que já foi pago</small></div></a>{% endif %}
+  {% if me.role in ['admin','finance','support'] %}<a class="quick" href="{{ url_for('payments') }}"><span>↓</span><div><b>Registrar pagamento</b><small>Somente o que já foi pago</small></div></a>{% endif %}
   <a class="quick" href="{{ url_for('stock') }}"><span>⌕</span><div><b>Consultar chassi</b><small>Fonte única da verdade</small></div></a>
-  {% if me.role == 'admin' %}<a class="quick" href="{{ url_for('imports') }}"><span>⇩</span><div><b>Nova importação</b><small>Invoice + BL + chassis + custos</small></div></a>{% endif %}
+  {% if me.role in ['admin','support'] %}<a class="quick" href="{{ url_for('imports') }}"><span>⇩</span><div><b>Nova importação</b><small>Invoice + BL + chassis + custos</small></div></a>{% endif %}
 </div>
 {% endblock %}

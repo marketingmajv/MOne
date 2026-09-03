@@ -3,7 +3,7 @@
 {% block page_title %}Usuários e permissões{% endblock %}
 {% block page_subtitle %}Cada pessoa vê só o que precisa.{% endblock %}
 {% block top_actions %}
-  {% if me.role == 'admin' %}
+  {% if me.role in ['admin', 'support'] %}
     <button class="btn primary" onclick="openModal('newUser')">+ Criar Usuário</button>
   {% endif %}
 {% endblock %}
@@ -16,7 +16,7 @@
         <th>Usuário</th>
         <th>Perfil / Acesso</th>
         <th>Status</th>
-        {% if me.role == 'admin' %}
+        {% if me.role in ['admin', 'support'] %}
           <th>Ações da Diretoria</th>
         {% endif %}
       </tr>
@@ -34,7 +34,7 @@
             <span class="status sold">Inativo</span>
           {% endif %}
         </td>
-        {% if me.role == 'admin' %}
+        {% if me.role in ['admin', 'support'] %}
           <td>
             <div class="action-row-compact">
               <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
@@ -76,6 +76,7 @@
           <option value="stock">Estoque (estoque, produtos, importar chassis)</option>
           <option value="finance">Financeiro (vendas, pagamentos, estoque, produtos)</option>
           <option value="admin">Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
+          <option value="support">Suporte Técnico (Acesso geral e suporte técnico)</option>
         </select>
       </label>
       <label class="span-2">Senha inicial temporária

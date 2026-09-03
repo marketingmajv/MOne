@@ -3,7 +3,7 @@
 {% block page_title %}Pagamentos realizados{% endblock %}
 {% block page_subtitle %}Aqui não existe conta futura: só entra o que já foi pago.{% endblock %}
 {% block top_actions %}
-  {% if me.role in ['admin', 'finance'] %}
+  {% if me.role in ['admin', 'finance', 'support'] %}
     <a href="{{ url_for('export_payments') }}" class="btn">Exportar CSV</a>
     <button class="btn primary" onclick="openModal('newPayment')">+ Registros de pagamento</button>
   {% endif %}
@@ -22,7 +22,7 @@
         <th>Categoria</th>
         <th>Conta / Origem</th>
         <th>Valor</th>
-        {% if me.role == 'admin' %}
+        {% if me.role in ['admin', 'support'] %}
           <th>Importação</th>
         {% endif %}
         <th>Comprovante</th>
@@ -36,7 +36,7 @@
         <td><span class="badge">{{ p.category or 'Geral' }}</span></td>
         <td>{{ p.account or '—' }}</td>
         <td><b class="text-accent">{{ p.amount|money }}</b></td>
-        {% if me.role == 'admin' %}
+        {% if me.role in ['admin', 'support'] %}
           <td>{{ p.import_ref or '—' }}</td>
         {% endif %}
         <td>
@@ -48,7 +48,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="{{ '7' if me.role == 'admin' else '6' }}" class="empty">Nenhum pagamento registrado.</td></tr>
+      <tr><td colspan="{{ '7' if me.role in ['admin', 'support'] else '6' }}" class="empty">Nenhum pagamento registrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -78,7 +78,7 @@
         <input name="account" placeholder="Ex.: Sicoob, Cartão, Caixa...">
       </label>
 
-      {% if me.role == 'admin' and imports %}
+      {% if me.role in ['admin', 'support'] and imports %}
         <label class="span-2">Vincular à importação (Restrito à Diretoria)
           <select name="import_id">
             <option value="">Não vincular (despesa operacional geral)</option>

@@ -4,7 +4,7 @@
 {% block page_subtitle %}Cada unidade tem uma história única. Fonte única da verdade.{% endblock %}
 {% block top_actions %}
   <a href="{{ url_for('export_stock') }}" class="btn">Exportar CSV</a>
-  {% if me.role in ['admin', 'stock'] %}
+  {% if me.role in ['admin', 'stock', 'support'] %}
     <button class="btn primary" onclick="openModal('newStockUnit')">+ Novo chassi</button>
   {% endif %}
 {% endblock %}

@@ -3,7 +3,7 @@
 {% block page_title %}Importações e Contêineres{% endblock %}
 {% block page_subtitle %}Controle de lotes, Invoice, BL, chassis e custos restritos.{% endblock %}
 {% block top_actions %}
-  {% if me.role == 'admin' %}
+  {% if me.role in ['admin', 'support'] %}
     <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
   {% endif %}
 {% endblock %}
@@ -21,7 +21,7 @@
   
   <div class="import-stats">
     <span><small>Chassis do lote</small><b>{{ i.chassis_count or 0 }}</b></span>
-    {% if me.role == 'admin' %}
+    {% if me.role in ['admin', 'support'] %}
       <span><small>Câmbio base</small><b>{{ i.usd_rate or '—' }}</b></span>
       <span><small>Custos cadastrados</small><b class="text-accent">{{ i.costs_brl|money }}</b></span>
     {% endif %}
@@ -29,11 +29,11 @@
   </div>
 
   <div class="action-row">
-    {% if me.role in ['admin', 'stock'] %}
+    {% if me.role in ['admin', 'stock', 'support'] %}
       <button class="btn" onclick="openModal('chassis{{ i.id }}')">Importar planilha de chassis</button>
     {% endif %}
     
-    {% if me.role == 'admin' %}
+    {% if me.role in ['admin', 'support'] %}
       <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Custo / Pagamento da Importação</button>
       {% if i.status != 'released' %}
         <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
@@ -65,7 +65,7 @@
 </div>
 
 <!-- Modal Adicionar Custo (Admin Only) -->
-{% if me.role == 'admin' %}
+{% if me.role in ['admin', 'support'] %}
 <div class="modal" id="cost{{ i.id }}">
   <div class="modal-card">
     <div class="modal-head">
@@ -119,7 +119,7 @@
 </div>
 
 <!-- Modal Nova Importação (Admin Only) -->
-{% if me.role == 'admin' %}
+{% if me.role in ['admin', 'support'] %}
 <div class="modal" id="newImport">
   <div class="modal-card large">
     <div class="modal-head">

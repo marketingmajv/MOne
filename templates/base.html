@@ -14,10 +14,10 @@
         <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">▦ <span>Visão geral</span></a>
         <a href="{{ url_for('sales') }}" class="{{ 'active' if request.endpoint=='sales' else '' }}">↗ <span>Vendas</span></a>
         <a href="{{ url_for('stock') }}" class="{{ 'active' if request.endpoint=='stock' else '' }}">▣ <span>Estoque / Chassis</span></a>
-        {% if me and me.role in ['admin','finance','stock'] %}<a href="{{ url_for('products') }}" class="{{ 'active' if request.endpoint=='products' else '' }}">◫ <span>Produtos</span></a>{% endif %}
-        {% if me and me.role in ['admin','finance'] %}<a href="{{ url_for('payments') }}" class="{{ 'active' if request.endpoint=='payments' else '' }}">$ <span>Pagamentos</span></a>{% endif %}
-        {% if me and me.role == 'admin' %}<a href="{{ url_for('imports') }}" class="{{ 'active' if request.endpoint=='imports' else '' }}">⌁ <span>Importações</span></a>{% endif %}
-        {% if me and me.role == 'admin' %}<a href="{{ url_for('users') }}" class="{{ 'active' if request.endpoint=='users' else '' }}">◎ <span>Usuários</span></a>{% endif %}
+        {% if me and me.role in ['admin','finance','stock','support'] %}<a href="{{ url_for('products') }}" class="{{ 'active' if request.endpoint=='products' else '' }}">◫ <span>Produtos</span></a>{% endif %}
+        {% if me and me.role in ['admin','finance','support'] %}<a href="{{ url_for('payments') }}" class="{{ 'active' if request.endpoint=='payments' else '' }}">$ <span>Pagamentos</span></a>{% endif %}
+        {% if me and me.role in ['admin','support'] %}<a href="{{ url_for('imports') }}" class="{{ 'active' if request.endpoint=='imports' else '' }}">⌁ <span>Importações</span></a>{% endif %}
+        {% if me and me.role in ['admin','support'] %}<a href="{{ url_for('users') }}" class="{{ 'active' if request.endpoint=='users' else '' }}">◎ <span>Usuários</span></a>{% endif %}
       </nav>
       <div class="sidebar-foot">
         <div class="user-chip"><b>{{ me.name }}</b><small>{{ role_labels.get(me.role, me.role) }}</small></div>

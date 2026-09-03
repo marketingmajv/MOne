@@ -42,6 +42,7 @@ Todos usam a senha temporária `MOne2026!` e devem alterá-la no primeiro uso op
 - luisa — Vendas
 - leo — Vendas
 - gabriel — Vendas
+- fauzer — Suporte Técnico
 
 ## Rodar no computador
 

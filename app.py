@@ -123,6 +123,7 @@ ROLE_LABELS = {
     "finance": "Financeiro",
     "stock": "Estoque",
     "sales": "Vendas",
+    "support": "Suporte Técnico",
 }
 
 
@@ -477,7 +478,7 @@ def dashboard():
 
 @app.route("/products", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance", "stock")
+@roles_required("admin", "finance", "stock", "support")
 def products():
     if request.method == "POST":
         name = request.form["name"].strip()
@@ -511,7 +512,7 @@ def products():
 
 @app.route("/products/<int:pid>/edit", methods=["POST"])
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def edit_product(pid):
     fields = (
         request.form.get("name", "").strip(),
@@ -533,7 +534,7 @@ def edit_product(pid):
 
 @app.route("/imports", methods=["GET", "POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def imports():
     if request.method == "POST":
         reference = request.form["reference"].strip()
@@ -631,7 +632,7 @@ def parse_chassis_file(file_storage):
 
 @app.route("/imports/<int:iid>/chassis", methods=["POST"])
 @login_required
-@roles_required("admin", "stock")
+@roles_required("admin", "stock", "support")
 def import_chassis(iid):
     f = request.files.get("chassis_file")
     if not f or not f.filename:
@@ -690,7 +691,7 @@ def import_chassis(iid):
 
 @app.route("/imports/<int:iid>/cost", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def add_import_cost(iid):
     try:
         receipt = save_upload(request.files.get("receipt_file"), "importcost")
@@ -719,7 +720,7 @@ def add_import_cost(iid):
 
 @app.route("/imports/<int:iid>/release", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def release_import(iid):
     with db() as conn:
         imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
@@ -767,7 +768,7 @@ def stock():
 
 @app.route("/sales", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance", "sales")
+@roles_required("admin", "finance", "sales", "support")
 def sales():
     if request.method == "POST":
         order_number = request.form.get("order_number", "").strip()
@@ -896,7 +897,7 @@ def sales():
 
 @app.route("/payments", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def payments():
     if request.method == "POST":
         paid_at = request.form.get("paid_at") or date.today().isoformat()
@@ -928,7 +929,7 @@ def payments():
 
     u = current_user()
     with db() as conn:
-        if u["role"] == "admin":
+        if u["role"] in ("admin", "support"):
             rows = conn.execute("SELECT p.*,i.reference import_ref FROM payments p LEFT JOIN imports i ON i.id=p.import_id ORDER BY p.paid_at DESC,p.id DESC LIMIT 300").fetchall()
             imports_rows = conn.execute("SELECT id,reference FROM imports ORDER BY created_at DESC").fetchall()
         else:
@@ -939,7 +940,7 @@ def payments():
 
 @app.route("/users", methods=["GET", "POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def users():
     if request.method == "POST":
         name = request.form["name"].strip()
@@ -997,7 +998,7 @@ def api_chassis(chassis):
 
 @app.route("/stock/add", methods=["POST"])
 @login_required
-@roles_required("admin", "stock")
+@roles_required("admin", "stock", "support")
 def add_stock_unit():
     chassis = request.form.get("chassis", "").strip()
     product_id = request.form.get("product_id")
@@ -1025,7 +1026,7 @@ def add_stock_unit():
 
 @app.route("/users/<int:uid>/toggle", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def toggle_user(uid):
     with db() as conn:
         u = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
@@ -1040,7 +1041,7 @@ def toggle_user(uid):
 
 @app.route("/users/<int:uid>/reset-password", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def reset_user_password(uid):
     default_pass = "MOne2026!"
     with db() as conn:
@@ -1089,11 +1090,11 @@ def export_sales():
 
 @app.route("/payments/export")
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def export_payments():
     u = current_user()
     with db() as conn:
-        if u["role"] == "admin":
+        if u["role"] in ("admin", "support"):
             rows = conn.execute(
                 """SELECT p.paid_at, p.description, p.category, p.account, p.amount, i.reference import_ref
                    FROM payments p LEFT JOIN imports i ON i.id=p.import_id ORDER BY p.paid_at DESC"""
