@@ -24,13 +24,12 @@ O **M-One** é o sistema operacional e ERP leve desenvolvido sob medida para a *
 
 ```mermaid
 graph TD
-    Client["Navegador Web (Desktop / Mobile)"] -->|HTTPS| CloudflareDNS["DNS Registro.br"]
-    CloudflareDNS -->|m-one.majmobilidade.com.br| Vercel["Vercel Serverless Platform"]
+    Client["Navegador Web (Desktop / Mobile)"] -->|HTTPS| DNS["DNS Registro.br"]
+    DNS -->|m-one.majmobilidade.com.br| Vercel["Vercel Serverless Platform"]
     Vercel -->|api/index.py| FlaskApp["Flask Web Application (Python 3)"]
     FlaskApp -->|PgBouncer IPv4 :6543| Supabase["Supabase PostgreSQL Database (us-west-2)"]
     
     DevClient["Desenvolvimento Local (Mac Studio)"] -->|dev.sh| LocalFlask["Flask Local (:5001)"]
-    LocalFlask -->|Túnel HTTPS| CloudflareTunnel["Cloudflare Quick Tunnel"]
     LocalFlask -->|PgBouncer IPv4 :6543| Supabase
 ```
 
@@ -41,7 +40,7 @@ graph TD
 | **Frontend** | HTML5 Semântico + CSS3 Moderno | Dark Mode com padrão visual elegante, responsivo e sem dependências pesadas |
 | **Hospedagem Produção** | **Vercel** Serverless | Entrypoint em [`api/index.py`](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/api/index.py) |
 | **Domínio Oficial** | `m-one.majmobilidade.com.br` | Apontamento CNAME no Registro.br com SSL emitido automaticamente |
-| **Ambiente de Testes** | Flask + Cloudflare Quick Tunnel | Script [`dev.sh`](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/dev.sh) para testar no celular em tempo real |
+| **Ambiente Local** | Flask na porta 5001 | Script [`dev.sh`](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/dev.sh) com auto-reloading |
 
 ---
 
@@ -132,16 +131,15 @@ No terminal do Mac Studio:
 ./dev.sh
 ```
 O script iniciará:
-- Servidor Flask na porta `5001` com recarregamento automático a cada alteração de código.
-- Túnel Cloudflare fornecendo uma URL pública HTTPS instantânea para testar no celular.
+- Servidor Flask na porta `5001` com recarregamento automático a cada alteração de código (`http://localhost:5001`).
 
 ### 6.3. Protocolos Automatizados do Assistente:
 
 #### 🟢 Protocolo `[start]` (Inicialização da Sessão de Trabalho)
 Ao digitar `[start]` ou `start`:
 1. Executa `git fetch origin` e compara status de sincronização (commits pendentes de push/pull).
-2. Inicializa o servidor local na porta `5001` e o túnel Cloudflare online se não estiverem ativos.
-3. Exibe relatório da sincronização e entrega links de teste (local, túnel e produção).
+2. Inicializa o servidor local na porta `5001` se não estiver ativo.
+3. Exibe relatório da sincronização e entrega links de teste (ambiente local e produção).
 
 #### 🚀 Protocolo `[deploy]` (Validação e Publicação em Produção)
 Ao digitar `[deploy]` ou `deploy`:

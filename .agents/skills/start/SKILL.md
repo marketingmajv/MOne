@@ -21,18 +21,14 @@ Este protocolo deve ser executado obrigatoriamente e imediatamente sempre que o 
    - **Sincronizado**: Se local e remoto estiverem no mesmo commit.
    - **Arquivos modificados**: Listar arquivos alterados ou pendentes de commit.
 
-### Passo 02 — Inicialização do Servidor Local e Túnel Online
+### Passo 02 — Inicialização do Servidor Local
 1. Verificar se o servidor local na porta `5001` está ativo (`lsof -i :5001`).
 2. Se não estiver rodando, iniciar o servidor Flask em background na porta 5001:
    ```bash
    PORT=5001 .venv/bin/python3 app.py
    ```
-3. Verificar se o túnel Cloudflare está ativo (`pgrep cloudflared`). Se não estiver, iniciar o túnel:
-   ```bash
-   cloudflared tunnel --url http://localhost:5001
-   ```
    *(Ou executar `./dev.sh`)*.
-4. Validar se a rota `/login` responde com HTTP 200 via `curl -sI http://localhost:5001/login`.
+3. Validar se a rota `/login` responde com HTTP 200 via `curl -sI http://localhost:5001/login`.
 
 ### Passo 03 — Relatório de Sincronização e Links de Teste
 Apresentar ao usuário um relatório estruturado contendo:
@@ -44,8 +40,7 @@ Apresentar ao usuário um relatório estruturado contendo:
    - Servidor local (porta 5001) ➔ Ativo.
    - Banco de Dados (Supabase PostgreSQL) ➔ Conectado.
 3. **Links Diretos para Teste**:
-   - 💻 **Local**: `http://localhost:5001`
-   - 🌐 **Online (Túnel Cloudflare)**: Link público ativo
+   - 💻 **Ambiente Local**: `http://localhost:5001`
    - 🚀 **Produção Oficial**: `https://m-one.majmobilidade.com.br`
 4. **Credenciais Rápidas**:
    - `fauzer` / `MOne2026!` (Suporte Técnico)

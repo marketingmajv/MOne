@@ -1,5 +1,5 @@
 #!/bin/bash
-# M-One: Iniciar servidor local + Túnel Cloudflare para testes online
+# M-One: Iniciar servidor local de desenvolvimento
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
@@ -13,17 +13,12 @@ else
     source .venv/bin/activate
 fi
 
-# Matar processos anteriores na porta 5001 se existirem
+# Liberar porta 5001 se estiver em uso
 lsof -ti :5001 | xargs kill -9 2>/dev/null || true
-pkill -f "cloudflared tunnel --url http://localhost:5001" 2>/dev/null || true
 
 echo "Iniciando M-One na porta 5001..."
-PORT=5001 python3 app.py &
-APP_PID=$!
+echo "Acesse localmente em: http://localhost:5001"
+echo "Produção oficial em:  https://m-one.majmobilidade.com.br"
+echo ""
 
-trap "kill $APP_PID 2>/dev/null; exit" INT TERM EXIT
-
-sleep 2
-
-echo "Iniciando túnel Cloudflare online..."
-cloudflared tunnel --url http://localhost:5001
+PORT=5001 python3 app.py
