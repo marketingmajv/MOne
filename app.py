@@ -10,6 +10,8 @@ import base64
 from datetime import datetime, date, timedelta
 from functools import wraps
 from pathlib import Path
+from urllib.parse import urlparse, unquote
+
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
@@ -129,12 +131,37 @@ ROLE_LABELS = {
 
 DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres"
 
+def connect_pg(db_url: str):
+    if not db_url or not psycopg2:
+        return None
+    try:
+        parsed = urlparse(db_url)
+        user = unquote(parsed.username) if parsed.username else None
+        pwd = unquote(parsed.password) if parsed.password else None
+        dbname = parsed.path.lstrip("/") if parsed.path else "postgres"
+        host = parsed.hostname
+        port = parsed.port or 5432
+        return psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=pwd,
+            dbname=dbname,
+            sslmode="require",
+            connect_timeout=10
+        )
+    except Exception as e:
+        print("PG connect_pg failed:", e)
+        # Fallback to raw string
+        return psycopg2.connect(db_url, sslmode="require", connect_timeout=10)
+
 def db():
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2:
         try:
-            conn = psycopg2.connect(db_url, sslmode="require", connect_timeout=10)
-            return PGConnWrapper(conn)
+            conn = connect_pg(db_url)
+            if conn:
+                return PGConnWrapper(conn)
         except Exception as e:
             print("Direct PG connection failed:", e)
 
@@ -146,6 +173,7 @@ def db():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
+
 
 
 
