@@ -1,6 +1,9 @@
-# M-One — MVP operacional da MAJ
+# M-One — Sistema Operacional da MAJ Mobilidade
 
-Primeira versão funcional do sistema definido nesta conversa.
+> 🌐 **Acesso Oficial em Produção**: [https://m-one.majmobilidade.com.br](https://m-one.majmobilidade.com.br)  
+> 📖 **Documentação Completa**: Consulte o arquivo [`DOCUMENTACAO.md`](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/DOCUMENTACAO.md) para detalhes de arquitetura, regras de negócio, infraestrutura e guias operacionais.
+
+---
 
 ## O que já está implementado
 
