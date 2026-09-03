@@ -644,7 +644,7 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
         retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
         
         promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
-        promo_eligible = 1 if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else 0
+        promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
 
         if name or sku:
             rows.append({
@@ -735,6 +735,142 @@ def import_products():
     audit("products.imported", f"created={created_count}; updated={updated_count}")
     flash(f"Planilha de produtos processada! {created_count} novos produtos cadastrados, {updated_count} atualizados.", "success")
     return redirect(url_for("products"))
+
+
+@app.route("/api/sync-prices", methods=["POST"])
+def api_sync_prices():
+    token = request.args.get("token") or request.headers.get("X-Sync-Token")
+    expected_token = os.environ.get("SYNC_TOKEN") or "maj-m-one-sync-secret-2026"
+    if not token or token != expected_token:
+        return jsonify({"ok": False, "error": "Token de autenticação inválido"}), 401
+
+    payload = request.get_json(silent=True)
+    all_rows = []
+
+    if isinstance(payload, list):
+        all_rows = payload
+    elif isinstance(payload, dict):
+        all_rows = payload.get("data") or payload.get("rows") or payload.get("products") or []
+
+    if not all_rows and request.data:
+        text = request.data.decode("utf-8-sig", errors="replace")
+        try:
+            dialect = csv.Sniffer().sniff(text[:2048], delimiters=",;\t")
+        except Exception:
+            dialect = csv.excel
+            dialect.delimiter = ";"
+        reader = csv.reader(io.StringIO(text), dialect)
+        all_rows = list(reader)
+
+    if not all_rows:
+        return jsonify({"ok": False, "error": "Nenhum dado enviado"}), 400
+
+    parsed_rows = []
+    if isinstance(all_rows[0], list):
+        headers = normalize_headers(all_rows[0])
+        def idx(candidates):
+            for c in candidates:
+                if c in headers:
+                    return headers.index(c)
+            return None
+
+        i_name = idx(["produto", "product", "modelo", "model", "nome", "name", "descricao", "description"])
+        i_sku = idx(["sku", "codigo", "code"])
+        i_category = idx(["categoria", "category", "tipo", "type"])
+        i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo"])
+        i_wholesale = idx(["atacado", "wholesale", "wholesale_price", "preco atacado", "valor atacado"])
+        i_retail = idx(["varejo", "retail", "retail_price", "preco varejo", "valor varejo", "preco", "price"])
+        i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
+
+        def parse_float(val):
+            if val is None:
+                return 0.0
+            s = str(val).strip().replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+            try:
+                return float(s)
+            except Exception:
+                try:
+                    return float(str(val).strip().replace(",", "."))
+                except Exception:
+                    return 0.0
+
+        for raw in all_rows[1:]:
+            name = str(raw[i_name] or "").strip() if i_name is not None and i_name < len(raw) else ""
+            sku = str(raw[i_sku] or "").strip() if i_sku is not None and i_sku < len(raw) else ""
+            category = str(raw[i_category] or "").strip() if i_category is not None and i_category < len(raw) else ""
+            unit_cost = parse_float(raw[i_cost]) if i_cost is not None and i_cost < len(raw) else 0.0
+            wholesale_price = parse_float(raw[i_wholesale]) if i_wholesale is not None and i_wholesale < len(raw) else 0.0
+            retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
+            
+            promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
+            promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
+
+            if name or sku:
+                parsed_rows.append({
+                    "name": name or sku,
+                    "sku": sku or None,
+                    "category": category or None,
+                    "unit_cost": unit_cost,
+                    "wholesale_price": wholesale_price,
+                    "retail_price": retail_price,
+                    "promo_eligible": promo_eligible
+                })
+    elif isinstance(all_rows[0], dict):
+        for item in all_rows:
+            name = str(item.get("name") or item.get("produto") or item.get("modelo") or "").strip()
+            sku = str(item.get("sku") or item.get("codigo") or "").strip() or None
+            category = str(item.get("category") or item.get("categoria") or "").strip() or None
+            unit_cost = float(item.get("unit_cost") or item.get("custo") or 0)
+            wholesale_price = float(item.get("wholesale_price") or item.get("atacado") or 0)
+            retail_price = float(item.get("retail_price") or item.get("varejo") or 0)
+            promo_eligible = bool(item.get("promo_eligible", True))
+            if name or sku:
+                parsed_rows.append({
+                    "name": name or sku,
+                    "sku": sku,
+                    "category": category,
+                    "unit_cost": unit_cost,
+                    "wholesale_price": wholesale_price,
+                    "retail_price": retail_price,
+                    "promo_eligible": promo_eligible
+                })
+
+
+    created_count = 0
+    updated_count = 0
+
+    with db() as conn:
+        for r in parsed_rows:
+            existing = None
+            if r["sku"]:
+                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(?)", (r["sku"],)).fetchone()
+            if not existing and r["name"]:
+                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (r["name"],)).fetchone()
+
+            if existing:
+                conn.execute(
+                    """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
+                       unit_cost=?, wholesale_price=?, retail_price=?, promo_eligible=? WHERE id=?""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"], existing["id"])
+                )
+                updated_count += 1
+            else:
+                conn.execute(
+                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, promo_eligible)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r["promo_eligible"])
+                )
+                created_count += 1
+        conn.commit()
+
+    audit("products.sync_webhook", f"created={created_count}; updated={updated_count}")
+    return jsonify({
+        "ok": True,
+        "message": f"Sincronização concluída com sucesso. {created_count} criados, {updated_count} atualizados.",
+        "created": created_count,
+        "updated": updated_count
+    })
+
 
 
 
