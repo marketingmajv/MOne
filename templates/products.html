@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Produtos{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+{% block page_subtitle %}Modelo é o produto; cor é variação.{% endblock %}
+{% block top_actions %}
+  {% if me.role in ['admin', 'finance', 'stock'] %}
+    <button class="btn primary" onclick="openModal('newProduct')">+ Novo produto</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>SKU</th>
+        <th>Categoria</th>
+        <th>Custo</th>
+        <th>Atacado</th>
+        <th>Varejo</th>
+        <th>Disponível</th>
+        <th>Vendido</th>
+        <th>Promo</th>
+        {% if me.role in ['admin', 'finance'] %}
+          <th>Ações</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in products %}
+      <tr>
+        <td><b>{{ p.name }}</b></td>
+        <td><small class="mono">{{ p.sku or '—' }}</small></td>
+        <td>{{ p.category or '—' }}</td>
+        <td>
+          {% if me.role in ['admin', 'finance'] %}
+            {{ p.unit_cost|money }}
+          {% else %}
+            <span class="muted">Oculto</span>
+          {% endif %}
+        </td>
+        <td>{{ p.wholesale_price|money }}</td>
+        <td><b>{{ p.retail_price|money }}</b></td>
+        <td><span class="badge available">{{ p.available or 0 }}</span></td>
+        <td><span class="badge muted">{{ p.sold or 0 }}</span></td>
+        <td>
+          {% if p.promo_eligible %}
+            <span class="pill good">Elegível</span>
+          {% else %}
+            <span class="muted">Não</span>
+          {% endif %}
+        </td>
+        {% if me.role in ['admin', 'finance'] %}
+          <td>
+            <button class="btn small" onclick="openModal('editProduct{{ p.id }}')">Editar</button>
+          </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="10" class="empty">Nenhum produto cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Edit Product Modals -->
+{% if me.role in ['admin', 'finance'] %}
+{% for p in products %}
+<div class="modal" id="editProduct{{ p.id }}">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Editar Produto • {{ p.name }}</h3>
+      <button onclick="closeModal('editProduct{{ p.id }}')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('edit_product', pid=p.id) }}" class="form-grid">
+      <label>Modelo / Nome
+        <input name="name" value="{{ p.name }}" required>
+      </label>
+      <label>SKU
+        <input name="sku" value="{{ p.sku or '' }}">
+      </label>
+      <label>Categoria
+        <input name="category" value="{{ p.category or '' }}" placeholder="Scooter, triciclo...">
+      </label>
+      <label>Custo unitário (R$)
+        <input type="number" step="0.01" name="unit_cost" value="{{ p.unit_cost }}">
+      </label>
+      <label>Preço atacado (R$)
+        <input type="number" step="0.01" name="wholesale_price" value="{{ p.wholesale_price }}">
+      </label>
+      <label>Preço varejo (R$)
+        <input type="number" step="0.01" name="retail_price" value="{{ p.retail_price }}">
+      </label>
+      <label class="check span-2">
+        <input type="checkbox" name="promo_eligible" {{ 'checked' if p.promo_eligible }}> Elegível para produto de oportunidade (sugestão custo + 10%)
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('editProduct{{ p.id }}')">Cancelar</button>
+        <button class="btn primary">Salvar alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- New Product Modal -->
+<div class="modal" id="newProduct">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Novo produto</h3>
+      <button onclick="closeModal('newProduct')">×</button>
+    </div>
+    <form method="post" class="form-grid">
+      <label>Modelo / nome<input name="name" required placeholder="Ex.: Scooter V80 PRO"></label>
+      <label>SKU<input name="sku" placeholder="Ex.: V80PRO-01"></label>
+      <label>Categoria<input name="category" placeholder="Scooter, triciclo..."></label>
+      <label>Custo unitário<input type="number" step="0.01" name="unit_cost" value="0"></label>
+      <label>Preço atacado<input type="number" step="0.01" name="wholesale_price" value="0"></label>
+      <label>Preço varejo<input type="number" step="0.01" name="retail_price" value="0"></label>
+      <label class="check span-2">
+        <input type="checkbox" name="promo_eligible" checked> Elegível para produto de oportunidade
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newProduct')">Cancelar</button>
+        <button class="btn primary">Cadastrar produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

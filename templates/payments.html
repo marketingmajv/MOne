@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Pagamentos{% endblock %}
+{% block page_title %}Pagamentos realizados{% endblock %}
+{% block page_subtitle %}Aqui não existe conta futura: só entra o que já foi pago.{% endblock %}
+{% block top_actions %}
+  {% if me.role in ['admin', 'finance'] %}
+    <a href="{{ url_for('export_payments') }}" class="btn">Exportar CSV</a>
+    <button class="btn primary" onclick="openModal('newPayment')">+ Registros de pagamento</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="filter-bar">
+  <input id="paymentsSearch" onkeyup="filterPaymentsTable()" placeholder="Buscar por descrição, categoria ou conta...">
+</div>
+
+<div class="panel table-wrap">
+  <table id="paymentsTable">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrição</th>
+        <th>Categoria</th>
+        <th>Conta / Origem</th>
+        <th>Valor</th>
+        {% if me.role == 'admin' %}
+          <th>Importação</th>
+        {% endif %}
+        <th>Comprovante</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in payments %}
+      <tr>
+        <td>{{ p.paid_at }}</td>
+        <td><b>{{ p.description }}</b></td>
+        <td><span class="badge">{{ p.category or 'Geral' }}</span></td>
+        <td>{{ p.account or '—' }}</td>
+        <td><b class="text-accent">{{ p.amount|money }}</b></td>
+        {% if me.role == 'admin' %}
+          <td>{{ p.import_ref or '—' }}</td>
+        {% endif %}
+        <td>
+          {% if p.receipt_file %}
+            <a class="link-btn" href="{{ url_for('uploads', filename=p.receipt_file) }}" target="_blank">📄 Comprovante</a>
+          {% else %}
+            <span class="muted">Sem anexo</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ '7' if me.role == 'admin' else '6' }}" class="empty">Nenhum pagamento registrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- New Payment Modal -->
+<div class="modal" id="newPayment">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Registrar pagamento realizado</h3>
+      <button onclick="closeModal('newPayment'); stopLiveCamera(this)">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      <label>Data do pagamento
+        <input type="date" name="paid_at">
+      </label>
+      <label>Valor (R$)
+        <input type="number" step="0.01" name="amount" required placeholder="0,00">
+      </label>
+      <label class="span-2">Descrição da despesa / pagamento
+        <input name="description" placeholder="Ex.: Aluguel loja Consolação, frete, impostos, tarifas..." required>
+      </label>
+      <label>Categoria
+        <input name="category" placeholder="Ex.: Aluguel, folha, frete, impostos...">
+      </label>
+      <label>Conta / Plataforma
+        <input name="account" placeholder="Ex.: Sicoob, Cartão, Caixa...">
+      </label>
+
+      {% if me.role == 'admin' and imports %}
+        <label class="span-2">Vincular à importação (Restrito à Diretoria)
+          <select name="import_id">
+            <option value="">Não vincular (despesa operacional geral)</option>
+            {% for i in imports %}
+              <option value="{{ i.id }}">{{ i.reference }} (Invoice {{ i.invoice_no or '—' }})</option>
+            {% endfor %}
+          </select>
+        </label>
+      {% endif %}
+
+      <!-- Interactive WebCam Camera Widget -->
+      <div class="span-2 camera-widget-container">
+        <label class="section-label">Comprovante de Pagamento (Tirar Foto ou Anexar)</label>
+        <input type="hidden" name="captured_image_data" id="capturedImageDataInput">
+        
+        <div id="cameraControls" class="camera-controls-box">
+          <button type="button" class="btn primary camera-btn" onclick="startLiveCamera(this)">
+            📷 Abrir Câmera para Tirar Foto
+          </button>
+          <span class="muted-text">ou escolha um arquivo:</span>
+          <input type="file" name="receipt_file" accept="image/*,.pdf" capture="environment">
+        </div>
+
+        <div id="cameraStreamBox" class="camera-stream-box" style="display:none;">
+          <video id="liveVideo" autoplay playsinline class="video-preview"></video>
+          <div class="camera-actions">
+            <button type="button" class="btn primary" onclick="takeSnapshot(this)">📸 Capturar Foto Agora</button>
+            <button type="button" class="btn warn-btn" onclick="stopLiveCamera(this)">Cancelar Câmera</button>
+          </div>
+        </div>
+
+        <div id="cameraPreviewBox" class="camera-preview-box" style="display:none;">
+          <img id="capturedImagePreview" class="img-preview" alt="Foto capturada">
+          <div class="preview-actions">
+            <span class="badge available">✓ Foto capturada e pronta para salvar</span>
+            <button type="button" class="btn small" onclick="retakePhoto(this)">🔄 Tirar outra foto</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newPayment'); stopLiveCamera(this)">Cancelar</button>
+        <button class="btn primary">Salvar pagamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterPaymentsTable() {
+  const q = document.getElementById('paymentsSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('#paymentsTable tbody tr');
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    r.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

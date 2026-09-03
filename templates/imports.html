@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Importações{% endblock %}
+{% block page_title %}Importações e Contêineres{% endblock %}
+{% block page_subtitle %}Controle de lotes, Invoice, BL, chassis e custos restritos.{% endblock %}
+{% block top_actions %}
+  {% if me.role == 'admin' %}
+    <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="cards-stack">
+{% for i in imports %}
+<section class="panel import-card">
+  <div class="panel-head">
+    <div>
+      <h3>{{ i.reference }}</h3>
+      <p>Invoice: {{ i.invoice_no or '—' }} • BL: {{ i.bl_no or '—' }} • NF Entrada: {{ i.nf_entry or '—' }}</p>
+    </div>
+    <span class="status {{ i.status }}">{{ 'Liberada para venda' if i.status=='released' else 'Em conferência (Bloqueado)' }}</span>
+  </div>
+  
+  <div class="import-stats">
+    <span><small>Chassis do lote</small><b>{{ i.chassis_count or 0 }}</b></span>
+    {% if me.role == 'admin' %}
+      <span><small>Câmbio base</small><b>{{ i.usd_rate or '—' }}</b></span>
+      <span><small>Custos cadastrados</small><b class="text-accent">{{ i.costs_brl|money }}</b></span>
+    {% endif %}
+    <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
+  </div>
+
+  <div class="action-row">
+    {% if me.role in ['admin', 'stock'] %}
+      <button class="btn" onclick="openModal('chassis{{ i.id }}')">Importar planilha de chassis</button>
+    {% endif %}
+    
+    {% if me.role == 'admin' %}
+      <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Custo / Pagamento da Importação</button>
+      {% if i.status != 'released' %}
+        <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
+          <button class="btn primary">Liberar estoque para venda</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+<!-- Modal Importar Chassis -->
+<div class="modal" id="chassis{{ i.id }}">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Planilha de Chassis • {{ i.reference }}</h3>
+      <button onclick="closeModal('chassis{{ i.id }}')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('import_chassis', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <label class="span-2">Arquivo CSV ou XLSX
+        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" required>
+        <small>Formato: colunas MODELO e CHASSI obrigatórias. MOTOR e COR são opcionais.</small>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('chassis{{ i.id }}')">Cancelar</button>
+        <button class="btn primary">Processar e Carregar Chassis</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Adicionar Custo (Admin Only) -->
+{% if me.role == 'admin' %}
+<div class="modal" id="cost{{ i.id }}">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Adicionar Custo de Importação • {{ i.reference }}</h3>
+      <button onclick="closeModal('cost{{ i.id }}')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('add_import_cost', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <label>Tipo de custo
+        <select name="cost_type">
+          <option>Frete Internacional</option>
+          <option>Impostos (II, IPI, PIS, COFINS, ICMS)</option>
+          <option>Taxas Portuárias / Demurrage</option>
+          <option>Despachante / Marinha</option>
+          <option>Armazenagem</option>
+          <option>Outros</option>
+        </select>
+      </label>
+      <label>Moeda
+        <select name="currency">
+          <option value="BRL">BRL (R$)</option>
+          <option value="USD">USD ($)</option>
+        </select>
+      </label>
+      <label>Valor
+        <input type="number" step="0.01" name="amount" required placeholder="0,00">
+      </label>
+      <label>Taxa de câmbio usada (se USD)
+        <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate }}">
+      </label>
+      <label class="span-2">Descrição do custo
+        <input name="description" placeholder="Ex.: Taxa de liberação Santos container 40HQ">
+      </label>
+      <label>Data de pagamento
+        <input type="date" name="paid_at">
+      </label>
+      <label>Comprovante
+        <input type="file" name="receipt_file" accept="image/*,.pdf">
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('cost{{ i.id }}')">Cancelar</button>
+        <button class="btn primary">Salvar Custo</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+  <div class="panel empty">Nenhuma importação cadastrada.</div>
+{% endfor %}
+</div>
+
+<!-- Modal Nova Importação (Admin Only) -->
+{% if me.role == 'admin' %}
+<div class="modal" id="newImport">
+  <div class="modal-card large">
+    <div class="modal-head">
+      <h3>Nova Importação / Contêiner</h3>
+      <button onclick="closeModal('newImport')">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      <label>Identificador / Ref. Contêiner
+        <input name="reference" required placeholder="Ex.: CONT-2026-01">
+      </label>
+      <label>Número Invoice
+        <input name="invoice_no" placeholder="Ex.: INV-9988">
+      </label>
+      <label>Número BL (Bill of Lading)
+        <input name="bl_no" placeholder="Ex.: BL-COSCO-123">
+      </label>
+      <label>NF Entrada
+        <input name="nf_entry" placeholder="Ex.: NF-0045">
+      </label>
+      <label>Câmbio estimado (USD/BRL)
+        <input type="number" step="0.0001" name="usd_rate" value="5.65">
+      </label>
+      <label>Data prevista de chegada
+        <input type="date" name="arrival_date">
+      </label>
+      <label>Arquivo Invoice (PDF/Imagem)
+        <input type="file" name="invoice_file" accept="image/*,.pdf">
+      </label>
+      <label>Arquivo BL (PDF/Imagem)
+        <input type="file" name="bl_file" accept="image/*,.pdf">
+      </label>
+      <label class="span-2">Arquivo NF Entrada (PDF/XML)
+        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
+      </label>
+      <label class="span-2">Observações da importação
+        <textarea name="notes" placeholder="Detalhes do fornecedor, navio, porto de desembarque..."></textarea>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newImport')">Cancelar</button>
+        <button class="btn primary">Criar Importação</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

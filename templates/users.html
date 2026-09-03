@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Usuários{% endblock %}
+{% block page_title %}Usuários e permissões{% endblock %}
+{% block page_subtitle %}Cada pessoa vê só o que precisa.{% endblock %}
+{% block top_actions %}
+  {% if me.role == 'admin' %}
+    <button class="btn primary" onclick="openModal('newUser')">+ Criar Usuário</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Usuário</th>
+        <th>Perfil / Acesso</th>
+        <th>Status</th>
+        {% if me.role == 'admin' %}
+          <th>Ações da Diretoria</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td><b>{{ u.name }}</b></td>
+        <td><small class="mono">{{ u.username }}</small></td>
+        <td><span class="badge">{{ role_labels.get(u.role, u.role) }}</span></td>
+        <td>
+          {% if u.active %}
+            <span class="status available">Ativo</span>
+          {% else %}
+            <span class="status sold">Inativo</span>
+          {% endif %}
+        </td>
+        {% if me.role == 'admin' %}
+          <td>
+            <div class="action-row-compact">
+              <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
+                <button class="btn small {{ 'warn-btn' if u.active else 'good-btn' }}">
+                  {{ 'Desativar' if u.active else 'Ativar' }}
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('reset_user_password', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Resetar a senha deste usuário para MOne2026!?');">
+                <button class="btn small">Resetar Senha</button>
+              </form>
+            </div>
+          </td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="empty">Nenhum usuário cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- New User Modal -->
+<div class="modal" id="newUser">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Novo colaborador / usuário</h3>
+      <button onclick="closeModal('newUser')">×</button>
+    </div>
+    <form method="post" class="form-grid">
+      <label>Nome completo
+        <input name="name" required placeholder="Ex.: Maria Silva">
+      </label>
+      <label>Usuário de acesso
+        <input name="username" required placeholder="Ex.: maria">
+      </label>
+      <label class="span-2">Perfil de acesso
+        <select name="role">
+          <option value="sales">Vendas (vendas, estoque, produtos)</option>
+          <option value="stock">Estoque (estoque, produtos, importar chassis)</option>
+          <option value="finance">Financeiro (vendas, pagamentos, estoque, produtos)</option>
+          <option value="admin">Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
+        </select>
+      </label>
+      <label class="span-2">Senha inicial temporária
+        <input name="password" value="MOne2026!" required>
+        <small>O colaborador deverá alterar a senha no primeiro uso.</small>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newUser')">Cancelar</button>
+        <button class="btn primary">Criar usuário</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

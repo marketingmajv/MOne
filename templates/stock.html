@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Estoque{% endblock %}
+{% block page_title %}Estoque por chassi{% endblock %}
+{% block page_subtitle %}Cada unidade tem uma história única. Fonte única da verdade.{% endblock %}
+{% block top_actions %}
+  <a href="{{ url_for('export_stock') }}" class="btn">Exportar CSV</a>
+  {% if me.role in ['admin', 'stock'] %}
+    <button class="btn primary" onclick="openModal('newStockUnit')">+ Novo chassi</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar" method="get">
+  <input name="q" value="{{ q }}" placeholder="Buscar chassi, modelo, cor ou motor">
+  <select name="status">
+    <option value="available" {{ 'selected' if status=='available' }}>Disponíveis</option>
+    <option value="unreleased" {{ 'selected' if status=='unreleased' }}>Em conferência (não liberados)</option>
+    <option value="sold" {{ 'selected' if status=='sold' }}>Vendidos</option>
+    <option value="all" {{ 'selected' if status=='all' }}>Todos</option>
+  </select>
+  <button class="btn primary">Filtrar</button>
+</form>
+
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Chassi</th>
+        <th>Produto</th>
+        <th>Cor</th>
+        <th>Motor</th>
+        <th>Origem / Importação</th>
+        <th>Local</th>
+        <th>Status</th>
+        <th>NF venda</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in units %}
+      <tr>
+        <td><b class="mono">{{ u.chassis }}</b></td>
+        <td><b>{{ u.product_name }}</b></td>
+        <td>{{ u.color or '—' }}</td>
+        <td class="mono">{{ u.motor_no or '—' }}</td>
+        <td>
+          {{ u.import_ref or 'Nacional / Direta' }}
+          {% if u.import_status and u.import_status != 'released' %}
+            <span class="mini-warning">não liberada</span>
+          {% endif %}
+        </td>
+        <td>{{ u.location }}</td>
+        <td>
+          {% if u.status == 'available' %}
+            <span class="status available">Disponível</span>
+          {% elif u.status == 'unreleased' %}
+            <span class="status warning">Em conferência</span>
+          {% elif u.status == 'sold' %}
+            <span class="status sold">Vendido</span>
+          {% else %}
+            <span class="status">{{ u.status }}</span>
+          {% endif %}
+        </td>
+        <td>{{ u.invoice_number or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="empty">Nenhuma unidade encontrada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Manual Chassis Creation -->
+<div class="modal" id="newStockUnit">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Cadastrar chassi individual</h3>
+      <button onclick="closeModal('newStockUnit')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('add_stock_unit') }}" class="form-grid">
+      <label class="span-2">Chassi VIN (Obrigatório)
+        <input name="chassis" required placeholder="Ex.: 9BWCA11008000000" class="mono">
+      </label>
+      <label>Produto / Modelo
+        <select name="product_id" required>
+          <option value="">Selecione o modelo...</option>
+          {% for p in products %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Cor
+        <input name="color" placeholder="Ex.: Preto, Branco, Amarelo">
+      </label>
+      <label>Número do Motor (Opcional)
+        <input name="motor_no" placeholder="Ex.: MTR9982">
+      </label>
+      <label>Localização
+        <input name="location" value="Depósito Consolação">
+      </label>
+      <label class="span-2">Data de entrada
+        <input type="date" name="received_at">
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newStockUnit')">Cancelar</button>
+        <button class="btn primary">Cadastrar unidade</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

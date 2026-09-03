@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}M-One{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260903_03') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark">M</span><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
+      <nav>
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">▦ <span>Visão geral</span></a>
+        <a href="{{ url_for('sales') }}" class="{{ 'active' if request.endpoint=='sales' else '' }}">↗ <span>Vendas</span></a>
+        <a href="{{ url_for('stock') }}" class="{{ 'active' if request.endpoint=='stock' else '' }}">▣ <span>Estoque / Chassis</span></a>
+        {% if me and me.role in ['admin','finance','stock'] %}<a href="{{ url_for('products') }}" class="{{ 'active' if request.endpoint=='products' else '' }}">◫ <span>Produtos</span></a>{% endif %}
+        {% if me and me.role in ['admin','finance'] %}<a href="{{ url_for('payments') }}" class="{{ 'active' if request.endpoint=='payments' else '' }}">$ <span>Pagamentos</span></a>{% endif %}
+        {% if me and me.role == 'admin' %}<a href="{{ url_for('imports') }}" class="{{ 'active' if request.endpoint=='imports' else '' }}">⌁ <span>Importações</span></a>{% endif %}
+        {% if me and me.role == 'admin' %}<a href="{{ url_for('users') }}" class="{{ 'active' if request.endpoint=='users' else '' }}">◎ <span>Usuários</span></a>{% endif %}
+      </nav>
+      <div class="sidebar-foot">
+        <div class="user-chip"><b>{{ me.name }}</b><small>{{ role_labels.get(me.role, me.role) }}</small></div>
+        <div class="user-actions-row">
+          <button type="button" class="link-btn" onclick="openModal('changePassModal')">Alterar senha</button>
+          <a class="logout" href="{{ url_for('logout') }}">Sair</a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div><h1>{% block page_title %}M-One{% endblock %}</h1><p>{% block page_subtitle %}{% endblock %}</p></div>
+        <div class="top-actions">{% block top_actions %}{% endblock %}</div>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+          {% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <section class="content">{% block content %}{% endblock %}</section>
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='app.js', v='20260903_03') }}"></script>
+  {% block scripts %}{% endblock %}
+  <div class="modal" id="changePassModal"><div class="modal-card"><div class="modal-head"><h3>Alterar minha senha</h3><button onclick="closeModal('changePassModal')">×</button></div>
+<form method="post" action="{{ url_for('change_password') }}" class="form-grid">
+<label class="span-2">Nova senha (mínimo 8 caracteres)<input type="password" name="new_password" required minlength="8" placeholder="Digite sua nova senha"></label>
+<div class="form-actions span-2"><button type="button" class="btn" onclick="closeModal('changePassModal')">Cancelar</button><button class="btn primary">Atualizar senha</button></div>
+</form></div></div>
+</body>
+</html>

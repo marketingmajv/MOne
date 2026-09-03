@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>M-One • Login</title><link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}"></head>
+<body class="login-page">
+  <div class="login-card">
+    <div class="brand login-brand"><span class="brand-mark">M</span><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
+    <h2>Entrar</h2><p>Operação simples. Informação uma vez só.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="form-grid one">
+      <label>Usuário<input name="username" autocomplete="username" required></label>
+      <label>Senha<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn primary wide">Entrar no M-One</button>
+    </form>
+    <div class="hint">Primeiro acesso: <b>jean</b> / <b>MOne2026!</b></div>
+  </div>
+</body></html>

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Visão geral{% endblock %}
+{% block page_title %}Visão geral{% endblock %}
+{% block page_subtitle %}O que merece sua decisão hoje.{% endblock %}
+{% block content %}
+<div class="metric-grid">
+  <div class="metric"><small>Vendas hoje</small><strong>{{ sales_today|money }}</strong><span>realizado</span></div>
+  <div class="metric"><small>Vendas no mês</small><strong>{{ sales_month|money }}</strong><span>realizado</span></div>
+  <div class="metric"><small>Pagamentos no mês</small><strong>{{ payments_month|money }}</strong><span>já pagos</span></div>
+  <div class="metric"><small>Unidades disponíveis</small><strong>{{ stock_available }}</strong><span>por chassi</span></div>
+</div>
+
+{% if chassis_alerts %}<div class="banner warning"><b>Atenção:</b> há {{ chassis_alerts }} chassis ainda ligados a importações não liberadas ou sem importação válida.</div>{% endif %}
+
+<div class="two-col">
+  <section class="panel">
+    <div class="panel-head"><div><h3>Mais vendidos</h3><p>Ranking do mês atual</p></div><a href="{{ url_for('sales') }}">ver vendas</a></div>
+    {% if top_products %}
+      <div class="rank-list">
+        {% for p in top_products %}<div class="rank-row"><span class="rank">{{ loop.index }}</span><div class="grow"><b>{{ p.name }}</b><small>{{ p.units }} unidade(s)</small></div><strong>{{ p.revenue|money }}</strong></div>{% endfor %}
+      </div>
+    {% else %}<div class="empty">Ainda não há vendas cadastradas.</div>{% endif %}
+  </section>
+
+  <section class="panel opportunity-panel">
+    <div class="panel-head"><div><h3>Produtos de oportunidade</h3><p>Estoque parado + baixo giro</p></div><span class="pill">custo + 10%</span></div>
+    {% if opportunities %}
+      {% for p in opportunities %}
+      <div class="opportunity">
+        <div><b>{{ p.name }}</b><small>{{ p.available }} em estoque • {{ p.days_in_stock }} dias • {{ p.sold_30 }} venda(s) em 30 dias</small></div>
+        <div class="suggestion"><small>Sugestão</small><strong>{{ p.suggested_price|money }}</strong><span>promoção</span></div>
+      </div>
+      {% endfor %}
+    {% else %}<div class="empty">Nenhuma oportunidade crítica agora. Produtos entram aqui após 90 dias em estoque.</div>{% endif %}
+  </section>
+</div>
+
+<div class="quick-grid">
+  <a class="quick" href="{{ url_for('sales') }}"><span>＋</span><div><b>Registrar venda</b><small>Pedido + NF + chassis + recebimentos</small></div></a>
+  {% if me.role in ['admin','finance'] %}<a class="quick" href="{{ url_for('payments') }}"><span>↓</span><div><b>Registrar pagamento</b><small>Somente o que já foi pago</small></div></a>{% endif %}
+  <a class="quick" href="{{ url_for('stock') }}"><span>⌕</span><div><b>Consultar chassi</b><small>Fonte única da verdade</small></div></a>
+  {% if me.role == 'admin' %}<a class="quick" href="{{ url_for('imports') }}"><span>⇩</span><div><b>Nova importação</b><small>Invoice + BL + chassis + custos</small></div></a>{% endif %}
+</div>
+{% endblock %}
