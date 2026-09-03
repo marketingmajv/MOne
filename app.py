@@ -27,14 +27,13 @@ try:
 except Exception:
     psycopg2 = None
 
-import psycopg2.pool
-
-DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
 pg_pool = None
 
 def get_pg_pool():
     global pg_pool
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2 and pg_pool is None:
         try:
             pg_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, dsn=db_url)
@@ -132,7 +131,7 @@ def db():
     if pool:
         conn = pool.getconn()
         return PGConnWrapper(conn, pool=pool)
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2:
         conn = psycopg2.connect(db_url)
         return PGConnWrapper(conn)
@@ -148,7 +147,7 @@ def hash_password(password: str) -> str:
 
 
 def init_db():
-    if os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL"):
+    if os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL:
         # PostgreSQL / Supabase tables are initialized via Supabase SQL Editor
         return
     with db() as conn:
@@ -1115,6 +1114,11 @@ def export_payments():
 def too_large(_):
     flash("Arquivo grande demais. Limite: 20 MB.", "danger")
     return redirect(request.referrer or url_for("dashboard"))
+
+@app.errorhandler(500)
+def handle_500(e):
+    import traceback
+    return f"<h3>Erro Interno</h3><pre>{traceback.format_exc()}</pre>", 500
 
 
 if __name__ == "__main__":
