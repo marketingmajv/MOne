@@ -241,6 +241,7 @@ def init_db():
                 bl_no TEXT,
                 arrival_date TEXT,
                 usd_rate REAL NOT NULL DEFAULT 0,
+                invoice_amount_usd REAL NOT NULL DEFAULT 0,
                 nf_entry TEXT,
                 invoice_file TEXT,
                 bl_file TEXT,
@@ -437,7 +438,15 @@ def money(v):
         return "R$ 0,00"
 
 
+def money_usd(v):
+    try:
+        return f"$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "$ 0,00"
+
+
 app.jinja_env.filters["money"] = money
+app.jinja_env.filters["money_usd"] = money_usd
 
 
 @app.context_processor
@@ -937,6 +946,7 @@ def imports():
         bl_no = request.form.get("bl_no", "").strip()
         arrival_date = request.form.get("arrival_date") or None
         usd_rate = float(request.form.get("usd_rate") or 0)
+        invoice_amount_usd = float(request.form.get("invoice_amount_usd") or 0)
         nf_entry = request.form.get("nf_entry", "").strip()
         notes = request.form.get("notes", "").strip()
         try:
@@ -948,26 +958,106 @@ def imports():
             return redirect(url_for("imports"))
         with db() as conn:
             conn.execute(
-                """INSERT INTO imports(reference,invoice_no,bl_no,arrival_date,usd_rate,nf_entry,invoice_file,bl_file,nf_entry_file,notes,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
-                (reference, invoice_no, bl_no, arrival_date, usd_rate, nf_entry, invoice_file, bl_file, nf_entry_file, notes, session["user_id"]),
+                """INSERT INTO imports(reference,invoice_no,bl_no,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,notes,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (reference, invoice_no, bl_no, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, notes, session["user_id"]),
             )
             conn.commit()
         audit("import.created", reference)
-        flash("Importação criada. Agora carregue a planilha de chassis e os custos.", "success")
+        flash("Importação criada. Agora carregue os comprovantes de pagamento e planilha de chassis.", "success")
         return redirect(url_for("imports"))
+
     with db() as conn:
-        rows = conn.execute(
+        import_rows = conn.execute(
             """
-            SELECT i.*, COUNT(DISTINCT st.id) chassis_count,
-                   COALESCE(SUM(ic.amount * CASE WHEN ic.currency='USD' THEN COALESCE(NULLIF(ic.usd_rate,0),NULLIF(i.usd_rate,0),1) ELSE 1 END),0) costs_brl
+            SELECT i.*, COUNT(DISTINCT st.id) AS chassis_count
             FROM imports i
             LEFT JOIN stock_units st ON st.import_id=i.id
-            LEFT JOIN import_costs ic ON ic.import_id=i.id
             GROUP BY i.id ORDER BY i.created_at DESC
             """
         ).fetchall()
-    return render_template("imports.html", imports=rows)
+
+        result_imports = []
+        for row in import_rows:
+            imp_dict = dict(row)
+            costs = conn.execute(
+                "SELECT * FROM import_costs WHERE import_id=? ORDER BY paid_at ASC, id ASC",
+                (imp_dict["id"],)
+            ).fetchall()
+
+            costs_list = [dict(c) for c in costs]
+            supplier_brl = 0.0
+            total_costs_brl = 0.0
+
+            for c in costs_list:
+                c_rate = float(c.get("usd_rate") or imp_dict.get("usd_rate") or 1.0)
+                amount = float(c.get("amount") or 0.0)
+                c_currency = (c.get("currency") or "BRL").upper()
+
+                if c_currency == "USD":
+                    amount_brl = amount * (c_rate if c_rate > 0 else 1.0)
+                else:
+                    amount_brl = amount
+
+                c["amount_brl"] = amount_brl
+                total_costs_brl += amount_brl
+
+                # Check if this is a payment to supplier
+                c_type = (c.get("cost_type") or "").strip().lower()
+                if "fornecedor" in c_type or "sinal" in c_type or "inicial" in c_type or "intermedi" in c_type or "final" in c_type:
+                    supplier_brl += amount_brl
+
+            imp_dict["costs_list"] = costs_list
+            imp_dict["costs_brl"] = total_costs_brl
+            imp_dict["supplier_brl"] = supplier_brl
+
+            inv_usd = float(imp_dict.get("invoice_amount_usd") or 0.0)
+            if inv_usd > 0 and supplier_brl > 0:
+                imp_dict["avg_usd_rate"] = round(supplier_brl / inv_usd, 4)
+            else:
+                imp_dict["avg_usd_rate"] = float(imp_dict.get("usd_rate") or 0.0)
+
+            result_imports.append(imp_dict)
+
+    return render_template("imports.html", imports=result_imports)
+
+
+@app.route("/imports/<int:iid>/edit", methods=["POST"])
+@login_required
+@roles_required("admin")
+def edit_import(iid):
+    reference = request.form.get("reference", "").strip()
+    invoice_no = request.form.get("invoice_no", "").strip()
+    bl_no = request.form.get("bl_no", "").strip()
+    nf_entry = request.form.get("nf_entry", "").strip()
+    arrival_date = request.form.get("arrival_date") or None
+    usd_rate = float(request.form.get("usd_rate") or 0)
+    invoice_amount_usd = float(request.form.get("invoice_amount_usd") or 0)
+    notes = request.form.get("notes", "").strip()
+
+    with db() as conn:
+        imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
+        if not imp:
+            flash("Importação não encontrada.", "danger")
+            return redirect(url_for("imports"))
+
+        try:
+            invoice_file = save_upload(request.files.get("invoice_file"), "invoice") or imp["invoice_file"]
+            bl_file = save_upload(request.files.get("bl_file"), "bl") or imp["bl_file"]
+            nf_entry_file = save_upload(request.files.get("nf_entry_file"), "nfentrada") or imp["nf_entry_file"]
+        except ValueError as e:
+            flash(str(e), "danger")
+            return redirect(url_for("imports"))
+
+        conn.execute(
+            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, notes=?
+               WHERE id=?""",
+            (reference or imp["reference"], invoice_no, bl_no, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, notes, iid)
+        )
+        conn.commit()
+    audit("import.updated", f"import_id={iid}")
+    flash("Importação atualizada com sucesso.", "success")
+    return redirect(url_for("imports"))
 
 
 def normalize_headers(headers):
@@ -1098,7 +1188,7 @@ def add_import_cost(iid):
             "INSERT INTO import_costs(import_id,cost_type,description,amount,currency,usd_rate,paid_at,receipt_file) VALUES(?,?,?,?,?,?,?,?)",
             (
                 iid,
-                request.form.get("cost_type", "Outros"),
+                request.form.get("cost_type", "Pagamento Extra / Outros"),
                 request.form.get("description", "").strip(),
                 float(request.form.get("amount") or 0),
                 request.form.get("currency", "BRL"),
@@ -1109,7 +1199,21 @@ def add_import_cost(iid):
         )
         conn.commit()
     audit("import.cost", f"import_id={iid}")
-    flash("Custo adicionado à importação.", "success")
+    flash("Comprovante/Custo adicionado à importação.", "success")
+    return redirect(url_for("imports"))
+
+
+@app.route("/imports/cost/<int:cid>/delete", methods=["POST"])
+@login_required
+@roles_required("admin")
+def delete_import_cost(cid):
+    with db() as conn:
+        cost = conn.execute("SELECT import_id FROM import_costs WHERE id=?", (cid,)).fetchone()
+        if cost:
+            conn.execute("DELETE FROM import_costs WHERE id=?", (cid,))
+            conn.commit()
+            audit("import.cost_deleted", f"cost_id={cid}")
+            flash("Comprovante/Custo removido com sucesso.", "success")
     return redirect(url_for("imports"))
 
 

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}M-One • Importações{% endblock %}
 {% block page_title %}Importações e Contêineres{% endblock %}
-{% block page_subtitle %}Controle de lotes, Invoice, BL, chassis e custos restritos.{% endblock %}
+{% block page_subtitle %}Controle de lotes, Invoice, BL, comprovantes de pagamentos e custos.{% endblock %}
 {% block top_actions %}
   {% if me.role == 'admin' %}
     <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
@@ -14,27 +14,124 @@
   <div class="panel-head">
     <div>
       <h3>{{ i.reference }}</h3>
-      <p>Invoice: {{ i.invoice_no or '—' }} • BL: {{ i.bl_no or '—' }} • NF Entrada: {{ i.nf_entry or '—' }}</p>
+      <p>Invoice: <strong>{{ i.invoice_no or '—' }}</strong> • BL: <strong>{{ i.bl_no or '—' }}</strong> • NF Entrada: <strong>{{ i.nf_entry or '—' }}</strong></p>
     </div>
-    <span class="status {{ i.status }}">{{ 'Liberada para venda' if i.status=='released' else 'Em conferência (Bloqueado)' }}</span>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      {% if me.role == 'admin' %}
+        <button class="btn sm" onclick="openModal('editImport{{ i.id }}')">✏️ Editar Dados</button>
+      {% endif %}
+      <span class="status {{ i.status }}">{{ 'Liberada para venda' if i.status=='released' else 'Em conferência (Bloqueado)' }}</span>
+    </div>
   </div>
   
   <div class="import-stats">
     <span><small>Chassis do lote</small><b>{{ i.chassis_count or 0 }}</b></span>
     {% if me.role == 'admin' %}
-      <span><small>Câmbio base</small><b>{{ i.usd_rate or '—' }}</b></span>
-      <span><small>Custos cadastrados</small><b class="text-accent">{{ i.costs_brl|money }}</b></span>
+      <span><small>Valor Invoice (USD)</small><b>{{ i.invoice_amount_usd|money_usd if i.invoice_amount_usd else '—' }}</b></span>
+      <span><small>Total Pago Fornecedor</small><b>{{ i.supplier_brl|money }}</b></span>
+      <span><small>Câmbio Médio (R$/USD)</small><b class="text-accent" style="font-size: 1.1rem;">{{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}</b></span>
+      <span><small>Custos Landed (Total R$)</small><b>{{ i.costs_brl|money }}</b></span>
     {% endif %}
     <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
   </div>
 
-  <div class="action-row">
+  {% if i.invoice_file or i.bl_file or i.nf_entry_file or i.chassis_file %}
+  <div class="document-links" style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+    {% if i.invoice_file %}
+      <a href="{{ url_for('uploaded_file', filename=i.invoice_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Documento Invoice</a>
+    {% endif %}
+    {% if i.bl_file %}
+      <a href="{{ url_for('uploaded_file', filename=i.bl_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Bill of Lading (BL)</a>
+    {% endif %}
+    {% if i.nf_entry_file %}
+      <a href="{{ url_for('uploaded_file', filename=i.nf_entry_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 NF Entrada</a>
+    {% endif %}
+    {% if i.chassis_file %}
+      <a href="{{ url_for('uploaded_file', filename=i.chassis_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📊 Planilha Chassis</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if i.notes %}
+    <p style="margin-top: 10px; font-size: 0.88rem; color: var(--text-muted);"><strong>Obs:</strong> {{ i.notes }}</p>
+  {% endif %}
+
+  <!-- Tabela de Comprovantes e Pagamentos da Importação -->
+  {% if me.role == 'admin' %}
+  <div class="costs-section" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+      <h4 style="margin: 0; font-size: 0.98rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+        💳 Comprovantes & Pagamentos Registrados
+      </h4>
+      <button class="btn sm primary" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
+    </div>
+    
+    {% if i.costs_list %}
+    <div class="table-responsive" style="overflow-x: auto;">
+      <table class="data-table" style="width: 100%; font-size: 0.88rem; border-collapse: collapse;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <th style="padding: 8px;">Data</th>
+            <th style="padding: 8px;">Categoria / Pagamento</th>
+            <th style="padding: 8px;">Descrição / Obs</th>
+            <th style="padding: 8px;">Moeda / Original</th>
+            <th style="padding: 8px;">Valor em R$</th>
+            <th style="padding: 8px;">Comprovante Anexo</th>
+            <th style="padding: 8px; text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in i.costs_list %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <td style="padding: 8px;">{{ c.paid_at or '—' }}</td>
+            <td style="padding: 8px;">
+              <span class="badge" style="background: {% if 'Fornecedor' in c.cost_type %}rgba(34, 197, 94, 0.15); color: #4ade80{% else %}rgba(255,255,255,0.08){% endif %}; font-weight: 600; padding: 4px 8px; border-radius: 4px;">
+                {{ c.cost_type }}
+              </span>
+            </td>
+            <td style="padding: 8px;">{{ c.description or '—' }}</td>
+            <td style="padding: 8px;">
+              {% if c.currency == 'USD' %}
+                $ {{ "%.2f"|format(c.amount) }} <small class="text-muted">(USD @ {{ "%.4f"|format(c.usd_rate or i.usd_rate) }})</small>
+              {% else %}
+                R$ {{ "%.2f"|format(c.amount) }}
+              {% endif %}
+            </td>
+            <td style="padding: 8px;"><strong>{{ c.amount_brl|money }}</strong></td>
+            <td style="padding: 8px;">
+              {% if c.receipt_file %}
+                <a href="{{ url_for('uploaded_file', filename=c.receipt_file) }}" target="_blank" class="btn sm outline" style="padding: 2px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                  📄 Abrir Comprovante
+                </a>
+              {% else %}
+                <span class="text-muted" style="font-size: 0.8rem;">Sem anexo</span>
+              {% endif %}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              <form method="post" action="{{ url_for('delete_import_cost', cid=c.id) }}" onsubmit="return confirm('Remover este comprovante/pagamento?');" style="display:inline;">
+                <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger, #ef4444); font-size: 1rem;" title="Excluir comprovante">🗑️</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; text-align: center;">
+        <p class="text-muted" style="font-size: 0.85rem; margin: 0;">Nenhum comprovante de pagamento cadastrado ainda nesta importação.</p>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="action-row" style="margin-top: 16px;">
     {% if me.role in ['admin', 'stock'] %}
       <button class="btn" onclick="openModal('chassis{{ i.id }}')">Importar planilha de chassis</button>
     {% endif %}
     
     {% if me.role == 'admin' %}
-      <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Custo / Pagamento da Importação</button>
+      <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
       {% if i.status != 'released' %}
         <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
           <button class="btn primary">Liberar estoque para venda</button>
@@ -43,6 +140,57 @@
     {% endif %}
   </div>
 </section>
+
+<!-- Modal Editar Importação (Admin Only) -->
+{% if me.role == 'admin' %}
+<div class="modal" id="editImport{{ i.id }}">
+  <div class="modal-card large">
+    <div class="modal-head">
+      <h3>Editar Importação • {{ i.reference }}</h3>
+      <button onclick="closeModal('editImport{{ i.id }}')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('edit_import', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <label>Identificador / Ref. Contêiner
+        <input name="reference" value="{{ i.reference }}" required>
+      </label>
+      <label>Número Invoice
+        <input name="invoice_no" value="{{ i.invoice_no or '' }}">
+      </label>
+      <label>Valor Total Invoice (USD)
+        <input type="number" step="0.01" name="invoice_amount_usd" value="{{ i.invoice_amount_usd or 0 }}" placeholder="50000.00">
+      </label>
+      <label>Número BL (Bill of Lading)
+        <input name="bl_no" value="{{ i.bl_no or '' }}">
+      </label>
+      <label>NF Entrada
+        <input name="nf_entry" value="{{ i.nf_entry or '' }}">
+      </label>
+      <label>Câmbio estimado (USD/BRL)
+        <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate or 5.65 }}">
+      </label>
+      <label>Data prevista de chegada
+        <input type="date" name="arrival_date" value="{{ i.arrival_date or '' }}">
+      </label>
+      <label>Substituir Invoice (PDF/Imagem)
+        <input type="file" name="invoice_file" accept="image/*,.pdf">
+      </label>
+      <label>Substituir BL (PDF/Imagem)
+        <input type="file" name="bl_file" accept="image/*,.pdf">
+      </label>
+      <label class="span-2">Substituir NF Entrada (PDF/XML)
+        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
+      </label>
+      <label class="span-2">Observações da importação
+        <textarea name="notes">{{ i.notes or '' }}</textarea>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('editImport{{ i.id }}')">Cancelar</button>
+        <button class="btn primary">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 
 <!-- Modal Importar Chassis -->
 <div class="modal" id="chassis{{ i.id }}">
@@ -64,23 +212,27 @@
   </div>
 </div>
 
-<!-- Modal Adicionar Custo (Admin Only) -->
+<!-- Modal Registrar Pagamento / Custo (Admin Only) -->
 {% if me.role == 'admin' %}
 <div class="modal" id="cost{{ i.id }}">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>Adicionar Custo de Importação • {{ i.reference }}</h3>
+      <h3>Registrar Pagamento / Comprovante • {{ i.reference }}</h3>
       <button onclick="closeModal('cost{{ i.id }}')">×</button>
     </div>
     <form method="post" action="{{ url_for('add_import_cost', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
-      <label>Tipo de custo
-        <select name="cost_type">
-          <option>Frete Internacional</option>
-          <option>Impostos (II, IPI, PIS, COFINS, ICMS)</option>
-          <option>Taxas Portuárias / Demurrage</option>
-          <option>Despachante / Marinha</option>
-          <option>Armazenagem</option>
-          <option>Outros</option>
+      <label class="span-2">Categoria / Tipo de Pagamento
+        <select name="cost_type" required>
+          <option value="Pagamento Inicial (Sinal Fornecedor)">Pagamento Inicial (Sinal Fornecedor)</option>
+          <option value="Pagamento Intermediário (Fornecedor)">Pagamento Intermediário (Fornecedor)</option>
+          <option value="Pagamento Final (Fornecedor)">Pagamento Final (Fornecedor)</option>
+          <option value="Frete Marítimo Internacional">Frete Marítimo Internacional</option>
+          <option value="Frete Marítimo Equipe Brasil">Frete Marítimo Equipe Brasil</option>
+          <option value="Frete Terrestre (até o Galpão)">Frete Terrestre (até o Galpão)</option>
+          <option value="Numerário (Impostos & Aduana)">Numerário (Impostos & Aduana)</option>
+          <option value="Ajudantes / Descarga">Ajudantes / Descarga</option>
+          <option value="Despesas Extras / Armazenagem">Despesas Extras / Armazenagem</option>
+          <option value="Pagamento Extra / Outros">Pagamento Extra / Outros</option>
         </select>
       </label>
       <label>Moeda
@@ -89,24 +241,25 @@
           <option value="USD">USD ($)</option>
         </select>
       </label>
-      <label>Valor
+      <label>Valor do Pagamento
         <input type="number" step="0.01" name="amount" required placeholder="0,00">
       </label>
       <label>Taxa de câmbio usada (se USD)
         <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate }}">
       </label>
-      <label class="span-2">Descrição do custo
-        <input name="description" placeholder="Ex.: Taxa de liberação Santos container 40HQ">
-      </label>
-      <label>Data de pagamento
+      <label>Data do pagamento
         <input type="date" name="paid_at">
       </label>
-      <label>Comprovante
+      <label class="span-2">Descrição / Detalhes
+        <input name="description" placeholder="Ex.: Transferência sinal invoice INV-9988 via banco X">
+      </label>
+      <label class="span-2">Comprovante de Pagamento (Anexo PDF/Imagem)
         <input type="file" name="receipt_file" accept="image/*,.pdf">
+        <small>Anexe o arquivo do comprovante bancário ou recibo.</small>
       </label>
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('cost{{ i.id }}')">Cancelar</button>
-        <button class="btn primary">Salvar Custo</button>
+        <button class="btn primary">Salvar Comprovante</button>
       </div>
     </form>
   </div>
@@ -132,6 +285,9 @@
       </label>
       <label>Número Invoice
         <input name="invoice_no" placeholder="Ex.: INV-9988">
+      </label>
+      <label>Valor Total Invoice (USD)
+        <input type="number" step="0.01" name="invoice_amount_usd" placeholder="Ex.: 50000.00">
       </label>
       <label>Número BL (Bill of Lading)
         <input name="bl_no" placeholder="Ex.: BL-COSCO-123">
