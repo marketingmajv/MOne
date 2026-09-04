@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 BLING_OAUTH_AUTH_URL = "https://www.bling.com.br/Api/v3/oauth/authorize"
 BLING_OAUTH_TOKEN_URL = "https://www.bling.com.br/Api/v3/oauth/token"
-BLING_API_BASE_URL = "https://www.bling.com.br/Api/v3"
+BLING_API_BASE_URL = "https://api.bling.com.br/v3"
 
 def get_db_connection():
     from app import db
