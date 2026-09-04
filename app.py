@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
+load_dotenv(".env.local")
 import os
 import csv
 import io
@@ -18,6 +19,9 @@ try:
     from openpyxl import load_workbook
 except Exception:
     load_workbook = None
+
+from gemini_service import ask_gemini_copilot, get_gemini_api_key, extract_and_match_chassis
+import bling_service
 
 
 import base64
@@ -811,11 +815,44 @@ def sales():
                     flash(e, "danger")
                 return redirect(url_for("sales"))
 
+            danfe_file_obj = request.files.get("danfe_file")
+            danfe_captured = request.form.get("danfe_captured_image")
+            danfe_filename = None
+            if danfe_captured:
+                danfe_filename = save_base64_upload(danfe_captured, "danfe")
+            elif danfe_file_obj and danfe_file_obj.filename:
+                try:
+                    danfe_filename = save_upload(danfe_file_obj, "danfe")
+                except ValueError as e:
+                    flash(f"Arquivo de comprovante da DANFE inválido: {str(e)}", "danger")
+                    return redirect(url_for("sales"))
+
+            if not danfe_filename:
+                flash("É obrigatório anexar o comprovante da venda (foto da DANFE, Termo ou documento com o chassi).", "danger")
+                return redirect(url_for("sales"))
+
+            ai_verified = request.form.get("ai_chassis_verified") == "1"
+            ai_extracted = request.form.get("ai_extracted_chassis", "").strip()
+
+            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora
+            if not ai_verified:
+                danfe_path = UPLOAD_DIR / danfe_filename
+                if danfe_path.exists():
+                    ext = danfe_filename.rsplit(".", 1)[-1].lower()
+                    mime = "application/pdf" if ext == "pdf" else f"image/{ext if ext != 'jpg' else 'jpeg'}"
+                    v_res = extract_and_match_chassis(danfe_path.read_bytes(), mime, chassis_list)
+                    if not v_res.get("is_valid"):
+                        flash(f"Bloqueio da IA: {v_res.get('summary', 'O chassi do documento não confere com o digitado.')}", "danger")
+                        return redirect(url_for("sales"))
+                    ai_verified = True
+                    ai_extracted = ", ".join(v_res.get("extracted_chassis", []))
+
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                "INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,created_by) VALUES(?,?,?,?,?,?,?,?)",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -1119,6 +1156,181 @@ def too_large(_):
 def handle_500(e):
     import traceback
     return f"<h3>Erro Interno</h3><pre>{traceback.format_exc()}</pre>", 500
+
+
+@app.route("/copilot")
+@login_required
+def copilot():
+    has_key = bool(get_gemini_api_key())
+    return render_template("copilot.html", has_key=has_key)
+
+
+@app.route("/api/copilot/chat", methods=["POST"])
+@login_required
+def copilot_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    history = data.get("history") or []
+    if not message:
+        return jsonify({"success": False, "message": "Mensagem não informada."}), 400
+
+    u = current_user()
+    if not u:
+        return jsonify({"success": False, "message": "Sessão expirada. Faça login novamente."}), 401
+
+    with db() as conn:
+        result = ask_gemini_copilot(
+            user_message=message,
+            history=history,
+            db_conn=conn,
+            user_role=u["role"],
+            user_name=u["name"],
+        )
+    return jsonify(result)
+
+
+@app.route("/api/sales/verify-chassis", methods=["POST"])
+@login_required
+def verify_sales_chassis():
+    chassis_raw = request.form.get("chassis", "")
+    chassis_list = [x.strip() for x in chassis_raw.replace(";", ",").split(",") if x.strip()]
+    if not chassis_list:
+        return jsonify({
+            "success": False,
+            "is_valid": False,
+            "message": "Nenhum número de chassi informado. Digite o(s) chassi(s) no formulário antes de conferir o comprovante."
+        }), 400
+
+    file_obj = request.files.get("file")
+    captured_data = request.form.get("captured_image")
+    file_bytes = None
+    mime_type = "image/jpeg"
+
+    if captured_data and "," in captured_data:
+        try:
+            header, data_str = captured_data.split(",", 1)
+            file_bytes = base64.b64decode(data_str)
+            if "png" in header:
+                mime_type = "image/png"
+            elif "webp" in header:
+                mime_type = "image/webp"
+            else:
+                mime_type = "image/jpeg"
+        except Exception as e:
+            return jsonify({"success": False, "is_valid": False, "message": f"Erro na decodificação da foto: {str(e)}"}), 400
+    elif file_obj and file_obj.filename:
+        ext = file_obj.filename.rsplit(".", 1)[-1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            return jsonify({"success": False, "is_valid": False, "message": f"Tipo de arquivo '.{ext}' não suportado. Use JPG, PNG, WebP ou PDF."}), 400
+        file_bytes = file_obj.read()
+        if ext == "pdf":
+            mime_type = "application/pdf"
+        elif ext == "png":
+            mime_type = "image/png"
+        elif ext == "webp":
+            mime_type = "image/webp"
+        else:
+            mime_type = "image/jpeg"
+    else:
+        return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400
+
+    result = extract_and_match_chassis(file_bytes, mime_type, chassis_list)
+    return jsonify(result)
+
+
+@app.route("/integrations/bling", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def integrations_bling():
+    rec = bling_service.get_bling_integration_record()
+    has_credentials = bool(rec and rec.get("client_id") and rec.get("client_secret"))
+    is_connected = bool(rec and rec.get("access_token"))
+    callback_url = url_for("bling_callback", _external=True)
+    return render_template(
+        "integrations_bling.html",
+        rec=rec or {},
+        has_credentials=has_credentials,
+        is_connected=is_connected,
+        callback_url=callback_url
+    )
+
+
+@app.route("/integrations/bling/save", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def save_bling_config():
+    client_id = request.form.get("client_id", "").strip()
+    client_secret = request.form.get("client_secret", "").strip()
+    if not client_id or not client_secret:
+        flash("Informe o Client ID e o Client Secret do Bling.", "danger")
+        return redirect(url_for("integrations_bling"))
+    bling_service.save_bling_credentials(client_id, client_secret)
+    flash("Credenciais do Bling salvas com sucesso! Agora clique em 'Conectar com Bling'.", "success")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/authorize")
+@login_required
+@roles_required("admin", "support")
+def bling_authorize():
+    try:
+        callback_url = url_for("bling_callback", _external=True)
+        auth_url = bling_service.get_bling_auth_url(callback_url)
+        return redirect(auth_url)
+    except Exception as e:
+        flash(f"Erro ao iniciar autorização com Bling: {str(e)}", "danger")
+        return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/callback")
+@login_required
+def bling_callback():
+    code = request.args.get("code")
+    err = request.args.get("error")
+    if err:
+        flash(f"Autorização cancelada ou recusada no Bling: {err}", "danger")
+        return redirect(url_for("integrations_bling"))
+    if not code:
+        flash("Nenhum código de autorização retornado pelo Bling.", "danger")
+        return redirect(url_for("integrations_bling"))
+    try:
+        callback_url = url_for("bling_callback", _external=True)
+        bling_service.exchange_code_for_token(code, callback_url)
+        flash("🎉 Conexão com o Bling ERP autorizada e ativada com sucesso!", "success")
+    except Exception as e:
+        flash(f"Falha ao trocar código pelo token do Bling: {str(e)}", "danger")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/disconnect")
+@login_required
+@roles_required("admin", "support")
+def bling_disconnect():
+    with db() as conn:
+        conn.execute("UPDATE integrations SET access_token = NULL, refresh_token = NULL WHERE service_name = 'bling'")
+        conn.commit()
+    flash("Conexão com o Bling foi desconectada.", "warning")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/api/bling/order/<path:order_num>")
+@login_required
+def api_bling_order(order_num):
+    try:
+        data = bling_service.search_bling_order(order_num)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"found": False, "message": str(e)}), 400
+
+
+@app.route("/api/bling/invoice/<path:inv_num>")
+@login_required
+def api_bling_invoice(inv_num):
+    try:
+        data = bling_service.search_bling_invoice(inv_num)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"found": False, "message": str(e)}), 400
 
 
 if __name__ == "__main__":

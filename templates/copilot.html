@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Copilot IA{% endblock %}
+{% block page_title %}Copilot IA{% endblock %}
+{% block page_subtitle %}Assistente de inteligência artificial em tempo real do ecossistema MAJ Mobilidade.{% endblock %}
+
+{% block top_actions %}
+<button class="btn" onclick="clearCopilotChat()" title="Reiniciar histórico da conversa">↺ Limpar conversa</button>
+{% endblock %}
+
+{% block content %}
+<style>
+.copilot-layout {
+  display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 20px;
+  min-height: calc(100vh - 165px);
+}
+@media(max-width: 1024px) {
+  .copilot-layout { grid-template-columns: 1fr; }
+}
+.copilot-chat-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  height: 720px;
+  max-height: calc(100vh - 170px);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.copilot-chat-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel2);
+}
+.copilot-chat-header .badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.badge-status.active {
+  background: rgba(97, 243, 156, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(97, 243, 156, 0.3);
+}
+.badge-status.warning {
+  background: rgba(255, 203, 102, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(255, 203, 102, 0.3);
+}
+.copilot-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  scroll-behavior: smooth;
+}
+.copilot-msg {
+  display: flex;
+  gap: 14px;
+  max-width: 88%;
+}
+.copilot-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.copilot-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.copilot-msg.bot .copilot-avatar {
+  background: linear-gradient(135deg, var(--accent), #72b7ff);
+  color: #06110a;
+}
+.copilot-msg.user .copilot-avatar {
+  background: #253344;
+  color: #d1e2f5;
+  border: 1px solid #3c4f64;
+}
+.copilot-bubble {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #f0f4f9;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.copilot-msg.user .copilot-bubble {
+  background: #193826;
+  border-color: #2e6241;
+  color: #f7fff9;
+  border-top-right-radius: 4px;
+}
+.copilot-msg.bot .copilot-bubble {
+  border-top-left-radius: 4px;
+}
+.copilot-bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 12.5px;
+}
+.copilot-bubble th, .copilot-bubble td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  text-align: left;
+}
+.copilot-bubble th {
+  background: #11171f;
+  color: var(--muted);
+}
+.copilot-bubble p { margin: 0 0 8px; }
+.copilot-bubble p:last-child { margin-bottom: 0; }
+.copilot-bubble ul, .copilot-bubble ol { margin: 6px 0; padding-left: 20px; }
+.copilot-bubble li { margin-bottom: 4px; }
+.copilot-bubble code {
+  background: #0d131a;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+.copilot-typing {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  width: fit-content;
+  margin-bottom: 12px;
+}
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: typingBounce 1.3s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.copilot-input-area {
+  padding: 16px 20px;
+  background: var(--panel2);
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.copilot-textarea {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  resize: none;
+  height: 48px;
+  max-height: 120px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.copilot-textarea:focus {
+  border-color: var(--accent);
+}
+.copilot-send-btn {
+  background: var(--accent);
+  color: #08160e;
+  border: none;
+  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: filter 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+.copilot-send-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.copilot-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.copilot-sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.suggestion-pill {
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: #d1dce7;
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.suggestion-pill:hover {
+  border-color: var(--accent);
+  background: #142219;
+  color: #fff;
+}
+.suggestion-pill span {
+  color: var(--accent);
+  font-weight: bold;
+}
+.key-alert-card {
+  background: #2b2314;
+  border: 1px solid #6b5220;
+  border-radius: var(--radius);
+  padding: 18px;
+  color: #f7e0b5;
+  margin-bottom: 20px;
+}
+.key-alert-card h4 {
+  margin: 0 0 8px 0;
+  color: var(--warning);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.key-alert-card ol {
+  margin: 8px 0 12px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.key-alert-card a {
+  color: #ffd881;
+  text-decoration: underline;
+  font-weight: 600;
+}
+</style>
+
+{% if not has_key %}
+<div class="key-alert-card">
+  <h4>⚠️ Configuração da API do Google Gemini</h4>
+  <p>O Copilot IA está instalado e pronto para operar! Para começar a responder consultas reais, basta conectar sua chave gratuita da API do Gemini:</p>
+  <ol>
+    <li>Acesse gratuitamente o <strong><a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio ↗</a></strong> com sua conta Google.</li>
+    <li>Clique em <strong>Get API key</strong> e em seguida <strong>Create API key</strong>.</li>
+    <li>Insira a chave no arquivo <code>.env</code> na variável <code>GEMINI_API_KEY=sua_chave_aqui</code> (e na Vercel para produção).</li>
+  </ol>
+  <small style="color:#d9bf8f;">Após salvar a variável no <code>.env</code>, reinicie o servidor local para ativar.</small>
+</div>
+{% endif %}
+
+<div class="copilot-layout">
+  <div class="copilot-chat-card">
+    <div class="copilot-chat-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;color:var(--accent);">✦</span>
+        <div>
+          <b style="font-size:15px;display:block;">M-One Copilot</b>
+          <small style="color:var(--muted);font-size:11px;">Alimentado por Google Gemini 2.5 Flash</small>
+        </div>
+      </div>
+      <div>
+        {% if has_key %}
+          <span class="badge-status active">● Gemini Online</span>
+        {% else %}
+          <span class="badge-status warning">○ Chave Pendente</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="copilot-chat-messages" id="chatMessages">
+      <div class="copilot-msg bot">
+        <div class="copilot-avatar">✦</div>
+        <div class="copilot-bubble">
+          <p>Olá, <strong>{{ me.name }}</strong>! Sou o <strong>Copilot IA</strong> do M-One.</p>
+          <p>Tenho acesso em tempo real aos números da <strong>MAJ Mobilidade</strong>: estoque de modelos, chassis liberados para venda, histórico de faturamento e status operacional.</p>
+          <p>Como posso ajudar você hoje? Você pode digitar qualquer pergunta abaixo ou clicar em uma das sugestões ao lado.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="copilot-typing" id="typingIndicator">
+      <span style="font-size:12px;color:var(--muted);margin-right:4px;">Copilot pensando</span>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <form class="copilot-input-area" id="copilotForm" onsubmit="handleCopilotSubmit(event)">
+      <textarea 
+        id="userInput" 
+        class="copilot-textarea" 
+        placeholder="Faça uma pergunta sobre estoque, vendas, chassis ou métricas..." 
+        rows="1"
+        onkeydown="handleTextareaKey(event)"
+      ></textarea>
+      <button type="submit" class="copilot-send-btn" id="sendBtn" title="Enviar mensagem">➤</button>
+    </form>
+  </div>
+
+  <div class="copilot-sidebar-card">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3 style="font-size:14px;">Consultas Rápidas</h3>
+          <p style="font-size:11px;">Sugestões de perguntas operacionais</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="suggestion-pill" onclick="sendPrompt('Quantos chassis temos disponíveis em estoque por modelo?')">
+          <span>⌕</span> Quantos chassis disponíveis por modelo?
+        </button>
+        <button class="suggestion-pill" onclick="sendPrompt('Qual foi o faturamento de vendas hoje e no mês atual?')">
+          <span>$</span> Faturamento de vendas hoje e no mês
+        </button>
+        <button class="suggestion-pill" onclick="sendPrompt('Quais foram as últimas vendas registradas e seus valores?')">
+          <span>↗</span> Últimas vendas registradas
+        </button>
+        <button class="suggestion-pill" onclick="sendPrompt('Quais modelos têm menor disponibilidade e merecem atenção de reposição?')">
+          <span>!</span> Modelos com estoque crítico
+        </button>
+        <button class="suggestion-pill" onclick="sendPrompt('Resuma a tabela de produtos com preços à vista e a prazo.')">
+          <span>◫</span> Tabela de produtos e preços
+        </button>
+        {% if me.role in ['admin', 'support'] %}
+        <button class="suggestion-pill" onclick="sendPrompt('Qual a situação das últimas importações, contêineres e câmbio médio?')">
+          <span>⌁</span> Status das importações e contêineres
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel" style="background:#0e141c;">
+      <h4 style="margin:0 0 6px 0;font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:0.04em;">Nível de Acesso</h4>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <b style="color:#fff;">{{ me.name }}</b>
+        <span class="pill">{{ role_labels.get(me.role, me.role) }}</span>
+      </div>
+      <small style="color:var(--muted);line-height:1.4;display:block;">
+        O Copilot aplica restrições automáticas de segurança. Custos e importações são restritos à Diretoria e Suporte.
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let chatHistory = [];
+
+function handleTextareaKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleCopilotSubmit(e);
+  }
+}
+
+function sendPrompt(text) {
+  document.getElementById('userInput').value = text;
+  handleCopilotSubmit(new Event('submit'));
+}
+
+function clearCopilotChat() {
+  if (confirm("Deseja limpar as mensagens da conversa atual?")) {
+    chatHistory = [];
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = `
+      <div class="copilot-msg bot">
+        <div class="copilot-avatar">✦</div>
+        <div class="copilot-bubble">
+          <p>Histórico reiniciado! Em que posso ajudar você agora?</p>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function formatMarkdown(text) {
+  if (!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Tables
+  html = html.replace(/((?:\|[^\n]+\|\r?\n)+)/g, function(match) {
+    const lines = match.trim().split(/\r?\n/);
+    if (lines.length < 2) return match;
+    let table = '<table>';
+    lines.forEach((line, idx) => {
+      const cells = line.split('|').map(c => c.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1);
+      if (idx === 1 && cells.every(c => /^[-:]+$/.test(c))) {
+        return; // Separator row
+      }
+      table += '<tr>';
+      cells.forEach(c => {
+        const tag = idx === 0 ? 'th' : 'td';
+        table += `<${tag}>${c}</${tag}>`;
+      });
+      table += '</tr>';
+    });
+    table += '</table>';
+    return table;
+  });
+
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h4 style="margin:10px 0 6px 0;color:var(--accent);font-size:14px;">$1</h4>');
+  html = html.replace(/^## (.*$)/gim, '<h3 style="margin:12px 0 8px 0;color:#fff;font-size:15px;">$1</h3>');
+
+  // Bold & Italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Unordered list items
+  html = html.replace(/^\s*[-•]\s+(.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/gms, '<ul>$1</ul>');
+  html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+  // Line breaks into paragraphs
+  const paragraphs = html.split(/\n\n+/);
+  return paragraphs.map(p => {
+    p = p.trim();
+    if (p.startsWith('<ul>') || p.startsWith('<table>') || p.startsWith('<h3') || p.startsWith('<h4')) {
+      return p;
+    }
+    return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+  }).join('');
+}
+
+async function handleCopilotSubmit(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('userInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  input.value = '';
+  input.style.height = '48px';
+
+  const messagesContainer = document.getElementById('chatMessages');
+  const typingIndicator = document.getElementById('typingIndicator');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Append user message
+  const userMsgEl = document.createElement('div');
+  userMsgEl.className = 'copilot-msg user';
+  userMsgEl.innerHTML = `
+    <div class="copilot-avatar">👤</div>
+    <div class="copilot-bubble">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+  `;
+  messagesContainer.appendChild(userMsgEl);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  // Show typing indicator
+  typingIndicator.style.display = 'inline-flex';
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  sendBtn.disabled = true;
+
+  chatHistory.push({ role: 'user', text: message });
+
+  try {
+    const res = await fetch('/api/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message, history: chatHistory })
+    });
+
+    const data = await res.json();
+    typingIndicator.style.display = 'none';
+    sendBtn.disabled = false;
+
+    const botMsgEl = document.createElement('div');
+    botMsgEl.className = 'copilot-msg bot';
+    
+    let botReply = '';
+    if (data.success) {
+      botReply = data.message;
+      chatHistory.push({ role: 'model', text: botReply });
+    } else {
+      botReply = data.message || 'Desculpe, ocorreu um erro ao comunicar com a inteligência artificial.';
+    }
+
+    botMsgEl.innerHTML = `
+      <div class="copilot-avatar">✦</div>
+      <div class="copilot-bubble">${formatMarkdown(botReply)}</div>
+    `;
+    messagesContainer.appendChild(botMsgEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  } catch (err) {
+    typingIndicator.style.display = 'none';
+    sendBtn.disabled = false;
+
+    const botMsgEl = document.createElement('div');
+    botMsgEl.className = 'copilot-msg bot';
+    botMsgEl.innerHTML = `
+      <div class="copilot-avatar">⚠️</div>
+      <div class="copilot-bubble" style="border-color:var(--danger);color:#ffc4c4;">
+        Não foi possível conectar ao servidor: ${err.message}
+      </div>
+    `;
+    messagesContainer.appendChild(botMsgEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+}
+</script>
+{% endblock %}

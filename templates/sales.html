@@ -25,6 +25,7 @@
         <th>Chassis</th>
         <th>Venda</th>
         <th>Recebido</th>
+        <th>Comprovante / IA</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -42,11 +43,21 @@
           {{ s.received|money }}
         </td>
         <td>
+          {% if s.danfe_file %}
+            <a class="link-btn" href="{{ url_for('uploads', filename=s.danfe_file) }}" target="_blank" title="Abrir arquivo da DANFE / Termo">📄 DANFE</a>
+            {% if s.ai_chassis_verified %}
+              <span class="badge available" style="margin-left:4px;font-size:10px;" title="Chassi auditado e confirmado pela IA">✓ IA</span>
+            {% endif %}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>
           <button class="btn small" onclick="openModal('saleDetails{{ s.id }}')">Detalhes</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="9" class="empty">Nenhuma venda cadastrada.</td></tr>
+      <tr><td colspan="10" class="empty">Nenhuma venda cadastrada.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -85,6 +96,23 @@
         <small>Registrado Por</small>
         <b>{{ s.created_by_name or 'Sistema' }}</b>
       </div>
+      <div class="detail-block">
+        <small>Comprovante DANFE</small>
+        {% if s.danfe_file %}
+          <a class="link-btn" href="{{ url_for('uploads', filename=s.danfe_file) }}" target="_blank" style="font-weight:bold;">📄 Abrir Documento</a>
+          {% if s.ai_chassis_verified %}
+            <span class="badge available" style="display:inline-block;margin-top:4px;">✓ Chassi Auditado por IA</span>
+          {% endif %}
+        {% else %}
+          <span class="muted">Sem anexo</span>
+        {% endif %}
+      </div>
+      {% if s.ai_extracted_chassis %}
+      <div class="detail-block">
+        <small>Chassis Lidos na Nota</small>
+        <span class="mono" style="font-size:12px;color:var(--accent);">{{ s.ai_extracted_chassis }}</span>
+      </div>
+      {% endif %}
     </div>
 
     <div class="detail-section">
@@ -147,6 +175,7 @@
     </div>
   </div>
 </div>
+
 {% endfor %}
 
 <!-- New Sale Modal -->
@@ -156,31 +185,89 @@
       <h3>Registrar venda</h3>
       <button onclick="closeModal('newSale')">×</button>
     </div>
-    <form method="post" enctype="multipart/form-data" class="form-grid" id="saleForm">
-      <label>Pedido Bling<input name="order_number" required placeholder="Ex.: 12345"></label>
-      <label>Nota fiscal<input name="invoice_number" required placeholder="Ex.: NF-00982"></label>
+    <form method="post" enctype="multipart/form-data" class="form-grid" id="saleForm" onsubmit="return validateSaleBeforeSubmit(event)">
+      <label>
+        Pedido Bling
+        <div style="display:flex;gap:6px;">
+          <input name="order_number" id="blingOrderInput" required placeholder="Ex.: 12345">
+          <button type="button" class="btn small" onclick="fetchFromBling()" id="blingSearchBtn" style="white-space:nowrap;font-size:11px;" title="Buscar pedido e preencher dados automaticamente pelo Bling">
+            ⌕ Buscar
+          </button>
+        </div>
+      </label>
+      <label>Nota fiscal<input name="invoice_number" id="invoiceNumberInput" required placeholder="Ex.: NF-00982"></label>
       <label>Canal
-        <select name="channel">
+        <select name="channel" id="channelInput">
           <option value="varejo">Varejo</option>
           <option value="atacado">Atacado</option>
         </select>
       </label>
-      <label>Cliente<input name="customer" placeholder="Nome do cliente"></label>
-      <label>Data<input type="date" name="sold_at" value="{{ request.args.get('date','') }}"></label>
-      <label>Valor total<input type="number" step="0.01" name="total_value" placeholder="deixe vazio para usar tabela"></label>
+      <label>Cliente<input name="customer" id="customerInput" placeholder="Nome do cliente"></label>
+      <label>Data<input type="date" name="sold_at" id="soldAtInput" value="{{ request.args.get('date','') }}"></label>
+      <label>Valor total<input type="number" step="0.01" name="total_value" id="totalValueInput" placeholder="deixe vazio para usar tabela"></label>
+      
       <label class="span-2">Chassis
-        <textarea name="chassis" rows="3" placeholder="Cole um ou vários chassis separados por vírgula ou ponto-e-vírgula" required></textarea>
-        <small>O sistema trava se qualquer chassi não existir, já tiver sido vendido ou pertencimento a importação não liberada.</small>
+        <textarea name="chassis" id="chassisInput" rows="2" placeholder="Cole um ou vários chassis separados por vírgula ou ponto-e-vírgula" required oninput="resetAiValidation()"></textarea>
+        <small>O sistema exige chassi válido e confere automaticamente contra a foto do comprovante anexo.</small>
       </label>
+
+      <!-- SEÇÃO OBRIGATÓRIA DE COMPROVANTE & VALIDAÇÃO IA -->
+      <div class="span-2" style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--accent);">✦</span> Comprovante Obrigatório (Foto da DANFE / Termo de Entrega)
+            </strong>
+            <small style="color:var(--muted);display:block;">A IA analisará a imagem/PDF para certificar que o chassi informado está presente no documento.</small>
+          </div>
+          <span id="aiBadge" class="badge muted">Aguardando Documento</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <input type="file" id="danfeFileInput" name="danfe_file" accept="image/*,.pdf" capture="environment" onchange="onDanfeFileSelected(event)">
+          <button type="button" class="btn" id="cameraBtn" onclick="toggleDanfeCamera()" style="display:flex;align-items:center;gap:6px;">
+            📷 Câmera
+          </button>
+        </div>
+
+        <!-- CÂMERA WEBCAM INTEGRADA -->
+        <div id="danfeCameraBox" style="display:none;margin-top:12px;background:#070b10;padding:12px;border-radius:10px;border:1px solid var(--line);text-align:center;">
+          <video id="danfeVideo" style="width:100%;max-height:260px;border-radius:8px;background:#000;object-fit:cover;" autoplay playsinline></video>
+          <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+            <button type="button" class="btn primary small" onclick="captureDanfePhoto()">📸 Capturar Foto</button>
+            <button type="button" class="btn small" onclick="closeDanfeCamera()">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- MINIATURA DE PREVIEW -->
+        <div id="danfePreviewBox" style="display:none;margin-top:10px;text-align:center;">
+          <img id="danfePreviewImg" src="" style="max-height:160px;border-radius:8px;border:1px solid var(--line);margin:0 auto;display:inline-block;" alt="Preview comprovante">
+          <div style="margin-top:4px;"><small style="color:var(--muted);" id="danfePreviewLabel"></small></div>
+        </div>
+
+        <input type="hidden" name="danfe_captured_image" id="danfeCapturedImage">
+        <input type="hidden" name="ai_chassis_verified" id="aiChassisVerified" value="0">
+        <input type="hidden" name="ai_extracted_chassis" id="aiExtractedChassis" value="">
+
+        <!-- CARD DE FEEDBACK DA IA -->
+        <div id="aiStatusBox" style="display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.45;">
+          <div id="aiStatusContent"></div>
+        </div>
+      </div>
+
       <div class="span-2">
         <div class="section-label">Recebimentos desta venda</div>
         <div id="paymentsBox"></div>
         <button type="button" class="btn small" onclick="addPaymentRow()">+ outro recebimento</button>
       </div>
+
       <label class="span-2">Observações<textarea name="notes" placeholder="Detalhes da negociação, frete, etc..."></textarea></label>
+      
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('newSale')">Cancelar</button>
-        <button class="btn primary">Validar chassis e registrar</button>
+        <button type="submit" class="btn primary" id="saveSaleBtn" disabled title="Anexe o comprovante com o chassi para liberar o cadastro">
+          🔒 Anexe a DANFE com o chassi para liberar
+        </button>
       </div>
     </form>
   </div>
@@ -189,6 +276,10 @@
 
 {% block scripts %}
 <script>
+let cameraStream = null;
+let currentFile = null;
+let currentBase64 = null;
+
 document.addEventListener('DOMContentLoaded', () => {
   addPaymentRow('Pix', 'Sicoob');
   addPaymentRow('Link', 'Fonton Pay');
@@ -202,5 +293,281 @@ function filterSalesTable() {
     r.style.display = text.includes(q) ? '' : 'none';
   });
 }
+
+async function fetchFromBling() {
+  const input = document.getElementById('blingOrderInput');
+  const num = input.value.trim();
+  if (!num) {
+    alert('Por favor, digite o número do Pedido Bling antes de buscar.');
+    input.focus();
+    return;
+  }
+  const btn = document.getElementById('blingSearchBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Buscando...';
+
+  try {
+    const res = await fetch(`/api/bling/order/${encodeURIComponent(num)}`);
+    const data = await res.json();
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+
+    if (!data.found) {
+      alert(data.message || 'Pedido não localizado no Bling.');
+      return;
+    }
+
+    if (data.customer) {
+      document.getElementById('customerInput').value = data.customer;
+    }
+    if (data.invoice_number) {
+      document.getElementById('invoiceNumberInput').value = data.invoice_number;
+    }
+    if (data.sold_at) {
+      document.getElementById('soldAtInput').value = data.sold_at;
+    }
+    if (data.total_value) {
+      document.getElementById('totalValueInput').value = data.total_value.toFixed(2);
+    }
+    if (data.notes) {
+      const notesEl = document.querySelector('#saleForm textarea[name="notes"]');
+      if (notesEl && !notesEl.value) {
+        notesEl.value = data.notes;
+      }
+    }
+
+    let itemsMsg = '';
+    if (data.items && data.items.length) {
+      itemsMsg = '\n\nItens do pedido:\n' + data.items.map(i => `• ${i.quantidade}x ${i.descricao}`).join('\n');
+    }
+    alert(`✓ Pedido #${data.order_number} encontrado no Bling!\n\nCliente: ${data.customer}\nNota Fiscal: ${data.invoice_number || 'Ainda não emitida'}\nValor Total: R$ ${data.total_value.toFixed(2)}${itemsMsg}`);
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    alert('Erro ao consultar API do Bling: ' + err.message + '\nVerifique se o M-One está conectado ao Bling na aba Integrações.');
+  }
+}
+
+function resetAiValidation() {
+  document.getElementById('aiChassisVerified').value = '0';
+  document.getElementById('aiExtractedChassis').value = '';
+  const saveBtn = document.getElementById('saveSaleBtn');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '🔒 Anexe a DANFE com o chassi para liberar';
+  saveBtn.classList.remove('good-btn');
+  
+  const badge = document.getElementById('aiBadge');
+  badge.className = 'badge muted';
+  badge.innerText = 'Aguardando Documento';
+
+  const statusBox = document.getElementById('aiStatusBox');
+  statusBox.style.display = 'none';
+  statusBox.innerHTML = '';
+}
+
+function onDanfeFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  currentFile = file;
+  currentBase64 = null;
+  document.getElementById('danfeCapturedImage').value = '';
+
+  // Show preview
+  const previewBox = document.getElementById('danfePreviewBox');
+  const previewImg = document.getElementById('danfePreviewImg');
+  const previewLabel = document.getElementById('danfePreviewLabel');
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'inline-block';
+      previewLabel.innerText = file.name;
+      previewBox.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewImg.style.display = 'none';
+    previewLabel.innerText = '📄 Documento PDF: ' + file.name;
+    previewBox.style.display = 'block';
+  }
+
+  runChassisAiVerification(file, null);
+}
+
+async function toggleDanfeCamera() {
+  const box = document.getElementById('danfeCameraBox');
+  if (box.style.display === 'none') {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      document.getElementById('danfeVideo').srcObject = cameraStream;
+      box.style.display = 'block';
+    } catch (err) {
+      alert('Não foi possível acessar a câmera: ' + err.message + '\nVocê pode anexar o arquivo diretamente pelo botão ao lado.');
+    }
+  } else {
+    closeDanfeCamera();
+  }
+}
+
+function closeDanfeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  document.getElementById('danfeCameraBox').style.display = 'none';
+}
+
+function captureDanfePhoto() {
+  const video = document.getElementById('danfeVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  closeDanfeCamera();
+
+  currentBase64 = dataUrl;
+  currentFile = null;
+  document.getElementById('danfeFileInput').value = '';
+  document.getElementById('danfeCapturedImage').value = dataUrl;
+
+  const previewBox = document.getElementById('danfePreviewBox');
+  const previewImg = document.getElementById('danfePreviewImg');
+  const previewLabel = document.getElementById('danfePreviewLabel');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'inline-block';
+  previewLabel.innerText = '📷 Foto capturada da câmera';
+  previewBox.style.display = 'block';
+
+  runChassisAiVerification(null, dataUrl);
+}
+
+async function runChassisAiVerification(file, base64Data) {
+  const chassisVal = document.getElementById('chassisInput').value.trim();
+  const badge = document.getElementById('aiBadge');
+  const statusBox = document.getElementById('aiStatusBox');
+  const saveBtn = document.getElementById('saveSaleBtn');
+
+  if (!chassisVal) {
+    alert('Por favor, informe primeiro o(s) número(s) do chassi no campo acima antes de validar o comprovante.');
+    resetAiValidation();
+    return;
+  }
+
+  badge.className = 'badge warning';
+  badge.innerHTML = '✦ IA Auditando Documento...';
+  statusBox.style.display = 'block';
+  statusBox.style.background = '#1b232c';
+  statusBox.style.borderColor = '#384756';
+  statusBox.style.color = '#e2ecf7';
+  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini 3.6 Flash está examinando o documento e rastreando os chassis...</span></div>';
+
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '⏳ Auditando comprovante...';
+
+  const fd = new FormData();
+  fd.append('chassis', chassisVal);
+  if (file) {
+    fd.append('file', file);
+  } else if (base64Data) {
+    fd.append('captured_image', base64Data);
+  }
+
+  try {
+    const res = await fetch('/api/sales/verify-chassis', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+
+    if (data.success && data.is_valid) {
+      document.getElementById('aiChassisVerified').value = '1';
+      document.getElementById('aiExtractedChassis').value = (data.extracted_chassis || []).join(', ');
+
+      badge.className = 'badge available';
+      badge.innerHTML = '✓ Chassi Validado pela IA';
+
+      statusBox.style.background = 'rgba(97, 243, 156, 0.12)';
+      statusBox.style.borderColor = 'rgba(97, 243, 156, 0.4)';
+      statusBox.style.color = '#a5f3c5';
+      statusBox.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <span style="font-size:16px;">✓</span>
+          <div>
+            <strong>Validação Positiva por IA:</strong> Documento reconhecido como <em>${data.document_type || 'Comprovante'}</em>.<br>
+            Todos os chassis informados foram localizados no documento com sucesso:<br>
+            <span class="mono" style="font-size:12px;color:var(--accent);">${data.matched_chassis.join(', ')}</span>
+          </div>
+        </div>
+      `;
+
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '✓ Validar chassis e registrar';
+      saveBtn.classList.add('good-btn');
+
+    } else {
+      document.getElementById('aiChassisVerified').value = '0';
+      badge.className = 'badge warn-btn';
+      badge.innerHTML = '✕ Bloqueado por Divergência';
+
+      statusBox.style.background = 'rgba(255, 107, 107, 0.12)';
+      statusBox.style.borderColor = 'rgba(255, 107, 107, 0.4)';
+      statusBox.style.color = '#ffc5cb';
+
+      let missingMsg = '';
+      if (data.missing_chassis && data.missing_chassis.length > 0) {
+        missingMsg = `<br>Chassi(s) ausente(s) na foto/PDF: <b class="mono" style="color:#ff8e98;">${data.missing_chassis.join(', ')}</b>`;
+      }
+
+      statusBox.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <span style="font-size:16px;">✕</span>
+          <div>
+            <strong>Bloqueio de Integridade:</strong> ${data.summary || data.message || 'O chassi do documento não confere com o digitado.'}
+            ${missingMsg}
+            <div style="margin-top:6px;font-size:12px;color:#f0b4ba;">
+              Por favor, anexe uma imagem nítida da DANFE/Termo onde os chassis estejam legíveis para liberar o cadastro.
+            </div>
+          </div>
+        </div>
+      `;
+
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '🔒 Bloqueado: Chassi não confere com documento';
+      saveBtn.classList.remove('good-btn');
+    }
+
+  } catch (err) {
+    document.getElementById('aiChassisVerified').value = '0';
+    badge.className = 'badge warn-btn';
+    badge.innerHTML = '✕ Erro na Validação';
+
+    statusBox.style.background = 'rgba(255, 107, 107, 0.12)';
+    statusBox.style.borderColor = 'rgba(255, 107, 107, 0.4)';
+    statusBox.style.color = '#ffc5cb';
+    statusBox.innerHTML = `<strong>Erro ao processar validação:</strong> ${err.message}`;
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '🔒 Falha de Conexão na Validação';
+    saveBtn.classList.remove('good-btn');
+  }
+}
+
+function validateSaleBeforeSubmit(event) {
+  const verified = document.getElementById('aiChassisVerified').value === '1';
+  if (!verified) {
+    event.preventDefault();
+    alert('Atenção: A venda não pode ser registrada sem que a IA aprove o comprovante com o chassi correspondente.');
+    return false;
+  }
+  return true;
+}
 </script>
 {% endblock %}
+
