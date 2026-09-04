@@ -601,31 +601,7 @@ def edit_product(pid):
 
 
 def clean_product_name(raw_name: str) -> str:
-    name = (raw_name or "").strip()
-    if not name:
-        return ""
-    lower = name.lower()
-    if lower.startswith("701"):
-        name = "V701 " + name[3:].strip()
-        lower = name.lower()
-    if not (lower.startswith("scooter") or lower.startswith("v80") or lower.startswith("v12") or lower.startswith("v8") or lower.startswith("v701")):
-        name = "Scooter " + name
-
-    parts = name.split()
-    cleaned = []
-    for p in parts:
-        pl = p.lower()
-        if pl == "scooter":
-            cleaned.append("Scooter")
-        elif pl == "short":
-            cleaned.append("Short")
-        elif pl in ["pro", "hero", "icon", "one", "mini", "ultra", "magic"]:
-            cleaned.append(p.upper())
-        elif pl in ["v80", "v12", "v8", "v701"]:
-            cleaned.append(p.upper())
-        else:
-            cleaned.append(p)
-    return " ".join(cleaned)
+    return (raw_name or "").strip()
 
 
 def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"):
