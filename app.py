@@ -2040,6 +2040,77 @@ def api_bling_invoice(inv_num):
         return jsonify({"found": False, "message": str(e)}), 400
 
 
+@app.route("/integrations/whatsapp", methods=["GET", "POST"])
+@login_required
+@roles_required("admin", "support")
+def integrations_whatsapp():
+    with db() as conn:
+        cfg = conn.execute("SELECT * FROM whatsapp_config ORDER BY id DESC LIMIT 1").fetchone()
+        if not cfg:
+            conn.execute("INSERT INTO whatsapp_config (display_name, phone_number, waba_id) VALUES (?,?,?)",
+                         ("Maj mobilidade elétrica", "+55 27 99606-1538", "10988893282731750"))
+            conn.commit()
+            cfg = conn.execute("SELECT * FROM whatsapp_config ORDER BY id DESC LIMIT 1").fetchone()
+
+        cfg_dict = dict(cfg)
+
+    if request.method == "POST":
+        display_name = request.form.get("display_name", "").strip()
+        phone_number = request.form.get("phone_number", "").strip()
+        waba_id = request.form.get("waba_id", "").strip()
+        phone_number_id = request.form.get("phone_number_id", "").strip()
+        token = request.form.get("token", "").strip()
+        welcome_message = request.form.get("welcome_message", "").strip()
+        default_response = request.form.get("default_response", "").strip()
+        media_response = request.form.get("media_response", "").strip()
+        support_flow = request.form.get("support_flow", "").strip()
+        profile_description = request.form.get("profile_description", "").strip()
+        profile_sector = request.form.get("profile_sector", "").strip()
+        profile_email = request.form.get("profile_email", "").strip()
+        profile_website = request.form.get("profile_website", "").strip()
+        profile_address = request.form.get("profile_address", "").strip()
+        action_type = request.form.get("action_type", "save")
+
+        with db() as conn:
+            if action_type == "disconnect":
+                conn.execute(
+                    """UPDATE whatsapp_config SET number_status='Desconectado', account_status='Inativo', updated_at=CURRENT_TIMESTAMP WHERE id=?""",
+                    (cfg_dict["id"],)
+                )
+                conn.commit()
+                flash("Conta do WhatsApp desconectada.", "warning")
+            else:
+                conn.execute(
+                    """UPDATE whatsapp_config SET display_name=?, phone_number=?, waba_id=?, phone_number_id=?, token=?,
+                       welcome_message=?, default_response=?, media_response=?, support_flow=?,
+                       profile_description=?, profile_sector=?, profile_email=?, profile_website=?, profile_address=?,
+                       number_status='Conectado', account_status='Ativo', updated_at=CURRENT_TIMESTAMP
+                       WHERE id=?""",
+                    (display_name or cfg_dict["display_name"],
+                     phone_number or cfg_dict["phone_number"],
+                     waba_id or cfg_dict["waba_id"],
+                     phone_number_id or cfg_dict.get("phone_number_id"),
+                     token or cfg_dict.get("token"),
+                     welcome_message or cfg_dict["welcome_message"],
+                     default_response or cfg_dict["default_response"],
+                     media_response or cfg_dict["media_response"],
+                     support_flow or cfg_dict["support_flow"],
+                     profile_description or cfg_dict["profile_description"],
+                     profile_sector or cfg_dict["profile_sector"],
+                     profile_email or cfg_dict["profile_email"],
+                     profile_website or cfg_dict["profile_website"],
+                     profile_address or cfg_dict["profile_address"],
+                     cfg_dict["id"])
+                )
+                conn.commit()
+                flash("Configurações do WhatsApp Business salvas e atualizadas com sucesso!", "success")
+
+        return redirect(url_for("integrations_whatsapp"))
+
+    webhook_url = url_for("whatsapp_webhook", _external=True)
+    return render_template("integrations_whatsapp.html", cfg=cfg_dict, webhook_url=webhook_url)
+
+
 # ==========================================
 # CRM & WHATSAPP FULL ROUTE HANDLERS
 # ==========================================
