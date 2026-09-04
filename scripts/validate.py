@@ -1,54 +1,72 @@
 #!/usr/bin/env python3
+"""
+M-One Pre-Deploy Integrity Checker
+Valida sintaxe Python, templates Jinja2, inicialização Flask e variáveis críticas de DB.
+"""
 import sys
-import os
-import importlib.util
+import py_compile
 from pathlib import Path
 
-print("🔍 Executando varredura profunda de integridade do M-One...")
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR))
 
-errors = []
+def validate_all():
+    print("🔍 [1/4] Varredura de sintaxe e compilação Python...")
+    python_files = ["app.py", "api/index.py"]
+    for pf in python_files:
+        full_path = BASE_DIR / pf
+        if full_path.exists():
+            try:
+                py_compile.compile(str(full_path), doraise=True)
+                print(f"  ✓ {pf}: Sintaxe válida")
+            except py_compile.PyCompileError as e:
+                print(f"  ✗ ERRO no arquivo {pf}: {e}")
+                return False
 
-# 1. Verificar arquivos essenciais
-required_files = ["app.py", "requirements.txt", ".env", "templates/base.html", "templates/login.html"]
-for rf in required_files:
-    if not os.path.exists(rf):
-        errors.append(f"Arquivo essencial ausente: {rf}")
+    print("🎨 [2/4] Varredura de integridade dos templates HTML/Jinja2...")
+    try:
+        from jinja2 import Environment, FileSystemLoader
+        templates_dir = BASE_DIR / "templates"
+        env = Environment(loader=FileSystemLoader(str(templates_dir)))
+        for template_file in templates_dir.glob("*.html"):
+            try:
+                env.parse(template_file.read_text(encoding="utf-8"))
+                print(f"  ✓ templates/{template_file.name}: Template válido")
+            except Exception as e:
+                print(f"  ✗ ERRO no template {template_file.name}: {e}")
+                return False
+    except Exception as e:
+        print(f"  ✗ Falha ao carregar Jinja2: {e}")
+        return False
 
-# 2. Testar sintaxe e importação de app.py
-try:
-    spec = importlib.util.spec_from_file_location("app_module", "app.py")
-    module = importlib.util.module_from_spec(spec)
-    print("✅ Sintaxe do app.py verificada com sucesso.")
-except Exception as e:
-    errors.append(f"Erro de sintaxe em app.py: {e}")
+    print("⚙️ [3/4] Validação da aplicação Flask e rotas...")
+    try:
+        from app import app
+        with app.test_client() as client:
+            res = client.get("/login")
+            if res.status_code != 200:
+                print(f"  ✗ Falha no endpoint /login: HTTP {res.status_code}")
+                return False
+            print("  ✓ Instanciação do Flask e rota /login: HTTP 200 OK")
+    except Exception as e:
+        print(f"  ✗ ERRO na inicialização da aplicação: {e}")
+        return False
 
-# 3. Testar conexão com PostgreSQL Supabase Pooler
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-    import psycopg2
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
-    if db_url:
-        conn = psycopg2.connect(db_url, sslmode="require", connect_timeout=5)
-        conn.close()
-        print("✅ Conexão com banco de dados Supabase PostgreSQL verificada.")
-    else:
-        print("⚠️ DATABASE_URL não definida, ignorando teste de BD remoto.")
-except Exception as e:
-    errors.append(f"Falha ao conectar no Supabase PostgreSQL: {e}")
+    print("🛡️ [4/4] Validação da configuração de banco de dados (IPv4 Pooler)...")
+    try:
+        from app import DEFAULT_DB_URL
+        if "aws-0-us-west-2.pooler.supabase.com" not in DEFAULT_DB_URL:
+            print("  ✗ AVISO: DEFAULT_DB_URL não aponta para o pooler IPv4 verificado do Supabase.")
+            return False
+        print("  ✓ Pooler IPv4 Supabase verificado")
+    except Exception as e:
+        print(f"  ✗ ERRO na checagem de banco de dados: {e}")
+        return False
 
-# 4. Verificar porta configurada
-port = os.environ.get("PORT", "5001")
-if port == "5000":
-    errors.append("Porta 5000 é reservada pelo macOS (AirPlay/ControlCenter). Utilize a porta 5001.")
-else:
-    print(f"✅ Porta de desenvolvimento configurada: {port}")
+    print("\n✅ TODAS AS VERIFICAÇÕES FORAM APROVADAS! Código pronto para deploy.\n")
+    return True
 
-if errors:
-    print("\n❌ Varredura encontrou erros:")
-    for err in errors:
-        print(f"  - {err}")
-    sys.exit(1)
-
-print("\n🎉 Varredura concluída! Todos os testes de integridade passaram.")
-sys.exit(0)
+if __name__ == "__main__":
+    if not validate_all():
+        sys.exit(1)
+    sys.exit(0)

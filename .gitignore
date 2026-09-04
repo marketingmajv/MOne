@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .env
+.env.local
+.env.*
 m_one.db
 uploads/
 .DS_Store

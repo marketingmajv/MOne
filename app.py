@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv()
+load_dotenv(".env.local")
 import os
 import csv
 import io
@@ -44,6 +45,9 @@ try:
 except Exception:
     load_workbook = None
 
+from gemini_service import ask_gemini_copilot, get_gemini_api_key, extract_and_match_chassis
+import bling_service
+
 
 import base64
 try:
@@ -52,14 +56,13 @@ try:
 except Exception:
     psycopg2 = None
 
-import psycopg2.pool
-
-DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
 pg_pool = None
 
 def get_pg_pool():
     global pg_pool
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2 and pg_pool is None:
         try:
             pg_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, dsn=db_url)
@@ -206,7 +209,7 @@ def hash_password(password: str) -> str:
 
 
 def init_db():
-    if os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL"):
+    if os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL:
         # PostgreSQL / Supabase tables are initialized via Supabase SQL Editor
         return
     with db() as conn:
@@ -551,7 +554,7 @@ def dashboard():
 
 @app.route("/products", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance", "stock")
+@roles_required("admin", "finance", "stock", "support")
 def products():
     if request.method == "POST":
         name = request.form["name"].strip()
@@ -587,7 +590,7 @@ def products():
 
 @app.route("/products/<int:pid>/edit", methods=["POST"])
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def edit_product(pid):
     fields = (
         request.form.get("name", "").strip(),
@@ -938,7 +941,7 @@ def api_sync_prices():
 
 @app.route("/imports", methods=["GET", "POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def imports():
     if request.method == "POST":
         reference = request.form["reference"].strip()
@@ -1117,7 +1120,7 @@ def parse_chassis_file(file_storage):
 
 @app.route("/imports/<int:iid>/chassis", methods=["POST"])
 @login_required
-@roles_required("admin", "stock")
+@roles_required("admin", "stock", "support")
 def import_chassis(iid):
     f = request.files.get("chassis_file")
     if not f or not f.filename:
@@ -1176,7 +1179,7 @@ def import_chassis(iid):
 
 @app.route("/imports/<int:iid>/cost", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def add_import_cost(iid):
     try:
         receipt = save_upload(request.files.get("receipt_file"), "importcost")
@@ -1219,7 +1222,7 @@ def delete_import_cost(cid):
 
 @app.route("/imports/<int:iid>/release", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def release_import(iid):
     with db() as conn:
         imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
@@ -1267,7 +1270,7 @@ def stock():
 
 @app.route("/sales", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance", "sales")
+@roles_required("admin", "finance", "sales", "support")
 def sales():
     if request.method == "POST":
         order_number = request.form.get("order_number", "").strip()
@@ -1337,11 +1340,44 @@ def sales():
                     flash(f"Bloqueio de Nota Fiscal — {e}", "danger")
                 return redirect(url_for("sales"))
 
+            danfe_file_obj = request.files.get("danfe_file")
+            danfe_captured = request.form.get("danfe_captured_image")
+            danfe_filename = None
+            if danfe_captured:
+                danfe_filename = save_base64_upload(danfe_captured, "danfe")
+            elif danfe_file_obj and danfe_file_obj.filename:
+                try:
+                    danfe_filename = save_upload(danfe_file_obj, "danfe")
+                except ValueError as e:
+                    flash(f"Arquivo de comprovante da DANFE inválido: {str(e)}", "danger")
+                    return redirect(url_for("sales"))
+
+            if not danfe_filename:
+                flash("É obrigatório anexar o comprovante da venda (foto da DANFE, Termo ou documento com o chassi).", "danger")
+                return redirect(url_for("sales"))
+
+            ai_verified = request.form.get("ai_chassis_verified") == "1"
+            ai_extracted = request.form.get("ai_extracted_chassis", "").strip()
+
+            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora
+            if not ai_verified:
+                danfe_path = UPLOAD_DIR / danfe_filename
+                if danfe_path.exists():
+                    ext = danfe_filename.rsplit(".", 1)[-1].lower()
+                    mime = "application/pdf" if ext == "pdf" else f"image/{ext if ext != 'jpg' else 'jpeg'}"
+                    v_res = extract_and_match_chassis(danfe_path.read_bytes(), mime, chassis_list)
+                    if not v_res.get("is_valid"):
+                        flash(f"Bloqueio da IA: {v_res.get('summary', 'O chassi do documento não confere com o digitado.')}", "danger")
+                        return redirect(url_for("sales"))
+                    ai_verified = True
+                    ai_extracted = ", ".join(v_res.get("extracted_chassis", []))
+
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                "INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,created_by) VALUES(?,?,?,?,?,?,?,?)",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -1437,7 +1473,7 @@ def sales():
 
 @app.route("/payments", methods=["GET", "POST"])
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def payments():
     if request.method == "POST":
         paid_at = request.form.get("paid_at") or date.today().isoformat()
@@ -1469,7 +1505,7 @@ def payments():
 
     u = current_user()
     with db() as conn:
-        if u["role"] == "admin":
+        if u["role"] in ("admin", "support"):
             rows = conn.execute("SELECT p.*,i.reference import_ref FROM payments p LEFT JOIN imports i ON i.id=p.import_id ORDER BY p.paid_at DESC,p.id DESC LIMIT 300").fetchall()
             imports_rows = conn.execute("SELECT id,reference FROM imports ORDER BY created_at DESC").fetchall()
         else:
@@ -1480,7 +1516,7 @@ def payments():
 
 @app.route("/users", methods=["GET", "POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def users():
     if request.method == "POST":
         name = request.form["name"].strip()
@@ -1501,7 +1537,7 @@ def users():
 
 @app.route("/users/<int:uid>/toggle", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def toggle_user(uid):
     with db() as conn:
         u = conn.execute("SELECT active FROM users WHERE id=?", (uid,)).fetchone()
@@ -1515,7 +1551,7 @@ def toggle_user(uid):
 
 @app.route("/users/<int:uid>/reset-password", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def reset_user_password(uid):
     with db() as conn:
         conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password("MOne2026!"), uid))
@@ -1526,7 +1562,7 @@ def reset_user_password(uid):
 
 @app.route("/users/<int:uid>/edit", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "support")
 def edit_user(uid):
     name = request.form.get("name", "").strip()
     username = request.form.get("username", "").strip().lower()
@@ -1612,7 +1648,7 @@ def api_chassis(chassis):
 
 @app.route("/stock/add", methods=["POST"])
 @login_required
-@roles_required("admin", "stock")
+@roles_required("admin", "stock", "support")
 def add_stock_unit():
     chassis = request.form.get("chassis", "").strip()
     product_id = request.form.get("product_id")
@@ -1674,11 +1710,11 @@ def export_sales():
 
 @app.route("/payments/export")
 @login_required
-@roles_required("admin", "finance")
+@roles_required("admin", "finance", "support")
 def export_payments():
     u = current_user()
     with db() as conn:
-        if u["role"] == "admin":
+        if u["role"] in ("admin", "support"):
             rows = conn.execute(
                 """SELECT p.paid_at, p.description, p.category, p.account, p.amount, i.reference import_ref
                    FROM payments p LEFT JOIN imports i ON i.id=p.import_id ORDER BY p.paid_at DESC"""
@@ -1699,6 +1735,186 @@ def export_payments():
 def too_large(_):
     flash("Arquivo grande demais. Limite: 20 MB.", "danger")
     return redirect(request.referrer or url_for("dashboard"))
+
+@app.errorhandler(500)
+def handle_500(e):
+    import traceback
+    return f"<h3>Erro Interno</h3><pre>{traceback.format_exc()}</pre>", 500
+
+
+@app.route("/copilot")
+@login_required
+def copilot():
+    has_key = bool(get_gemini_api_key())
+    return render_template("copilot.html", has_key=has_key)
+
+
+@app.route("/api/copilot/chat", methods=["POST"])
+@login_required
+def copilot_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    history = data.get("history") or []
+    if not message:
+        return jsonify({"success": False, "message": "Mensagem não informada."}), 400
+
+    u = current_user()
+    if not u:
+        return jsonify({"success": False, "message": "Sessão expirada. Faça login novamente."}), 401
+
+    with db() as conn:
+        result = ask_gemini_copilot(
+            user_message=message,
+            history=history,
+            db_conn=conn,
+            user_role=u["role"],
+            user_name=u["name"],
+        )
+    return jsonify(result)
+
+
+@app.route("/api/sales/verify-chassis", methods=["POST"])
+@login_required
+def verify_sales_chassis():
+    chassis_raw = request.form.get("chassis", "")
+    chassis_list = [x.strip() for x in chassis_raw.replace(";", ",").split(",") if x.strip()]
+    if not chassis_list:
+        return jsonify({
+            "success": False,
+            "is_valid": False,
+            "message": "Nenhum número de chassi informado. Digite o(s) chassi(s) no formulário antes de conferir o comprovante."
+        }), 400
+
+    file_obj = request.files.get("file")
+    captured_data = request.form.get("captured_image")
+    file_bytes = None
+    mime_type = "image/jpeg"
+
+    if captured_data and "," in captured_data:
+        try:
+            header, data_str = captured_data.split(",", 1)
+            file_bytes = base64.b64decode(data_str)
+            if "png" in header:
+                mime_type = "image/png"
+            elif "webp" in header:
+                mime_type = "image/webp"
+            else:
+                mime_type = "image/jpeg"
+        except Exception as e:
+            return jsonify({"success": False, "is_valid": False, "message": f"Erro na decodificação da foto: {str(e)}"}), 400
+    elif file_obj and file_obj.filename:
+        ext = file_obj.filename.rsplit(".", 1)[-1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            return jsonify({"success": False, "is_valid": False, "message": f"Tipo de arquivo '.{ext}' não suportado. Use JPG, PNG, WebP ou PDF."}), 400
+        file_bytes = file_obj.read()
+        if ext == "pdf":
+            mime_type = "application/pdf"
+        elif ext == "png":
+            mime_type = "image/png"
+        elif ext == "webp":
+            mime_type = "image/webp"
+        else:
+            mime_type = "image/jpeg"
+    else:
+        return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400
+
+    result = extract_and_match_chassis(file_bytes, mime_type, chassis_list)
+    return jsonify(result)
+
+
+@app.route("/integrations/bling", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def integrations_bling():
+    rec = bling_service.get_bling_integration_record()
+    has_credentials = bool(rec and rec.get("client_id") and rec.get("client_secret"))
+    is_connected = bool(rec and rec.get("access_token"))
+    callback_url = url_for("bling_callback", _external=True)
+    return render_template(
+        "integrations_bling.html",
+        rec=rec or {},
+        has_credentials=has_credentials,
+        is_connected=is_connected,
+        callback_url=callback_url
+    )
+
+
+@app.route("/integrations/bling/save", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def save_bling_config():
+    client_id = request.form.get("client_id", "").strip()
+    client_secret = request.form.get("client_secret", "").strip()
+    if not client_id or not client_secret:
+        flash("Informe o Client ID e o Client Secret do Bling.", "danger")
+        return redirect(url_for("integrations_bling"))
+    bling_service.save_bling_credentials(client_id, client_secret)
+    flash("Credenciais do Bling salvas com sucesso! Agora clique em 'Conectar com Bling'.", "success")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/authorize")
+@login_required
+@roles_required("admin", "support")
+def bling_authorize():
+    try:
+        callback_url = url_for("bling_callback", _external=True)
+        auth_url = bling_service.get_bling_auth_url(callback_url)
+        return redirect(auth_url)
+    except Exception as e:
+        flash(f"Erro ao iniciar autorização com Bling: {str(e)}", "danger")
+        return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/callback")
+@login_required
+def bling_callback():
+    code = request.args.get("code")
+    err = request.args.get("error")
+    if err:
+        flash(f"Autorização cancelada ou recusada no Bling: {err}", "danger")
+        return redirect(url_for("integrations_bling"))
+    if not code:
+        flash("Nenhum código de autorização retornado pelo Bling.", "danger")
+        return redirect(url_for("integrations_bling"))
+    try:
+        callback_url = url_for("bling_callback", _external=True)
+        bling_service.exchange_code_for_token(code, callback_url)
+        flash("🎉 Conexão com o Bling ERP autorizada e ativada com sucesso!", "success")
+    except Exception as e:
+        flash(f"Falha ao trocar código pelo token do Bling: {str(e)}", "danger")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/bling/disconnect")
+@login_required
+@roles_required("admin", "support")
+def bling_disconnect():
+    with db() as conn:
+        conn.execute("UPDATE integrations SET access_token = NULL, refresh_token = NULL WHERE service_name = 'bling'")
+        conn.commit()
+    flash("Conexão com o Bling foi desconectada.", "warning")
+    return redirect(url_for("integrations_bling"))
+
+
+@app.route("/api/bling/order/<path:order_num>")
+@login_required
+def api_bling_order(order_num):
+    try:
+        data = bling_service.search_bling_order(order_num)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"found": False, "message": str(e)}), 400
+
+
+@app.route("/api/bling/invoice/<path:inv_num>")
+@login_required
+def api_bling_invoice(inv_num):
+    try:
+        data = bling_service.search_bling_invoice(inv_num)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"found": False, "message": str(e)}), 400
 
 
 if __name__ == "__main__":

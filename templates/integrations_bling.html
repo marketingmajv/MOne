@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Integração Bling ERP{% endblock %}
+{% block page_title %}Integração Bling ERP{% endblock %}
+{% block page_subtitle %}Conexão oficial com a API v3 do Bling para importação automática de pedidos, NFs e clientes.{% endblock %}
+
+{% block content %}
+<style>
+.bling-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+@media(max-width: 992px) {
+  .bling-grid { grid-template-columns: 1fr; }
+}
+.status-hero {
+  padding: 22px;
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.status-hero.connected {
+  background: linear-gradient(135deg, #133321, #0e1e16);
+  border: 1px solid #2d6b47;
+}
+.status-hero.pending {
+  background: linear-gradient(135deg, #382c16, #21190c);
+  border: 1px solid #755928;
+}
+.status-hero.disconnected {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.status-hero h2 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.copy-badge {
+  background: #0d141c;
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 0 12px;
+  word-break: break-all;
+}
+</style>
+
+<div class="status-hero {{ 'connected' if is_connected else ('pending' if has_credentials else 'disconnected') }}">
+  <div>
+    <h2>
+      {% if is_connected %}
+        <span style="color:var(--accent);">●</span> Conexão Ativa com o Bling ERP (API v3)
+      {% elif has_credentials %}
+        <span style="color:var(--warning);">○</span> Credenciais Configuradas — Aguardando Autorização
+      {% else %}
+        <span style="color:var(--muted);">○</span> Bling Desconectado
+      {% endif %}
+    </h2>
+    <p style="margin:0;color:var(--muted);font-size:13.5px;">
+      {% if is_connected %}
+        O M-One está conectado com o Bling. No formulário de vendas, o botão <strong>"⌕ Buscar no Bling"</strong> já preenche pedidos e NFs instantaneamente.
+      {% elif has_credentials %}
+        As credenciais foram salvas no M-One. Clique no botão ao lado para autorizar o acesso à sua conta do Bling.
+      {% else %}
+        Cadastre o aplicativo no painel do Bling e insira o Client ID e Client Secret abaixo para começar.
+      {% endif %}
+    </p>
+  </div>
+  <div>
+    {% if is_connected %}
+      <a href="{{ url_for('bling_authorize') }}" class="btn small" style="margin-right:8px;">Reautorizar Conexão</a>
+      <a href="{{ url_for('bling_disconnect') }}" class="btn warn-btn small" onclick="return confirm('Deseja realmente desconectar o Bling?')">Desconectar</a>
+    {% elif has_credentials %}
+      <a href="{{ url_for('bling_authorize') }}" class="btn primary" style="font-weight:bold;font-size:15px;padding:12px 20px;">
+        ✦ Conectar com Bling ↗
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bling-grid">
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h3>Credenciais do Aplicativo Bling (OAuth 2.0)</h3>
+        <p>Informe o Client ID e Client Secret gerados no painel de desenvolvedor do Bling.</p>
+      </div>
+    </div>
+
+    <form method="post" action="{{ url_for('save_bling_config') }}" class="form-grid one">
+      <label>
+        Client ID
+        <input type="text" name="client_id" required value="{{ rec.client_id or '' }}" placeholder="Ex.: 8a1b2c3d4e5f6g7h8i9j">
+      </label>
+
+      <label>
+        Client Secret
+        <input type="password" name="client_secret" required value="{{ rec.client_secret or '' }}" placeholder="Ex.: 9z8y7x6w5v4u3t2s1r">
+      </label>
+
+      <div class="form-actions" style="margin-top:10px;">
+        <button type="submit" class="btn primary">Salvar Credenciais</button>
+      </div>
+    </form>
+
+    {% if has_credentials and not is_connected %}
+    <div style="margin-top:20px;padding:16px;background:#17281c;border:1px solid #2f613c;border-radius:12px;text-align:center;">
+      <h4 style="margin:0 0 8px 0;color:var(--accent);">Próximo Passo: Autorizar no Bling</h4>
+      <p style="font-size:13px;color:#cce8d4;margin:0 0 14px 0;">Clique abaixo para fazer login no Bling e autorizar o M-One:</p>
+      <a href="{{ url_for('bling_authorize') }}" class="btn primary" style="font-weight:bold;padding:10px 22px;">
+        Autorizar e Conectar com o Bling ↗
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="background:#0e141c;">
+    <h3 style="font-size:15px;margin:0 0 12px 0;">Como criar o App no Bling:</h3>
+    <ol style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#c7d4e2;">
+      <li>No Bling, clique na engrenagem: <strong>Preferências > Sistema > Desenvolvedor > Aplicativos</strong>.</li>
+      <li>Clique em <strong>Novo Aplicativo</strong>.</li>
+      <li>Defina o Nome como: <code>M-One</code>.</li>
+      <li>Copie e cole a <strong>URL de Redirecionamento (Callback)</strong>:</li>
+    </ol>
+
+    <div class="copy-badge">
+      <span id="cbUrlLocal">{{ callback_url }}</span>
+      <button type="button" class="link-btn" onclick="navigator.clipboard.writeText('{{ callback_url }}'); alert('Copiado!');">Copiar</button>
+    </div>
+
+    <small style="color:var(--muted);display:block;margin-bottom:12px;">Para o ambiente online oficial da Vercel, use:</small>
+    <div class="copy-badge">
+      <span>https://m-one.majmobilidade.com.br/bling/callback</span>
+      <button type="button" class="link-btn" onclick="navigator.clipboard.writeText('https://m-one.majmobilidade.com.br/bling/callback'); alert('Copiado!');">Copiar</button>
+    </div>
+
+    <ol start="5" style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#c7d4e2;">
+      <li>Em <strong>Permissões/Escopos</strong>, marque:
+        <ul>
+          <li>Vendas</li>
+          <li>Notas Fiscais</li>
+          <li>Contatos/Clientes</li>
+          <li>Produtos</li>
+        </ul>
+      </li>
+      <li>Salve e copie o <strong>Client ID</strong> e <strong>Client Secret</strong> para o formulário ao lado.</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

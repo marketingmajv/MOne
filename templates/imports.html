@@ -3,7 +3,7 @@
 {% block page_title %}Importações e Contêineres{% endblock %}
 {% block page_subtitle %}Controle de lotes, Invoice, BL, comprovantes de pagamentos e custos.{% endblock %}
 {% block top_actions %}
-  {% if me.role == 'admin' %}
+  {% if me.role in ['admin', 'support'] %}
     <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
   {% endif %}
 {% endblock %}
@@ -26,7 +26,7 @@
   
   <div class="import-stats">
     <span><small>Chassis do lote</small><b>{{ i.chassis_count or 0 }}</b></span>
-    {% if me.role == 'admin' %}
+    {% if me.role in ['admin', 'support'] %}
       <span><small>Valor Invoice (USD)</small><b>{{ i.invoice_amount_usd|money_usd if i.invoice_amount_usd else '—' }}</b></span>
       <span><small>Total Pago Fornecedor</small><b>{{ i.supplier_brl|money }}</b></span>
       <span><small>Câmbio Médio (R$/USD)</small><b class="text-accent" style="font-size: 1.1rem;">{{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}</b></span>
@@ -35,6 +35,7 @@
     <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
   </div>
 
+<<<<<<< HEAD
   {% if i.invoice_file or i.bl_file or i.nf_entry_file or i.chassis_file %}
   <div class="document-links" style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
     {% if i.invoice_file %}
@@ -126,11 +127,11 @@
   {% endif %}
 
   <div class="action-row" style="margin-top: 16px;">
-    {% if me.role in ['admin', 'stock'] %}
+    {% if me.role in ['admin', 'stock', 'support'] %}
       <button class="btn" onclick="openModal('chassis{{ i.id }}')">Importar planilha de chassis</button>
     {% endif %}
     
-    {% if me.role == 'admin' %}
+    {% if me.role in ['admin', 'support'] %}
       <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
       {% if i.status != 'released' %}
         <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
@@ -212,8 +213,8 @@
   </div>
 </div>
 
-<!-- Modal Registrar Pagamento / Custo (Admin Only) -->
-{% if me.role == 'admin' %}
+<!-- Modal Registrar Pagamento / Custo (Admin e Suporte) -->
+{% if me.role in ['admin', 'support'] %}
 <div class="modal" id="cost{{ i.id }}">
   <div class="modal-card">
     <div class="modal-head">
@@ -272,7 +273,7 @@
 </div>
 
 <!-- Modal Nova Importação (Admin Only) -->
-{% if me.role == 'admin' %}
+{% if me.role in ['admin', 'support'] %}
 <div class="modal" id="newImport">
   <div class="modal-card large">
     <div class="modal-head">
