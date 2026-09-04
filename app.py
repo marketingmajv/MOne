@@ -4,6 +4,9 @@ load_dotenv(".env.local")
 import os
 import csv
 import io
+import json
+import time
+import urllib.request
 import sqlite3
 import secrets
 import hashlib
@@ -1730,6 +1733,126 @@ def export_payments():
     for r in rows:
         writer.writerow([r["paid_at"], r["description"], r["category"] or "", r["account"] or "", f"{r['amount']:.2f}".replace(".", ","), r["import_ref"] or ""])
     return out.getvalue(), 200, {"Content-Type": "text/csv; charset=utf-8-sig", "Content-Disposition": "attachment; filename=pagamentos_m_one.csv"}
+
+
+# ==========================================
+# META WHATSAPP CLOUD API & CRM INTEGRATION
+# ==========================================
+
+def send_whatsapp_message(to_phone: str, text: str):
+    token = os.environ.get("WHATSAPP_TOKEN")
+    phone_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID")
+    version = os.environ.get("WHATSAPP_API_VERSION", "v19.0")
+
+    clean_phone = "".join(ch for ch in str(to_phone) if ch.isdigit())
+    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
+        clean_phone = f"55{clean_phone}"
+
+    if not token or not phone_id or token == "SUA_CHAVE_META_TOKEN_AQUI":
+        print(f"[WhatsApp Mock Send] to={clean_phone}: {text}")
+        with db() as conn:
+            conn.execute(
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                (f"mock-{int(time.time()*1000)}", clean_phone, "outbound", "text", text, "sent"),
+            )
+            conn.commit()
+        return {"success": True, "mock": True}
+
+    url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_phone,
+        "type": "text",
+        "text": {"body": text},
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            wam_id = res_data.get("messages", [{}])[0].get("id", f"wam-{int(time.time()*1000)}")
+            with db() as conn:
+                conn.execute(
+                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                    (wam_id, clean_phone, "outbound", "text", text, "sent"),
+                )
+                conn.commit()
+            return {"success": True, "data": res_data}
+    except Exception as e:
+        print("[WhatsApp Send Error]:", e)
+        return {"success": False, "error": str(e)}
+
+
+@app.route("/webhook/whatsapp", methods=["GET", "POST"])
+def whatsapp_webhook():
+    if request.method == "GET":
+        mode = request.args.get("hub.mode")
+        verify_token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
+        expected_token = os.environ.get("WHATSAPP_VERIFY_TOKEN", "mone_whatsapp_verify_token_2026")
+        if mode == "subscribe" and verify_token == expected_token:
+            print("[WhatsApp Webhook Verified Successfully!]")
+            return challenge, 200
+        return "Verification failed", 403
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        try:
+            entries = data.get("entry", [])
+            for entry in entries:
+                changes = entry.get("changes", [])
+                for change in changes:
+                    value = change.get("value", {})
+                    contacts = value.get("contacts", [])
+                    messages = value.get("messages", [])
+
+                    sender_name = contacts[0].get("profile", {}).get("name", "Cliente WhatsApp") if contacts else "Cliente WhatsApp"
+
+                    for msg in messages:
+                        wam_id = msg.get("id")
+                        from_phone = msg.get("from")
+                        msg_type = msg.get("type", "text")
+                        body = ""
+
+                        if msg_type == "text":
+                            body = msg.get("text", {}).get("body", "")
+                        elif msg_type in ["image", "video", "document", "audio"]:
+                            body = f"[{msg_type.upper()} recebido]"
+
+                        if from_phone:
+                            with db() as conn:
+                                conn.execute(
+                                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?) ON CONFLICT (wam_id) DO NOTHING",
+                                    (wam_id, from_phone, "inbound", msg_type, body, "received"),
+                                )
+                                lead = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (from_phone,)).fetchone()
+                                if not lead:
+                                    conn.execute(
+                                        "INSERT INTO crm_leads(name, phone, channel, status) VALUES(?,?,?,?)",
+                                        (sender_name, from_phone, "WhatsApp", "novo"),
+                                    )
+                                conn.commit()
+        except Exception as e:
+            print("[WhatsApp Webhook POST Error]:", e)
+
+        return jsonify({"status": "ok"}), 200
+
+
+@app.route("/api/whatsapp/send", methods=["POST"])
+@login_required
+def api_send_whatsapp():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "").strip()
+    text = data.get("text", "").strip()
+    if not phone or not text:
+        return jsonify({"success": False, "error": "Telefone e texto são obrigatórios."}), 400
+    res = send_whatsapp_message(phone, text)
+    return jsonify(res)
+
 
 @app.errorhandler(413)
 def too_large(_):
