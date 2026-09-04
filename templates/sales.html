@@ -177,9 +177,40 @@
         <div id="paymentsBox"></div>
         <button type="button" class="btn small" onclick="addPaymentRow()">+ outro recebimento</button>
       </div>
+
+      <!-- Interactive WebCam Camera Widget for Sale Receipt -->
+      <div class="span-2 camera-widget-container">
+        <label class="section-label">Comprovante de Venda / Recebimento (Tirar Foto ou Anexar)</label>
+        <input type="hidden" name="captured_image_data" id="capturedImageDataInput">
+        
+        <div id="cameraControls" class="camera-controls-box">
+          <button type="button" class="btn primary camera-btn" onclick="startLiveCamera(this)">
+            📷 Abrir Câmera para Fotografar Comprovante
+          </button>
+          <span class="muted-text">ou escolha um arquivo:</span>
+          <input type="file" name="sale_receipt_file" accept="image/*,.pdf" capture="environment">
+        </div>
+
+        <div id="cameraStreamBox" class="camera-stream-box" style="display:none;">
+          <video id="liveVideo" autoplay playsinline class="video-preview"></video>
+          <div class="camera-actions">
+            <button type="button" class="btn primary" onclick="takeSnapshot(this)">📸 Capturar Foto Agora</button>
+            <button type="button" class="btn warn-btn" onclick="stopLiveCamera(this)">Cancelar Câmera</button>
+          </div>
+        </div>
+
+        <div id="cameraPreviewBox" class="camera-preview-box" style="display:none;">
+          <img id="capturedImagePreview" class="img-preview" alt="Foto capturada">
+          <div class="preview-actions">
+            <span class="badge available">✓ Foto do comprovante pronta para salvar</span>
+            <button type="button" class="btn small" onclick="retakePhoto(this)">🔄 Tirar outra foto</button>
+          </div>
+        </div>
+      </div>
+
       <label class="span-2">Observações<textarea name="notes" placeholder="Detalhes da negociação, frete, etc..."></textarea></label>
       <div class="form-actions span-2">
-        <button type="button" class="btn" onclick="closeModal('newSale')">Cancelar</button>
+        <button type="button" class="btn" onclick="closeModal('newSale'); stopLiveCamera(this)">Cancelar</button>
         <button class="btn primary">Validar chassis e registrar</button>
       </div>
     </form>

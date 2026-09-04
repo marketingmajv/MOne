@@ -1223,6 +1223,14 @@ def sales():
             accounts = request.form.getlist("payment_account[]")
             amounts = request.form.getlist("payment_amount[]")
             receipt_files = request.files.getlist("payment_receipt[]")
+
+            sale_photo_receipt = save_base64_upload(request.form.get("captured_image_data"), "venda")
+            if not sale_photo_receipt:
+                try:
+                    sale_photo_receipt = save_upload(request.files.get("sale_receipt_file"), "venda")
+                except ValueError:
+                    sale_photo_receipt = None
+
             receipt_total = 0.0
             for idx, amount_str in enumerate(amounts):
                 if not amount_str:
@@ -1235,9 +1243,16 @@ def sales():
                         receipt = save_upload(receipt_files[idx], "recebimento")
                     except ValueError:
                         receipt = None
+                if not receipt and idx == 0 and sale_photo_receipt:
+                    receipt = sale_photo_receipt
+
                 method = methods[idx] if idx < len(methods) else "À vista"
                 account = accounts[idx] if idx < len(accounts) else ""
                 conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(?,?,?,?,?,?)", (sale_id, method, account, amount, sold_at, receipt))
+
+            if not amounts and sale_photo_receipt:
+                conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(?,?,?,?,?,?)", (sale_id, "À vista", "Geral", total_value, sold_at, sale_photo_receipt))
+
             conn.commit()
         audit("sale.created", f"sale_id={sale_id}; invoice={invoice_number}; chassis={','.join(chassis_list)}")
         if abs(receipt_total - total_value) > 0.01:
