@@ -1,111 +1,220 @@
 {% extends 'base.html' %}
-{% block title %}M-One • CRM & WhatsApp{% endblock %}
-{% block page_title %}Gestão de Leads & CRM WhatsApp{% endblock %}
-{% block page_subtitle %}Funil de vendas, oportunidades, chat ao vivo e conversão de leads.{% endblock %}
+{% block title %}M-One • CRM & Monitor WhatsApp{% endblock %}
+{% block page_title %}Monitor de Conversas & CRM WhatsApp{% endblock %}
+{% block page_subtitle %}Acompanhamento ao vivo de conversas, histórico de atendimento e funil de vendas.{% endblock %}
 
 {% block top_actions %}
   <button class="btn primary" onclick="openModal('newLeadModal')">+ Novo Lead / Cliente</button>
 {% endblock %}
 
 {% block content %}
+<!-- View Switcher Tabs -->
+<div class="view-tabs" style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+  <button type="button" id="tabConversations" class="btn primary" onclick="switchCrmView('conversations')" style="font-size: 0.9rem;">
+    💬 Monitor de Conversas Ao Vivo ({{ conversations|length }})
+  </button>
+  <button type="button" id="tabKanban" class="btn" onclick="switchCrmView('kanban')" style="font-size: 0.9rem;">
+    📋 Funil Kanban de Vendas
+  </button>
+</div>
+
 <!-- Top Metrics Stack -->
-<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px;">
+    <span style="font-size: 0.85rem; color: var(--text-muted);">Conversas Ativas no WhatsApp</span>
+    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #38bdf8;">{{ conversations|length }}</h2>
+  </div>
   <div class="metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px;">
     <span style="font-size: 0.85rem; color: var(--text-muted);">Total de Leads no CRM</span>
     <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #fff;">{{ total_leads }}</h2>
   </div>
   <div class="metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px;">
     <span style="font-size: 0.85rem; color: var(--text-muted);">Novos do WhatsApp</span>
-    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #38bdf8;">{{ new_count }}</h2>
+    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #a855f7;">{{ new_count }}</h2>
   </div>
   <div class="metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px;">
-    <span style="font-size: 0.85rem; color: var(--text-muted);">Qualificação & Proposta</span>
-    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #facc15;">{{ leads_by_status.qualificacao|length + leads_by_status.proposta|length }}</h2>
-  </div>
-  <div class="metric-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px;">
-    <span style="font-size: 0.85rem; color: var(--text-muted);">Em Negociação</span>
-    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #4ade80;">{{ leads_by_status.negociacao|length }}</h2>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">Oportunidades em Aberto</span>
+    <h2 style="margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 700; color: #4ade80;">{{ leads_by_status.qualificacao|length + leads_by_status.proposta|length + leads_by_status.negociacao|length }}</h2>
   </div>
 </div>
 
-<!-- CRM Kanban Board -->
-<div class="kanban-board" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; overflow-x: auto; padding-bottom: 20px;">
+<!-- ========================================== -->
+<!-- VIEW 1: LIVE CONVERSATIONS MONITORING LIST -->
+<!-- ========================================== -->
+<div id="conversationsView" class="crm-view-section">
+  <div class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 20px;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+        💬 Monitor de Conversas em Tempo Real
+      </h3>
+      <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; font-size: 0.82rem;">
+        🟢 Monitorando entradas de mensagens
+      </span>
+    </div>
 
-  <!-- Column: Novo Lead -->
-  <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #38bdf8; padding-bottom: 8px;">
-      <h4 style="margin: 0; font-size: 0.95rem;">📥 Novos Leads</h4>
-      <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700;">{{ leads_by_status.novo|length }}</span>
+    {% if conversations %}
+    <div class="table-responsive">
+      <table class="data-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <th style="padding: 12px;">Cliente / Telefone</th>
+            <th style="padding: 12px;">Última Mensagem</th>
+            <th style="padding: 12px;">Horário</th>
+            <th style="padding: 12px;">Etapa / Status</th>
+            <th style="padding: 12px;">Interesse</th>
+            <th style="padding: 12px; text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in conversations %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+            
+            <!-- Cliente / Telefone -->
+            <td style="padding: 12px;">
+              <div style="font-weight: 600; color: #fff;">{{ c.lead_name or 'Cliente WhatsApp' }}</div>
+              <small style="color: var(--text-muted); font-family: monospace;">📱 {{ c.phone }}</small>
+            </td>
+
+            <!-- Última Mensagem -->
+            <td style="padding: 12px; max-width: 320px;">
+              <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e2e8f0;" title="{{ c.last_message }}">
+                {% if c.last_direction == 'inbound' %}
+                  <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.72rem; padding: 2px 6px;">📥 Recebida</span>
+                {% else %}
+                  <span class="badge" style="background: rgba(74, 222, 128, 0.15); color: #4ade80; font-size: 0.72rem; padding: 2px 6px;">✈️ Enviada</span>
+                {% endif %}
+                {{ c.last_message or '[Sem texto]' }}
+              </div>
+            </td>
+
+            <!-- Horário -->
+            <td style="padding: 12px;">
+              <small style="color: var(--text-muted);">{{ c.last_activity or '—' }}</small>
+            </td>
+
+            <!-- Etapa do Funil -->
+            <td style="padding: 12px;">
+              <span class="badge" style="background: rgba(255,255,255,0.08); font-weight: 600;">
+                {{ (c.lead_status or 'novo')|capitalize }}
+              </span>
+            </td>
+
+            <!-- Interesse -->
+            <td style="padding: 12px;">
+              {% if c.product_interest %}
+                <span style="color: #facc15; font-size: 0.85rem; font-weight: 600;">🛵 {{ c.product_interest }}</span>
+              {% else %}
+                <span class="text-muted" style="font-size: 0.82rem;">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Ações -->
+            <td style="padding: 12px; text-align: center;">
+              <a href="{{ url_for('crm_chat', phone=c.phone) }}" class="btn primary sm" style="font-size: 0.82rem; padding: 4px 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                👁️ Ver Detalhes da Conversa
+              </a>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
-      {% for l in leads_by_status.novo %}
-        {% include 'crm_lead_card.html' %}
-      {% else %}
-        <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
-      {% endfor %}
-    </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px 10px; background: rgba(255,255,255,0.01); border-radius: 6px;">
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.95rem;">
+          Nenhuma conversa recebida ou iniciada no WhatsApp ainda.<br>
+          As conversas iniciadas aparecerão aqui automaticamente em tempo real assim que o cliente enviar a primeira mensagem!
+        </p>
+      </div>
+    {% endif %}
+
   </div>
+</div>
 
-  <!-- Column: Qualificação -->
-  <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #a855f7; padding-bottom: 8px;">
-      <h4 style="margin: 0; font-size: 0.95rem;">🔍 Qualificação</h4>
-      <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; font-weight: 700;">{{ leads_by_status.qualificacao|length }}</span>
+<!-- ========================================== -->
+<!-- VIEW 2: CRM KANBAN BOARD                   -->
+<!-- ========================================== -->
+<div id="kanbanView" class="crm-view-section" style="display: none;">
+  <div class="kanban-board" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; overflow-x: auto; padding-bottom: 20px;">
+
+    <!-- Column: Novo Lead -->
+    <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #38bdf8; padding-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">📥 Novos Leads</h4>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-weight: 700;">{{ leads_by_status.novo|length }}</span>
+      </div>
+      <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
+        {% for l in leads_by_status.novo %}
+          {% include 'crm_lead_card.html' %}
+        {% else %}
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
+        {% endfor %}
+      </div>
     </div>
-    <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
-      {% for l in leads_by_status.qualificacao %}
-        {% include 'crm_lead_card.html' %}
-      {% else %}
-        <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
-      {% endfor %}
+
+    <!-- Column: Qualificação -->
+    <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #a855f7; padding-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">🔍 Qualificação</h4>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; font-weight: 700;">{{ leads_by_status.qualificacao|length }}</span>
+      </div>
+      <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
+        {% for l in leads_by_status.qualificacao %}
+          {% include 'crm_lead_card.html' %}
+        {% else %}
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
+        {% endfor %}
+      </div>
     </div>
+
+    <!-- Column: Proposta -->
+    <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #facc15; padding-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">📄 Proposta Enviada</h4>
+        <span class="badge" style="background: rgba(250, 204, 21, 0.2); color: #facc15; font-weight: 700;">{{ leads_by_status.proposta|length }}</span>
+      </div>
+      <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
+        {% for l in leads_by_status.proposta %}
+          {% include 'crm_lead_card.html' %}
+        {% else %}
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Column: Negociação -->
+    <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #fb923c; padding-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">🤝 Em Negociação</h4>
+        <span class="badge" style="background: rgba(251, 146, 60, 0.2); color: #fb923c; font-weight: 700;">{{ leads_by_status.negociacao|length }}</span>
+      </div>
+      <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
+        {% for l in leads_by_status.negociacao %}
+          {% include 'crm_lead_card.html' %}
+        {% else %}
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Column: Fechado / Ganho -->
+    <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #4ade80; padding-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">✅ Fechado / Venda</h4>
+        <span class="badge" style="background: rgba(74, 222, 128, 0.2); color: #4ade80; font-weight: 700;">{{ leads_by_status.fechado|length }}</span>
+      </div>
+      <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
+        {% for l in leads_by_status.fechado %}
+          {% include 'crm_lead_card.html' %}
+        {% else %}
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
+        {% endfor %}
+      </div>
+    </div>
+
   </div>
-
-  <!-- Column: Proposta -->
-  <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #facc15; padding-bottom: 8px;">
-      <h4 style="margin: 0; font-size: 0.95rem;">📄 Proposta Enviada</h4>
-      <span class="badge" style="background: rgba(250, 204, 21, 0.2); color: #facc15; font-weight: 700;">{{ leads_by_status.proposta|length }}</span>
-    </div>
-    <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
-      {% for l in leads_by_status.proposta %}
-        {% include 'crm_lead_card.html' %}
-      {% else %}
-        <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Column: Negociação -->
-  <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #fb923c; padding-bottom: 8px;">
-      <h4 style="margin: 0; font-size: 0.95rem;">🤝 Em Negociação</h4>
-      <span class="badge" style="background: rgba(251, 146, 60, 0.2); color: #fb923c; font-weight: 700;">{{ leads_by_status.negociacao|length }}</span>
-    </div>
-    <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
-      {% for l in leads_by_status.negociacao %}
-        {% include 'crm_lead_card.html' %}
-      {% else %}
-        <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Column: Fechado / Ganho -->
-  <div class="kanban-column" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #4ade80; padding-bottom: 8px;">
-      <h4 style="margin: 0; font-size: 0.95rem;">✅ Fechado / Venda</h4>
-      <span class="badge" style="background: rgba(74, 222, 128, 0.2); color: #4ade80; font-weight: 700;">{{ leads_by_status.fechado|length }}</span>
-    </div>
-    <div class="kanban-cards-stack" style="display: flex; flex-direction: column; gap: 12px;">
-      {% for l in leads_by_status.fechado %}
-        {% include 'crm_lead_card.html' %}
-      {% else %}
-        <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 12px 0;">Nenhum lead nesta etapa.</div>
-      {% endfor %}
-    </div>
-  </div>
-
 </div>
 
 <!-- Modal: Novo Lead -->
@@ -161,4 +270,27 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchCrmView(viewName) {
+  const conversationsView = document.getElementById('conversationsView');
+  const kanbanView = document.getElementById('kanbanView');
+  const tabConversations = document.getElementById('tabConversations');
+  const tabKanban = document.getElementById('tabKanban');
+
+  if (viewName === 'conversations') {
+    conversationsView.style.display = 'block';
+    kanbanView.style.display = 'none';
+    tabConversations.className = 'btn primary';
+    tabKanban.className = 'btn';
+  } else {
+    conversationsView.style.display = 'none';
+    kanbanView.style.display = 'block';
+    tabConversations.className = 'btn';
+    tabKanban.className = 'btn primary';
+  }
+}
+</script>
 {% endblock %}

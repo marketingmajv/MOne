@@ -2132,6 +2132,22 @@ def crm():
             """
         ).fetchall()
 
+        # Monitor de Conversas Ativas do WhatsApp
+        conversations_rows = conn.execute(
+            """
+            SELECT m.phone,
+                   MAX(m.sent_at) AS last_activity,
+                   (SELECT body FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT direction FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_direction,
+                   (SELECT message_type FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_type,
+                   l.id AS lead_id, l.name AS lead_name, l.status AS lead_status, l.product_interest
+            FROM whatsapp_messages m
+            LEFT JOIN crm_leads l ON l.phone = m.phone
+            GROUP BY m.phone, l.id, l.name, l.status, l.product_interest
+            ORDER BY MAX(m.sent_at) DESC
+            """
+        ).fetchall()
+
         products_list = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name").fetchall()
         users_list = conn.execute("SELECT id, name, role FROM users WHERE active=1 ORDER BY name").fetchall()
 
@@ -2156,9 +2172,12 @@ def crm():
         if st == "novo":
             new_count += 1
 
+    conversations = [dict(c) for c in conversations_rows]
+
     return render_template(
         "crm.html",
         leads_by_status=leads_by_status,
+        conversations=conversations,
         products=products_list,
         users=users_list,
         total_leads=total_leads,
