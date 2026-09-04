@@ -292,5 +292,21 @@ function switchCrmView(viewName) {
     tabKanban.className = 'btn primary';
   }
 }
+
+// Auto-poll for new incoming WhatsApp conversations every 3.5s
+setInterval(async () => {
+  try {
+    const res = await fetch('/api/crm/conversations');
+    if (res.ok) {
+      const data = await res.json();
+      const countElem = document.getElementById('tabConversations');
+      if (countElem && data) {
+        countElem.innerText = `💬 Monitor de Conversas Ao Vivo (${data.length})`;
+      }
+    }
+  } catch (err) {
+    console.error('Polling error:', err);
+  }
+}, 3500);
 </script>
 {% endblock %}

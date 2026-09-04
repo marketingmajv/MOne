@@ -108,5 +108,36 @@ document.addEventListener('DOMContentLoaded', () => {
     box.scrollTop = box.scrollHeight;
   }
 });
+
+// Auto-poll live chat messages every 3s
+setInterval(async () => {
+  try {
+    const phone = "{{ phone }}";
+    const res = await fetch('/api/crm/messages/' + phone);
+    if (res.ok) {
+      const messages = await res.json();
+      const box = document.getElementById('chatMessagesBox');
+      if (box && messages && messages.length > 0) {
+        let html = '';
+        messages.forEach(m => {
+          const isOut = m.direction === 'outbound';
+          const style = isOut ? 'align-self: flex-end; background: #059669; color: #fff; border-bottom-right-radius: 2px;' : 'align-self: flex-start; background: rgba(255,255,255,0.08); color: #e2e8f0; border-bottom-left-radius: 2px;';
+          const ticks = isOut ? '✔️✔️' : '';
+          html += `<div class="message-bubble ${m.direction}" style="max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; ${style}">
+            <div>${m.body}</div>
+            <div style="font-size: 0.7rem; opacity: 0.7; text-align: right; margin-top: 4px;">${m.sent_at || ''} ${ticks}</div>
+          </div>`;
+        });
+        const isAtBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 50;
+        box.innerHTML = html;
+        if (isAtBottom) {
+          box.scrollTop = box.scrollHeight;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Chat polling error:', err);
+  }
+}, 3000);
 </script>
 {% endblock %}

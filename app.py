@@ -2185,6 +2185,39 @@ def crm():
     )
 
 
+@app.route("/api/crm/conversations", methods=["GET"])
+@login_required
+def api_crm_conversations():
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.phone,
+                   MAX(m.sent_at) AS last_activity,
+                   (SELECT body FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT direction FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_direction,
+                   (SELECT message_type FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_type,
+                   l.id AS lead_id, l.name AS lead_name, l.status AS lead_status, l.product_interest
+            FROM whatsapp_messages m
+            LEFT JOIN crm_leads l ON l.phone = m.phone
+            GROUP BY m.phone, l.id, l.name, l.status, l.product_interest
+            ORDER BY MAX(m.sent_at) DESC
+            """
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/crm/messages/<phone>", methods=["GET"])
+@login_required
+def api_crm_messages(phone):
+    clean_phone = "".join(ch for ch in str(phone) if ch.isdigit())
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC",
+            (clean_phone,)
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
 @app.route("/crm/lead/new", methods=["POST"])
 @login_required
 def crm_lead_new():
