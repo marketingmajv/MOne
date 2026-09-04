@@ -2040,6 +2040,129 @@ def api_bling_invoice(inv_num):
         return jsonify({"found": False, "message": str(e)}), 400
 
 
+# ==========================================
+# CRM & WHATSAPP FULL ROUTE HANDLERS
+# ==========================================
+
+@app.route("/crm", methods=["GET"])
+@login_required
+@roles_required("admin", "sales", "finance", "support")
+def crm():
+    with db() as conn:
+        leads_rows = conn.execute(
+            """
+            SELECT l.*, p.name AS product_name, u.name AS assigned_name,
+                   (SELECT body FROM whatsapp_messages WHERE phone=l.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT sent_at FROM whatsapp_messages WHERE phone=l.phone ORDER BY id DESC LIMIT 1) AS last_activity
+            FROM crm_leads l
+            LEFT JOIN products p ON p.name = l.product_interest
+            LEFT JOIN users u ON u.id = l.assigned_to
+            ORDER BY l.updated_at DESC
+            """
+        ).fetchall()
+
+        products_list = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name").fetchall()
+        users_list = conn.execute("SELECT id, name, role FROM users WHERE active=1 ORDER BY name").fetchall()
+
+    leads_by_status = {
+        "novo": [],
+        "qualificacao": [],
+        "proposta": [],
+        "negociacao": [],
+        "fechado": [],
+        "perdido": [],
+    }
+
+    total_leads = len(leads_rows)
+    new_count = 0
+
+    for l in leads_rows:
+        ld = dict(l)
+        st = ld.get("status") or "novo"
+        if st not in leads_by_status:
+            st = "novo"
+        leads_by_status[st].append(ld)
+        if st == "novo":
+            new_count += 1
+
+    return render_template(
+        "crm.html",
+        leads_by_status=leads_by_status,
+        products=products_list,
+        users=users_list,
+        total_leads=total_leads,
+        new_count=new_count,
+    )
+
+
+@app.route("/crm/lead/new", methods=["POST"])
+@login_required
+def crm_lead_new():
+    name = request.form.get("name", "").strip()
+    phone = request.form.get("phone", "").strip()
+    email = request.form.get("email", "").strip()
+    product_interest = request.form.get("product_interest", "").strip()
+    status = request.form.get("status", "novo").strip()
+    notes = request.form.get("notes", "").strip()
+    assigned_to = request.form.get("assigned_to") or None
+
+    if not name or not phone:
+        flash("Nome e telefone do Lead são obrigatórios.", "danger")
+        return redirect(url_for("crm"))
+
+    clean_phone = "".join(ch for ch in phone if ch.isdigit())
+    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
+        clean_phone = f"55{clean_phone}"
+
+    with db() as conn:
+        existing = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
+        if existing:
+            flash(f"Este número de telefone ({clean_phone}) já possui um Lead cadastrado.", "warning")
+            return redirect(url_for("crm"))
+
+        conn.execute(
+            "INSERT INTO crm_leads(name, phone, email, product_interest, status, notes, assigned_to, channel) VALUES(?,?,?,?,?,?,?,?)",
+            (name, clean_phone, email, product_interest, status, notes, assigned_to, "Manual"),
+        )
+        conn.commit()
+
+    audit("crm.lead_created", f"lead_phone={clean_phone}; name={name}")
+    flash("Novo Lead cadastrado no CRM com sucesso!", "success")
+    return redirect(url_for("crm"))
+
+
+@app.route("/crm/lead/<int:lid>/status", methods=["POST"])
+@login_required
+def crm_lead_status(lid):
+    new_status = request.form.get("status", "novo")
+    with db() as conn:
+        conn.execute("UPDATE crm_leads SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_status, lid))
+        conn.commit()
+    audit("crm.lead_status_updated", f"lead_id={lid}; status={new_status}")
+    flash("Status do Lead atualizado.", "success")
+    return redirect(url_for("crm"))
+
+
+@app.route("/crm/chat/<phone>", methods=["GET", "POST"])
+@login_required
+def crm_chat(phone):
+    clean_phone = "".join(ch for ch in str(phone) if ch.isdigit())
+
+    if request.method == "POST":
+        text = request.form.get("message", "").strip()
+        if text:
+            send_whatsapp_message(clean_phone, text)
+            flash("Mensagem enviada via WhatsApp!", "success")
+        return redirect(url_for("crm_chat", phone=clean_phone))
+
+    with db() as conn:
+        lead = conn.execute("SELECT * FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
+        messages = conn.execute("SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC", (clean_phone,)).fetchall()
+        products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
+
+    return render_template("crm_chat.html", phone=clean_phone, lead=lead or {}, messages=messages, products=products)
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5001")), debug=True)

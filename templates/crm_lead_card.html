@@ -1,0 +1,36 @@
+<div class="lead-card" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <strong style="font-size: 0.95rem; color: #fff;">{{ l.name }}</strong>
+    <span class="badge" style="font-size: 0.72rem; background: rgba(255,255,255,0.06); padding: 2px 6px;">{{ l.channel or 'WhatsApp' }}</span>
+  </div>
+
+  <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px;">
+    <span>📱 {{ l.phone }}</span>
+    {% if l.product_name or l.product_interest %}
+      <span style="color: #facc15; font-weight: 600;">🛵 {{ l.product_name or l.product_interest }}</span>
+    {% endif %}
+    {% if l.last_message %}
+      <span style="font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;" title="{{ l.last_message }}">
+        💬 "{{ l.last_message }}"
+      </span>
+    {% endif %}
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+    <!-- Form to change status dynamically -->
+    <form method="post" action="{{ url_for('crm_lead_status', lid=l.id) }}" style="display:inline;">
+      <select name="status" onchange="this.form.submit()" style="font-size: 0.78rem; padding: 2px 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
+        <option value="novo" {% if l.status == 'novo' %}selected{% endif %}>Novo Lead</option>
+        <option value="qualificacao" {% if l.status == 'qualificacao' %}selected{% endif %}>Qualificação</option>
+        <option value="proposta" {% if l.status == 'proposta' %}selected{% endif %}>Proposta</option>
+        <option value="negociacao" {% if l.status == 'negociacao' %}selected{% endif %}>Negociação</option>
+        <option value="fechado" {% if l.status == 'fechado' %}selected{% endif %}>Fechado</option>
+        <option value="perdido" {% if l.status == 'perdido' %}selected{% endif %}>Perdido</option>
+      </select>
+    </form>
+
+    <a href="{{ url_for('crm_chat', phone=l.phone) }}" class="btn sm primary" style="font-size: 0.78rem; padding: 3px 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+      💬 Conversar no Chat
+    </a>
+  </div>
+</div>

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Chat WhatsApp • {{ lead.name or phone }}{% endblock %}
+{% block page_title %}Chat ao Vivo WhatsApp • {{ lead.name or phone }}{% endblock %}
+{% block page_subtitle %}Histórico de mensagens em tempo real e atendimento direto.{% endblock %}
+
+{% block top_actions %}
+  <a href="{{ url_for('crm') }}" class="btn">&larr; Voltar ao Funil CRM</a>
+  <a href="{{ url_for('sales') }}?customer={{ lead.name or '' }}" class="btn primary">↗ Registrar Venda para este Cliente</a>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container" style="display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start;">
+  
+  <!-- Left Side: Live WhatsApp Message Thread -->
+  <div class="panel chat-main-box" style="display: flex; flex-direction: column; height: 600px; padding: 0; overflow: hidden; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+    
+    <!-- Chat Header -->
+    <div style="padding: 16px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">{{ lead.name or 'Cliente WhatsApp' }}</h3>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">📱 {{ phone }}</span>
+      </div>
+      <a href="https://wa.me/{{ phone }}" target="_blank" class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; text-decoration: none; font-size: 0.82rem;">
+        🟢 Abrir no WhatsApp Web
+      </a>
+    </div>
+
+    <!-- Messages List Thread -->
+    <div id="chatMessagesBox" style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+      {% for m in messages %}
+        <div class="message-bubble {{ m.direction }}" style="max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; {% if m.direction == 'outbound' %}align-self: flex-end; background: #059669; color: #fff; border-bottom-right-radius: 2px;{% else %}align-self: flex-start; background: rgba(255,255,255,0.08); color: #e2e8f0; border-bottom-left-radius: 2px;{% endif %}">
+          <div>{{ m.body }}</div>
+          <div style="font-size: 0.7rem; opacity: 0.7; text-align: right; margin-top: 4px;">
+            {{ m.sent_at }} {% if m.direction == 'outbound' %}✔️✔️{% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div style="text-align: center; color: var(--text-muted); margin: auto; font-size: 0.9rem;">
+          Nenhuma mensagem registrada nesta conversa ainda.<br>Envie uma mensagem abaixo para iniciar o atendimento!
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Send Message Form -->
+    <form method="post" style="padding: 14px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px;">
+      <input type="text" name="message" required placeholder="Digite sua mensagem aqui..." style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
+      <button class="btn primary" style="padding: 0 20px;">Enviar ✈️</button>
+    </form>
+
+  </div>
+
+  <!-- Right Side: Lead Info & Lead Details -->
+  <div class="panel lead-details-box" style="padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; flex-direction: column; gap: 16px;">
+    <h4 style="margin: 0; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">Dados do Lead</h4>
+    
+    <div>
+      <label style="font-size: 0.78rem; color: var(--text-muted);">Nome</label>
+      <div style="font-weight: 600;">{{ lead.name or 'Não informado' }}</div>
+    </div>
+
+    <div>
+      <label style="font-size: 0.78rem; color: var(--text-muted);">Telefone / WhatsApp</label>
+      <div style="font-weight: 600;">{{ phone }}</div>
+    </div>
+
+    <div>
+      <label style="font-size: 0.78rem; color: var(--text-muted);">Status no Funil</label>
+      {% if lead.id %}
+        <form method="post" action="{{ url_for('crm_lead_status', lid=lead.id) }}" style="margin-top: 4px;">
+          <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
+            <option value="novo" {% if lead.status == 'novo' %}selected{% endif %}>Novo Lead</option>
+            <option value="qualificacao" {% if lead.status == 'qualificacao' %}selected{% endif %}>Qualificação</option>
+            <option value="proposta" {% if lead.status == 'proposta' %}selected{% endif %}>Proposta</option>
+            <option value="negociacao" {% if lead.status == 'negociacao' %}selected{% endif %}>Negociação</option>
+            <option value="fechado" {% if lead.status == 'fechado' %}selected{% endif %}>Fechado</option>
+            <option value="perdido" {% if lead.status == 'perdido' %}selected{% endif %}>Perdido</option>
+          </select>
+        </form>
+      {% else %}
+        <div style="font-weight: 600; color: #38bdf8;">Novo Lead (Automático)</div>
+      {% endif %}
+    </div>
+
+    {% if lead.product_interest %}
+    <div>
+      <label style="font-size: 0.78rem; color: var(--text-muted);">Interesse em Produto</label>
+      <div style="font-weight: 600; color: #facc15;">🛵 {{ lead.product_interest }}</div>
+    </div>
+    {% endif %}
+
+    {% if lead.notes %}
+    <div>
+      <label style="font-size: 0.78rem; color: var(--text-muted);">Observações</label>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">{{ lead.notes }}</div>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const box = document.getElementById('chatMessagesBox');
+  if (box) {
+    box.scrollTop = box.scrollHeight;
+  }
+});
+</script>
+{% endblock %}
