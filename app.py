@@ -1276,39 +1276,65 @@ def sales():
         customer = request.form.get("customer", "").strip()
         sold_at = request.form.get("sold_at") or date.today().isoformat()
         notes = request.form.get("notes", "").strip()
-        chassis_list = [x.strip() for x in request.form.get("chassis", "").replace(";", ",").split(",") if x.strip()]
-        if not order_number or not invoice_number or not chassis_list:
-            flash("Pedido, nota fiscal e pelo menos um chassi são obrigatórios. Nenhuma nota sai sem chassi.", "danger")
+        raw_chassis = request.form.get("chassis", "")
+        chassis_list = [x.strip().upper() for x in raw_chassis.replace(";", ",").split(",") if x.strip()]
+
+        if not order_number or not invoice_number:
+            flash("Pedido e Nota Fiscal são campos obrigatórios.", "danger")
             return redirect(url_for("sales"))
+
+        # Regra Negocial Inegociável: Chassi Obrigatório em todas as NFs de venda
+        if not chassis_list and notes:
+            # Tentar identificar se o chassi foi digitado na descrição/observação da NF
+            with db() as conn:
+                db_chassis = [r["chassis"].upper() for r in conn.execute("SELECT chassis FROM stock_units").fetchall() if r["chassis"]]
+            found = [c for c in db_chassis if c in notes.upper()]
+            if found:
+                chassis_list = list(set(found))
+
+        if not chassis_list:
+            flash("Bloqueado: A Nota Fiscal (NF) deve conter obrigatoriamente um número de chassi válido na descrição e no cadastro da venda. Nenhuma nota é faturada sem chassi.", "danger")
+            return redirect(url_for("sales"))
+
         if len(chassis_list) != len(set(chassis_list)):
-            flash("Há chassi repetido na própria venda.", "danger")
+            flash("Bloqueado: Há chassi duplicado na própria Nota Fiscal.", "danger")
             return redirect(url_for("sales"))
+
+        # Garantir que a descrição (notes) da NF contenha explicitamente os números de chassi
+        chassis_str = ", ".join(chassis_list)
+        if not notes:
+            notes = f"Chassi(s) da NF: {chassis_str}"
+        elif not any(c in notes.upper() for c in chassis_list):
+            notes = f"{notes} | Chassi(s) da NF: {chassis_str}"
+
         with db() as conn:
             if conn.execute("SELECT 1 FROM sales WHERE invoice_number=?", (invoice_number,)).fetchone():
-                flash("Essa nota fiscal já foi cadastrada.", "danger")
+                flash("Essa Nota Fiscal já foi cadastrada no sistema.", "danger")
                 return redirect(url_for("sales"))
+
             units = []
             errors = []
             for ch in chassis_list:
                 u = conn.execute(
                     """SELECT st.*,p.name product_name,p.retail_price,p.wholesale_price,i.status import_status
                        FROM stock_units st JOIN products p ON p.id=st.product_id LEFT JOIN imports i ON i.id=st.import_id
-                       WHERE st.chassis=?""", (ch,)
+                       WHERE UPPER(st.chassis)=?""", (ch,)
                 ).fetchone()
                 if not u:
-                    errors.append(f"{ch}: chassi não encontrado na base. Importe a planilha do contêiner antes de faturar.")
+                    errors.append(f"{ch}: chassi não encontrado no estoque. Importe o lote antes de faturar a Nota Fiscal.")
                 elif u["status"] != "available":
                     if u["status"] == "unreleased":
                         errors.append(f"{ch}: este chassi pertence a uma importação em conferência (não liberada pela Diretoria).")
                     else:
-                        errors.append(f"{ch}: chassi já está em status {u['status']}.")
+                        errors.append(f"{ch}: este chassi já consta como vendido ou indisponível (status: {u['status']}).")
                 elif u["import_status"] != "released":
-                    errors.append(f"{ch}: importação ainda não foi liberada.")
+                    errors.append(f"{ch}: importação deste chassi ainda não foi liberada pela Diretoria.")
                 else:
                     units.append(u)
+
             if errors:
                 for e in errors:
-                    flash(e, "danger")
+                    flash(f"Bloqueio de Nota Fiscal — {e}", "danger")
                 return redirect(url_for("sales"))
 
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
