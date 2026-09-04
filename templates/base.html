@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}M-One{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260903_03') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260903_04') }}">
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><span class="brand-mark">M</span><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
+      <div class="brand"><div class="brand-mark"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo MAJ M-One"></div><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
       <nav>
         <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' else '' }}">▦ <span>Visão geral</span></a>
         <a href="{{ url_for('sales') }}" class="{{ 'active' if request.endpoint=='sales' else '' }}">↗ <span>Vendas</span></a>

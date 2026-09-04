@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>M-One • Login</title><link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}"></head>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>M-One • Login</title><link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}"><link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}"></head>
 <body class="login-page">
   <div class="login-card">
-    <div class="brand login-brand"><span class="brand-mark">M</span><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
+    <div class="brand login-brand"><div class="brand-mark"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo MAJ M-One"></div><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
     <h2>Entrar</h2><p>Operação simples. Informação uma vez só.</p>
     {% with messages = get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
     <form method="post" class="form-grid one">
