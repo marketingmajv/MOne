@@ -43,6 +43,9 @@
           {{ s.received|money }}
         </td>
         <td>
+          {% if s.chassis_photo_file %}
+            <a class="link-btn" href="{{ url_for('uploads', filename=s.chassis_photo_file) }}" target="_blank" title="Foto da Plaqueta/Etiqueta do Chassi">🏷️ Foto Chassi</a>
+          {% endif %}
           {% if s.danfe_file %}
             <a class="link-btn" href="{{ url_for('uploads', filename=s.danfe_file) }}" target="_blank" title="Abrir foto/PDF da DANFE">📄 DANFE</a>
           {% endif %}
@@ -54,7 +57,7 @@
           {% if s.ai_chassis_verified %}
             <span class="badge available" style="margin-left:4px;font-size:10px;" title="Chassi auditado e confirmado pela IA">✓ IA</span>
           {% endif %}
-          {% if not s.danfe_file and not s.term_files_list %}
+          {% if not s.danfe_file and not s.term_files_list and not s.chassis_photo_file %}
             <span class="muted">—</span>
           {% endif %}
         </td>
@@ -107,6 +110,14 @@
       <div class="detail-block">
         <small>Registrado Por</small>
         <b>{{ s.created_by_name or 'Sistema' }}</b>
+      </div>
+      <div class="detail-block">
+        <small>Foto do Chassi (Veículo/Caixa)</small>
+        {% if s.chassis_photo_file %}
+          <a class="link-btn" href="{{ url_for('uploads', filename=s.chassis_photo_file) }}" target="_blank" style="font-weight:bold;">🏷️ Abrir Foto do Chassi</a>
+        {% else %}
+          <span class="muted">Sem anexo</span>
+        {% endif %}
       </div>
       <div class="detail-block">
         <small>DANFE (Nota Fiscal)</small>
@@ -313,6 +324,43 @@
         <input type="hidden" name="delivery_term_captured_images" id="deliveryTermCapturedImages" value="[]">
       </div>
 
+      <!-- SEÇÃO 3: FOTO DO CHASSI DO VEÍCULO OU CAIXA -->
+      <div class="span-2" style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--accent);">🏷️</span> 3. Foto do Chassi (Plaqueta do Veículo ou Etiqueta da Caixa)
+            </strong>
+            <small style="color:var(--muted);display:block;">Tire uma foto nítida do chassi gravado na plaqueta do veículo ou na etiqueta da caixa.</small>
+          </div>
+          <span id="chassisPhotoBadge" class="badge muted">Aguardando Foto do Chassi</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <input type="file" id="chassisPhotoFileInput" name="chassis_photo_file" accept="image/*" capture="environment" onchange="onChassisPhotoFileSelected(event)">
+          <button type="button" class="btn" id="chassisPhotoCameraBtn" onclick="toggleChassisPhotoCamera()" style="display:flex;align-items:center;gap:6px;">
+            📷 Câmera Chassi
+          </button>
+        </div>
+
+        <!-- CÂMERA WEBCAM INTEGRADA CHASSI -->
+        <div id="chassisPhotoCameraBox" style="display:none;margin-top:12px;background:#070b10;padding:12px;border-radius:10px;border:1px solid var(--line);text-align:center;">
+          <video id="chassisPhotoVideo" style="width:100%;max-height:240px;border-radius:8px;background:#000;object-fit:cover;" autoplay playsinline></video>
+          <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+            <button type="button" class="btn primary small" onclick="captureChassisPhoto()">📸 Capturar Foto do Chassi</button>
+            <button type="button" class="btn small" onclick="closeChassisPhotoCamera()">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- PREVIEW CHASSI -->
+        <div id="chassisPhotoPreviewBox" style="display:none;margin-top:10px;text-align:center;">
+          <img id="chassisPhotoPreviewImg" src="" style="max-height:160px;border-radius:8px;border:1px solid var(--line);margin:0 auto;display:inline-block;" alt="Preview Foto do Chassi">
+          <div style="margin-top:4px;"><small style="color:var(--muted);" id="chassisPhotoPreviewLabel"></small></div>
+        </div>
+
+        <input type="hidden" name="chassis_photo_captured_image" id="chassisPhotoCapturedImage">
+      </div>
+
       <!-- CARD DE FEEDBACK DA IA -->
       <div class="span-2" id="aiStatusBox" style="display:none;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.45;">
         <div id="aiStatusContent"></div>
@@ -424,8 +472,12 @@ async function fetchFromBling() {
 let chassisDebounceTimer = null;
 let danfeCameraStream = null;
 let termCameraStream = null;
+let chassisPhotoCameraStream = null;
+
 let currentDanfeFile = null;
 let currentDanfeBase64 = null;
+let currentChassisPhotoFile = null;
+let currentChassisPhotoBase64 = null;
 let termCapturedPhotos = [];
 
 function resetAiValidation() {
@@ -433,7 +485,7 @@ function resetAiValidation() {
   document.getElementById('aiExtractedChassis').value = '';
   const saveBtn = document.getElementById('saveSaleBtn');
   saveBtn.disabled = true;
-  saveBtn.innerHTML = '🔒 Anexe a DANFE ou Termo para liberar';
+  saveBtn.innerHTML = '🔒 Anexe os comprovantes para liberar';
   saveBtn.classList.remove('good-btn');
   
   const badge = document.getElementById('aiBadge');
@@ -447,7 +499,7 @@ function resetAiValidation() {
 
 function hasAnyDocumentAttached() {
   const termFiles = document.getElementById('termFileInput').files;
-  return currentDanfeFile || currentDanfeBase64 || (termFiles && termFiles.length > 0) || (termCapturedPhotos && termCapturedPhotos.length > 0);
+  return currentDanfeFile || currentDanfeBase64 || currentChassisPhotoFile || currentChassisPhotoBase64 || (termFiles && termFiles.length > 0) || (termCapturedPhotos && termCapturedPhotos.length > 0);
 }
 
 function onChassisInputChange() {
@@ -471,7 +523,7 @@ function onChassisInputChange() {
     statusBox.style.background = '#1b232c';
     statusBox.style.borderColor = '#384756';
     statusBox.style.color = '#e2ecf7';
-    statusBox.innerHTML = '📄 <strong>Documento anexado!</strong> Digite ou cole o número do chassi no campo de chassis acima para a IA conferir se é o mesmo chassi do documento.';
+    statusBox.innerHTML = '📄 <strong>Comprovante anexado!</strong> Digite ou cole o número do chassi no campo de chassis acima para a IA realizar a triangulação dos documentos.';
   }
 }
 
@@ -552,6 +604,95 @@ function captureDanfePhoto() {
   previewImg.style.display = 'inline-block';
   previewLabel.innerText = '📷 Foto da DANFE capturada';
   previewBox.style.display = 'block';
+
+  onChassisInputChange();
+}
+
+/* ================= CHASSIS PHOTO LOGIC ================= */
+function onChassisPhotoFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  currentChassisPhotoFile = file;
+  currentChassisPhotoBase64 = null;
+  document.getElementById('chassisPhotoCapturedImage').value = '';
+
+  const previewBox = document.getElementById('chassisPhotoPreviewBox');
+  const previewImg = document.getElementById('chassisPhotoPreviewImg');
+  const previewLabel = document.getElementById('chassisPhotoPreviewLabel');
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'inline-block';
+      previewLabel.innerText = file.name;
+      previewBox.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewImg.style.display = 'none';
+    previewLabel.innerText = '📄 Documento: ' + file.name;
+    previewBox.style.display = 'block';
+  }
+
+  const badge = document.getElementById('chassisPhotoBadge');
+  badge.className = 'badge available';
+  badge.innerText = 'Foto Anexada';
+
+  onChassisInputChange();
+}
+
+async function toggleChassisPhotoCamera() {
+  const box = document.getElementById('chassisPhotoCameraBox');
+  if (box.style.display === 'none') {
+    try {
+      chassisPhotoCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      document.getElementById('chassisPhotoVideo').srcObject = chassisPhotoCameraStream;
+      box.style.display = 'block';
+    } catch (err) {
+      alert('Não foi possível acessar a câmera para foto do chassi: ' + err.message);
+    }
+  } else {
+    closeChassisPhotoCamera();
+  }
+}
+
+function closeChassisPhotoCamera() {
+  if (chassisPhotoCameraStream) {
+    chassisPhotoCameraStream.getTracks().forEach(t => t.stop());
+    chassisPhotoCameraStream = null;
+  }
+  document.getElementById('chassisPhotoCameraBox').style.display = 'none';
+}
+
+function captureChassisPhoto() {
+  const video = document.getElementById('chassisPhotoVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  closeChassisPhotoCamera();
+
+  currentChassisPhotoBase64 = dataUrl;
+  currentChassisPhotoFile = null;
+  document.getElementById('chassisPhotoFileInput').value = '';
+  document.getElementById('chassisPhotoCapturedImage').value = dataUrl;
+
+  const previewBox = document.getElementById('chassisPhotoPreviewBox');
+  const previewImg = document.getElementById('chassisPhotoPreviewImg');
+  const previewLabel = document.getElementById('chassisPhotoPreviewLabel');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'inline-block';
+  previewLabel.innerText = '📷 Foto da plaqueta/caixa capturada';
+  previewBox.style.display = 'block';
+
+  const badge = document.getElementById('chassisPhotoBadge');
+  badge.className = 'badge available';
+  badge.innerText = 'Foto Capturada';
 
   onChassisInputChange();
 }
@@ -657,7 +798,7 @@ async function runChassisAiVerification() {
   statusBox.style.background = '#1b232c';
   statusBox.style.borderColor = '#384756';
   statusBox.style.color = '#e2ecf7';
-  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini está examinando os comprovantes anexados e buscando o chassi digitado...</span></div>';
+  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini está examinando os comprovantes (DANFE, Foto do Chassi do Veículo/Caixa e Termo) e realizando a triangulação do chassi...</span></div>';
 
   saveBtn.disabled = true;
   saveBtn.innerHTML = '⏳ Conferindo chassi com documento...';
@@ -673,6 +814,12 @@ async function runChassisAiVerification() {
     fd.append('file', currentDanfeFile);
   } else if (currentDanfeBase64) {
     fd.append('captured_image', currentDanfeBase64);
+  }
+
+  if (currentChassisPhotoFile) {
+    fd.append('chassis_photo_file', currentChassisPhotoFile);
+  } else if (currentChassisPhotoBase64) {
+    fd.append('chassis_photo_captured_image', currentChassisPhotoBase64);
   }
 
   const termFilesInput = document.getElementById('termFileInput');

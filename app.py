@@ -370,7 +370,7 @@ def init_db():
 def ensure_sales_columns():
     try:
         with db() as conn:
-            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model"]:
+            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model", "chassis_photo_file"]:
                 try:
                     conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
                 except Exception:
@@ -1386,8 +1386,21 @@ def sales():
                 except Exception:
                     pass
 
-            if not danfe_filename and not term_filenames:
-                flash("É obrigatório anexar a DANFE ou a foto do Termo de Entrega com o chassi.", "danger")
+            # Processamento da Foto do Chassi (Plaqueta do Veículo / Caixa)
+            chassis_photo_file_obj = request.files.get("chassis_photo_file")
+            chassis_photo_captured = request.form.get("chassis_photo_captured_image")
+            chassis_photo_filename = None
+            if chassis_photo_captured:
+                chassis_photo_filename = save_base64_upload(chassis_photo_captured, "chassis_veiculo")
+            elif chassis_photo_file_obj and chassis_photo_file_obj.filename:
+                try:
+                    chassis_photo_filename = save_upload(chassis_photo_file_obj, "chassis_veiculo")
+                except ValueError as e:
+                    flash(f"Foto de chassi do veículo/caixa inválida: {str(e)}", "danger")
+                    return redirect(url_for("sales"))
+
+            if not danfe_filename and not term_filenames and not chassis_photo_filename:
+                flash("É obrigatório anexar a Foto do Chassi do Veículo/Caixa, a DANFE ou o Termo de Entrega.", "danger")
                 return redirect(url_for("sales"))
 
             term_files_json = json.dumps(term_filenames) if term_filenames else None
@@ -1396,9 +1409,9 @@ def sales():
             ai_verified = request.form.get("ai_chassis_verified") == "1"
             ai_extracted = request.form.get("ai_extracted_chassis", "").strip()
 
-            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora no primeiro documento disponível
+            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora nos documentos disponíveis
             if not ai_verified:
-                target_filename = danfe_filename or (term_filenames[0] if term_filenames else None)
+                target_filename = chassis_photo_filename or danfe_filename or (term_filenames[0] if term_filenames else None)
                 if target_filename:
                     doc_path = UPLOAD_DIR / target_filename
                     if doc_path.exists():
@@ -1414,9 +1427,9 @@ def sales():
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,ai_chassis_verified,ai_extracted_chassis,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, ai_verified, ai_extracted, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,chassis_photo_file,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, chassis_photo_filename, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -1859,24 +1872,33 @@ def verify_sales_chassis():
         except Exception:
             pass
 
-    for file_obj in file_objs:
-        if file_obj and file_obj.filename:
-            ext = file_obj.filename.rsplit(".", 1)[-1].lower()
-            if ext in ALLOWED_EXTENSIONS:
-                b = file_obj.read()
-                m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
-                items_to_check.append((b, m))
+    chassis_photo_file = request.files.get("chassis_photo_file")
+    chassis_photo_captured = request.form.get("chassis_photo_captured_image")
+
+    if chassis_photo_captured and "," in chassis_photo_captured:
+        try:
+            header, data_str = chassis_photo_captured.split(",", 1)
+            b = base64.b64decode(data_str)
+            m = "image/png" if "png" in header else ("image/webp" if "webp" in header else "image/jpeg")
+            items_to_check.append((b, m))
+        except Exception:
+            pass
+
+    if chassis_photo_file and chassis_photo_file.filename:
+        ext = chassis_photo_file.filename.rsplit(".", 1)[-1].lower()
+        if ext in ALLOWED_EXTENSIONS:
+            b = chassis_photo_file.read()
+            m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
+            items_to_check.append((b, m))
+
+    if not items_to_check:
+        return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400
 
     vehicle_model = request.form.get("vehicle_model", "").strip()
 
-    last_res = None
-    for file_bytes, mime_type in items_to_check:
-        res = extract_and_match_chassis(file_bytes, mime_type, chassis_list, expected_model=vehicle_model)
-        if res.get("is_valid"):
-            return jsonify(res)
-        last_res = res
-
-    return jsonify(last_res or {"success": False, "is_valid": False, "message": "Não foi possível validar o chassi no documento."})
+    # Passa todos os comprovantes anexados para a IA realizar a triangulação de chassi
+    res = extract_and_match_chassis(items_to_check, chassis_list, expected_model=vehicle_model)
+    return jsonify(res)
 
 
 @app.route("/integrations/bling", methods=["GET"])

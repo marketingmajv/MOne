@@ -232,8 +232,10 @@ DIRETRIZES DE ATUAÇÃO:
         }
 
 
-def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassis_list: list, expected_model: str = "") -> dict:
-    """Analisa imagem ou PDF da DANFE/comprovante com Gemini 3.6 Flash, audita o modelo do veículo e valida os chassis."""
+def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_model: str = "", mime_type: str = "image/jpeg") -> dict:
+    """Analisa imagem(ns) / PDF(s) da DANFE, Termo e Foto do Chassi (Veículo/Caixa) com Gemini 3.6 Flash.
+    Realiza a auditoria de triangulação confirmando se o chassi da foto do veículo é idêntico ao da DANFE.
+    """
     api_key = get_gemini_api_key()
     if not api_key:
         return {
@@ -242,6 +244,22 @@ def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassi
             "error_type": "MISSING_KEY",
             "message": "A chave `GEMINI_API_KEY` não está configurada no sistema.",
             "details": "Chave da API do Google Gemini ausente."
+        }
+
+    # Tratamento de suporte retrógrado se for passado bytes direto no 1º argumento
+    if isinstance(items_data, (bytes, bytearray)):
+        items_list = [(bytes(items_data), mime_type if isinstance(mime_type, str) else "image/jpeg")]
+    elif isinstance(items_data, list):
+        items_list = items_data
+    else:
+        items_list = []
+
+    if not items_list:
+        return {
+            "success": False,
+            "is_valid": False,
+            "error_type": "NO_DOCUMENTS",
+            "message": "Nenhum arquivo ou foto foi enviado para a auditoria."
         }
 
     # Normalizar lista esperada
@@ -257,57 +275,58 @@ def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassi
             "is_valid": False,
             "error_type": "NO_CHASSIS_PROVIDED",
             "message": "Nenhum número de chassi foi informado para conferência.",
-            "details": "Preencha o campo de chassis antes de validar o comprovante."
+            "details": "Preencha o campo de chassis antes de validar os comprovantes."
         }
 
-    b64_data = base64.b64encode(file_bytes).decode("utf-8")
-    
+    parts = []
+    for b_bytes, m_type in items_list:
+        if b_bytes:
+            parts.append({
+                "inlineData": {
+                    "mimeType": m_type or "image/jpeg",
+                    "data": base64.b64encode(b_bytes).decode("utf-8")
+                }
+            })
+
     prompt = f"""
 Você é um auditor de documentação veicular e conferência fiscal da MAJ Mobilidade Elétrica.
-Analise a imagem ou documento PDF anexo (DANFE, Termo de Entrega, Recibo ou Foto).
+Analise as imagens e documentos PDF anexos (DANFE da Nota Fiscal, Foto da Plaqueta/Etiqueta do Veículo ou Caixa, e Termo de Entrega).
 
-OBJETIVO DA AUDITORIA:
-1. Identificar números de chassi de veículos (identificados como CHASSI, CHASSIS, QUADRO, VIN, Nº DE SÉRIE ou em descrições de produtos) e comparar com a lista de chassis informados.
-2. Identificar a descrição do MODELO DO VEÍCULO / PRODUTO constante no documento e verificar se corresponde ao modelo informado pelo vendedor/pedido.
+OBJETIVO DA AUDITORIA DE TRIANGULAÇÃO:
+1. Rastrear o número do chassi gravado/estampado na FOTO DO VEÍCULO / CAIXA e o número do chassi impresso na DANFE da Nota Fiscal.
+2. Confirmar se o chassi da FOTO DO VEÍCULO/CAIXA é EXATAMENTE O MESMO CHASSI da DANFE e da lista de chassis digitada pelo vendedor.
+3. Rastrear o modelo do veículo na DANFE e conferir se corresponde ao modelo informado no pedido.
 
-CHASSIS INFORMADOS NA VENDA QUE DEVEM CONSTAR NO DOCUMENTO:
+CHASSIS INFORMADOS NA VENDA QUE DEVEM CONSTAR NOS COMPROVANTES:
 {json.dumps(clean_expected, indent=2)}
 
 MODELO DE VEÍCULO ESPERADO NO PEDIDO / CADASTRO:
 "{expected_model or 'Não especificado'}"
 
-DIRETRIZES DE AUDITORIA:
-1. Faça uma varredura detalhada no documento: cabeçalho, descrição dos produtos/itens, dados adicionais da NF-e e observações.
-2. Identifique todos os números de chassis e o modelo/nome comercial do produto no documento.
-3. Responda ESTRITAMENTE em formato JSON com o seguinte schema:
+DIRETRIZES DE RESPOSTA JSON ESTRITA:
+Responda ESTRITAMENTE em formato JSON com o seguinte schema:
 {{
-  "document_type": "Tipo de documento (ex: DANFE NF-e, Termo de Entrega, Foto de Plaqueta)",
-  "extracted_chassis": ["lista de todos os chassis veiculares encontrados"],
-  "matched_chassis": ["chassis esperados que foram encontrados no documento"],
-  "missing_chassis": ["chassis esperados que NÃO foram encontrados no documento"],
-  "extracted_model": "Modelo/Nome do produto identificado no documento (ex: Scooter Elétrica MAJ M1)",
-  "model_matched": true ou false (true se o modelo no documento for idêntico ou compatível com o modelo esperado),
-  "is_valid": true ou false (true se TODOS os chassis esperados foram localizados),
-  "summary": "Resumo claro e objetivo em português do resultado da auditoria de chassi e modelo"
+  "document_type": "Descrição dos comprovantes analisados (ex: DANFE NF-e + Foto do Chassi do Veículo)",
+  "extracted_chassis": ["lista de todos os chassis veiculares encontrados nas fotos e na DANFE"],
+  "matched_chassis": ["chassis esperados que foram localizados nos comprovantes"],
+  "missing_chassis": ["chassis esperados que NÃO foram encontrados nos comprovantes"],
+  "vehicle_photo_chassis": "Número do chassi lido na foto da plaqueta do veículo ou caixa",
+  "danfe_chassis": "Número do chassi lido na DANFE",
+  "chassis_match_confirmed": true ou false (true se o chassi da foto do veículo/caixa for idêntico ao chassi da DANFE),
+  "extracted_model": "Modelo do produto identificado na DANFE",
+  "model_matched": true ou false,
+  "is_valid": true ou false (true se TODOS os chassis esperados foram localizados e a foto do veículo/caixa confere com a DANFE),
+  "summary": "Resumo claro e objetivo em português do resultado da triangulação"
 }}
 """
+    parts.append({"text": prompt})
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
                 "role": "user",
-                "parts": [
-                    {
-                        "inlineData": {
-                            "mimeType": mime_type,
-                            "data": b64_data
-                        }
-                    },
-                    {
-                        "text": prompt
-                    }
-                ]
+                "parts": parts
             }
         ],
         "generationConfig": {
@@ -328,11 +347,10 @@ DIRETRIZES DE AUDITORIA:
             res_data = json.loads(response.read().decode("utf-8"))
             candidates = res_data.get("candidates", [])
             if candidates and "content" in candidates[0]:
-                parts = candidates[0]["content"].get("parts", [])
-                raw_json = "".join([p.get("text", "") for p in parts]).strip()
+                res_parts = candidates[0]["content"].get("parts", [])
+                raw_json = "".join([p.get("text", "") for p in res_parts]).strip()
                 parsed = json.loads(raw_json)
 
-                # Validação programática cruzada com os dados extraídos
                 extracted_raw = parsed.get("extracted_chassis", [])
                 extracted_norm = [re.sub(r'[^A-Z0-9]', '', str(x).upper()) for x in extracted_raw]
 
@@ -355,9 +373,12 @@ DIRETRIZES DE AUDITORIA:
                     "extracted_chassis": extracted_raw,
                     "matched_chassis": matched if matched else parsed.get("matched_chassis", []),
                     "missing_chassis": missing if not is_valid else [],
+                    "vehicle_photo_chassis": parsed.get("vehicle_photo_chassis", ""),
+                    "danfe_chassis": parsed.get("danfe_chassis", ""),
+                    "chassis_match_confirmed": parsed.get("chassis_match_confirmed", True),
                     "extracted_model": parsed.get("extracted_model", ""),
                     "model_matched": parsed.get("model_matched", True),
-                    "summary": parsed.get("summary", "Conferência de chassis e modelo concluída."),
+                    "summary": parsed.get("summary", "Conferência de triangulação de chassis e modelo concluída."),
                     "all_matched": is_valid
                 }
             return {"success": False, "is_valid": False, "message": "O modelo não retornou conteúdo textual compreensível."}
