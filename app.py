@@ -56,6 +56,7 @@ from gemini_service import (
     PAYMENT_METHODS
 )
 import bling_service
+import freight_service
 
 
 import base64
@@ -2385,8 +2386,199 @@ def sync_bling_stock_route():
     return redirect(url_for("products"))
 
 
+# =========================================================================
+# MÓDULO DE FRETE & TRANSPORTADORAS
+# =========================================================================
+
+@app.route("/freight")
+@login_required
+def freight():
+    """Interface principal do Módulo de Fretes."""
+    me = current_user()
+    with db() as conn:
+        freight_service.ensure_freight_tables(conn)
+        
+        # Buscar lista de produtos para o dropdown de consulta
+        cur_p = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name ASC")
+        products = cur_p.fetchall()
+        
+        # Buscar transportadoras e tabelas cadastradas
+        sql_t = """
+            SELECT 
+                t.id AS table_id,
+                t.name AS table_name,
+                t.file_url,
+                t.created_at,
+                c.id AS carrier_id,
+                c.name AS carrier_name,
+                c.active AS carrier_active,
+                (SELECT COUNT(*) FROM freight_rates r WHERE r.table_id = t.id) AS rates_count
+            FROM freight_tables t
+            JOIN carriers c ON c.id = t.carrier_id
+            ORDER BY c.name ASC, t.created_at DESC
+        """
+        cur_t = conn.execute(sql_t)
+        tables = cur_t.fetchall()
+        
+        # Buscar lista de transportadoras ativas
+        cur_c = conn.execute("SELECT id, name, active FROM carriers ORDER BY name ASC")
+        carriers = cur_c.fetchall()
+
+    return render_template(
+        "freight.html",
+        me=me,
+        role_labels=ROLE_LABELS,
+        products=products,
+        tables=tables,
+        carriers=carriers,
+        default_cep=freight_service.DEFAULT_MAJ_CEP
+    )
+
+@app.route("/freight/calculate", methods=["POST"])
+@login_required
+def freight_calculate():
+    """API para cálculo de frete por CEP, peso e produto."""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        cep_dest = data.get("cep_dest", "").strip()
+        weight_kg = float(data.get("weight_kg", 0) or 0)
+        product_id = data.get("product_id")
+        if product_id:
+            try:
+                product_id = int(product_id)
+            except Exception:
+                product_id = None
+        declared_value = float(data.get("declared_value", 0) or 0)
+        cep_orig = data.get("cep_orig", "").strip() or freight_service.DEFAULT_MAJ_CEP
+
+        with db() as conn:
+            freight_service.ensure_freight_tables(conn)
+            res = freight_service.calculate_freight(
+                db_conn=conn,
+                cep_dest=cep_dest,
+                weight_kg=weight_kg,
+                declared_value=declared_value,
+                product_id=product_id,
+                cep_orig=cep_orig
+            )
+            return jsonify(res)
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
+@app.route("/freight/whatsapp", methods=["POST"])
+@login_required
+def freight_whatsapp():
+    """Gera o texto formatado para envio no WhatsApp."""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        customer_name = data.get("customer_name", "")
+        cep_dest = data.get("cep_dest", "")
+        product_name = data.get("product_name", "")
+        options = data.get("options", [])
+        if isinstance(options, str):
+            options = json.loads(options)
+
+        msg = freight_service.generate_whatsapp_budget(
+            customer_name=customer_name,
+            cep_dest=cep_dest,
+            product_name=product_name,
+            options=options
+        )
+        return jsonify({"success": True, "message": msg})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
+@app.route("/freight/tables/upload", methods=["POST"])
+@login_required
+def freight_table_upload():
+    """Upload e parsing por IA (Gemini) de novas tabelas de frete."""
+    try:
+        carrier_name = request.form.get("carrier_name", "").strip()
+        table_name = request.form.get("table_name", "").strip()
+        file = request.files.get("table_file")
+
+        if not carrier_name or not table_name or not file or not file.filename:
+            flash("⚠️ Preencha o nome da transportadora, nome da tabela e selecione o arquivo.", "warning")
+            return redirect(url_for("freight"))
+
+        filename = secure_filename(file.filename)
+        file_path = UPLOAD_DIR / f"freight_{int(time.time())}_{filename}"
+        file.save(file_path)
+
+        # Usar Gemini para analisar a tabela
+        rates = freight_service.parse_freight_table_with_gemini(file_path, carrier_name)
+
+        with db() as conn:
+            freight_service.ensure_freight_tables(conn)
+            
+            # Buscar ou criar transportadora
+            cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) = LOWER(?)", (carrier_name,))
+            row_c = cur_c.fetchone()
+            if row_c:
+                carrier_id = row_c["id"]
+            else:
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", (carrier_name,))
+                carrier_id = cur_ins.lastrowid
+
+            # Criar tabela de frete
+            cur_t = conn.execute(
+                "INSERT INTO freight_tables (carrier_id, name, file_url) VALUES (?, ?, ?)",
+                (carrier_id, table_name, str(file_path.name))
+            )
+            table_id = cur_t.lastrowid
+
+            # Inserir regras extraídas
+            inserted_count = 0
+            for r in rates:
+                conn.execute(
+                    """
+                    INSERT INTO freight_rates (
+                        table_id, uf, city, cep_start, cep_end, 
+                        min_weight, max_weight, fixed_price, weight_price_per_kg, 
+                        ad_valorem_percent, gris_percent, min_freight_price, delivery_days, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        table_id,
+                        r.get("uf"),
+                        r.get("city"),
+                        freight_service.clean_cep(r.get("cep_start")),
+                        freight_service.clean_cep(r.get("cep_end")),
+                        float(r.get("min_weight") or 0),
+                        float(r.get("max_weight") or 999999),
+                        float(r.get("fixed_price") or 0),
+                        float(r.get("weight_price_per_kg") or 0),
+                        float(r.get("ad_valorem_percent") or 0),
+                        float(r.get("gris_percent") or 0),
+                        float(r.get("min_freight_price") or 0),
+                        int(r.get("delivery_days") or 1),
+                        r.get("notes") or ""
+                    )
+                )
+                inserted_count += 1
+
+        flash(f"✅ Tabela '{table_name}' da transportadora '{carrier_name}' importada com sucesso! ({inserted_count} regras processadas pela IA)", "success")
+    except Exception as e:
+        flash(f"Erro ao importar tabela de frete: {str(e)}", "danger")
+
+    return redirect(url_for("freight"))
+
+@app.route("/freight/tables/delete/<int:table_id>", methods=["POST"])
+@login_required
+def freight_table_delete(table_id):
+    """Exclui uma tabela de frete cadastrada."""
+    try:
+        with db() as conn:
+            conn.execute("DELETE FROM freight_tables WHERE id = ?", (table_id,))
+        flash("✅ Tabela de frete excluída com sucesso.", "success")
+    except Exception as e:
+        flash(f"Erro ao excluir tabela: {str(e)}", "danger")
+    return redirect(url_for("freight"))
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5001")), debug=True)
+
 
 

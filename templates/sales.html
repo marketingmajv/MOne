@@ -3,6 +3,7 @@
 {% block page_title %}Vendas{% endblock %}
 {% block page_subtitle %}Pedido Bling + NF + chassis validados + recebimentos.{% endblock %}
 {% block top_actions %}
+  <a href="{{ url_for('freight') }}" class="btn secondary flex items-center gap-1"><span>🚚</span> Consultar Frete</a>
   <a href="{{ url_for('export_sales') }}" class="btn">Exportar CSV</a>
   <button class="btn primary" onclick="openModal('newSale')">+ Registrar venda</button>
 {% endblock %}
