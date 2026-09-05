@@ -203,10 +203,14 @@ def make_bling_api_request(endpoint: str, params: dict = None, method: str = "GE
         err_body = e.read().decode("utf-8", errors="ignore")
         try:
             err_json = json.loads(err_body)
-            msg = err_json.get("error", {}).get("message") or err_json.get("message") or err_body
+            raw_msg = err_json.get("error", {}).get("message") or err_json.get("message") or err_body
+            if "insufficient_scope" in str(err_json).lower() or "insufficient_scope" in err_body.lower():
+                msg = "Permissões de 'Pedidos de Venda' ou 'Notas Fiscais' pendentes no Bling (403: insufficient_scope).\n\nPara liberar em 1 minuto:\n1. No Bling, acesse: Preferências ⚙ -> Integrações -> Aplicativos -> Seu App\n2. Na aba 'Permissões', marque as opções: 'Pedidos de Venda' e 'Notas Fiscais'\n3. Salve no Bling e volte no M-One (Bling ERP) para clicar em 'Conectar com Bling' novamente."
+            else:
+                msg = f"Erro API Bling ({e.code}): {raw_msg}"
         except Exception:
-            msg = err_body
-        raise RuntimeError(f"Erro API Bling ({e.code}): {msg}")
+            msg = f"Erro API Bling ({e.code}): {err_body}"
+        raise RuntimeError(msg)
 
 def search_bling_order(order_number: str) -> dict:
     """Busca um pedido de venda no Bling pelo número digitado."""
