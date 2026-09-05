@@ -207,7 +207,7 @@
       <label>Valor total<input type="number" step="0.01" name="total_value" id="totalValueInput" placeholder="deixe vazio para usar tabela"></label>
       
       <label class="span-2">Chassis
-        <textarea name="chassis" id="chassisInput" rows="2" placeholder="Cole um ou vários chassis separados por vírgula ou ponto-e-vírgula" required oninput="resetAiValidation()"></textarea>
+        <textarea name="chassis" id="chassisInput" rows="2" placeholder="Cole um ou vários chassis separados por vírgula ou ponto-e-vírgula" required oninput="onChassisInputChange()"></textarea>
         <small>O sistema exige chassi válido e confere automaticamente contra a foto do comprovante anexo.</small>
       </label>
 
@@ -350,6 +350,8 @@ async function fetchFromBling() {
   }
 }
 
+let chassisDebounceTimer = null;
+
 function resetAiValidation() {
   document.getElementById('aiChassisVerified').value = '0';
   document.getElementById('aiExtractedChassis').value = '';
@@ -365,6 +367,31 @@ function resetAiValidation() {
   const statusBox = document.getElementById('aiStatusBox');
   statusBox.style.display = 'none';
   statusBox.innerHTML = '';
+}
+
+function onChassisInputChange() {
+  resetAiValidation();
+
+  const chassisVal = document.getElementById('chassisInput').value.trim();
+  const hasDocument = currentFile || currentBase64;
+
+  if (hasDocument && chassisVal) {
+    if (chassisDebounceTimer) clearTimeout(chassisDebounceTimer);
+    chassisDebounceTimer = setTimeout(() => {
+      runChassisAiVerification(currentFile, currentBase64);
+    }, 600);
+  } else if (hasDocument && !chassisVal) {
+    const badge = document.getElementById('aiBadge');
+    badge.className = 'badge warning';
+    badge.innerText = 'Digite o Chassi Acima';
+
+    const statusBox = document.getElementById('aiStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#1b232c';
+    statusBox.style.borderColor = '#384756';
+    statusBox.style.color = '#e2ecf7';
+    statusBox.innerHTML = '📄 <strong>Documento anexado!</strong> Digite ou cole o número do chassi no campo de chassis acima para a IA conferir se é o mesmo chassi do documento.';
+  }
 }
 
 function onDanfeFileSelected(event) {
@@ -393,6 +420,21 @@ function onDanfeFileSelected(event) {
     previewImg.style.display = 'none';
     previewLabel.innerText = '📄 Documento PDF: ' + file.name;
     previewBox.style.display = 'block';
+  }
+
+  const chassisVal = document.getElementById('chassisInput').value.trim();
+  if (!chassisVal) {
+    const badge = document.getElementById('aiBadge');
+    badge.className = 'badge warning';
+    badge.innerText = 'Digite o Chassi Acima';
+
+    const statusBox = document.getElementById('aiStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#1b232c';
+    statusBox.style.borderColor = '#384756';
+    statusBox.style.color = '#e2ecf7';
+    statusBox.innerHTML = '📄 <strong>Documento anexado!</strong> Digite ou cole o número do chassi no campo de chassis acima para a IA conferir se é o mesmo chassi do documento.';
+    return;
   }
 
   runChassisAiVerification(file, null);
@@ -445,6 +487,21 @@ function captureDanfePhoto() {
   previewLabel.innerText = '📷 Foto capturada da câmera';
   previewBox.style.display = 'block';
 
+  const chassisVal = document.getElementById('chassisInput').value.trim();
+  if (!chassisVal) {
+    const badge = document.getElementById('aiBadge');
+    badge.className = 'badge warning';
+    badge.innerText = 'Digite o Chassi Acima';
+
+    const statusBox = document.getElementById('aiStatusBox');
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#1b232c';
+    statusBox.style.borderColor = '#384756';
+    statusBox.style.color = '#e2ecf7';
+    statusBox.innerHTML = '📷 <strong>Foto capturada!</strong> Digite ou cole o número do chassi no campo de chassis acima para a IA conferir se é o mesmo chassi da foto.';
+    return;
+  }
+
   runChassisAiVerification(null, dataUrl);
 }
 
@@ -455,21 +512,20 @@ async function runChassisAiVerification(file, base64Data) {
   const saveBtn = document.getElementById('saveSaleBtn');
 
   if (!chassisVal) {
-    alert('Por favor, informe primeiro o(s) número(s) do chassi no campo acima antes de validar o comprovante.');
     resetAiValidation();
     return;
   }
 
   badge.className = 'badge warning';
-  badge.innerHTML = '✦ IA Auditando Documento...';
+  badge.innerHTML = '✦ IA Rastreando e Conferindo...';
   statusBox.style.display = 'block';
   statusBox.style.background = '#1b232c';
   statusBox.style.borderColor = '#384756';
   statusBox.style.color = '#e2ecf7';
-  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini 3.6 Flash está examinando o documento e rastreando os chassis...</span></div>';
+  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini está buscando o chassi no documento e conferindo com o chassi digitado...</span></div>';
 
   saveBtn.disabled = true;
-  saveBtn.innerHTML = '⏳ Auditando comprovante...';
+  saveBtn.innerHTML = '⏳ Conferindo chassi com documento...';
 
   const fd = new FormData();
   fd.append('chassis', chassisVal);
@@ -491,7 +547,7 @@ async function runChassisAiVerification(file, base64Data) {
       document.getElementById('aiExtractedChassis').value = (data.extracted_chassis || []).join(', ');
 
       badge.className = 'badge available';
-      badge.innerHTML = '✓ Chassi Validado pela IA';
+      badge.innerHTML = '✓ Chassi Confirmado no DANFE';
 
       statusBox.style.background = 'rgba(97, 243, 156, 0.12)';
       statusBox.style.borderColor = 'rgba(97, 243, 156, 0.4)';
@@ -500,21 +556,22 @@ async function runChassisAiVerification(file, base64Data) {
         <div style="display:flex;align-items:flex-start;gap:8px;">
           <span style="font-size:16px;">✓</span>
           <div>
-            <strong>Validação Positiva por IA:</strong> Documento reconhecido como <em>${data.document_type || 'Comprovante'}</em>.<br>
-            Todos os chassis informados foram localizados no documento com sucesso:<br>
-            <span class="mono" style="font-size:12px;color:var(--accent);">${data.matched_chassis.join(', ')}</span>
+            <strong>Confirmação Positiva por IA:</strong> O chassi localizado no documento (<em>${data.document_type || 'DANFE'}</em>) corresponde exatamente ao chassi digitado!<br>
+            <div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.25);border-radius:6px;display:inline-block;">
+              <strong>Chassi no DANFE:</strong> <span class="mono" style="color:var(--accent);font-weight:bold;">${data.matched_chassis.join(', ')}</span>
+            </div>
           </div>
         </div>
       `;
 
       saveBtn.disabled = false;
-      saveBtn.innerHTML = '✓ Validar chassis e registrar';
+      saveBtn.innerHTML = '✓ Chassis conferidos e liberados - Registrar Venda';
       saveBtn.classList.add('good-btn');
 
     } else {
       document.getElementById('aiChassisVerified').value = '0';
       badge.className = 'badge warn-btn';
-      badge.innerHTML = '✕ Bloqueado por Divergência';
+      badge.innerHTML = '✕ Divergência de Chassi';
 
       statusBox.style.background = 'rgba(255, 107, 107, 0.12)';
       statusBox.style.borderColor = 'rgba(255, 107, 107, 0.4)';
@@ -522,24 +579,29 @@ async function runChassisAiVerification(file, base64Data) {
 
       let missingMsg = '';
       if (data.missing_chassis && data.missing_chassis.length > 0) {
-        missingMsg = `<br>Chassi(s) ausente(s) na foto/PDF: <b class="mono" style="color:#ff8e98;">${data.missing_chassis.join(', ')}</b>`;
+        missingMsg = `<br>Chassi(s) digitado(s) que não constam no documento: <b class="mono" style="color:#ff8e98;">${data.missing_chassis.join(', ')}</b>`;
+      }
+      let foundMsg = '';
+      if (data.extracted_chassis && data.extracted_chassis.length > 0) {
+        foundMsg = `<br>Chassi(s) lido(s) no documento: <b class="mono" style="color:var(--accent);">${data.extracted_chassis.join(', ')}</b>`;
       }
 
       statusBox.innerHTML = `
         <div style="display:flex;align-items:flex-start;gap:8px;">
           <span style="font-size:16px;">✕</span>
           <div>
-            <strong>Bloqueio de Integridade:</strong> ${data.summary || data.message || 'O chassi do documento não confere com o digitado.'}
+            <strong>Divergência Detectada:</strong> O chassi informado no campo não coincide com o chassi do documento.
             ${missingMsg}
+            ${foundMsg}
             <div style="margin-top:6px;font-size:12px;color:#f0b4ba;">
-              Por favor, anexe uma imagem nítida da DANFE/Termo onde os chassis estejam legíveis para liberar o cadastro.
+              Confira a digitação ou certifique-se de anexar o DANFE correto do veículo.
             </div>
           </div>
         </div>
       `;
 
       saveBtn.disabled = true;
-      saveBtn.innerHTML = '🔒 Bloqueado: Chassi não confere com documento';
+      saveBtn.innerHTML = '🔒 Bloqueado: Chassi digitado não confere com documento';
       saveBtn.classList.remove('good-btn');
     }
 
@@ -563,7 +625,7 @@ function validateSaleBeforeSubmit(event) {
   const verified = document.getElementById('aiChassisVerified').value === '1';
   if (!verified) {
     event.preventDefault();
-    alert('Atenção: A venda não pode ser registrada sem que a IA aprove o comprovante com o chassi correspondente.');
+    alert('Atenção: A venda não pode ser registrada sem que a IA confirme que o chassi do documento confere com o chassi digitado.');
     return false;
   }
   return true;
