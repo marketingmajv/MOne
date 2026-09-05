@@ -272,15 +272,15 @@ function addProductRow() {
       <input type="number" min="1" value="1" class="input-field product-qty text-center text-xs w-16" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
     <td class="py-2 px-2 text-center">
-      <input type="number" step="0.1" value="85" class="input-field product-weight text-center text-xs w-20" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      <input type="number" step="0.1" value="" placeholder="kg" class="input-field product-weight text-center text-xs w-20" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
     <td class="py-2 px-2">
       <div class="flex items-center gap-1 text-xs">
-        <input type="number" value="180" placeholder="C" class="input-field product-length text-center text-xs w-14" onchange="updateTotalsSummary()">
+        <input type="number" value="" placeholder="C" class="input-field product-length text-center text-xs w-14" onchange="updateTotalsSummary()">
         <span>x</span>
-        <input type="number" value="70" placeholder="L" class="input-field product-width text-center text-xs w-14" onchange="updateTotalsSummary()">
+        <input type="number" value="" placeholder="L" class="input-field product-width text-center text-xs w-14" onchange="updateTotalsSummary()">
         <span>x</span>
-        <input type="number" value="110" placeholder="A" class="input-field product-height text-center text-xs w-14" onchange="updateTotalsSummary()">
+        <input type="number" value="" placeholder="A" class="input-field product-height text-center text-xs w-14" onchange="updateTotalsSummary()">
       </div>
     </td>
     <td class="py-2 px-2 text-right">
@@ -313,20 +313,24 @@ function onProductSelectChange(rowId) {
   const select = row.querySelector(".product-select");
   const selectedOpt = select.options[select.selectedIndex];
 
-  if (selectedOpt.value) {
+  if (selectedOpt && selectedOpt.value) {
     const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
-    const weightVal = parseFloat(selectedOpt.getAttribute("data-weight") || 85);
-    const lengthVal = parseFloat(selectedOpt.getAttribute("data-l") || 180);
-    const widthVal = parseFloat(selectedOpt.getAttribute("data-w") || 70);
-    const heightVal = parseFloat(selectedOpt.getAttribute("data-h") || 110);
+    const weightVal = selectedOpt.getAttribute("data-weight");
+    const lengthVal = selectedOpt.getAttribute("data-l");
+    const widthVal = selectedOpt.getAttribute("data-w");
+    const heightVal = selectedOpt.getAttribute("data-h");
 
     row.querySelector(".product-onethird-display").innerText = `R$ ${oneThirdVal.toFixed(2)}`;
-    row.querySelector(".product-weight").value = weightVal;
-    row.querySelector(".product-length").value = lengthVal;
-    row.querySelector(".product-width").value = widthVal;
-    row.querySelector(".product-height").value = heightVal;
+    row.querySelector(".product-weight").value = weightVal !== null ? weightVal : "";
+    row.querySelector(".product-length").value = lengthVal !== null ? lengthVal : "";
+    row.querySelector(".product-width").value = widthVal !== null ? widthVal : "";
+    row.querySelector(".product-height").value = heightVal !== null ? heightVal : "";
   } else {
     row.querySelector(".product-onethird-display").innerText = "R$ 0,00";
+    row.querySelector(".product-weight").value = "";
+    row.querySelector(".product-length").value = "";
+    row.querySelector(".product-width").value = "";
+    row.querySelector(".product-height").value = "";
   }
 
   updateTotalsSummary();

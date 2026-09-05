@@ -2405,20 +2405,19 @@ def freight():
         for p in products_raw:
             w_price = float(p.get("wholesale_price") or 0)
             p_name_upper = (p.get("name") or "").upper()
-            w_kg = 85.0
-            l_cm = 180.0
-            wi_cm = 70.0
-            h_cm = 110.0
-            if "MINI" in p_name_upper or "V8" in p_name_upper:
-                w_kg = 55.0
-                l_cm = 150.0
-                wi_cm = 60.0
-                h_cm = 95.0
-            elif "MAX" in p_name_upper or "GP" in p_name_upper:
-                w_kg = 90.0
-                l_cm = 185.0
-                wi_cm = 75.0
-                h_cm = 115.0
+            # Mapeamento de especificações por modelo da MAJ Mobilidade
+            if "MINI" in p_name_upper:
+                w_kg, l_cm, wi_cm, h_cm = 55.0, 150.0, 60.0, 95.0
+            elif "V20" in p_name_upper or "RIDE" in p_name_upper or "M9" in p_name_upper or "M50" in p_name_upper or "V80" in p_name_upper:
+                w_kg, l_cm, wi_cm, h_cm = 65.0, 165.0, 65.0, 100.0
+            elif "CLASSIC" in p_name_upper or "FLOW" in p_name_upper or "DB" in p_name_upper or "M2" in p_name_upper or "RZ" in p_name_upper:
+                w_kg, l_cm, wi_cm, h_cm = 80.0, 175.0, 70.0, 105.0
+            elif "MAX" in p_name_upper or "NOVA" in p_name_upper or "VITTORIA" in p_name_upper or "SPORT" in p_name_upper:
+                w_kg, l_cm, wi_cm, h_cm = 88.0, 180.0, 70.0, 110.0
+            elif "GP" in p_name_upper:
+                w_kg, l_cm, wi_cm, h_cm = 95.0, 185.0, 75.0, 115.0
+            else:
+                w_kg, l_cm, wi_cm, h_cm = 85.0, 180.0, 70.0, 110.0
 
             products.append({
                 "id": p.get("id"),
