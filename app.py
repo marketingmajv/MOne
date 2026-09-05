@@ -393,7 +393,12 @@ def ensure_sales_columns():
 def ensure_product_columns():
     try:
         with db() as conn:
-            for col, col_type in [("bling_stock", "INTEGER DEFAULT 0"), ("bling_updated_at", "TEXT")]:
+            for col, col_type in [
+                ("bling_stock", "INTEGER DEFAULT 0"),
+                ("bling_updated_at", "TEXT"),
+                ("fob_price_usd", "REAL DEFAULT 0"),
+                ("aliquota_rate", "REAL DEFAULT 0"),
+            ]:
                 try:
                     conn.execute(f"ALTER TABLE products ADD COLUMN {col} {col_type}")
                 except Exception:
@@ -499,8 +504,18 @@ def money_usd(v):
         return "$ 0,00"
 
 
+def aliquota(v):
+    try:
+        if not v or float(v) == 0:
+            return "—"
+        return f"R$ {float(v):,.4f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "—"
+
+
 app.jinja_env.filters["money"] = money
 app.jinja_env.filters["money_usd"] = money_usd
+app.jinja_env.filters["aliquota"] = aliquota
 
 
 @app.context_processor
@@ -611,7 +626,17 @@ def products():
         name = request.form["name"].strip()
         sku = request.form.get("sku", "").strip() or None
         category = request.form.get("category", "").strip()
+        fob_price_usd = float(request.form.get("fob_price_usd") or 0)
+        aliquota_rate = float(request.form.get("aliquota_rate") or 0)
         unit_cost = float(request.form.get("unit_cost") or 0)
+
+        if fob_price_usd > 0 and aliquota_rate > 0:
+            unit_cost = round(fob_price_usd * aliquota_rate, 2)
+        elif unit_cost > 0 and fob_price_usd > 0 and aliquota_rate == 0:
+            aliquota_rate = round(unit_cost / fob_price_usd, 4)
+        elif unit_cost > 0 and aliquota_rate > 0 and fob_price_usd == 0:
+            fob_price_usd = round(unit_cost / aliquota_rate, 2)
+
         retail_price = float(request.form.get("retail_price") or 0)
         wholesale_price = float(request.form.get("wholesale_price") or 0)
         installment_12x = float(request.form.get("installment_12x") or 0)
@@ -624,8 +649,9 @@ def products():
         promo_eligible = 1 if request.form.get("promo_eligible") else 0
         with db() as conn:
             conn.execute(
-                "INSERT INTO products(name,sku,category,unit_cost,retail_price,wholesale_price,installment_12x,installment_18x,promo_eligible) VALUES(?,?,?,?,?,?,?,?,?)",
-                (name, sku, category, unit_cost, retail_price, wholesale_price, installment_12x, installment_18x, promo_eligible),
+                """INSERT INTO products(name,sku,category,fob_price_usd,aliquota_rate,unit_cost,retail_price,wholesale_price,installment_12x,installment_18x,promo_eligible)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, retail_price, wholesale_price, installment_12x, installment_18x, promo_eligible),
             )
             conn.commit()
         audit("product.created", name)
@@ -667,11 +693,24 @@ def edit_product(pid):
         if installment_18x == 0:
             installment_18x = round((retail_price * 1.1437722) / 18, 2)
 
+    fob_price_usd = float(request.form.get("fob_price_usd") or 0)
+    aliquota_rate = float(request.form.get("aliquota_rate") or 0)
+    unit_cost = float(request.form.get("unit_cost") or 0)
+
+    if fob_price_usd > 0 and aliquota_rate > 0:
+        unit_cost = round(fob_price_usd * aliquota_rate, 2)
+    elif unit_cost > 0 and fob_price_usd > 0 and aliquota_rate == 0:
+        aliquota_rate = round(unit_cost / fob_price_usd, 4)
+    elif unit_cost > 0 and aliquota_rate > 0 and fob_price_usd == 0:
+        fob_price_usd = round(unit_cost / aliquota_rate, 2)
+
     fields = (
         request.form.get("name", "").strip(),
         request.form.get("sku", "").strip() or None,
         request.form.get("category", "").strip(),
-        float(request.form.get("unit_cost") or 0),
+        fob_price_usd,
+        aliquota_rate,
+        unit_cost,
         retail_price,
         float(request.form.get("wholesale_price") or 0),
         installment_12x,
@@ -680,7 +719,11 @@ def edit_product(pid):
         pid,
     )
     with db() as conn:
-        conn.execute("UPDATE products SET name=?,sku=?,category=?,unit_cost=?,retail_price=?,wholesale_price=?,installment_12x=?,installment_18x=?,promo_eligible=? WHERE id=?", fields)
+        conn.execute(
+            """UPDATE products SET name=?,sku=?,category=?,fob_price_usd=?,aliquota_rate=?,unit_cost=?,retail_price=?,wholesale_price=?,installment_12x=?,installment_18x=?,promo_eligible=?
+               WHERE id=?""",
+            fields,
+        )
         conn.commit()
     audit("product.updated", f"product_id={pid}")
     flash("Produto atualizado.", "success")
@@ -736,7 +779,9 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     i_name = idx(["produto", "product", "modelo", "model", "nome", "name", "descricao", "description"])
     i_sku = idx(["sku", "codigo", "code"])
     i_category = idx(["categoria", "category", "tipo", "type"])
-    i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo"])
+    i_fob = idx(["fob", "fob (usd)", "fob usd", "preco fob", "usd fob", "valor fob"])
+    i_aliquota = idx(["aliquota", "aliquota real", "aliquota (r$/usd)", "taxa aliquota", "aliquota r$"])
+    i_cost = idx(["custo", "unit_cost", "cost", "custo unitario", "valor custo", "custo galpao"])
     i_wholesale = idx(["atacado", "wholesale", "wholesale_price", "preco atacado", "valor atacado"])
     i_retail = idx(["varejo", "retail", "retail_price", "preco varejo", "valor varejo", "preco", "price"])
     i_inst_12x = idx(["12x varejo", "12x", "12x (parcela)", "parcela 12x", "12x varejo (parcela)"])
@@ -749,7 +794,7 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     def parse_float(val):
         if val is None:
             return 0.0
-        s = str(val).strip().replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+        s = str(val).strip().replace("R$", "").replace("$", "").replace(" ", "").replace(".", "").replace(",", ".")
         try:
             return float(s)
         except Exception:
@@ -762,7 +807,17 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
         name = str(raw[i_name] or "").strip() if i_name is not None and i_name < len(raw) else ""
         sku = str(raw[i_sku] or "").strip() if i_sku is not None and i_sku < len(raw) else ""
         category = str(raw[i_category] or "").strip() if i_category is not None and i_category < len(raw) else ""
+        fob_price_usd = parse_float(raw[i_fob]) if i_fob is not None and i_fob < len(raw) else 0.0
+        aliquota_rate = parse_float(raw[i_aliquota]) if i_aliquota is not None and i_aliquota < len(raw) else 0.0
         unit_cost = parse_float(raw[i_cost]) if i_cost is not None and i_cost < len(raw) else 0.0
+
+        if fob_price_usd > 0 and aliquota_rate > 0:
+            unit_cost = round(fob_price_usd * aliquota_rate, 2)
+        elif unit_cost > 0 and fob_price_usd > 0 and aliquota_rate == 0:
+            aliquota_rate = round(unit_cost / fob_price_usd, 4)
+        elif unit_cost > 0 and aliquota_rate > 0 and fob_price_usd == 0:
+            fob_price_usd = round(unit_cost / aliquota_rate, 2)
+
         wholesale_price = parse_float(raw[i_wholesale]) if i_wholesale is not None and i_wholesale < len(raw) else 0.0
         retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
         installment_12x = parse_float(raw[i_inst_12x]) if i_inst_12x is not None and i_inst_12x < len(raw) else 0.0
@@ -781,6 +836,8 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
                 "name": clean_product_name(name) if name else sku,
                 "sku": sku or None,
                 "category": category or None,
+                "fob_price_usd": fob_price_usd,
+                "aliquota_rate": aliquota_rate,
                 "unit_cost": unit_cost,
                 "wholesale_price": wholesale_price,
                 "retail_price": retail_price,
@@ -851,17 +908,18 @@ def import_products():
             if existing:
                 conn.execute(
                     """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
-                       unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
+                       fob_price_usd=?, aliquota_rate=?, unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
+                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
-                    """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
+                    """INSERT INTO products (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
                 )
                 created_count += 1
+        conn.commit()
         conn.commit()
 
     audit("products.imported", f"created={created_count}; updated={updated_count}")
@@ -1153,6 +1211,15 @@ def imports():
                 imp_dict["avg_usd_rate"] = round(supplier_brl / float(imp_dict.get("invoice_amount_usd")), 4)
             else:
                 imp_dict["avg_usd_rate"] = float(imp_dict.get("usd_rate") or 0.0)
+
+            # Cálculo da Alíquota Real do Dólar da Importação (R$ Total de Despesas / US$ Invoice)
+            inv_usd = float(imp_dict.get("invoice_amount_usd") or 0.0)
+            if inv_usd > 0 and total_costs_brl > 0:
+                imp_dict["landed_aliquota"] = round(total_costs_brl / inv_usd, 4)
+            elif supplier_usd > 0 and total_costs_brl > 0:
+                imp_dict["landed_aliquota"] = round(total_costs_brl / supplier_usd, 4)
+            else:
+                imp_dict["landed_aliquota"] = 0.0
 
             result_imports.append(imp_dict)
 

@@ -41,11 +41,17 @@
       <span><small>Total Pago Fornecedor</small><b>{{ i.supplier_brl|money }}</b></span>
       <span>
         <small>Dólar Médio (Chineses)</small>
-        <b class="text-accent" style="font-size: 1.1rem;" title="Câmbio Médio = Total Pago em R$ / Total Pago em USD">
+        <b class="text-accent" style="font-size: 1.1rem;" title="Câmbio Médio = Total Pago em R$ ao Fornecedor / Total Pago em USD">
           {{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}
         </b>
       </span>
       <span><small>Custos Landed (Total R$)</small><b>{{ i.costs_brl|money }}</b></span>
+      <span>
+        <small>Alíquota Real (R$/USD)</small>
+        <b class="badge warning" style="font-size: 1.05rem; font-weight: 700; padding: 4px 8px;" title="Alíquota = (Pagamentos China R$ + Fretes + Impostos + Aduana + Extras R$) / Total USD Invoice">
+          {{ 'R$ %.4f / $'|format(i.landed_aliquota) if i.landed_aliquota else '—' }}
+        </b>
+      </span>
     {% endif %}
     <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
   </div>

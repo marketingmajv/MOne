@@ -23,7 +23,13 @@
     <thead>
       <tr>
         <th>Produto</th>
-        <th>Custo</th>
+        {% if me.role in ['admin', 'finance', 'support'] %}
+          <th>FOB (USD)</th>
+          <th>Alíquota Real</th>
+          <th>Custo Galpão</th>
+        {% else %}
+          <th>Custo</th>
+        {% endif %}
         <th>Atacado</th>
         <th>Varejo à Vista</th>
         <th>Parcela 12x</th>
@@ -40,13 +46,21 @@
     {% for p in products %}
       <tr>
         <td><b>{{ p.name }}</b></td>
-        <td>
-          {% if me.role in ['admin', 'finance', 'support'] %}
-            {{ p.unit_cost|money }}
-          {% else %}
-            <span class="muted">Oculto</span>
-          {% endif %}
-        </td>
+        {% if me.role in ['admin', 'finance', 'support'] %}
+          <td>{{ p.fob_price_usd|money_usd if p.fob_price_usd else '—' }}</td>
+          <td>
+            {% if p.aliquota_rate and p.aliquota_rate > 0 %}
+              <span class="badge warning" style="font-weight: 700; font-size: 0.85rem;" title="Alíquota = R$ Total Gasto / US$ Total Invoice">
+                {{ p.aliquota_rate|aliquota }} / $
+              </span>
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td><b>{{ p.unit_cost|money }}</b></td>
+        {% else %}
+          <td><span class="muted">Oculto</span></td>
+        {% endif %}
         <td>{{ p.wholesale_price|money }}</td>
         <td><b>{{ p.retail_price|money }}</b></td>
         <td>{{ p.installment_12x|money }}</td>
@@ -75,7 +89,7 @@
         {% endif %}
       </tr>
     {% else %}
-      <tr><td colspan="10" class="empty">Nenhum produto cadastrado.</td></tr>
+      <tr><td colspan="12" class="empty">Nenhum produto cadastrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -94,8 +108,15 @@
       <label class="span-2">Modelo / Nome
         <input name="name" value="{{ p.name }}" required>
       </label>
-      <label>Custo unitário (R$)
-        <input type="number" step="0.01" name="unit_cost" value="{{ p.unit_cost }}">
+      <label>Preço FOB (USD)
+        <input type="number" step="0.01" name="fob_price_usd" id="edit_fob_{{ p.id }}" value="{{ p.fob_price_usd or 0 }}" oninput="calcProdCost('edit', '{{ p.id }}')">
+      </label>
+      <label>Alíquota Real (R$/USD)
+        <input type="number" step="0.0001" name="aliquota_rate" id="edit_aliquota_{{ p.id }}" value="{{ p.aliquota_rate or 0 }}" placeholder="Ex.: 8.8889" oninput="calcProdCost('edit', '{{ p.id }}')">
+      </label>
+      <label class="span-2">Custo Unitário no Galpão (R$)
+        <input type="number" step="0.01" name="unit_cost" id="edit_cost_{{ p.id }}" value="{{ p.unit_cost or 0 }}">
+        <small class="muted">Calculado automaticamente: FOB (USD) × Alíquota (R$/USD)</small>
       </label>
       <label>Preço atacado (R$)
         <input type="number" step="0.01" name="wholesale_price" value="{{ p.wholesale_price }}">
@@ -131,7 +152,16 @@
     </div>
     <form method="post" class="form-grid">
       <label class="span-2">Modelo / nome<input name="name" required placeholder="Ex.: Scooter V80 PRO"></label>
-      <label>Custo unitário<input type="number" step="0.01" name="unit_cost" value="0"></label>
+      <label>Preço FOB (USD)
+        <input type="number" step="0.01" name="fob_price_usd" id="new_fob_new" value="0" oninput="calcProdCost('new', 'new')">
+      </label>
+      <label>Alíquota Real (R$/USD)
+        <input type="number" step="0.0001" name="aliquota_rate" id="new_aliquota_new" value="0" placeholder="Ex.: 8.8889" oninput="calcProdCost('new', 'new')">
+      </label>
+      <label class="span-2">Custo Unitário no Galpão (R$)
+        <input type="number" step="0.01" name="unit_cost" id="new_cost_new" value="0">
+        <small class="muted">Calculado automaticamente: FOB (USD) × Alíquota (R$/USD)</small>
+      </label>
       <label>Preço atacado<input type="number" step="0.01" name="wholesale_price" value="0"></label>
       <label>Preço varejo à vista<input type="number" step="0.01" name="retail_price" value="0"></label>
       <label>Parcela 12x<input type="number" step="0.01" name="installment_12x" value="0"></label>
@@ -165,7 +195,7 @@
       </label>
       <div class="span-2 muted-box" style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem;">
         <strong>Colunas reconhecidas automaticamente:</strong><br>
-        <code>MODELO</code> | <code>ATACADO</code> | <code>VAREJO</code> | <code>12x VAREJO (parcela)</code> | <code>18x VAREJO (parcela)</code>
+        <code>MODELO</code> | <code>FOB (USD)</code> | <code>ALÍQUOTA</code> | <code>CUSTO GALPÃO</code> | <code>ATACADO</code> | <code>VAREJO</code> | <code>12x VAREJO</code> | <code>18x VAREJO</code>
       </div>
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('importProductsModal')">Cancelar</button>
@@ -174,6 +204,21 @@
     </form>
   </div>
 </div>
+
+<script>
+function calcProdCost(prefix, id) {
+  const fobEl = document.getElementById(prefix + '_fob_' + id);
+  const aliEl = document.getElementById(prefix + '_aliquota_' + id);
+  const costEl = document.getElementById(prefix + '_cost_' + id);
+  if (fobEl && aliEl && costEl) {
+    const fob = parseFloat(fobEl.value) || 0;
+    const ali = parseFloat(aliEl.value) || 0;
+    if (fob > 0 && ali > 0) {
+      costEl.value = (fob * ali).toFixed(2);
+    }
+  }
+}
+</script>
 {% endblock %}
 
 
