@@ -6,6 +6,7 @@ Responsável pelo upload, parsing por IA (Gemini), cálculo e geração de orça
 import os
 import re
 import json
+import base64
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -13,6 +14,7 @@ from gemini_service import get_gemini_api_key
 
 # CEP Padrão da Loja/CD MAJ (Vitória - ES)
 DEFAULT_MAJ_CEP = "29045-660"
+
 
 def clean_cep(cep_raw: str) -> str:
     """Remove caracteres não numéricos do CEP e garante 8 dígitos."""

@@ -2,170 +2,239 @@
 
 {% block title %}Consulta de Frete — M-One{% endblock %}
 {% block page_title %}Consulta de Fretes & Transportadoras{% endblock %}
-{% block page_subtitle %}Simulação instantânea com múltiplos modelos, 1/3 do valor de atacado e gestão de tabelas{% endblock %}
+{% block page_subtitle %}Simulação instantânea multi-produtos com dimensões, peso e 1/3 do valor de atacado{% endblock %}
 
 {% block content %}
-<div class="grid-2-col gap-6">
-  <!-- COLUNA 1: SIMULADOR DE FRETE (MÚLTIPLOS MODELOS DE PRODUTO) -->
-  <div class="card shadow-lg">
-    <div class="card-header border-b border-border-color pb-4 mb-4 flex justify-between items-center">
+<div class="freight-container space-y-6">
+  
+  <!-- KPI STATS TOPBAR -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="stat-card bg-slate-900/80 p-4 rounded-xl border border-border-color flex items-center gap-4">
+      <div class="p-3 bg-primary/20 text-primary rounded-lg text-2xl">🚚</div>
       <div>
-        <h2 class="text-xl font-bold flex items-center gap-2">
-          <span>🚚</span> Simulador de Frete Multi-Produtos
-        </h2>
-        <p class="text-sm text-muted">Consulte os fretes por CEP. O seguro é estritamente 1/3 do valor de atacado.</p>
+        <span class="text-xs text-muted font-medium uppercase tracking-wider block">Transportadoras</span>
+        <strong class="text-2xl font-bold">{{ carriers|length }} ativas</strong>
       </div>
     </div>
 
-    <form id="freightCalcForm" class="form-grid" onsubmit="event.preventDefault(); runFreightCalculation();">
-      <label class="span-2">
-        Nome do Cliente (opcional para a mensagem no WhatsApp)
-        <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="input-field">
-      </label>
-
-      <label>
-        CEP Destino *
-        <div class="flex gap-2">
-          <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="input-field flex-1" onblur="lookupViaCEP(this.value)">
-          <button type="button" class="btn secondary" onclick="lookupViaCEP(document.getElementById('cep_dest').value)">Buscar CEP</button>
-        </div>
-        <small id="cepLocationText" class="text-xs text-muted block mt-1"></small>
-      </label>
-
-      <label>
-        CEP Origem (Loja/CD MAJ)
-        <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="input-field">
-      </label>
-
-      <!-- SEÇÃO DE MÚLTIPLOS MODELOS DE PRODUTOS -->
-      <div class="span-2 bg-slate-900/60 p-4 rounded-lg border border-border-color mt-2 mb-2">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-md font-bold flex items-center gap-2">
-            <span>📦</span> Produtos da Cotação (Modelos e Quantidades)
-          </h3>
-          <button type="button" class="btn secondary sm" onclick="addProductRow()">
-            <span>+</span> Adicionar Modelo
-          </button>
-        </div>
-
-        <div id="productRowsContainer" class="space-y-3">
-          <!-- A primeira linha é gerada automaticamente -->
-        </div>
-
-        <!-- RESUMO AUTOMÁTICO DOS ITENS -->
-        <div class="border-t border-border-color/50 pt-3 mt-3 flex justify-between items-center text-sm">
-          <div>
-            <span class="text-muted">Total de Itens:</span> <strong id="summaryTotalQty">0</strong>
-          </div>
-          <div>
-            <span class="text-muted">Valor de Seguro (1/3 Atacado):</span> <strong id="summaryTotalInsurance" class="text-primary">R$ 0.00</strong>
-          </div>
-        </div>
+    <div class="stat-card bg-slate-900/80 p-4 rounded-xl border border-border-color flex items-center gap-4">
+      <div class="p-3 bg-info/20 text-info rounded-lg text-2xl">📊</div>
+      <div>
+        <span class="text-xs text-muted font-medium uppercase tracking-wider block">Tabelas de Frete</span>
+        <strong class="text-2xl font-bold">{{ tables|length }} carregadas</strong>
       </div>
+    </div>
 
-      <div class="span-2 form-actions mt-2">
-        <button type="submit" class="btn primary w-full flex items-center justify-center gap-2 py-3 text-lg">
-          <span>🔍</span> Calcular Frete Agora
-        </button>
+    <div class="stat-card bg-slate-900/80 p-4 rounded-xl border border-border-color flex items-center gap-4">
+      <div class="p-3 bg-success/20 text-success rounded-lg text-2xl">🛡️</div>
+      <div>
+        <span class="text-xs text-muted font-medium uppercase tracking-wider block">Regra de Seguro</span>
+        <strong class="text-2xl font-bold text-success">1/3 do Atacado</strong>
       </div>
-    </form>
+    </div>
 
-    <!-- ÁREA DE RESULTADOS DO FRETE -->
-    <div id="freightResultsArea" class="mt-6 hidden">
-      <div class="border-t border-border-color pt-4 mb-3 flex justify-between items-center">
-        <h3 class="text-lg font-bold">Opções de Frete Encontradas</h3>
-        <button type="button" class="btn success sm" onclick="copyWhatsAppMessage()">
-          <span>📲</span> Copiar para WhatsApp
-        </button>
-      </div>
-
-      <div id="freightOptionsList" class="space-y-3">
-        <!-- Renderizado dinamicamente via JS -->
+    <div class="stat-card bg-slate-900/80 p-4 rounded-xl border border-border-color flex items-center gap-4">
+      <div class="p-3 bg-warning/20 text-warning rounded-lg text-2xl">📍</div>
+      <div>
+        <span class="text-xs text-muted font-medium uppercase tracking-wider block">Origem Padrão</span>
+        <strong class="text-xl font-bold">{{ default_cep }}</strong>
       </div>
     </div>
   </div>
 
-  <!-- COLUNA 2: GESTÃO DE TABELAS DE FRETE -->
-  <div class="space-y-6">
-    <!-- UPLOAD DE TABELA COM IA -->
-    <div class="card shadow-lg">
-      <div class="card-header border-b border-border-color pb-3 mb-4">
-        <h2 class="text-lg font-bold flex items-center gap-2">
-          <span>🤖</span> Importar Tabela com IA (Gemini)
-        </h2>
-        <p class="text-sm text-muted">Faça upload da tabela enviada pela transportadora em PDF, Excel ou CSV</p>
-      </div>
-
-      <form method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="form-grid">
-        <label class="span-2">
-          Nome da Transportadora *
-          <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress, Solistica, TNT" class="input-field" list="carrier_list">
-          <datalist id="carrier_list">
-            {% for c in carriers %}
-            <option value="{{ c.name }}"></option>
-            {% endfor %}
-          </datalist>
-        </label>
-
-        <label class="span-2">
-          Nome da Tabela / Região *
-          <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026, Tabela Nordeste Aérea" class="input-field">
-        </label>
-
-        <label class="span-2">
-          Arquivo da Tabela (PDF, XLSX, XLS, CSV) *
-          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="input-field">
-        </label>
-
-        <div class="span-2 form-actions mt-2">
-          <button class="btn secondary w-full flex items-center justify-center gap-2">
-            <span>⚡</span> Processar Tabela com Gemini IA
-          </button>
+  <!-- LAYOUT PRINCIPAL EM 2 COLUNAS -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- PAINEL ESQUERDO: SIMULADOR DE FRETE (8 COLUNAS) -->
+    <div class="lg:col-span-8 space-y-6">
+      <div class="card shadow-2xl border border-border-color bg-slate-900/90 rounded-2xl p-6">
+        
+        <div class="border-b border-border-color pb-4 mb-5 flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h2 class="text-2xl font-extrabold flex items-center gap-2">
+              <span>⚡</span> Calculadora Multi-Produtos
+            </h2>
+            <p class="text-sm text-muted">Informe os modelos, quantidades e o CEP de destino do cliente</p>
+          </div>
         </div>
-      </form>
+
+        <form id="freightCalcForm" onsubmit="event.preventDefault(); runFreightCalculation();" class="space-y-6">
+          
+          <!-- DADOS DO CLIENTE E CEPS (GRID 3 COLUNAS) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Cliente (Opcional)</label>
+              <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="input-field w-full">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">CEP Destino *</label>
+              <div class="flex gap-2">
+                <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="input-field w-full" onblur="lookupViaCEP(this.value)">
+                <button type="button" class="btn secondary px-3" onclick="lookupViaCEP(document.getElementById('cep_dest').value)">🔍</button>
+              </div>
+              <small id="cepLocationText" class="text-xs text-info block mt-1"></small>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">CEP Origem (Loja MAJ)</label>
+              <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="input-field w-full">
+            </div>
+          </div>
+
+          <!-- TABELA DINÂMICA DE PRODUTOS DA COTAÇÃO -->
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-border-color/80 space-y-4">
+            <div class="flex justify-between items-center border-b border-border-color/60 pb-3">
+              <div>
+                <h3 class="text-md font-bold flex items-center gap-2">
+                  <span>📦</span> Produtos da Cotação
+                </h3>
+                <small class="text-xs text-muted">Adicione quantos modelos e quantidades quiser</small>
+              </div>
+              <button type="button" class="btn primary sm flex items-center gap-1" onclick="addProductRow()">
+                <span>+</span> Adicionar Modelo
+              </button>
+            </div>
+
+            <!-- TABELA RESPONSIVA DE ITENS -->
+            <div class="table-responsive">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-border-color text-xs text-muted uppercase tracking-wider">
+                    <th class="py-2 px-2" style="width: 35%;">Modelo do Veículo / Produto</th>
+                    <th class="py-2 px-2 text-center" style="width: 10%;">Qtd</th>
+                    <th class="py-2 px-2 text-center" style="width: 13%;">Peso (kg)</th>
+                    <th class="py-2 px-2 text-center" style="width: 22%;">Medidas (C x L x A cm)</th>
+                    <th class="py-2 px-2 text-right" style="width: 15%;">1/3 Atacado Un.</th>
+                    <th class="py-2 px-2 text-center" style="width: 5%;"></th>
+                  </tr>
+                </thead>
+                <tbody id="productRowsTableBody" class="divide-y divide-border-color/40">
+                  <!-- As linhas são inseridas via Javascript -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- RESUMO EM TEMPO REAL DA CARGA -->
+            <div class="bg-slate-900 p-3 rounded-lg flex flex-wrap justify-between items-center gap-4 text-xs border border-border-color/50">
+              <div class="flex items-center gap-6">
+                <div>Total de Itens: <strong id="summaryTotalQty" class="text-base text-white">0</strong></div>
+                <div>Peso Físico Total: <strong id="summaryTotalWeight" class="text-base text-white">0 kg</strong></div>
+                <div>Peso Cúbico Est.: <strong id="summaryCubicWeight" class="text-base text-info">0 kg</strong></div>
+              </div>
+              <div class="text-right">
+                <span>Base de Seguro Total (1/3 Atacado):</span>
+                <strong id="summaryTotalInsurance" class="text-lg text-success block">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTÃO DE AÇÃO -->
+          <div>
+            <button type="submit" class="btn primary w-full py-4 text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+              <span>🔍</span> Calcular Melhores Opções de Frete
+            </button>
+          </div>
+
+        </form>
+
+        <!-- RESULTADOS DO FRETE -->
+        <div id="freightResultsArea" class="mt-8 hidden">
+          <div class="border-t border-border-color pt-6 mb-4 flex justify-between items-center flex-wrap gap-2">
+            <div>
+              <h3 class="text-xl font-bold flex items-center gap-2">
+                <span>🏆</span> Opções Disponíveis de Frete
+              </h3>
+              <p class="text-xs text-muted">Ordenadas do menor para o maior preço total com taxas e seguro inclusos</p>
+            </div>
+            <button type="button" class="btn success flex items-center gap-2" onclick="copyWhatsAppMessage()">
+              <span>📲</span> Copiar Texto para WhatsApp
+            </button>
+          </div>
+
+          <div id="freightOptionsList" class="space-y-3">
+            <!-- Resultados inseridos via JS -->
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <!-- TABELAS CADASTRADAS -->
-    <div class="card shadow-lg">
-      <div class="card-header border-b border-border-color pb-3 mb-3">
-        <h3 class="text-md font-bold">Tabelas Ativas no Sistema</h3>
+    <!-- PAINEL DIREITO: GESTÃO DE TABELAS DE FRETE (4 COLUNAS) -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- UPLOAD DE TABELA DE TRANSPORTADORA COM IA -->
+      <div class="card shadow-xl border border-border-color bg-slate-900/90 rounded-2xl p-5">
+        <div class="border-b border-border-color pb-3 mb-4">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <span>🤖</span> Importar Tabela com IA
+          </h2>
+          <p class="text-xs text-muted">Faça upload da tabela em PDF, Excel (.xlsx) ou CSV</p>
+        </div>
+
+        <form method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Transportadora *</label>
+            <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress, Solistica" class="input-field w-full" list="carrier_list">
+            <datalist id="carrier_list">
+              {% for c in carriers %}
+              <option value="{{ c.name }}"></option>
+              {% endfor %}
+            </datalist>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Nome da Tabela / Região *</label>
+            <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="input-field w-full">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Arquivo da Tabela *</label>
+            <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="input-field w-full text-xs">
+          </div>
+
+          <button class="btn secondary w-full py-3 flex items-center justify-center gap-2 font-semibold">
+            <span>⚡</span> Ler Tabela com Gemini IA
+          </button>
+        </form>
       </div>
 
-      {% if tables %}
-      <div class="table-responsive">
-        <table class="table hover">
-          <thead>
-            <tr>
-              <th>Transportadora</th>
-              <th>Tabela</th>
-              <th>Regras</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for t in tables %}
-            <tr>
-              <td><strong>{{ t.carrier_name }}</strong></td>
-              <td>{{ t.table_name }}</td>
-              <td><span class="badge info">{{ t.rates_count }} faixas</span></td>
-              <td>
-                <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');" style="display:inline;">
-                  <button type="submit" class="btn danger sm">Excluir</button>
-                </form>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <!-- TABELAS CADASTRADAS NO SISTEMA -->
+      <div class="card shadow-xl border border-border-color bg-slate-900/90 rounded-2xl p-5">
+        <div class="border-b border-border-color pb-3 mb-3 flex justify-between items-center">
+          <h3 class="text-md font-bold">Tabelas Ativas no Sistema</h3>
+          <span class="badge info">{{ tables|length }} ativas</span>
+        </div>
+
+        {% if tables %}
+        <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+          {% for t in tables %}
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-border-color/60 flex justify-between items-center">
+            <div>
+              <strong class="text-sm block">{{ t.carrier_name }}</strong>
+              <span class="text-xs text-muted block">{{ t.table_name }}</span>
+              <small class="text-xs text-info">{{ t.rates_count }} faixas cadastradas</small>
+            </div>
+            <div>
+              <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');">
+                <button type="submit" class="btn danger sm px-2 py-1 text-xs">Excluir</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state py-8 text-center text-muted border border-dashed border-border-color/60 rounded-xl">
+          <p class="text-sm">Nenhuma tabela de frete importada ainda.</p>
+          <small class="text-xs block mt-1">Envie o PDF ou Excel da transportadora no formulário acima.</small>
+        </div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="empty-state py-6 text-center text-muted">
-        <p>Nenhuma tabela de frete importada ainda.</p>
-        <small>Utilize o formulário acima para enviar o PDF ou Excel fornecido pela transportadora.</small>
-      </div>
-      {% endif %}
+
     </div>
+
   </div>
+
 </div>
 {% endblock %}
 
@@ -176,52 +245,60 @@ let lastFreightCalculationResult = null;
 let itemRowCounter = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
-  addProductRow(); // Adiciona a 1ª linha por padrão
+  addProductRow(); // Adiciona a 1ª linha automaticamente ao carregar
 });
 
 function addProductRow() {
   itemRowCounter++;
-  const container = document.getElementById("productRowsContainer");
+  const tbody = document.getElementById("productRowsTableBody");
   
-  let optionsHtml = `<option value="">-- Selecione o Modelo --</option>`;
+  let optionsHtml = `<option value="">-- Selecione o Veículo / Modelo --</option>`;
   productsCatalog.forEach(p => {
-    optionsHtml += `<option value="${p.id}" data-wholesale="${p.wholesale_price}" data-onethird="${p.one_third_wholesale}">${p.name} (1/3 Atacado: R$ ${p.one_third_wholesale.toFixed(2)})</option>`;
+    optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-wholesale="${p.wholesale_price}" data-onethird="${p.one_third_wholesale}" data-weight="${p.weight_kg}" data-l="${p.length_cm}" data-w="${p.width_cm}" data-h="${p.height_cm}">${p.name} (1/3 Atacado: R$ ${p.one_third_wholesale.toFixed(2)})</option>`;
   });
 
   const rowId = `productRow_${itemRowCounter}`;
-  const rowHtml = `
-    <div id="${rowId}" class="flex flex-wrap gap-2 items-center bg-slate-800/80 p-3 rounded border border-border-color">
-      <div class="flex-1 min-w-[200px]">
-        <select class="input-field product-select" onchange="updateRowDetails('${rowId}')">
-          ${optionsHtml}
-        </select>
+  const tr = document.createElement("tr");
+  tr.id = rowId;
+  tr.className = "hover:bg-slate-900/50 transition-all";
+
+  tr.innerHTML = `
+    <td class="py-2 px-2">
+      <select class="input-field product-select w-full text-xs" onchange="onProductSelectChange('${rowId}')">
+        ${optionsHtml}
+      </select>
+    </td>
+    <td class="py-2 px-2 text-center">
+      <input type="number" min="1" value="1" class="input-field product-qty text-center text-xs w-16" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+    </td>
+    <td class="py-2 px-2 text-center">
+      <input type="number" step="0.1" value="85" class="input-field product-weight text-center text-xs w-20" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+    </td>
+    <td class="py-2 px-2">
+      <div class="flex items-center gap-1 text-xs">
+        <input type="number" value="180" placeholder="C" class="input-field product-length text-center text-xs w-14" onchange="updateTotalsSummary()">
+        <span>x</span>
+        <input type="number" value="70" placeholder="L" class="input-field product-width text-center text-xs w-14" onchange="updateTotalsSummary()">
+        <span>x</span>
+        <input type="number" value="110" placeholder="A" class="input-field product-height text-center text-xs w-14" onchange="updateTotalsSummary()">
       </div>
-      <div class="w-24">
-        <label class="text-xs text-muted block mb-1">Qtd</label>
-        <input type="number" min="1" value="1" class="input-field product-qty" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
-      </div>
-      <div class="w-28">
-        <label class="text-xs text-muted block mb-1">Peso Un. (kg)</label>
-        <input type="number" step="0.1" value="85" class="input-field product-weight" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
-      </div>
-      <div class="w-32 text-right">
-        <label class="text-xs text-muted block mb-1">1/3 Atacado</label>
-        <span class="product-onethird-display text-sm font-semibold text-primary block mt-2">R$ 0.00</span>
-      </div>
-      <div class="pt-4">
-        <button type="button" class="btn danger sm" onclick="removeProductRow('${rowId}')">×</button>
-      </div>
-    </div>
+    </td>
+    <td class="py-2 px-2 text-right">
+      <span class="product-onethird-display text-sm font-semibold text-primary block">R$ 0,00</span>
+    </td>
+    <td class="py-2 px-2 text-center">
+      <button type="button" class="btn danger sm px-2 py-1" onclick="removeProductRow('${rowId}')">×</button>
+    </td>
   `;
 
-  container.insertAdjacentHTML("beforeend", rowHtml);
+  tbody.appendChild(tr);
   updateTotalsSummary();
 }
 
 function removeProductRow(rowId) {
-  const container = document.getElementById("productRowsContainer");
-  if (container.children.length <= 1) {
-    alert("Você deve manter ao menos 1 produto na cotação.");
+  const tbody = document.getElementById("productRowsTableBody");
+  if (tbody.children.length <= 1) {
+    alert("A cotação deve conter ao menos 1 item.");
     return;
   }
   const elem = document.getElementById(rowId);
@@ -229,39 +306,77 @@ function removeProductRow(rowId) {
   updateTotalsSummary();
 }
 
-function updateRowDetails(rowId) {
+function onProductSelectChange(rowId) {
   const row = document.getElementById(rowId);
   if (!row) return;
 
   const select = row.querySelector(".product-select");
   const selectedOpt = select.options[select.selectedIndex];
-  const displaySpan = row.querySelector(".product-onethird-display");
 
-  const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
-  displaySpan.innerText = `R$ ${oneThirdVal.toFixed(2)}`;
+  if (selectedOpt.value) {
+    const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
+    const weightVal = parseFloat(selectedOpt.getAttribute("data-weight") || 85);
+    const lengthVal = parseFloat(selectedOpt.getAttribute("data-l") || 180);
+    const widthVal = parseFloat(selectedOpt.getAttribute("data-w") || 70);
+    const heightVal = parseFloat(selectedOpt.getAttribute("data-h") || 110);
+
+    row.querySelector(".product-onethird-display").innerText = `R$ ${oneThirdVal.toFixed(2)}`;
+    row.querySelector(".product-weight").value = weightVal;
+    row.querySelector(".product-length").value = lengthVal;
+    row.querySelector(".product-width").value = widthVal;
+    row.querySelector(".product-height").value = heightVal;
+  } else {
+    row.querySelector(".product-onethird-display").innerText = "R$ 0,00";
+  }
 
   updateTotalsSummary();
 }
 
 function updateTotalsSummary() {
-  const rows = document.querySelectorAll("#productRowsContainer > div");
+  const rows = document.querySelectorAll("#productRowsTableBody > tr");
   let totalQty = 0;
+  let totalPhysicalWeight = 0;
+  let totalCubicWeight = 0;
   let totalInsurance = 0;
 
   rows.forEach(row => {
     const select = row.querySelector(".product-select");
     const qtyInput = row.querySelector(".product-qty");
+    const weightInput = row.querySelector(".product-weight");
+    const lInput = row.querySelector(".product-length");
+    const wInput = row.querySelector(".product-width");
+    const hInput = row.querySelector(".product-height");
     const selectedOpt = select.options[select.selectedIndex];
-    
-    const qty = parseInt(qtyInput.value || 1);
+
+    const qty = intVal(qtyInput.value, 1);
+    const weight = floatVal(weightInput.value, 0);
+    const l = floatVal(lInput.value, 0);
+    const w = floatVal(wInput.value, 0);
+    const h = floatVal(hInput.value, 0);
     const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
 
+    // Peso cúbico = (C x L x A / 6000) * Qtd
+    const cubicWeightPerUnit = (l * w * h) / 6000.0;
+
     totalQty += qty;
+    totalPhysicalWeight += (weight * qty);
+    totalCubicWeight += (cubicWeightPerUnit * qty);
     totalInsurance += (oneThirdVal * qty);
   });
 
   document.getElementById("summaryTotalQty").innerText = totalQty;
+  document.getElementById("summaryTotalWeight").innerText = `${totalPhysicalWeight.toFixed(1)} kg`;
+  document.getElementById("summaryCubicWeight").innerText = `${totalCubicWeight.toFixed(1)} kg`;
   document.getElementById("summaryTotalInsurance").innerText = `R$ ${totalInsurance.toFixed(2)}`;
+}
+
+function intVal(v, def=0) {
+  const p = parseInt(v);
+  return isNaN(p) ? def : p;
+}
+function floatVal(v, def=0.0) {
+  const p = parseFloat(v);
+  return isNaN(p) ? def : p;
 }
 
 async function lookupViaCEP(cepVal) {
@@ -295,33 +410,42 @@ async function runFreightCalculation() {
     return;
   }
 
-  // Coletar itens dos produtos
-  const rows = document.querySelectorAll("#productRowsContainer > div");
+  // Coletar itens da tabela
+  const rows = document.querySelectorAll("#productRowsTableBody > tr");
   const items = [];
 
   rows.forEach(row => {
     const select = row.querySelector(".product-select");
     const qtyInput = row.querySelector(".product-qty");
     const weightInput = row.querySelector(".product-weight");
+    const lInput = row.querySelector(".product-length");
+    const wInput = row.querySelector(".product-width");
+    const hInput = row.querySelector(".product-height");
     const selectedOpt = select.options[select.selectedIndex];
     
     const productId = selectedOpt.value;
-    const qty = parseInt(qtyInput.value || 1);
-    const weight = parseFloat(weightInput.value || 85);
-    const productName = selectedOpt.text ? selectedOpt.text.split("(")[0].trim() : "";
+    const qty = intVal(qtyInput.value, 1);
+    const weight = floatVal(weightInput.value, 85);
+    const l = floatVal(lInput.value, 180);
+    const w = floatVal(wInput.value, 70);
+    const h = floatVal(hInput.value, 110);
+    const productName = selectedOpt.getAttribute("data-name") || (selectedOpt.text ? selectedOpt.text.split("(")[0].trim() : "");
 
     if (productId || weight > 0) {
-      items.append ? items.push({
+      items.push({
         product_id: productId,
         name: productName,
         qty: qty,
-        weight_kg: weight
-      }) : null;
+        weight_kg: weight,
+        length_cm: l,
+        width_cm: w,
+        height_cm: h
+      });
     }
   });
 
   if (items.length === 0) {
-    alert("Selecione ao menos um produto.");
+    alert("Selecione ao menos um produto válido na cotação.");
     return;
   }
 
@@ -329,7 +453,13 @@ async function runFreightCalculation() {
   const optionsList = document.getElementById("freightOptionsList");
   
   resultsArea.classList.remove("hidden");
-  optionsList.innerHTML = `<div class="p-6 text-center text-muted">🔄 Calculando frete para ${items.map(i => i.qty + 'x ' + i.name).join(', ')}...</div>`;
+  optionsList.innerHTML = `
+    <div class="p-8 text-center text-muted bg-slate-950/60 rounded-xl border border-border-color">
+      <div class="inline-block animate-spin text-3xl mb-2">⚡</div>
+      <p class="text-base font-semibold">Calculando frete com seguro de 1/3 do atacado...</p>
+      <small class="text-xs text-muted block mt-1">Comparando regras entre todas as transportadoras ativas</small>
+    </div>
+  `;
 
   try {
     const resp = await fetch("{{ url_for('freight_calculate') }}", {
@@ -343,17 +473,18 @@ async function runFreightCalculation() {
 
     if (!data.success || !data.options || data.options.length === 0) {
       optionsList.innerHTML = `
-        <div class="flash warning">
-          ⚠️ ${data.message || 'Nenhuma transportadora atende este CEP ou faixa de peso cadastrada.'}
+        <div class="flash warning p-4 rounded-xl">
+          ⚠️ ${data.message || 'Nenhuma transportadora cadastrada atende a este CEP ou faixa de peso.'}
         </div>
       `;
       return;
     }
 
     let html = `
-      <div class="bg-slate-900/40 p-3 rounded mb-3 text-sm flex justify-between items-center border border-border-color">
-        <div>📦 <strong>Itens da Cotação</strong>: ${data.product_name}</div>
-        <div>💰 <strong>Base de Seguro (1/3 Atacado)</strong>: <span class="text-primary font-bold">R$ ${data.insurance_base_value.toFixed(2)}</span></div>
+      <div class="bg-slate-950 p-4 rounded-xl border border-border-color text-xs flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div>📦 <strong>Carga</strong>: <span class="text-white font-semibold">${data.product_name}</span></div>
+        <div>⚖️ <strong>Peso Total</strong>: <span class="text-white font-semibold">${data.total_weight_kg.toFixed(1)} kg</span></div>
+        <div>🛡️ <strong>Base Seguro (1/3 Atacado)</strong>: <span class="text-success font-bold text-sm">R$ ${data.insurance_base_value.toFixed(2)}</span></div>
       </div>
     `;
 
@@ -367,19 +498,20 @@ async function runFreightCalculation() {
       }
 
       html += `
-        <div class="card border border-border-color hover:border-primary transition-all p-4 rounded-lg flex justify-between items-center">
+        <div class="card border border-border-color/80 hover:border-primary transition-all p-5 rounded-xl bg-slate-900/90 flex flex-wrap justify-between items-center gap-4">
           <div>
-            <div class="flex items-center">
-              <strong class="text-lg">${opt.carrier_name}</strong>
+            <div class="flex items-center flex-wrap gap-2">
+              <strong class="text-xl font-bold text-white">${opt.carrier_name}</strong>
               ${badgeHtml}
             </div>
-            <p class="text-sm text-muted mt-1">
-              Tabela: ${opt.table_name} | Prazo: <strong class="text-white">${opt.delivery_days} dia(s) útil(eis)</strong>
+            <p class="text-xs text-muted mt-1">
+              Tabela: ${opt.table_name} | Prazo Estimado: <strong class="text-white font-semibold">${opt.delivery_days} dia(s) útil(eis)</strong>
             </p>
-            ${opt.insurance_cost > 0 ? `<small class="text-xs text-muted block">Ad-valorem/Seguro (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2)}</small>` : ''}
+            ${opt.insurance_cost > 0 ? `<small class="text-xs text-muted block mt-1">Taxa de Seguro (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2)}</small>` : ''}
           </div>
           <div class="text-right">
-            <span class="text-2xl font-extrabold text-primary">R$ ${opt.total_price.toFixed(2)}</span>
+            <span class="text-3xl font-extrabold text-primary block">R$ ${opt.total_price.toFixed(2)}</span>
+            <small class="text-xs text-muted block">Frete Total Líquido</small>
           </div>
         </div>
       `;
@@ -387,7 +519,7 @@ async function runFreightCalculation() {
 
     optionsList.innerHTML = html;
   } catch (err) {
-    optionsList.innerHTML = `<div class="flash danger">Erro ao realizar cálculo: ${err.message}</div>`;
+    optionsList.innerHTML = `<div class="flash danger p-4 rounded-xl">Erro ao realizar cálculo: ${err.message}</div>`;
   }
 }
 

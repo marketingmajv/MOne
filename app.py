@@ -2404,13 +2404,34 @@ def freight():
         products = []
         for p in products_raw:
             w_price = float(p.get("wholesale_price") or 0)
+            p_name_upper = (p.get("name") or "").upper()
+            w_kg = 85.0
+            l_cm = 180.0
+            wi_cm = 70.0
+            h_cm = 110.0
+            if "MINI" in p_name_upper or "V8" in p_name_upper:
+                w_kg = 55.0
+                l_cm = 150.0
+                wi_cm = 60.0
+                h_cm = 95.0
+            elif "MAX" in p_name_upper or "GP" in p_name_upper:
+                w_kg = 90.0
+                l_cm = 185.0
+                wi_cm = 75.0
+                h_cm = 115.0
+
             products.append({
                 "id": p.get("id"),
                 "name": p.get("name"),
                 "wholesale_price": w_price,
                 "one_third_wholesale": round(w_price / 3.0, 2),
-                "retail_price": float(p.get("retail_price") or 0)
+                "retail_price": float(p.get("retail_price") or 0),
+                "weight_kg": w_kg,
+                "length_cm": l_cm,
+                "width_cm": wi_cm,
+                "height_cm": h_cm
             })
+
         
         # Buscar transportadoras e tabelas cadastradas
         sql_t = """
