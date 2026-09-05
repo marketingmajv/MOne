@@ -691,3 +691,47 @@ tr:hover td {
     align-items: stretch;
   }
 }
+
+/* High Contrast Input & Custom Table Utility Classes */
+.input-high-contrast {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  font-weight: 700 !important;
+  border: 1.5px solid #0070F3 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.input-high-contrast::placeholder {
+  color: #94A3B8 !important;
+  font-weight: 400 !important;
+}
+
+.input-high-contrast:focus {
+  border-color: #00E599 !important;
+  box-shadow: 0 0 0 3px rgba(0, 229, 153, 0.25) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #222222;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
+
+/* SVG Icon alignment helper */
+.icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+

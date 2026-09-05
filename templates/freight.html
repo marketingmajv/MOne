@@ -5,51 +5,54 @@
 {% block page_subtitle %}Simulação instantânea multi-produtos com dimensões, peso e 1/3 do valor de atacado{% endblock %}
 
 {% block content %}
-<div class="max-w-[1600px] mx-auto space-y-5 text-slate-200 font-sans">
+<div class="max-w-[1600px] mx-auto space-y-6 text-slate-200 font-sans">
 
-  <!-- TOP HEADER COM BARRA DE AÇÕES E BADGES DE STATUS -->
-  <div class="bg-[#0D1524] border border-[#1C2B47] rounded-2xl p-4 md:p-5 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-    <div class="flex items-center gap-4">
-      <div class="w-11 h-11 rounded-xl bg-[#0066FF] text-white flex items-center justify-center text-xl shadow-md shadow-blue-600/30">
-        🚚
+  <!-- HEADER COMPACTO SAAS COM ESTATÍSTICAS E AÇÕES RÁPIDAS -->
+  <div class="bg-[#0A0A0A] border border-[#222222] rounded-xl p-4 md:p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div class="flex items-center gap-3.5">
+      <div class="w-10 h-10 rounded-lg bg-[#0070F3]/15 text-[#0070F3] border border-[#0070F3]/30 flex items-center justify-center icon-svg">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       </div>
       <div>
         <div class="flex items-center gap-2 flex-wrap">
-          <h1 class="text-lg md:text-xl font-extrabold text-white tracking-tight">Consulta de Fretes & Transportadoras</h1>
-          <span class="bg-[#00B268]/15 text-[#00E599] border border-[#00B268]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
-            {{ carriers|length }} Transportadoras Ativas
+          <h1 class="text-base md:text-lg font-bold text-white tracking-tight">Simulador de Frete Multi-Transportadora</h1>
+          <span class="bg-[#00E599]/10 text-[#00E599] border border-[#00E599]/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            {{ carriers|length }} Transportadoras
           </span>
-          <span class="bg-[#0070F3]/15 text-[#38BDF8] border border-[#0070F3]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
-            {{ tables|length }} Tabelas
+          <span class="bg-[#0070F3]/10 text-[#38BDF8] border border-[#0070F3]/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            {{ tables|length }} Tabelas Ativas
           </span>
         </div>
-        <p class="text-xs text-slate-400 mt-0.5">Origem Loja MAJ: <strong class="text-white font-semibold">{{ default_cep }}</strong> (Vitória/ES) — Regra de seguro: 1/3 do valor de atacado</p>
+        <p class="text-xs text-slate-400 mt-0.5">Origem: <strong class="text-white font-semibold">{{ default_cep }}</strong> (Vitória/ES) — Regra de seguro: <span class="text-[#00E599] font-medium">1/3 do atacado</span></p>
       </div>
     </div>
     
     <div class="flex items-center gap-2.5 w-full md:w-auto">
-      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-3.5 py-2 rounded-xl bg-[#141C2B] hover:bg-[#1B273C] text-slate-300 text-xs font-semibold border border-[#23324C] flex items-center justify-center gap-1.5 transition-all">
-        <span>🗑️</span> Limpar tudo
+      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-3.5 py-2 rounded-lg bg-[#111111] hover:bg-[#161616] text-slate-300 text-xs font-semibold border border-[#222222] flex items-center justify-center gap-2 transition-all">
+        <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span>Limpar tudo</span>
       </button>
-      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0055D4] text-white text-xs font-bold shadow-md shadow-blue-600/30 flex items-center justify-center gap-1.5 transition-all">
-        <span>📄</span> Nova Cotação
+      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-4 py-2 rounded-lg bg-[#0070F3] hover:bg-[#0068D6] text-white text-xs font-bold shadow-sm shadow-blue-600/30 flex items-center justify-center gap-2 transition-all">
+        <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span>Nova Cotação</span>
       </button>
     </div>
   </div>
 
   <!-- MAIN SPLIT SCREEN: 2 COLUNAS PARALELAS LADO A LADO -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
     <!-- COLUNA DA ESQUERDA: SIMULADOR DE FRETE (7 COLUNAS) -->
-    <div class="lg:col-span-7 bg-[#0E1726] border border-[#1C2B47] rounded-2xl p-5 shadow-2xl flex flex-col justify-between space-y-5">
+    <div class="lg:col-span-7 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-5">
       
       <form id="freightCalcForm" onsubmit="event.preventDefault(); runFreightCalculation();" class="space-y-5 flex-1 flex flex-col justify-between">
         
         <div class="space-y-4">
           <!-- SEÇÃO 1: DADOS DO CLIENTE E CEPS -->
           <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-              <span class="text-[#0066FF] text-sm">📍</span> 1. Dados do Cliente e Destino
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+              <svg class="icon-svg text-[#0070F3]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>1. Dados de Destino e Cliente</span>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -57,46 +60,49 @@
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">Cliente (Opcional)</label>
                 <div class="relative">
-                  <span class="absolute left-3 top-2.5 text-slate-500 text-xs">👤</span>
-                  <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-[#141C2B] border border-[#23324C] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] transition-all">
+                  <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                  <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-[#111111] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3] transition-all">
                 </div>
               </div>
 
               <!-- CEP DESTINO -->
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">CEP de Destino *</label>
-                <div class="flex items-center bg-[#141C2B] border border-[#23324C] rounded-xl overflow-hidden focus-within:border-[#0066FF] focus-within:ring-1 focus-within:ring-[#0066FF] transition-all">
-                  <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="w-full bg-transparent px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none" onblur="lookupViaCEP(this.value)">
-                  <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="bg-[#0066FF] hover:bg-[#0055D4] text-white px-3.5 py-2 text-xs font-bold transition-all flex items-center justify-center">
-                    🔍
+                <div class="flex items-center bg-[#111111] border border-[#222222] rounded-lg overflow-hidden focus-within:border-[#0070F3] focus-within:ring-1 focus-within:ring-[#0070F3] transition-all">
+                  <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="w-full bg-transparent px-3 py-2 text-xs text-white font-bold placeholder:text-slate-500 focus:outline-none" onblur="lookupViaCEP(this.value)">
+                  <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="bg-[#0070F3] hover:bg-[#0068D6] text-white px-3 py-2 text-xs font-bold transition-all flex items-center justify-center icon-svg">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   </button>
                 </div>
-                <small id="cepLocationText" class="text-[10px] text-[#0066FF] block mt-1 min-h-[14px] font-medium"></small>
+                <small id="cepLocationText" class="text-[10px] text-[#38BDF8] block mt-1 min-h-[14px] font-medium"></small>
               </div>
 
               <!-- CEP ORIGEM -->
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">CEP Origem (Loja MAJ)</label>
-                <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-[#141C2B]/60 border border-[#23324C]/70 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
+                <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-[#111111]/60 border border-[#222222] rounded-lg px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
               </div>
             </div>
           </div>
 
           <!-- SEÇÃO 2: PRODUTOS DA COTAÇÃO -->
-          <div class="bg-[#090F1C] border border-[#1C2B47] rounded-xl p-4 space-y-3">
+          <div class="bg-[#111111] border border-[#222222] rounded-xl p-4 space-y-3">
             
-            <div class="flex justify-between items-center border-b border-[#1C2B47] pb-2.5">
+            <div class="flex justify-between items-center border-b border-[#222222] pb-2.5">
               <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center text-xs">
-                  📦
+                <div class="w-7 h-7 rounded-lg bg-[#0070F3]/15 text-[#0070F3] flex items-center justify-center icon-svg">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 </div>
                 <div>
                   <h3 class="text-xs font-bold text-white">2. Produtos da Cotação</h3>
-                  <p class="text-[10px] text-slate-400">Adicione os modelos e quantidades do pedido</p>
+                  <p class="text-[10px] text-slate-400">Selecione o modelo para preencher o peso e dimensões</p>
                 </div>
               </div>
-              <button type="button" onclick="addProductRow()" class="bg-[#00E676] hover:bg-[#00C853] text-[#07150D] font-extrabold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow-md shadow-emerald-500/20 transition-all">
-                <span>+</span> ADICIONAR PRODUTO
+              <button type="button" onclick="addProductRow()" class="bg-[#00E599] hover:bg-[#00C853] text-[#000000] font-extrabold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition-all">
+                <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>ADICIONAR PRODUTO</span>
               </button>
             </div>
 
@@ -104,7 +110,7 @@
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr class="border-b border-[#1C2B47] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <tr class="border-b border-[#222222] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     <th class="py-2 px-2" style="width: 38%;">MODELO DO VEÍCULO / PRODUTO</th>
                     <th class="py-2 px-2 text-center" style="width: 10%;">QTD</th>
                     <th class="py-2 px-2 text-center" style="width: 14%;">PESO (KG)</th>
@@ -113,43 +119,51 @@
                     <th class="py-2 px-2 text-center" style="width: 5%;">AÇÕES</th>
                   </tr>
                 </thead>
-                <tbody id="productRowsTableBody" class="divide-y divide-[#1C2B47]/60">
+                <tbody id="productRowsTableBody" class="divide-y divide-[#222222]">
                   <!-- Linhas dinâmicas via JS -->
                 </tbody>
               </table>
             </div>
 
             <!-- PAINEL RESUMO DAS MÉTRICAS -->
-            <div class="bg-[#0E1726] border border-[#1C2B47] rounded-xl p-3 grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+            <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-3 grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
               <div class="flex items-center gap-2.5">
-                <div class="text-[#0066FF] text-base">📦</div>
+                <div class="text-[#0070F3] icon-svg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
                 <div>
-                  <span class="text-[10px] text-slate-400 block uppercase">Total Itens</span>
+                  <span class="text-[10px] text-slate-400 block uppercase font-medium">Total Itens</span>
                   <strong id="summaryTotalQty" class="text-xs text-white font-bold">0</strong>
                 </div>
               </div>
 
               <div class="flex items-center gap-2.5">
-                <div class="text-[#0066FF] text-base">⚖️</div>
+                <div class="text-[#0070F3] icon-svg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
                 <div>
-                  <span class="text-[10px] text-slate-400 block uppercase">Peso Físico</span>
+                  <span class="text-[10px] text-slate-400 block uppercase font-medium">Peso Físico</span>
                   <strong id="summaryTotalWeight" class="text-xs text-white font-bold">0,0 kg</strong>
                 </div>
               </div>
 
               <div class="flex items-center gap-2.5">
-                <div class="text-[#0066FF] text-base">📦</div>
+                <div class="text-[#0070F3] icon-svg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                </div>
                 <div>
-                  <span class="text-[10px] text-slate-400 block uppercase">Peso Cúbico</span>
-                  <strong id="summaryCubicWeight" class="text-xs text-[#0066FF] font-bold">0,0 kg</strong>
+                  <span class="text-[10px] text-slate-400 block uppercase font-medium">Peso Cúbico</span>
+                  <strong id="summaryCubicWeight" class="text-xs text-[#0070F3] font-bold">0,0 kg</strong>
                 </div>
               </div>
 
               <div class="flex items-center gap-2.5">
-                <div class="text-[#0066FF] text-base">🛡️</div>
+                <div class="text-[#00E599] icon-svg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
                 <div>
-                  <span class="text-[10px] text-slate-400 block uppercase">Base Seguro (1/3 Atacado)</span>
-                  <strong id="summaryTotalInsurance" class="text-xs text-[#00E676] font-bold">R$ 0,00</strong>
+                  <span class="text-[10px] text-slate-400 block uppercase font-medium">Base Seguro (1/3)</span>
+                  <strong id="summaryTotalInsurance" class="text-xs text-[#00E599] font-bold">R$ 0,00</strong>
                 </div>
               </div>
             </div>
@@ -158,15 +172,17 @@
         </div>
 
         <!-- BOTÕES DE AÇÃO DO CÁLCULO E WHATSAPP -->
-        <div class="space-y-2 pt-2">
-          <button type="submit" class="w-full bg-[#00E676] hover:bg-[#00C853] text-[#07150D] font-black text-sm py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
-            <span>📋</span> Calcular Melhores Opções de Frete
+        <div class="space-y-2.5 pt-2">
+          <button type="submit" class="w-full bg-[#00E599] hover:bg-[#00C853] text-[#000000] font-black text-sm py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer">
+            <svg class="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Calcular Melhores Opções de Frete</span>
           </button>
           
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
-            <p class="text-[10px] text-slate-500">Ordenadas do menor para o maior preço total com taxas e seguro inclusos</p>
-            <button type="button" onclick="copyWhatsAppMessage()" class="border border-[#00E676]/40 text-[#00E676] bg-[#090F1C] hover:bg-[#00E676]/10 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all">
-              <span>💬</span> Copiar para WhatsApp
+            <p class="text-[10px] text-slate-500">Ordenadas da opção mais econômica para a mais rápida</p>
+            <button type="button" onclick="copyWhatsAppMessage()" class="border border-[#00E599]/40 text-[#00E599] bg-[#111111] hover:bg-[#00E599]/10 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all">
+              <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              <span>Copiar para WhatsApp</span>
             </button>
           </div>
         </div>
@@ -176,11 +192,12 @@
     </div>
 
     <!-- COLUNA DA DIREITA: PAINEL DE RESULTADOS DAS TRANSPORTADORAS (5 COLUNAS) -->
-    <div class="lg:col-span-5 bg-[#0E1726] border border-[#1C2B47] rounded-2xl p-5 shadow-2xl flex flex-col justify-between">
+    <div class="lg:col-span-5 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl flex flex-col justify-between">
       
-      <div class="mb-3 border-b border-[#1C2B47] pb-3">
+      <div class="mb-3 border-b border-[#222222] pb-3">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-amber-400 text-base">🏆</span> Opções Disponíveis de Frete
+          <svg class="icon-svg text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Opções Disponíveis de Frete</span>
         </h2>
         <p class="text-[11px] text-slate-400 mt-0.5">Opções ordenadas da mais econômica para a mais rápida</p>
       </div>
@@ -188,9 +205,9 @@
       <!-- CONTAINER DINÂMICO DOS RESULTADOS -->
       <div id="freightResultsArea" class="flex-1 flex flex-col justify-center my-auto">
         
-        <div id="freightEmptyState" class="border border-dashed border-[#0066FF]/40 bg-[#070D18] rounded-2xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[360px]">
-          <div class="w-14 h-14 rounded-full bg-[#0066FF]/10 border border-[#0066FF]/30 text-[#0066FF] flex items-center justify-center text-2xl mb-3 shadow-md shadow-blue-600/10">
-            🚚
+        <div id="freightEmptyState" class="border border-dashed border-[#0070F3]/40 bg-[#111111] rounded-xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[360px]">
+          <div class="w-12 h-12 rounded-full bg-[#0070F3]/10 border border-[#0070F3]/30 text-[#0070F3] flex items-center justify-center mb-3 icon-svg">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           </div>
           <p class="text-xs text-slate-300">
             Preencha os dados e clique em
@@ -199,7 +216,7 @@
           <span class="text-[11px] text-slate-500 block mt-2">As transportadoras e valores serão exibidos aqui.</span>
         </div>
 
-        <div id="freightOptionsList" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1 hidden">
+        <div id="freightOptionsList" class="space-y-3 max-h-[500px] overflow-y-auto pr-1 hidden">
           <!-- Resultados dinâmicos da consulta -->
         </div>
 
@@ -210,14 +227,15 @@
   </div>
 
   <!-- SEÇÃO INFERIOR: GESTÃO DE TABELAS E IMPORTAÇÃO IA LADO A LADO (2 COLUNAS DE 6) -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
     
     <!-- CARD 3: IMPORTAR TABELA COM IA (6 COLUNAS) -->
-    <div class="lg:col-span-6 bg-[#0E1726] border border-[#1C2B47] rounded-2xl p-5 shadow-2xl space-y-4 flex flex-col justify-between">
+    <div class="lg:col-span-6 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl space-y-4 flex flex-col justify-between">
       
       <div>
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-[#0066FF] text-base">📄</span> Importar Tabela de Frete por IA
+          <svg class="icon-svg text-[#0070F3]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          <span>Importar Tabela de Frete por IA</span>
         </h2>
         <p class="text-[11px] text-slate-400 mt-0.5">Upload de tabela em PDF, Excel (.xlsx) ou CSV para leitura automática</p>
       </div>
@@ -228,8 +246,10 @@
           <div>
             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Transportadora *</label>
             <div class="relative">
-              <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🚚</span>
-              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-[#141C2B] border border-[#23324C] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] transition-all" list="carrier_list">
+              <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </span>
+              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-[#111111] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all" list="carrier_list">
             </div>
             <datalist id="carrier_list">
               {% for c in carriers %}
@@ -241,19 +261,22 @@
           <div>
             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Nome da Tabela / Região *</label>
             <div class="relative">
-              <span class="absolute left-3 top-2.5 text-slate-500 text-xs">📅</span>
-              <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="w-full bg-[#141C2B] border border-[#23324C] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] transition-all">
+              <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </span>
+              <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="w-full bg-[#111111] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all">
             </div>
           </div>
         </div>
 
         <div>
           <label class="block text-[11px] font-semibold text-slate-400 mb-1">Arquivo da Tabela *</label>
-          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-[#141C2B] border border-[#23324C] rounded-xl py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0066FF]/20 file:text-[#0066FF] hover:file:bg-[#0066FF]/30 transition-all">
+          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-[#111111] border border-[#222222] rounded-lg py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#0070F3]/20 file:text-[#38BDF8] hover:file:bg-[#0070F3]/30 transition-all">
         </div>
 
-        <button class="w-full bg-[#0066FF] hover:bg-[#0055D4] text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 transition-all">
-          <span>✨</span> Ler Tabela com Gemini IA
+        <button class="w-full bg-[#0070F3] hover:bg-[#0068D6] text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all">
+          <svg class="icon-svg text-amber-300" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Ler Tabela com Gemini IA</span>
         </button>
 
       </form>
@@ -261,13 +284,14 @@
     </div>
 
     <!-- CARD 4: TABELAS ATIVAS NO SISTEMA (6 COLUNAS) -->
-    <div class="lg:col-span-6 bg-[#0E1726] border border-[#1C2B47] rounded-2xl p-5 shadow-2xl space-y-3 flex flex-col justify-between">
+    <div class="lg:col-span-6 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
       
-      <div class="flex justify-between items-center border-b border-[#1C2B47] pb-2.5">
+      <div class="flex justify-between items-center border-b border-[#222222] pb-2.5">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-[#0066FF] text-base">💾</span> Tabelas Ativas no Sistema
+          <svg class="icon-svg text-[#0070F3]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <span>Tabelas Ativas no Sistema</span>
         </h2>
-        <span class="bg-[#0066FF]/20 text-[#0066FF] border border-[#0066FF]/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+        <span class="bg-[#0070F3]/15 text-[#38BDF8] border border-[#0070F3]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
           {{ tables|length }} ATIVAS
         </span>
       </div>
@@ -275,24 +299,25 @@
       {% if tables %}
       <div class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
         {% for t in tables %}
-        <div class="p-3 bg-[#090F1C] border border-[#1C2B47] rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-slate-700 transition-all">
+        <div class="p-3 bg-[#111111] border border-[#222222] rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-slate-700 transition-all">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center text-sm">
-              🚚
+            <div class="w-8 h-8 rounded-lg bg-[#0070F3]/15 text-[#0070F3] flex items-center justify-center icon-svg">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             </div>
             <div>
               <strong class="text-xs font-bold text-white block">{{ t.carrier_name }}</strong>
-              <span class="text-[11px] text-slate-400">{{ t.table_name }} — <span class="text-[#0066FF] font-semibold">{{ t.rates_count }} faixas</span></span>
+              <span class="text-[11px] text-slate-400">{{ t.table_name }} — <span class="text-[#38BDF8] font-semibold">{{ t.rates_count }} faixas</span></span>
             </div>
           </div>
 
           <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-            <span class="bg-[#052E16] text-[#4ADE80] border border-[#166534] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+            <span class="bg-[#00E599]/10 text-[#00E599] border border-[#00E599]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
               ATIVA
             </span>
             <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');">
-              <button type="submit" class="bg-[#182338] hover:bg-[#283857] text-slate-300 border border-[#2B3B5C] text-xs px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 font-semibold">
-                <span>🗑️</span> Excluir
+              <button type="submit" class="bg-[#161616] hover:bg-[#222222] text-slate-300 border border-[#333333] text-xs px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-semibold">
+                <svg class="icon-svg text-red-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Excluir</span>
               </button>
             </form>
           </div>
@@ -300,7 +325,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <div class="py-8 text-center text-slate-500 border border-dashed border-[#1C2B47] rounded-xl">
+      <div class="py-8 text-center text-slate-500 border border-dashed border-[#222222] rounded-xl">
         <p class="text-xs">Nenhuma tabela de frete importada ainda.</p>
       </div>
       {% endif %}
@@ -356,34 +381,36 @@ function addProductRow() {
   const rowId = `productRow_${itemRowCounter}`;
   const tr = document.createElement("tr");
   tr.id = rowId;
-  tr.className = "hover:bg-[#141C2B]/40 transition-all";
+  tr.className = "hover:bg-[#111111]/80 transition-all";
 
   tr.innerHTML = `
-    <td class="py-2 px-2">
-      <select class="product-select w-full bg-[#141C2B] border border-[#23324C] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#0066FF] transition-all" onchange="onProductSelectChange('${rowId}')">
+    <td class="py-2.5 px-2">
+      <select class="product-select w-full bg-[#111111] border border-[#222222] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#0070F3] transition-all" onchange="onProductSelectChange('${rowId}')">
         ${optionsHtml}
       </select>
     </td>
-    <td class="py-2 px-2 text-center">
-      <input type="number" min="1" value="1" class="product-qty bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+    <td class="py-2.5 px-2 text-center">
+      <input type="number" min="1" value="1" class="product-qty input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
-    <td class="py-2 px-2 text-center">
-      <input type="number" step="0.1" value="" placeholder="kg" class="product-weight bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-20 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+    <td class="py-2.5 px-2 text-center">
+      <input type="number" step="0.1" value="" placeholder="kg" class="product-weight input-high-contrast rounded-md text-center text-xs w-20 py-1.5 focus:outline-none" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
-    <td class="py-2 px-2">
+    <td class="py-2.5 px-2">
       <div class="flex items-center justify-center gap-1 text-xs">
-        <input type="number" value="" placeholder="175" class="product-length bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
-        <span class="text-slate-400 font-bold">x</span>
-        <input type="number" value="" placeholder="70" class="product-width bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
-        <span class="text-slate-400 font-bold">x</span>
-        <input type="number" value="" placeholder="105" class="product-height bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
+        <input type="number" value="" placeholder="C" class="product-length input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
+        <span class="text-slate-500 font-bold">x</span>
+        <input type="number" value="" placeholder="L" class="product-width input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
+        <span class="text-slate-500 font-bold">x</span>
+        <input type="number" value="" placeholder="A" class="product-height input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
       </div>
     </td>
-    <td class="py-2 px-2 text-right">
-      <span class="product-onethird-display text-xs font-extrabold text-[#0066FF] block">R$ 0,00</span>
+    <td class="py-2.5 px-2 text-right">
+      <span class="product-onethird-display text-xs font-black text-[#0070F3] block">R$ 0,00</span>
     </td>
-    <td class="py-2 px-2 text-center">
-      <button type="button" class="w-7 h-7 rounded-lg bg-[#4A1521] hover:bg-red-900/80 text-red-400 border border-[#7A1C2E] flex items-center justify-center transition-all mx-auto" onclick="removeProductRow('${rowId}')">🗑️</button>
+    <td class="py-2.5 px-2 text-center">
+      <button type="button" class="w-7 h-7 rounded-md bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 flex items-center justify-center transition-all mx-auto icon-svg" onclick="removeProductRow('${rowId}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
     </td>
   `;
 
@@ -554,8 +581,8 @@ async function runFreightCalculation() {
   if (optionsList) {
     optionsList.classList.remove("hidden");
     optionsList.innerHTML = `
-      <div class="p-6 text-center text-slate-400 bg-[#090F1C] rounded-xl border border-[#1C2B47]">
-        <div class="inline-block animate-spin text-2xl mb-2 text-[#0066FF]">⚡</div>
+      <div class="p-6 text-center text-slate-400 bg-[#111111] rounded-xl border border-[#222222]">
+        <div class="inline-block animate-spin text-2xl mb-2 text-[#0070F3]">⚡</div>
         <p class="text-xs font-semibold text-white">Calculando frete com seguro de 1/3 do atacado...</p>
         <small class="text-[10px] text-slate-500 block mt-0.5">Comparando regras entre todas as transportadoras ativas</small>
       </div>
@@ -570,7 +597,7 @@ async function runFreightCalculation() {
     });
     
     const data = await resp.json();
-    lastFreightCalculationResult = { ...data, customer_name };
+    lastFreightCalculationResult = { ...data, customer_name, cep_dest };
 
     if (!data.success || !data.options || data.options.length === 0) {
       optionsList.innerHTML = `
@@ -582,10 +609,10 @@ async function runFreightCalculation() {
     }
 
     let html = `
-      <div class="bg-[#090F1C] p-3 rounded-xl border border-[#1C2B47] text-xs space-y-1 mb-3">
-        <div class="flex justify-between text-slate-400"><span>📦 Carga:</span> <strong class="text-white font-semibold">${data.product_name}</strong></div>
-        <div class="flex justify-between text-slate-400"><span>⚖️ Peso Total:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
-        <div class="flex justify-between text-slate-400"><span>🛡️ Base Seguro (1/3 Atacado):</span> <strong class="text-[#00E676] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
+      <div class="bg-[#111111] p-3.5 rounded-xl border border-[#222222] text-xs space-y-1.5 mb-3">
+        <div class="flex justify-between text-slate-400"><span>Carga:</span> <strong class="text-white font-semibold">${data.product_name}</strong></div>
+        <div class="flex justify-between text-slate-400"><span>Peso Total:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
+        <div class="flex justify-between text-slate-400"><span>Base Seguro (1/3 Atacado):</span> <strong class="text-[#00E599] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
       </div>
     `;
 
@@ -595,27 +622,27 @@ async function runFreightCalculation() {
         opt.badges.forEach(b => {
           const isCheap = b.includes("Barato");
           const badgeClass = isCheap 
-            ? "bg-[#052E16] text-[#4ADE80] border-[#166534]" 
-            : "bg-[#0066FF]/20 text-[#0066FF] border-[#0066FF]/40";
-          badgeHtml += `<span class="${badgeClass} border text-[10px] font-bold px-2 py-0.5 rounded-full ml-1">🏆 ${b}</span>`;
+            ? "bg-[#00E599]/10 text-[#00E599] border-[#00E599]/30" 
+            : "bg-[#0070F3]/10 text-[#38BDF8] border-[#0070F3]/30";
+          badgeHtml += `<span class="${badgeClass} border text-[10px] font-extrabold px-2 py-0.5 rounded-full ml-1 uppercase">🏆 ${b}</span>`;
         });
       }
 
       html += `
-        <div class="border border-[#1C2B47] hover:border-[#0066FF] transition-all p-3.5 rounded-xl bg-[#090F1C] flex flex-wrap justify-between items-center gap-3">
+        <div class="border border-[#222222] hover:border-[#0070F3] transition-all p-3.5 rounded-xl bg-[#111111] flex flex-wrap justify-between items-center gap-3">
           <div>
             <div class="flex items-center flex-wrap gap-1.5">
               <strong class="text-sm font-bold text-white">${opt.carrier_name}</strong>
               ${badgeHtml}
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">
-              Tabela: ${opt.table_name} | Prazo: <strong class="text-white font-semibold">${opt.delivery_days} dia(s) útil(eis)</strong>
+            <p class="text-[11px] text-slate-400 mt-1">
+              Tabela: <span class="text-slate-300">${opt.table_name}</span> | Prazo: <strong class="text-white font-bold">${opt.delivery_days} dia(s) útil(eis)</strong>
             </p>
             ${opt.insurance_cost > 0 ? `<small class="text-[10px] text-slate-500 block mt-0.5">Seguro (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
           </div>
           <div class="text-right">
-            <span class="text-xl font-extrabold text-[#0066FF] block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
-            <small class="text-[10px] text-slate-500 block uppercase font-semibold">LÍQUIDO TOTAL</small>
+            <span class="text-xl font-black text-[#0070F3] block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
+            <small class="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">VALOR TOTAL</small>
           </div>
         </div>
       `;
@@ -625,6 +652,32 @@ async function runFreightCalculation() {
   } catch (err) {
     optionsList.innerHTML = `<div class="bg-red-950/60 border border-red-800/60 text-red-300 p-4 rounded-xl text-xs">Erro ao realizar cálculo: ${err.message}</div>`;
   }
+}
+
+function copyWhatsAppMessage() {
+  if (!lastFreightCalculationResult || !lastFreightCalculationResult.options || lastFreightCalculationResult.options.length === 0) {
+    alert("Realize um cálculo de frete primeiro para copiar o resumo do WhatsApp.");
+    return;
+  }
+  const data = lastFreightCalculationResult;
+  let text = `🚚 *COTAÇÃO DE FRETE — MAJ MOBILIDADE*\n`;
+  if (data.customer_name) text += `👤 Cliente: ${data.customer_name}\n`;
+  text += `📍 Destino: CEP ${data.cep_dest}\n`;
+  text += `📦 Carga: ${data.product_name || 'Produtos MAJ'}\n`;
+  text += `⚖️ Peso Total: ${data.total_weight_kg.toFixed(1).replace('.', ',')} kg\n\n`;
+  text += `*OPÇÕES DE TRANSPORTE:*\n`;
+  data.options.forEach((opt, idx) => {
+    text += `${idx + 1}. *${opt.carrier_name}*\n`;
+    text += `   • Valor: R$ ${opt.total_price.toFixed(2).replace('.', ',')}\n`;
+    text += `   • Prazo: ${opt.delivery_days} dia(s) útil(eis)\n`;
+  });
+  text += `\n_Origem Vitória/ES. Seguro de 1/3 do valor de atacado já incluso na cotação._`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    alert("Cotação formatada copiada com sucesso! Você já pode colar na conversa do WhatsApp.");
+  }).catch(err => {
+    alert("Erro ao copiar para a área de transferência: " + err.message);
+  });
 }
 </script>
 {% endblock %}
