@@ -2523,6 +2523,7 @@ def freight_whatsapp():
 
 @app.route("/freight/tables/upload", methods=["POST"])
 @login_required
+@roles_required("admin", "support")
 def freight_table_upload():
     """Upload e parsing por IA (Gemini) de novas tabelas de frete."""
     try:
@@ -2598,6 +2599,7 @@ def freight_table_upload():
 
 @app.route("/freight/tables/delete/<int:table_id>", methods=["POST"])
 @login_required
+@roles_required("admin", "support")
 def freight_table_delete(table_id):
     """Exclui uma tabela de frete cadastrada."""
     try:

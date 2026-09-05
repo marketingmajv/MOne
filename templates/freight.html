@@ -245,10 +245,11 @@
 
   </div>
 
-  <!-- SEÇÃO INFERIOR: GESTÃO DE TABELAS E IMPORTAÇÃO IA LADO A LADO (2 COLUNAS DE 6) -->
+  <!-- SEÇÃO INFERIOR: GESTÃO DE TABELAS E IMPORTAÇÃO IA -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
     
-    <!-- CARD 3: IMPORTAR TABELA COM IA (6 COLUNAS - Dark Slate) -->
+    {% if me and me.role in ['admin', 'support'] %}
+    <!-- CARD 3: IMPORTAR TABELA COM IA (6 COLUNAS - Dark Slate - Apenas Diretoria) -->
     <div class="lg:col-span-6 bg-[#0E1526] border border-[#1E2E4C] rounded-xl p-5 shadow-xl space-y-4 flex flex-col justify-between">
       
       <div>
@@ -301,9 +302,10 @@
       </form>
 
     </div>
+    {% endif %}
 
-    <!-- CARD 4: TABELAS ATIVAS NO SISTEMA (6 COLUNAS - Deep Obsidian Navy) -->
-    <div class="lg:col-span-6 bg-[#0B1222] border border-[#1A2845] rounded-xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
+    <!-- CARD 4: TABELAS ATIVAS NO SISTEMA -->
+    <div class="{% if me and me.role in ['admin', 'support'] %}lg:col-span-6{% else %}lg:col-span-12{% endif %} bg-[#0B1222] border border-[#1A2845] rounded-xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
       
       <div class="flex justify-between items-center border-b border-[#1A2845] pb-2.5">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
@@ -333,12 +335,14 @@
             <span class="bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/35 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
               ATIVA
             </span>
+            {% if me and me.role in ['admin', 'support'] %}
             <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');">
               <button type="submit" class="bg-[#0B1324] hover:bg-[#162545] text-slate-300 border border-[#23355A] text-xs px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-semibold">
                 <svg class="icon-svg text-red-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 <span>Excluir</span>
               </button>
             </form>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
