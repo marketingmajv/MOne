@@ -365,9 +365,19 @@ def init_db():
             ]
             conn.executemany("INSERT INTO users(name,username,password_hash,role) VALUES(?,?,?,?)", defaults)
         conn.commit()
+    ensure_sales_columns()
 
-
-def allowed_file(filename):
+def ensure_sales_columns():
+    try:
+        with db() as conn:
+            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis"]:
+                try:
+                    conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
+                except Exception:
+                    pass
+            conn.commit()
+    except Exception:
+        pass
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
@@ -1352,32 +1362,60 @@ def sales():
                     flash(f"Arquivo de comprovante da DANFE inválido: {str(e)}", "danger")
                     return redirect(url_for("sales"))
 
-            if not danfe_filename:
-                flash("É obrigatório anexar o comprovante da venda (foto da DANFE, Termo ou documento com o chassi).", "danger")
+            # Processamento do Termo de Entrega (Permite múltiplas fotos / arquivos)
+            term_filenames = []
+            term_file_objs = request.files.getlist("delivery_term_files")
+            for tf in term_file_objs:
+                if tf and tf.filename:
+                    try:
+                        saved_name = save_upload(tf, "termo")
+                        if saved_name:
+                            term_filenames.append(saved_name)
+                    except ValueError:
+                        pass
+
+            term_captured_raw = request.form.get("delivery_term_captured_images", "")
+            if term_captured_raw:
+                try:
+                    cap_list = json.loads(term_captured_raw) if term_captured_raw.startswith("[") else [term_captured_raw]
+                    for cap_b64 in cap_list:
+                        if cap_b64 and "," in cap_b64:
+                            saved_name = save_base64_upload(cap_b64, "termo")
+                            if saved_name:
+                                term_filenames.append(saved_name)
+                except Exception:
+                    pass
+
+            if not danfe_filename and not term_filenames:
+                flash("É obrigatório anexar a DANFE ou a foto do Termo de Entrega com o chassi.", "danger")
                 return redirect(url_for("sales"))
+
+            term_files_json = json.dumps(term_filenames) if term_filenames else None
 
             ai_verified = request.form.get("ai_chassis_verified") == "1"
             ai_extracted = request.form.get("ai_extracted_chassis", "").strip()
 
-            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora
+            # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora no primeiro documento disponível
             if not ai_verified:
-                danfe_path = UPLOAD_DIR / danfe_filename
-                if danfe_path.exists():
-                    ext = danfe_filename.rsplit(".", 1)[-1].lower()
-                    mime = "application/pdf" if ext == "pdf" else f"image/{ext if ext != 'jpg' else 'jpeg'}"
-                    v_res = extract_and_match_chassis(danfe_path.read_bytes(), mime, chassis_list)
-                    if not v_res.get("is_valid"):
-                        flash(f"Bloqueio da IA: {v_res.get('summary', 'O chassi do documento não confere com o digitado.')}", "danger")
-                        return redirect(url_for("sales"))
-                    ai_verified = True
-                    ai_extracted = ", ".join(v_res.get("extracted_chassis", []))
+                target_filename = danfe_filename or (term_filenames[0] if term_filenames else None)
+                if target_filename:
+                    doc_path = UPLOAD_DIR / target_filename
+                    if doc_path.exists():
+                        ext = target_filename.rsplit(".", 1)[-1].lower()
+                        mime = "application/pdf" if ext == "pdf" else f"image/{ext if ext != 'jpg' else 'jpeg'}"
+                        v_res = extract_and_match_chassis(doc_path.read_bytes(), mime, chassis_list)
+                        if not v_res.get("is_valid"):
+                            flash(f"Bloqueio da IA: {v_res.get('summary', 'O chassi do documento não confere com o digitado.')}", "danger")
+                            return redirect(url_for("sales"))
+                        ai_verified = True
+                        ai_extracted = ", ".join(v_res.get("extracted_chassis", []))
 
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,ai_chassis_verified,ai_extracted_chassis,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, ai_verified, ai_extracted, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -1467,6 +1505,14 @@ def sales():
                 sd['chassis_details'] = c_list
                 sd['chassis_str'] = ', '.join(c['chassis'] for c in c_list)
                 sd['receipts'] = r_list
+                t_files = []
+                if sd.get('delivery_term_files'):
+                    try:
+                        raw_t = sd['delivery_term_files']
+                        t_files = json.loads(raw_t) if isinstance(raw_t, str) and raw_t.startswith("[") else ([raw_t] if raw_t else [])
+                    except Exception:
+                        t_files = []
+                sd['term_files_list'] = t_files
                 sales_data.append(sd)
     return render_template("sales.html", sales=sales_data)
 
@@ -1785,41 +1831,52 @@ def verify_sales_chassis():
             "message": "Nenhum número de chassi informado. Digite o(s) chassi(s) no formulário antes de conferir o comprovante."
         }), 400
 
-    file_obj = request.files.get("file")
+    file_objs = request.files.getlist("file")
     captured_data = request.form.get("captured_image")
-    file_bytes = None
-    mime_type = "image/jpeg"
+    captured_list_raw = request.form.get("captured_images")
+
+    items_to_check = []
 
     if captured_data and "," in captured_data:
         try:
             header, data_str = captured_data.split(",", 1)
-            file_bytes = base64.b64decode(data_str)
-            if "png" in header:
-                mime_type = "image/png"
-            elif "webp" in header:
-                mime_type = "image/webp"
-            else:
-                mime_type = "image/jpeg"
-        except Exception as e:
-            return jsonify({"success": False, "is_valid": False, "message": f"Erro na decodificação da foto: {str(e)}"}), 400
-    elif file_obj and file_obj.filename:
-        ext = file_obj.filename.rsplit(".", 1)[-1].lower()
-        if ext not in ALLOWED_EXTENSIONS:
-            return jsonify({"success": False, "is_valid": False, "message": f"Tipo de arquivo '.{ext}' não suportado. Use JPG, PNG, WebP ou PDF."}), 400
-        file_bytes = file_obj.read()
-        if ext == "pdf":
-            mime_type = "application/pdf"
-        elif ext == "png":
-            mime_type = "image/png"
-        elif ext == "webp":
-            mime_type = "image/webp"
-        else:
-            mime_type = "image/jpeg"
-    else:
+            b = base64.b64decode(data_str)
+            m = "image/png" if "png" in header else ("image/webp" if "webp" in header else "image/jpeg")
+            items_to_check.append((b, m))
+        except Exception:
+            pass
+
+    if captured_list_raw:
+        try:
+            cap_arr = json.loads(captured_list_raw) if captured_list_raw.startswith("[") else [captured_list_raw]
+            for c_str in cap_arr:
+                if c_str and "," in c_str:
+                    header, data_str = c_str.split(",", 1)
+                    b = base64.b64decode(data_str)
+                    m = "image/png" if "png" in header else ("image/webp" if "webp" in header else "image/jpeg")
+                    items_to_check.append((b, m))
+        except Exception:
+            pass
+
+    for file_obj in file_objs:
+        if file_obj and file_obj.filename:
+            ext = file_obj.filename.rsplit(".", 1)[-1].lower()
+            if ext in ALLOWED_EXTENSIONS:
+                b = file_obj.read()
+                m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
+                items_to_check.append((b, m))
+
+    if not items_to_check:
         return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400
 
-    result = extract_and_match_chassis(file_bytes, mime_type, chassis_list)
-    return jsonify(result)
+    last_res = None
+    for file_bytes, mime_type in items_to_check:
+        res = extract_and_match_chassis(file_bytes, mime_type, chassis_list)
+        if res.get("is_valid"):
+            return jsonify(res)
+        last_res = res
+
+    return jsonify(last_res or {"success": False, "is_valid": False, "message": "Não foi possível validar o chassi no documento."})
 
 
 @app.route("/integrations/bling", methods=["GET"])
