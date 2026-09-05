@@ -588,6 +588,11 @@ def products():
         wholesale_price = float(request.form.get("wholesale_price") or 0)
         installment_12x = float(request.form.get("installment_12x") or 0)
         installment_18x = float(request.form.get("installment_18x") or 0)
+        if retail_price > 0:
+            if installment_12x == 0:
+                installment_12x = round((retail_price * 1.1013216) / 12, 2)
+            if installment_18x == 0:
+                installment_18x = round((retail_price * 1.1437722) / 18, 2)
         promo_eligible = 1 if request.form.get("promo_eligible") else 0
         with db() as conn:
             conn.execute(
@@ -625,15 +630,24 @@ def products():
 @login_required
 @roles_required("admin", "finance", "support")
 def edit_product(pid):
+    retail_price = float(request.form.get("retail_price") or 0)
+    installment_12x = float(request.form.get("installment_12x") or 0)
+    installment_18x = float(request.form.get("installment_18x") or 0)
+    if retail_price > 0:
+        if installment_12x == 0:
+            installment_12x = round((retail_price * 1.1013216) / 12, 2)
+        if installment_18x == 0:
+            installment_18x = round((retail_price * 1.1437722) / 18, 2)
+
     fields = (
         request.form.get("name", "").strip(),
         request.form.get("sku", "").strip() or None,
         request.form.get("category", "").strip(),
         float(request.form.get("unit_cost") or 0),
-        float(request.form.get("retail_price") or 0),
+        retail_price,
         float(request.form.get("wholesale_price") or 0),
-        float(request.form.get("installment_12x") or 0),
-        float(request.form.get("installment_18x") or 0),
+        installment_12x,
+        installment_18x,
         1 if request.form.get("promo_eligible") else 0,
         pid,
     )
@@ -725,6 +739,11 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
         retail_price = parse_float(raw[i_retail]) if i_retail is not None and i_retail < len(raw) else 0.0
         installment_12x = parse_float(raw[i_inst_12x]) if i_inst_12x is not None and i_inst_12x < len(raw) else 0.0
         installment_18x = parse_float(raw[i_inst_18x]) if i_inst_18x is not None and i_inst_18x < len(raw) else 0.0
+        if retail_price > 0:
+            if installment_12x == 0:
+                installment_12x = round((retail_price * 1.1013216) / 12, 2)
+            if installment_18x == 0:
+                installment_18x = round((retail_price * 1.1437722) / 18, 2)
         
         promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
         promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
