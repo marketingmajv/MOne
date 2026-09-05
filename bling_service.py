@@ -239,12 +239,18 @@ def search_bling_order(order_number: str) -> dict:
 
 def find_matching_nfe_for_order(order: dict) -> str:
     """
-    Localização rápida e precisa da Nota Fiscal do Pedido no Bling.
-    1. Verifica vínculo direto no pedido (notaFiscal.numero)
-    2. Busca NFes do cliente no Bling (máx 5 mais recentes)
-    3. Analisa detalhes (observações, vínculo de venda e valor) e valida cronologia (Data NF >= Data Pedido)
+    Busca a Nota Fiscal referente ao Pedido de Venda no Bling.
+    Prioridades:
+    1. Vínculo direto no objeto notaFiscal do pedido
+    2. Vínculo direto ou menção ao número do pedido (ex: '2714') na NFe ou observações
+    3. Comparação de cliente, valor e data para NFs não vinculadas expressamente
     """
-    # 1. Vínculo direto no objeto notaFiscal do pedido
+    order_num = str(order.get("numero", "")).strip()
+    order_id = str(order.get("id", "") or "").strip()
+    order_total = float(order.get("total", 0) or 0)
+    order_date_str = str(order.get("data", "")).strip()[:10]
+
+    # 1. Se o próprio pedido já possui notaFiscal com número válido
     nfe_direct = order.get("notaFiscal") or {}
     direct_num = str(nfe_direct.get("numero", "")).strip()
     if direct_num and direct_num != "0":
@@ -252,43 +258,47 @@ def find_matching_nfe_for_order(order: dict) -> str:
 
     contato = order.get("contato", {})
     contato_id = contato.get("id")
-    order_id = order.get("id")
-    order_num = str(order.get("numero", "")).strip()
-    order_total = float(order.get("total", 0) or 0)
-    order_date_str = str(order.get("data", "")).strip()[:10]
 
-    if not contato_id and not order_num:
-        return ""
-
-    # 2. Busca lista recente de NFes do cliente (limite 5 para agilidade)
+    # Lista de candidatos a NF no Bling
     candidates = []
+
+    # 2. Busca NFes do cliente (limite 10)
     if contato_id:
         try:
-            nfe_resp = make_bling_api_request("/nfe", params={"idContato": contato_id, "limite": 5})
-            candidates = nfe_resp.get("data", [])
+            nfe_resp = make_bling_api_request("/nfe", params={"idContato": contato_id, "limite": 10})
+            candidates.extend(nfe_resp.get("data", []))
         except Exception:
-            candidates = []
+            pass
 
-    if not candidates and order_num:
+    # 3. Busca NFe pelo próprio número do pedido (caso a NF tenha o mesmo número do pedido)
+    if order_num:
         try:
-            nfe_resp = make_bling_api_request("/nfe", params={"numero": order_num})
-            candidates = nfe_resp.get("data", [])
+            nfe_num_resp = make_bling_api_request("/nfe", params={"numero": order_num})
+            candidates.extend(nfe_num_resp.get("data", []))
         except Exception:
-            candidates = []
+            pass
 
     if not candidates:
         return ""
 
+    # Remover duplicados
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        cid = c.get("id") or c.get("numero")
+        if cid and cid not in seen:
+            seen.add(cid)
+            unique_candidates.append(c)
+
     scored_candidates = []
 
-    # 3. Analisa os detalhes das 5 NFes candidatas
-    for c in candidates[:5]:
+    for c in unique_candidates[:10]:
         cid = c.get("id")
         c_num = str(c.get("numero", "")).strip()
         if not c_num or c_num == "0":
             continue
 
-        # Busca detalhes completos da NFe (para ler observacoes e venda)
+        # Busca detalhes completos para ler 'venda' e 'observacoes'
         c_detail = c
         if cid:
             try:
@@ -298,51 +308,40 @@ def find_matching_nfe_for_order(order: dict) -> str:
             except Exception:
                 pass
 
-        c_date_str = str(c_detail.get("dataEmissao") or c_detail.get("data", "")).strip()[:10]
-        c_total = float(c_detail.get("valorNota", 0) or c_detail.get("total", 0) or 0)
-        c_obs = str(c_detail.get("observacoes", "") or "") + " " + str(c_detail.get("observacoesSistema", "") or "")
-        
         c_venda = c_detail.get("venda") or {}
-        c_venda_id = str(c_venda.get("id", "") or "")
-        c_venda_num = str(c_venda.get("numero", "") or "")
+        c_venda_id = str(c_venda.get("id", "") or "").strip()
+        c_venda_num = str(c_venda.get("numero", "") or "").strip()
+        c_obs = str(c_detail.get("observacoes", "") or "") + " " + str(c_detail.get("observacoesSistema", "") or "")
+        c_total = float(c_detail.get("valorNota", 0) or c_detail.get("total", 0) or 0)
+        c_date_str = str(c_detail.get("dataEmissao") or c_detail.get("data", "")).strip()[:10]
 
-        # REGRA CRONOLÓGICA OBRIGATÓRIA: Data NF >= Data Pedido (nunca antes!)
+        # PRIO 1 EXPLICITA: Se a NFe está vinculada ao pedido ou menciona o número do pedido no texto
+        if order_num:
+            if (c_venda_num and c_venda_num == order_num) or (order_id and c_venda_id == order_id):
+                return f"NF-{c_num}"
+            if re.search(r'\b' + re.escape(order_num) + r'\b', c_obs, re.IGNORECASE):
+                return f"NF-{c_num}"
+
+        # PRIO 2: Comparação de valor e data para NFs sem vínculo textual explícito
+        score = 0
         if order_date_str and c_date_str:
             try:
                 d_order = datetime.strptime(order_date_str, "%Y-%m-%d")
                 d_nf = datetime.strptime(c_date_str, "%Y-%m-%d")
                 if d_nf < d_order:
-                    continue  # Ignora NFs emitidas ANTES da criação do pedido
+                    continue  # Desqualifica apenas NFs sem vínculo textual que foram emitidas antes do pedido
             except Exception:
                 pass
 
-        score = 0
-
-        # Match direto pelo número do pedido (na API ou no texto de observações da NF)
-        if order_num:
-            if c_venda_num == order_num or (order_id and c_venda_id == str(order_id)):
-                score += 300
-            elif re.search(r'\b' + re.escape(order_num) + r'\b', c_obs, re.IGNORECASE):
-                score += 180
-
-        # Match de valor total
-        if order_total > 0 and c_total > 0:
-            diff_val = abs(order_total - c_total)
-            if diff_val <= 0.05:
-                score += 50
-            elif diff_val <= 2.00:
-                score += 25
-
-        # Se encontrou o número do pedido vinculado ou nas obs, retorna imediatamente!
-        if score >= 180:
-            return f"NF-{c_num}"
+        if order_total > 0 and c_total > 0 and abs(order_total - c_total) <= 0.05:
+            score += 50
 
         scored_candidates.append((score, c_num))
 
     if scored_candidates:
         scored_candidates.sort(key=lambda x: x[0], reverse=True)
         best_score, best_num = scored_candidates[0]
-        if best_score >= 50:
+        if best_score >= 40:
             return f"NF-{best_num}"
 
     return ""
