@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import base64
 import urllib.request
 import urllib.parse
@@ -236,6 +237,179 @@ def search_bling_order(order_number: str) -> dict:
     detail_data = make_bling_api_request(f"/pedidos/vendas/{order_id}")
     return parse_bling_order_data(detail_data.get("data", pedidos[0]))
 
+def find_matching_nfe_for_order(order: dict) -> str:
+    """
+    Realiza varredura profunda no Bling para encontrar a Nota Fiscal CORRETA do Pedido de Venda.
+    Verifica:
+    1. Número do pedido vinculado na NF ou nas observações/sistema (ex: 'Pedido: 2714' ou 'PV 2714')
+    2. Correspondência de itens/produtos e quantidades do pedido
+    3. Valor total da nota em relação ao pedido
+    4. Validação cronológica obrigatória: Data da NF (dataEmissao) >= Data do Pedido (nunca antes!)
+    5. Tratamento inteligente para múltiplos pedidos do mesmo cliente
+    """
+    contato = order.get("contato", {})
+    contato_id = contato.get("id")
+    order_id = order.get("id")
+    order_num = str(order.get("numero", "")).strip()
+    order_total = float(order.get("total", 0) or 0)
+    order_date_str = str(order.get("data", "")).strip()[:10]
+    
+    order_items = order.get("itens", [])
+    order_item_codes = set()
+    order_item_descs = []
+    for it in order_items:
+        if it.get("codigo"):
+            order_item_codes.add(str(it["codigo"]).strip().lower())
+        if it.get("descricao"):
+            order_item_descs.append(str(it["descricao"]).strip().lower())
+
+    # 1. Se o pedido já possui objeto notaFiscal com número válido não-nulo
+    nfe_direct = order.get("notaFiscal") or {}
+    direct_num = str(nfe_direct.get("numero", "")).strip()
+    direct_id = nfe_direct.get("id")
+
+    # Lista de candidatos a NF para pontuar
+    candidates_raw = []
+
+    # Se veio indicação direta no pedido, busca detalhes para validar
+    if direct_id:
+        try:
+            d_res = make_bling_api_request(f"/nfe/{direct_id}")
+            if d_res and "data" in d_res:
+                candidates_raw.append(d_res["data"])
+        except Exception:
+            pass
+    elif direct_num and direct_num != "0":
+        try:
+            d_res = make_bling_api_request("/nfe", params={"numero": direct_num})
+            candidates_raw.extend(d_res.get("data", []))
+        except Exception:
+            pass
+
+    # 2. Varredura por Notas Fiscais do Cliente no Bling
+    if contato_id:
+        try:
+            nfe_resp = make_bling_api_request("/nfe", params={"idContato": contato_id, "limite": 50})
+            candidates_raw.extend(nfe_resp.get("data", []))
+        except Exception:
+            pass
+
+    if not candidates_raw:
+        return f"NF-{direct_num}" if direct_num and direct_num != "0" else ""
+
+    # Remover duplicados pelo id ou número da NFe
+    seen_ids = set()
+    unique_candidates = []
+    for c in candidates_raw:
+        cid = c.get("id") or c.get("numero")
+        if cid and cid not in seen_ids:
+            seen_ids.add(cid)
+            unique_candidates.append(c)
+
+    scored_candidates = []
+
+    for c in unique_candidates:
+        cid = c.get("id")
+        c_num = str(c.get("numero", "")).strip()
+        if not c_num or c_num == "0":
+            continue
+
+        # Para pontuação precisa, busca detalhes da NFe se não tiver itens/obs
+        c_detail = c
+        if cid and ("observacoes" not in c or "itens" not in c):
+            try:
+                res_det = make_bling_api_request(f"/nfe/{cid}")
+                if res_det and "data" in res_det:
+                    c_detail = res_det["data"]
+            except Exception:
+                pass
+
+        c_date_str = str(c_detail.get("dataEmissao") or c_detail.get("data", "")).strip()[:10]
+        c_total = float(c_detail.get("valorNota", 0) or c_detail.get("total", 0) or 0)
+        c_obs = str(c_detail.get("observacoes", "") or "") + " " + str(c_detail.get("observacoesSistema", "") or "")
+        
+        # Link direto com a venda na API Bling
+        c_venda = c_detail.get("venda") or {}
+        c_venda_id = str(c_venda.get("id", "") or "")
+        c_venda_num = str(c_venda.get("numero", "") or "")
+
+        # -------------------------------------------------------------
+        # PONTUAÇÃO E VALIDAÇÕES DO MATCHING
+        # -------------------------------------------------------------
+        score = 0
+
+        # REGRA CRONOLÓGICA OBRIGATÓRIA: Data NF >= Data Pedido (nunca o contrário!)
+        if order_date_str and c_date_str:
+            try:
+                d_order = datetime.strptime(order_date_str, "%Y-%m-%d")
+                d_nf = datetime.strptime(c_date_str, "%Y-%m-%d")
+                if d_nf < d_order:
+                    # Desqualifica NFs emitidas ANTES da data de criação do pedido
+                    continue
+                else:
+                    diff_days = (d_nf - d_order).days
+                    if diff_days == 0:
+                        score += 40  # Emitida no mesmo dia do pedido
+                    elif 1 <= diff_days <= 3:
+                        score += 30  # Emitida 1 a 3 dias após
+                    elif 4 <= diff_days <= 15:
+                        score += 15  # Emitida em até 15 dias
+                    elif diff_days <= 60:
+                        score += 5
+            except Exception:
+                pass
+
+        # REGRA DE NÚMERO DO PEDIDO: Procura o número do pedido nas observações / vínculo da NFe
+        if order_num:
+            if c_venda_num == order_num or (order_id and c_venda_id == str(order_id)):
+                score += 300  # Vínculo direto de pedido na API
+            elif re.search(r'\b' + re.escape(order_num) + r'\b', c_obs, re.IGNORECASE):
+                score += 180  # Número do pedido encontrado expressamente no texto da NF (ex: 'Pedido 2714')
+
+        # REGRA DE VALOR TOTAL: Compara valor da NF com o valor total do pedido
+        if order_total > 0 and c_total > 0:
+            diff_val = abs(order_total - c_total)
+            if diff_val <= 0.05:
+                score += 50  # Valor idêntico
+            elif diff_val <= 2.00:
+                score += 25  # Valor muito próximo
+
+        # REGRA DE ITENS / PRODUTOS: Compara produtos da NF com os produtos do Pedido
+        c_itens = c_detail.get("itens", [])
+        if c_itens and order_items:
+            matches_items = 0
+            for ci in c_itens:
+                ci_cod = str(ci.get("codigo", "") or "").strip().lower()
+                ci_desc = str(ci.get("descricao", "") or "").strip().lower()
+                if ci_cod and ci_cod in order_item_codes:
+                    matches_items += 1
+                elif ci_desc and any(od in ci_desc or ci_desc in od for od in order_item_descs):
+                    matches_items += 1
+            if matches_items > 0:
+                score += (40 + (matches_items * 20))
+
+        # REGRA DE SE FOI A NF INDICADA DIRETA PELO PEDIDO
+        if direct_num and c_num == direct_num:
+            score += 100
+
+        scored_candidates.append((score, c_num, c_detail))
+
+    if not scored_candidates:
+        return f"NF-{direct_num}" if direct_num and direct_num != "0" else ""
+
+    # Ordena os candidatos pela maior pontuação
+    scored_candidates.sort(key=lambda x: x[0], reverse=True)
+    best_score, best_num, best_detail = scored_candidates[0]
+
+    # Exige nota mínima de corte (score >= 60) para evitar puxar NF errada de outro pedido do mesmo cliente
+    if best_score >= 60:
+        return f"NF-{best_num}"
+    elif direct_num and direct_num != "0":
+        return f"NF-{direct_num}"
+
+    return ""
+
+
 def parse_bling_order_data(order: dict) -> dict:
     """Normaliza os dados do pedido do Bling para o formulário do M-One."""
     contato = order.get("contato", {})
@@ -245,25 +419,8 @@ def parse_bling_order_data(order: dict) -> dict:
     data_venda = order.get("data", "")
     obs = order.get("observacoes", "") or ""
 
-    # Verifica se há nota fiscal gerada no pedido
-    nota_fiscal = ""
-    nfe_data = order.get("notaFiscal") or {}
-    if nfe_data and nfe_data.get("numero"):
-        nota_fiscal = f"NF-{nfe_data['numero']}"
-    elif "transporte" in order and order["transporte"].get("etiqueta"):
-        pass
-
-    # Se não veio número de NF no pedido, tenta buscar se tem nfe vinculada
-    order_id = order.get("id")
-    if not nota_fiscal and order_id:
-        try:
-            nfe_resp = make_bling_api_request("/nfe", params={"idContato": contato.get("id"), "limit": 5})
-            for nf in nfe_resp.get("data", []):
-                if nf.get("numero"):
-                    nota_fiscal = f"NF-{nf['numero']}"
-                    break
-        except Exception:
-            pass
+    # Varredura inteligente da Nota Fiscal vinculada ao Pedido
+    nota_fiscal = find_matching_nfe_for_order(order)
 
     # Itens do pedido
     itens = []
@@ -278,6 +435,8 @@ def parse_bling_order_data(order: dict) -> dict:
 
     modelos_lista = [it["descricao"] for it in itens if it.get("descricao")]
     vehicle_model = ", ".join(modelos_lista) if modelos_lista else ""
+
+    order_id = order.get("id")
 
     return {
         "found": True,
