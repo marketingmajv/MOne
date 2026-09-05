@@ -2,24 +2,24 @@
 
 {% block title %}Consulta de Frete — M-One{% endblock %}
 {% block page_title %}Consulta de Fretes & Transportadoras{% endblock %}
-{% block page_subtitle %}Simulação instantânea de fretes rodoviários e gestão de tabelas ativas{% endblock %}
+{% block page_subtitle %}Simulação instantânea com múltiplos modelos, 1/3 do valor de atacado e gestão de tabelas{% endblock %}
 
 {% block content %}
 <div class="grid-2-col gap-6">
-  <!-- COLUNA 1: SIMULADOR DE FRETE -->
+  <!-- COLUNA 1: SIMULADOR DE FRETE (MÚLTIPLOS MODELOS DE PRODUTO) -->
   <div class="card shadow-lg">
     <div class="card-header border-b border-border-color pb-4 mb-4 flex justify-between items-center">
       <div>
         <h2 class="text-xl font-bold flex items-center gap-2">
-          <span>🚚</span> Simulador de Frete
+          <span>🚚</span> Simulador de Frete Multi-Produtos
         </h2>
-        <p class="text-sm text-muted">Consulte os melhores preços e prazos entre as transportadoras credenciadas</p>
+        <p class="text-sm text-muted">Consulte os fretes por CEP. O seguro é estritamente 1/3 do valor de atacado.</p>
       </div>
     </div>
 
     <form id="freightCalcForm" class="form-grid" onsubmit="event.preventDefault(); runFreightCalculation();">
       <label class="span-2">
-        Nome do Cliente (opcional para o WhatsApp)
+        Nome do Cliente (opcional para a mensagem no WhatsApp)
         <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="input-field">
       </label>
 
@@ -37,28 +37,31 @@
         <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="input-field">
       </label>
 
-      <label class="span-2">
-        Produto MAJ (Preenche peso e valor de seguro automático)
-        <select id="product_id" class="input-field" onchange="onProductSelectChange(this)">
-          <option value="">-- Selecione o Veículo / Produto ou digite abaixo --</option>
-          {% for p in products %}
-          <option value="{{ p.id }}" data-wholesale="{{ p.wholesale_price or 0 }}" data-retail="{{ p.retail_price or 0 }}">
-            {{ p.name }} (Atacado: R$ {{ "%.2f"|format(p.wholesale_price or 0) }})
-          </option>
-          {% endfor %}
-        </select>
-      </label>
+      <!-- SEÇÃO DE MÚLTIPLOS MODELOS DE PRODUTOS -->
+      <div class="span-2 bg-slate-900/60 p-4 rounded-lg border border-border-color mt-2 mb-2">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-md font-bold flex items-center gap-2">
+            <span>📦</span> Produtos da Cotação (Modelos e Quantidades)
+          </h3>
+          <button type="button" class="btn secondary sm" onclick="addProductRow()">
+            <span>+</span> Adicionar Modelo
+          </button>
+        </div>
 
-      <label>
-        Peso do Envio (kg)
-        <input type="number" step="0.1" id="weight_kg" placeholder="Ex: 85" class="input-field">
-      </label>
+        <div id="productRowsContainer" class="space-y-3">
+          <!-- A primeira linha é gerada automaticamente -->
+        </div>
 
-      <label>
-        Valor Declarado / NF (R$)
-        <input type="number" step="0.01" id="declared_value" placeholder="Ex: 6490.00" class="input-field">
-        <small class="text-xs text-muted block mt-1">💡 *O seguro da MAJ é calculado sobre 1/3 do valor de atacado.*</small>
-      </label>
+        <!-- RESUMO AUTOMÁTICO DOS ITENS -->
+        <div class="border-t border-border-color/50 pt-3 mt-3 flex justify-between items-center text-sm">
+          <div>
+            <span class="text-muted">Total de Itens:</span> <strong id="summaryTotalQty">0</strong>
+          </div>
+          <div>
+            <span class="text-muted">Valor de Seguro (1/3 Atacado):</span> <strong id="summaryTotalInsurance" class="text-primary">R$ 0.00</strong>
+          </div>
+        </div>
+      </div>
 
       <div class="span-2 form-actions mt-2">
         <button type="submit" class="btn primary w-full flex items-center justify-center gap-2 py-3 text-lg">
@@ -70,7 +73,7 @@
     <!-- ÁREA DE RESULTADOS DO FRETE -->
     <div id="freightResultsArea" class="mt-6 hidden">
       <div class="border-t border-border-color pt-4 mb-3 flex justify-between items-center">
-        <h3 class="text-lg font-bold">Opções Encontradas</h3>
+        <h3 class="text-lg font-bold">Opções de Frete Encontradas</h3>
         <button type="button" class="btn success sm" onclick="copyWhatsAppMessage()">
           <span>📲</span> Copiar para WhatsApp
         </button>
@@ -168,16 +171,97 @@
 
 {% block scripts %}
 <script>
-let lastFreightCalculationResult = None = null;
+const productsCatalog = {{ products|tojson }};
+let lastFreightCalculationResult = null;
+let itemRowCounter = 0;
 
-function onProductSelectChange(selectElem) {
-  const selectedOption = selectElem.options[selectElem.selectedIndex];
-  if (!selectedOption.value) return;
+document.addEventListener("DOMContentLoaded", () => {
+  addProductRow(); // Adiciona a 1ª linha por padrão
+});
+
+function addProductRow() {
+  itemRowCounter++;
+  const container = document.getElementById("productRowsContainer");
   
-  const wholesalePrice = parseFloat(selectedOption.getAttribute("data-wholesale") || 0);
-  if (wholesalePrice > 0) {
-    document.getElementById("declared_value").value = (wholesalePrice / 3.0).toFixed(2);
+  let optionsHtml = `<option value="">-- Selecione o Modelo --</option>`;
+  productsCatalog.forEach(p => {
+    optionsHtml += `<option value="${p.id}" data-wholesale="${p.wholesale_price}" data-onethird="${p.one_third_wholesale}">${p.name} (1/3 Atacado: R$ ${p.one_third_wholesale.toFixed(2)})</option>`;
+  });
+
+  const rowId = `productRow_${itemRowCounter}`;
+  const rowHtml = `
+    <div id="${rowId}" class="flex flex-wrap gap-2 items-center bg-slate-800/80 p-3 rounded border border-border-color">
+      <div class="flex-1 min-w-[200px]">
+        <select class="input-field product-select" onchange="updateRowDetails('${rowId}')">
+          ${optionsHtml}
+        </select>
+      </div>
+      <div class="w-24">
+        <label class="text-xs text-muted block mb-1">Qtd</label>
+        <input type="number" min="1" value="1" class="input-field product-qty" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      </div>
+      <div class="w-28">
+        <label class="text-xs text-muted block mb-1">Peso Un. (kg)</label>
+        <input type="number" step="0.1" value="85" class="input-field product-weight" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      </div>
+      <div class="w-32 text-right">
+        <label class="text-xs text-muted block mb-1">1/3 Atacado</label>
+        <span class="product-onethird-display text-sm font-semibold text-primary block mt-2">R$ 0.00</span>
+      </div>
+      <div class="pt-4">
+        <button type="button" class="btn danger sm" onclick="removeProductRow('${rowId}')">×</button>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML("beforeend", rowHtml);
+  updateTotalsSummary();
+}
+
+function removeProductRow(rowId) {
+  const container = document.getElementById("productRowsContainer");
+  if (container.children.length <= 1) {
+    alert("Você deve manter ao menos 1 produto na cotação.");
+    return;
   }
+  const elem = document.getElementById(rowId);
+  if (elem) elem.remove();
+  updateTotalsSummary();
+}
+
+function updateRowDetails(rowId) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+
+  const select = row.querySelector(".product-select");
+  const selectedOpt = select.options[select.selectedIndex];
+  const displaySpan = row.querySelector(".product-onethird-display");
+
+  const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
+  displaySpan.innerText = `R$ ${oneThirdVal.toFixed(2)}`;
+
+  updateTotalsSummary();
+}
+
+function updateTotalsSummary() {
+  const rows = document.querySelectorAll("#productRowsContainer > div");
+  let totalQty = 0;
+  let totalInsurance = 0;
+
+  rows.forEach(row => {
+    const select = row.querySelector(".product-select");
+    const qtyInput = row.querySelector(".product-qty");
+    const selectedOpt = select.options[select.selectedIndex];
+    
+    const qty = parseInt(qtyInput.value || 1);
+    const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
+
+    totalQty += qty;
+    totalInsurance += (oneThirdVal * qty);
+  });
+
+  document.getElementById("summaryTotalQty").innerText = totalQty;
+  document.getElementById("summaryTotalInsurance").innerText = `R$ ${totalInsurance.toFixed(2)}`;
 }
 
 async function lookupViaCEP(cepVal) {
@@ -204,9 +288,6 @@ async function lookupViaCEP(cepVal) {
 async function runFreightCalculation() {
   const cep_dest = document.getElementById("cep_dest").value.trim();
   const cep_orig = document.getElementById("cep_orig").value.trim();
-  const product_id = document.getElementById("product_id").value;
-  const weight_kg = parseFloat(document.getElementById("weight_kg").value || 0);
-  const declared_value = parseFloat(document.getElementById("declared_value").value || 0);
   const customer_name = document.getElementById("customer_name").value.trim();
 
   if (!cep_dest) {
@@ -214,17 +295,47 @@ async function runFreightCalculation() {
     return;
   }
 
+  // Coletar itens dos produtos
+  const rows = document.querySelectorAll("#productRowsContainer > div");
+  const items = [];
+
+  rows.forEach(row => {
+    const select = row.querySelector(".product-select");
+    const qtyInput = row.querySelector(".product-qty");
+    const weightInput = row.querySelector(".product-weight");
+    const selectedOpt = select.options[select.selectedIndex];
+    
+    const productId = selectedOpt.value;
+    const qty = parseInt(qtyInput.value || 1);
+    const weight = parseFloat(weightInput.value || 85);
+    const productName = selectedOpt.text ? selectedOpt.text.split("(")[0].trim() : "";
+
+    if (productId || weight > 0) {
+      items.append ? items.push({
+        product_id: productId,
+        name: productName,
+        qty: qty,
+        weight_kg: weight
+      }) : null;
+    }
+  });
+
+  if (items.length === 0) {
+    alert("Selecione ao menos um produto.");
+    return;
+  }
+
   const resultsArea = document.getElementById("freightResultsArea");
   const optionsList = document.getElementById("freightOptionsList");
   
   resultsArea.classList.remove("hidden");
-  optionsList.innerHTML = `<div class="p-6 text-center text-muted">🔄 Calculando melhores opções entre as transportadoras...</div>`;
+  optionsList.innerHTML = `<div class="p-6 text-center text-muted">🔄 Calculando frete para ${items.map(i => i.qty + 'x ' + i.name).join(', ')}...</div>`;
 
   try {
     const resp = await fetch("{{ url_for('freight_calculate') }}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cep_dest, cep_orig, product_id, weight_kg, declared_value })
+      body: JSON.stringify({ cep_dest, cep_orig, items })
     });
     
     const data = await resp.json();
@@ -233,13 +344,19 @@ async function runFreightCalculation() {
     if (!data.success || !data.options || data.options.length === 0) {
       optionsList.innerHTML = `
         <div class="flash warning">
-          ⚠️ ${data.message || 'Nenhuma opção de frete cadastrada atende a este CEP ou faixa de peso.'}
+          ⚠️ ${data.message || 'Nenhuma transportadora atende este CEP ou faixa de peso cadastrada.'}
         </div>
       `;
       return;
     }
 
-    let html = "";
+    let html = `
+      <div class="bg-slate-900/40 p-3 rounded mb-3 text-sm flex justify-between items-center border border-border-color">
+        <div>📦 <strong>Itens da Cotação</strong>: ${data.product_name}</div>
+        <div>💰 <strong>Base de Seguro (1/3 Atacado)</strong>: <span class="text-primary font-bold">R$ ${data.insurance_base_value.toFixed(2)}</span></div>
+      </div>
+    `;
+
     data.options.forEach((opt, idx) => {
       let badgeHtml = "";
       if (opt.badges && opt.badges.length > 0) {
@@ -259,7 +376,7 @@ async function runFreightCalculation() {
             <p class="text-sm text-muted mt-1">
               Tabela: ${opt.table_name} | Prazo: <strong class="text-white">${opt.delivery_days} dia(s) útil(eis)</strong>
             </p>
-            ${opt.insurance_cost > 0 ? `<small class="text-xs text-muted block">Ad-valorem/Seguro (1/3 atacado): R$ ${opt.insurance_cost.toFixed(2)}</small>` : ''}
+            ${opt.insurance_cost > 0 ? `<small class="text-xs text-muted block">Ad-valorem/Seguro (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2)}</small>` : ''}
           </div>
           <div class="text-right">
             <span class="text-2xl font-extrabold text-primary">R$ ${opt.total_price.toFixed(2)}</span>

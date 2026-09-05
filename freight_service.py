@@ -252,10 +252,11 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> list:
         return []
 
 
-def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None) -> dict:
+def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None) -> dict:
     """
     Calcula as opções de frete disponíveis em todas as transportadoras ativas.
-    Regra de Seguro/Frete: O valor declarado para seguro é 1/3 do valor de atacado do produto.
+    Suporta múltiplos itens e quantidades por modelo.
+    Regra de Seguro MAJ: O valor considerado para seguro é estritamente 1/3 do valor de atacado.
     """
     clean_dest = clean_cep(cep_dest)
     if len(clean_dest) != 8:
@@ -268,28 +269,62 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
     uf_dest = via_cep.get("uf", "").upper()
     city_dest = via_cep.get("city", "")
 
-    # 2. Se produto informado, buscar dados de peso e preço de atacado no banco
-    product_name = ""
-    wholesale_price = 0.0
-    if product_id and db_conn:
-        try:
-            cur = db_conn.execute("SELECT id, name, wholesale_price, retail_price FROM products WHERE id = ?", (product_id,))
-            p = cur.fetchone()
-            if p:
-                product_name = p.get("name") or p.get("nome") or ""
-                wholesale_price = float(p.get("wholesale_price") or 0)
-        except Exception as e:
-            print("[Freight Service] Erro ao buscar produto:", e)
+    # 2. Processar lista de itens
+    total_weight = 0.0
+    total_insurance_value = 0.0
+    item_descriptions = []
 
-    # Regra da MAJ: O valor considerado para cálculo do frete/seguro é 1/3 do valor de atacado
-    if wholesale_price > 0:
-        declared_value_for_insurance = wholesale_price / 3.0
-    elif declared_value > 0:
-        declared_value_for_insurance = declared_value / 3.0
-    else:
-        declared_value_for_insurance = 0.0
+    # Compatibilidade caso venha 1 unico produto
+    if not items or not isinstance(items, list):
+        items = []
+        if product_id or weight_kg > 0 or declared_value > 0:
+            items.append({
+                "product_id": product_id,
+                "qty": 1,
+                "weight_kg": weight_kg,
+                "declared_value": declared_value
+            })
 
-    # 3. Buscar todas as regras de frete ativas no banco de dados
+    for it in items:
+        p_id = it.get("product_id")
+        qty = int(it.get("qty", 1) or 1)
+        w = float(it.get("weight_kg", 0) or 0)
+        d_val = float(it.get("declared_value", 0) or 0)
+        w_price = 0.0
+        p_name = it.get("name") or ""
+
+        if p_id and db_conn:
+            try:
+                cur = db_conn.execute("SELECT id, name, wholesale_price FROM products WHERE id = ?", (int(p_id),))
+                p = cur.fetchone()
+                if p:
+                    p_name = p.get("name") or ""
+                    w_price = float(p.get("wholesale_price") or 0)
+            except Exception as e:
+                print("[Freight Service] Erro ao buscar produto:", e)
+
+        # Regra da MAJ: 1/3 do valor de atacado para seguro
+        if w_price > 0:
+            item_insurance = (w_price / 3.0)
+        elif d_val > 0:
+            item_insurance = (d_val / 3.0)
+        else:
+            item_insurance = 0.0
+
+        total_weight += (w * qty)
+        total_insurance_value += (item_insurance * qty)
+
+        if p_name:
+            item_descriptions.append(f"{qty}x {p_name}")
+        elif w > 0:
+            item_descriptions.append(f"{qty}x Carga ({w}kg)")
+
+    product_summary = ", ".join(item_descriptions) if item_descriptions else "Carga Geral"
+
+    if weight_kg > 0 and total_weight == 0:
+        total_weight = weight_kg
+
+    # 3. Buscar todas as regras de frete ativas
     if not db_conn:
         return {"success": False, "message": "Sem conexão com o banco de dados."}
 
@@ -326,10 +361,6 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
         all_rates = []
 
     dest_int = int(clean_dest)
-
-    options = []
-
-    # Agrupar por transportadora para pegar a melhor regra aplicável de cada uma
     carrier_best_rates = {}
 
     for r in all_rates:
@@ -356,10 +387,10 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
         if not (match_cep or match_uf or (not r_cep_start and not r_uf)):
             continue
 
-        # Filtro de Peso
+        # Filtro de Peso Total
         min_w = float(r.get("min_weight") or 0)
         max_w = float(r.get("max_weight") or 999999)
-        if weight_kg > 0 and not (min_w <= weight_kg <= max_w):
+        if total_weight > 0 and not (min_w <= total_weight <= max_w):
             continue
 
         # Cálculo do frete
@@ -370,11 +401,11 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
         min_f = float(r.get("min_freight_price") or 0)
         days = int(r.get("delivery_days") or 1)
 
-        # Custo do Peso
-        weight_cost = weight_kg * w_per_kg
+        # Custo do Peso Total
+        weight_cost = total_weight * w_per_kg
 
-        # Custo do Seguro (Ad-valorem + GRIS) sobre 1/3 do valor de atacado
-        insurance_cost = declared_value_for_insurance * ((ad_val_pct + gris_pct) / 100.0)
+        # Custo do Seguro (Ad-valorem + GRIS) sobre 1/3 do Valor de Atacado Total
+        insurance_cost = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
 
         total_price = fixed_p + weight_cost + insurance_cost
         if total_price < min_f:
@@ -391,7 +422,6 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
             "notes": r.get("notes") or ""
         }
 
-        # Guardar a menor tarifa dessa transportadora
         if c_id not in carrier_best_rates or total_price < carrier_best_rates[c_id]["total_price"]:
             carrier_best_rates[c_id] = rate_option
 
@@ -403,10 +433,9 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
             "cep_dest": format_cep(clean_dest),
             "uf": uf_dest,
             "city": city_dest,
-            "product_name": product_name,
-            "weight_kg": weight_kg,
-            "declared_value": declared_value,
-            "insurance_base_value": round(declared_value_for_insurance, 2),
+            "product_name": product_summary,
+            "total_weight_kg": total_weight,
+            "insurance_base_value": round(total_insurance_value, 2),
             "options": [],
             "message": "Nenhuma transportadora atende este CEP / faixa de peso cadastrada."
         }
@@ -431,10 +460,9 @@ def calculate_freight(db_conn, cep_dest: str, weight_kg: float = 0.0, volume_m3:
         "cep_dest": format_cep(clean_dest),
         "uf": uf_dest,
         "city": city_dest,
-        "product_name": product_name,
-        "weight_kg": weight_kg,
-        "wholesale_price": round(wholesale_price, 2),
-        "insurance_base_value": round(declared_value_for_insurance, 2),
+        "product_name": product_summary,
+        "total_weight_kg": total_weight,
+        "insurance_base_value": round(total_insurance_value, 2),
         "options": options
     }
 

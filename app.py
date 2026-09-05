@@ -2400,7 +2400,17 @@ def freight():
         
         # Buscar lista de produtos para o dropdown de consulta
         cur_p = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name ASC")
-        products = cur_p.fetchall()
+        products_raw = cur_p.fetchall()
+        products = []
+        for p in products_raw:
+            w_price = float(p.get("wholesale_price") or 0)
+            products.append({
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "wholesale_price": w_price,
+                "one_third_wholesale": round(w_price / 3.0, 2),
+                "retail_price": float(p.get("retail_price") or 0)
+            })
         
         # Buscar transportadoras e tabelas cadastradas
         sql_t = """
@@ -2437,7 +2447,7 @@ def freight():
 @app.route("/freight/calculate", methods=["POST"])
 @login_required
 def freight_calculate():
-    """API para cálculo de frete por CEP, peso e produto."""
+    """API para cálculo de frete por CEP, peso e múltiplos produtos."""
     try:
         data = request.get_json() if request.is_json else request.form
         cep_dest = data.get("cep_dest", "").strip()
@@ -2450,12 +2460,14 @@ def freight_calculate():
                 product_id = None
         declared_value = float(data.get("declared_value", 0) or 0)
         cep_orig = data.get("cep_orig", "").strip() or freight_service.DEFAULT_MAJ_CEP
+        items = data.get("items", [])
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
             res = freight_service.calculate_freight(
                 db_conn=conn,
                 cep_dest=cep_dest,
+                items=items,
                 weight_kg=weight_kg,
                 declared_value=declared_value,
                 product_id=product_id,
@@ -2464,6 +2476,7 @@ def freight_calculate():
             return jsonify(res)
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 400
+
 
 @app.route("/freight/whatsapp", methods=["POST"])
 @login_required
