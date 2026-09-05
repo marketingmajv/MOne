@@ -366,6 +366,7 @@ def init_db():
             conn.executemany("INSERT INTO users(name,username,password_hash,role) VALUES(?,?,?,?)", defaults)
         conn.commit()
     ensure_sales_columns()
+    ensure_product_columns()
 
 def ensure_sales_columns():
     try:
@@ -373,6 +374,18 @@ def ensure_sales_columns():
             for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model", "chassis_photo_file"]:
                 try:
                     conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
+                except Exception:
+                    pass
+            conn.commit()
+    except Exception:
+        pass
+
+def ensure_product_columns():
+    try:
+        with db() as conn:
+            for col, col_type in [("bling_stock", "INTEGER DEFAULT 0"), ("bling_updated_at", "TEXT")]:
+                try:
+                    conn.execute(f"ALTER TABLE products ADD COLUMN {col} {col_type}")
                 except Exception:
                     pass
             conn.commit()
@@ -589,13 +602,23 @@ def products():
         rows = conn.execute(
             """
             SELECT p.*,
-                   SUM(CASE WHEN st.status='available' THEN 1 ELSE 0 END) available,
+                   COALESCE(p.bling_stock, 0) as bling_stock,
+                   p.bling_updated_at,
+                   SUM(CASE WHEN st.status='available' THEN 1 ELSE 0 END) local_available,
                    SUM(CASE WHEN st.status='sold' THEN 1 ELSE 0 END) sold
             FROM products p LEFT JOIN stock_units st ON st.product_id=p.id
             GROUP BY p.id ORDER BY p.name
             """
         ).fetchall()
-    return render_template("products.html", products=rows)
+        
+        # Determine last sync timestamp
+        last_sync = None
+        for r in rows:
+            if r["bling_updated_at"]:
+                last_sync = r["bling_updated_at"]
+                break
+
+    return render_template("products.html", products=rows, last_sync=last_sync)
 
 
 @app.route("/products/<int:pid>/edit", methods=["POST"])
@@ -1996,7 +2019,27 @@ def api_bling_invoice(inv_num):
         return jsonify({"found": False, "message": str(e)}), 400
 
 
+@app.route("/products/sync-bling-stock", methods=["POST"])
+@app.route("/api/bling/sync-stock", methods=["POST"])
+@login_required
+def sync_bling_stock_route():
+    try:
+        res = bling_service.sync_bling_products_stock()
+        if request.headers.get("Accept") == "application/json" or request.is_json:
+            return jsonify(res)
+        if res.get("success"):
+            flash(f"✅ {res.get('message')}", "success")
+        else:
+            flash(f"⚠️ {res.get('message')}", "warning")
+    except Exception as e:
+        if request.headers.get("Accept") == "application/json" or request.is_json:
+            return jsonify({"success": False, "message": str(e)}), 400
+        flash(f"Erro ao sincronizar estoque com o Bling: {str(e)}", "danger")
+    return redirect(url_for("products"))
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5001")), debug=True)
+
 

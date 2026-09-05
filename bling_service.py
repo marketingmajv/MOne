@@ -180,12 +180,15 @@ def get_valid_access_token() -> str:
 
     return access_token
 
-def make_bling_api_request(endpoint: str, params: dict = None, method: str = "GET") -> dict:
+def make_bling_api_request(endpoint: str, params = None, method: str = "GET") -> dict:
     """Executa requisição autenticada à API v3 do Bling."""
     token = get_valid_access_token()
     url = f"{BLING_API_BASE_URL}{endpoint}"
     if params:
-        url += f"?{urllib.parse.urlencode(params)}"
+        if isinstance(params, str):
+            url += f"?{params}"
+        else:
+            url += f"?{urllib.parse.urlencode(params, doseq=True)}"
 
     req = urllib.request.Request(
         url,
@@ -317,3 +320,106 @@ def search_bling_invoice(invoice_number: str) -> dict:
         "sold_at": data_emissao,
         "notes": obs
     }
+
+def sync_bling_products_stock() -> dict:
+    """
+    Sincroniza o estoque disponível de produtos cadastrados no M-One com a API v3 do Bling.
+    Atualiza a coluna bling_stock no banco de dados do M-One.
+    """
+    # 1. Buscar produtos do Bling (até 10 páginas = 1000 produtos)
+    all_bling_prods = []
+    for page in range(1, 11):
+        try:
+            res = make_bling_api_request("/produtos", params={"limite": 100, "pagina": page, "criterio": 1})
+            data = res.get("data", [])
+            if not data:
+                break
+            all_bling_prods.extend(data)
+            if len(data) < 100:
+                break
+        except Exception as e:
+            print(f"Erro ao buscar produtos Bling (pagina {page}): {e}")
+            break
+
+    if not all_bling_prods:
+        return {"success": False, "message": "Nenhum produto ativo encontrado no Bling.", "updated": 0}
+
+    # 2. Buscar saldos de estoque em lotes de 50 produtos
+    bling_stock_map = {}
+    for i in range(0, len(all_bling_prods), 50):
+        batch = all_bling_prods[i:i+50]
+        ids = [p["id"] for p in batch if p.get("id")]
+        if not ids:
+            continue
+        try:
+            saldos_resp = make_bling_api_request("/estoques/saldos", params={"idsProdutos[]": ids})
+            saldos = saldos_resp.get("data", [])
+            for s in saldos:
+                pid = s.get("produto", {}).get("id")
+                sku = s.get("produto", {}).get("codigo")
+                bling_stock_map[pid] = {
+                    "sku": sku,
+                    "physical": int(s.get("saldoFisicoTotal", 0) or 0),
+                    "virtual": int(s.get("saldoVirtualTotal", 0) or 0)
+                }
+        except Exception as e:
+            print(f"Erro ao buscar saldos do lote Bling: {e}")
+
+    part_keywords = ['assento', 'motor', 'acelerador', 'display', 'pastilha', 'banco', 'peca', 'peça', 'roda', 'bateria', 'carregador', 'capacete', 'chassi', 'retrovisor']
+
+    # 3. Atualizar no banco de dados do M-One
+    updated_count = 0
+    now_iso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    details = []
+
+    with get_db_connection() as conn:
+        m_prods = conn.execute("SELECT id, name, sku FROM products").fetchall()
+        for mp in m_prods:
+            pid = mp["id"]
+            m_name = str(mp["name"] or "").strip()
+            m_sku = str(mp["sku"] or "").strip()
+            matched_stock = 0
+            matched_items = []
+
+            for bp in all_bling_prods:
+                b_id = bp.get("id")
+                b_name = str(bp.get("nome", "") or "").strip()
+                b_sku = str(bp.get("codigo", "") or "").strip()
+                st_qty = bling_stock_map.get(b_id, {}).get("virtual", 0)
+
+                b_name_lower = b_name.lower()
+                m_name_lower = m_name.lower()
+
+                # Ignora peças/acessórios se o produto M-One for modelo/veículo principal
+                if any(kw in b_name_lower for kw in part_keywords) and not any(kw in m_name_lower for kw in part_keywords):
+                    continue
+
+                is_match = False
+                if m_sku and b_sku and m_sku.lower() == b_sku.lower():
+                    is_match = True
+                elif m_name_lower in b_name_lower or b_name_lower in m_name_lower:
+                    is_match = True
+                elif m_name_lower.replace(" ", "") in b_name_lower.replace(" ", ""):
+                    is_match = True
+
+                if is_match:
+                    matched_stock += st_qty
+                    matched_items.append(f"{b_name} (Estoque: {st_qty})")
+
+            conn.execute(
+                "UPDATE products SET bling_stock = ?, bling_updated_at = ? WHERE id = ?",
+                (matched_stock, now_iso, pid)
+            )
+            updated_count += 1
+            details.append({"id": pid, "name": m_name, "stock": matched_stock, "matches": matched_items})
+
+        conn.commit()
+
+    return {
+        "success": True,
+        "message": f"Estoque de {updated_count} produtos sincronizado com o Bling com sucesso!",
+        "updated": updated_count,
+        "synced_at": now_iso,
+        "details": details
+    }
+

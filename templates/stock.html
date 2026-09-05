@@ -5,6 +5,9 @@
 {% block top_actions %}
   <a href="{{ url_for('export_stock') }}" class="btn">Exportar CSV</a>
   {% if me.role in ['admin', 'stock', 'support'] %}
+    <form method="post" action="{{ url_for('sync_bling_stock_route') }}" style="display:inline-block; margin-right:4px;">
+      <button class="btn accent" type="submit" onclick="this.innerHTML='⏳ Sincronizando...';">🔄 Sincronizar Estoque Bling</button>
+    </form>
     <button class="btn primary" onclick="openModal('newStockUnit')">+ Novo chassi</button>
   {% endif %}
 {% endblock %}

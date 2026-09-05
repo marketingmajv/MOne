@@ -4,11 +4,20 @@
 {% block page_subtitle %}Modelo é o produto; cor é variação.{% endblock %}
 {% block top_actions %}
   {% if me.role in ['admin', 'finance', 'stock', 'support'] %}
+    <form method="post" action="{{ url_for('sync_bling_stock_route') }}" style="display:inline-block; margin-right:4px;">
+      <button class="btn accent" type="submit" onclick="this.innerHTML='⏳ Sincronizando...';">🔄 Sincronizar Estoque Bling</button>
+    </form>
     <button class="btn" onclick="openModal('importProductsModal')">📊 Importar Planilha de Preços</button>
     <button class="btn primary" onclick="openModal('newProduct')">+ Novo produto</button>
   {% endif %}
 {% endblock %}
 {% block content %}
+{% if last_sync %}
+<div class="muted-box" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 204, 136, 0.05); border: 1px solid rgba(0, 204, 136, 0.2); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem;">
+  <span>🟢 <b>Estoque Bling Sincronizado</b> — Última atualização: <code>{{ last_sync }}</code></span>
+  <small class="muted">Os valores da coluna <b>Disponível</b> refletem o saldo retornado pelo Bling ERP.</small>
+</div>
+{% endif %}
 <div class="panel table-wrap">
   <table>
     <thead>
@@ -44,7 +53,15 @@
         <td><b>{{ p.retail_price|money }}</b></td>
         <td>{{ p.installment_12x|money }}</td>
         <td>{{ p.installment_18x|money }}</td>
-        <td><span class="badge available">{{ p.available or 0 }}</span></td>
+        <td>
+          {% set total_disp = p.bling_stock if p.bling_stock else (p.local_available or 0) %}
+          <span class="badge available" style="font-weight: 700; padding: 4px 10px;" title="Estoque Bling: {{ p.bling_stock or 0 }} | Chassi local: {{ p.local_available or 0 }}">
+            {{ total_disp }}
+          </span>
+          {% if p.bling_stock and p.bling_stock > 0 %}
+            <small style="display:block; font-size:0.7rem; color: #00cc88; margin-top:2px; font-weight:600;">Bling: {{ p.bling_stock }}</small>
+          {% endif %}
+        </td>
         <td><span class="badge muted">{{ p.sold or 0 }}</span></td>
         <td>
           {% if p.promo_eligible %}
