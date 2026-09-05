@@ -6,10 +6,15 @@ import urllib.request
 import urllib.error
 from datetime import datetime, date
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
 def get_gemini_api_key() -> str:
-    return os.environ.get("GEMINI_API_KEY", "").strip()
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key:
+        key = DEFAULT_GEMINI_KEY
+    return key
+
 
 def build_operational_context(db_conn, role: str, name: str) -> str:
     """Coleta métricas e dados operacionais reais das tabelas oficiais do M-One."""
