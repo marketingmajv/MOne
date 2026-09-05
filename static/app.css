@@ -1,34 +1,35 @@
 /* ==========================================================================
-   M-One (MAJ Operating System) — Senior Commercial SaaS Design System 2026
+   M-One (MAJ Operating System) — Pipedrive CRM Design System 2026
    ========================================================================== */
 
 :root {
-  /* Color Palette - Premium Slate & Obsidian */
-  --bg: #080C14;
-  --side: #05080E;
-  --panel: #0E1726;
-  --panel2: #131E32;
-  --panel-hover: #17243B;
-  --text: #F8FAFC;
-  --muted: #94A3B8;
-  --line: #1C2B47;
-  --line-light: #24375A;
+  /* Pipedrive Design System Color Tokens */
+  --bg: #0B0F17;                  /* Pipedrive Surface Ground (Dark Canvas) */
+  --side: #070B12;                /* Pipedrive Sidebar Background */
+  --panel: #141C2B;               /* Pipedrive Surface Card */
+  --panel2: #1B273C;              /* Pipedrive Surface Input / Inner Card */
+  --panel-hover: #1E2D46;         /* Pipedrive Hover Surface */
+  --text: #F9FAFB;                /* Pipedrive Text Primary */
+  --muted: #9CA3AF;               /* Pipedrive Text Muted */
+  --line: #23324C;                /* Pipedrive Border Color */
+  --line-light: #2D3E5E;          /* Pipedrive Active Border */
   
-  /* Brand & Status Accents */
-  --primary: #0066FF;
-  --primary-hover: #0055D4;
-  --accent: #10B981;
-  --accent-bright: #00E676;
-  --danger: #EF4444;
-  --warning: #F59E0B;
-  --blue: #3B82F6;
-  --info: #38BDF8;
+  /* Brand & Action Colors (Pipedrive Signature Palette) */
+  --primary: #00B268;             /* Pipedrive Signature Green */
+  --primary-hover: #009B5A;
+  --accent: #22C55E;              /* Pipedrive Positive Green */
+  --accent-bright: #22C55E;
+  --blue: #2563EB;                /* Pipedrive Action Blue */
+  --blue-hover: #1D4ED8;
+  --danger: #EF4444;              /* Pipedrive Negative Red */
+  --warning: #F59E0B;             /* Pipedrive Warning Amber */
+  --info: #38BDF8;                /* Pipedrive Info Sky */
   
   /* Geometry & Typography */
-  --radius: 14px;
+  --radius: 12px;
   --radius-sm: 8px;
-  --radius-lg: 20px;
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --radius-lg: 18px;
+  --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
@@ -70,7 +71,7 @@ button, input, select, textarea {
   background-color: var(--bg);
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation (Pipedrive Style) */
 .sidebar {
   position: sticky;
   top: 0;
@@ -134,10 +135,10 @@ button, input, select, textarea {
   gap: 12px;
   align-items: center;
   padding: 10px 14px;
-  color: #94A3B8;
+  color: #9CA3AF;
   font-weight: 600;
   font-size: 13px;
-  border-radius: 12px;
+  border-radius: 10px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -150,7 +151,7 @@ button, input, select, textarea {
   background: var(--panel);
   color: #FFFFFF;
   border: 1px solid var(--line);
-  box-shadow: inset 3px 0 var(--primary), 0 4px 12px rgba(0, 102, 255, 0.15);
+  box-shadow: inset 3px 0 var(--primary), 0 4px 12px rgba(0, 178, 104, 0.15);
 }
 
 .sidebar-foot {
@@ -162,7 +163,7 @@ button, input, select, textarea {
 .user-chip {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 10px 12px;
 }
 
@@ -327,7 +328,7 @@ button, input, select, textarea {
   gap: 20px;
 }
 
-/* Action Buttons & Controls */
+/* Action Buttons & Controls (Pipedrive Green Signature) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -337,7 +338,7 @@ button, input, select, textarea {
   background: var(--panel2);
   color: #F1F5F9;
   padding: 9px 16px;
-  border-radius: 11px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -356,26 +357,26 @@ button, input, select, textarea {
   border-color: var(--primary);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 178, 104, 0.25);
 }
 
 .btn.primary:hover {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
-  box-shadow: 0 6px 20px rgba(0, 102, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 178, 104, 0.35);
 }
 
 .btn.success, .btn.green {
-  background: var(--accent-bright);
-  border-color: var(--accent-bright);
-  color: #07150D;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 4px 14px rgba(0, 230, 118, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 178, 104, 0.25);
 }
 
 .btn.success:hover, .btn.green:hover {
-  background: #00C853;
-  border-color: #00C853;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn.secondary {
@@ -406,7 +407,7 @@ button, input, select, textarea {
   color: #FFFFFF;
 }
 
-/* Forms & Filter Controls */
+/* Forms & Filter Controls (Pipedrive Green Focus Ring) */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -429,10 +430,10 @@ button, input, select, textarea {
 .form-grid input, .form-grid select, .form-grid textarea, 
 .filter-bar input, .filter-bar select, .inline-form input {
   width: 100%;
-  background: #121D30;
+  background: #1B273C;
   border: 1px solid var(--line);
   color: #FFFFFF;
-  border-radius: 11px;
+  border-radius: 10px;
   padding: 9.5px 13px;
   font-size: 13px;
   outline: none;
@@ -442,7 +443,7 @@ button, input, select, textarea {
 .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus, 
 .filter-bar input:focus, .filter-bar select:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 178, 104, 0.2);
 }
 
 .span-2 {
@@ -493,7 +494,7 @@ th {
   letter-spacing: 0.06em;
   font-weight: 700;
   color: var(--muted);
-  background: #090F1C;
+  background: #0B1019;
 }
 
 td {
