@@ -552,3 +552,105 @@ FORMATO DA RESPOSTA (JSON ESTRITO):
         return {"success": False, "message": f"Erro ao analisar comprovante: {str(e)}"}
 
 
+def analyze_import_documents(doc_items: list) -> dict:
+    """
+    Analisa documentos de importação (Invoice, BL, NF Entrada, Planilha de Chassis) via Gemini Vision.
+    Extrai identificador/ref contêiner, número da invoice, nome do fornecedor, vendedor, valor USD, número BL, NF Entrada, data de chegada e chassis.
+    """
+    api_key = get_gemini_api_key()
+    if not api_key:
+        return {"success": False, "message": "Chave GEMINI_API_KEY não configurada no servidor."}
+
+    if not doc_items:
+        return {"success": False, "message": "Nenhum documento fornecido para análise da IA."}
+
+    parts = []
+    for doc in doc_items:
+        b64_data = base64.b64encode(doc["bytes"]).decode("utf-8")
+        parts.append({
+            "inlineData": {
+                "mimeType": doc.get("mime_type") or "application/pdf",
+                "data": b64_data
+            }
+        })
+
+    prompt = """
+Você é o especialista de comércio exterior e auditoria da MAJ Mobilidade Elétrica.
+EXAMINE CUIDADOSAMENTE OS DOCUMENTOS DE IMPORTAÇÃO ANEXADOS (Invoice, Bill of Lading - BL, Nota Fiscal de Entrada ou Planilha de Chassis) E EXTRAIA TODOS OS CAMPOS COM PRECISÃO:
+
+1. REFERÊNCIA / IDENTIFICADOR DO CONTÊINER / IMPORTAÇÃO (ex: "CONT-2026-01" ou "COSCO-9876"):
+   Identifique o código de referência ou número de identificação principal do lote/contêiner.
+
+2. NÚMERO DA INVOICE:
+   Extraia o número oficial da Commercial Invoice (ex: "INV-2026-8899").
+
+3. NOME DO FORNECEDOR / FABRICANTE CHINÊS:
+   Razão social completa da fábrica/empresa exportadora (ex: "Zhejiang Leike Electric Vehicle Co., Ltd.").
+
+4. NOME DO VENDEDOR / CONTATO COMERCIAL:
+   Nome do vendedor, representante ou contato que assina/consta na invoice (ex: "Chen", "Linda", "Jack").
+
+5. VALOR TOTAL DA INVOICE EM DÓLAR (USD):
+   Valor numérico total da Commercial Invoice em dólares americanos (ex: 48500.00).
+
+6. NÚMERO DO BL (BILL OF LADING):
+   Número do conhecimento de embarque marítimo (ex: "COSU6321908230").
+
+7. NÚMERO DA NOTA FISCAL DE ENTRADA:
+   Número da NF-e de entrada ou chave de acesso legível (ex: "00987").
+
+8. DATA PREVISTA DE CHEGADA OU DATA DO DOCUMENTO (YYYY-MM-DD):
+   Data de emissão da invoice, embarque do BL ou chegada estimada no formato YYYY-MM-DD.
+
+9. LISTA DE CHASSIS LOCALIZADOS:
+   Lista com todos os números de chassi legíveis nos documentos.
+
+FORMATO DA RESPOSTA (RETORNE APENAS JSON ESTRITO):
+{
+  "reference": "Referência identificada",
+  "invoice_no": "Número da Invoice",
+  "supplier_name": "Nome do Fornecedor / Fabricante",
+  "seller_name": "Nome do Vendedor / Contato Comercial",
+  "invoice_amount_usd": 0.00,
+  "bl_no": "Número do BL",
+  "nf_entry": "Número da NF Entrada",
+  "arrival_date": "YYYY-MM-DD",
+  "extracted_chassis": ["CHASSI1", "CHASSI2"],
+  "summary": "Resumo sintético em português dos dados extraídos dos documentos"
+}
+"""
+    parts.append({"text": prompt})
+
+    payload = {
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {
+            "temperature": 0.1,
+            "responseMimeType": "application/json"
+        }
+    }
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=40) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            candidates = res_data.get("candidates", [])
+            if candidates and "content" in candidates[0]:
+                raw_json = "".join([p.get("text", "") for p in candidates[0]["content"].get("parts", [])]).strip()
+                parsed = json.loads(raw_json)
+                return {
+                    "success": True,
+                    "data": parsed
+                }
+            return {"success": False, "message": "O modelo Gemini não retornou resposta estruturada dos documentos."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro na análise de documentos da importação: {str(e)}"}
+
+
+

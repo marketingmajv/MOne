@@ -50,6 +50,7 @@ from gemini_service import (
     get_gemini_api_key,
     extract_and_match_chassis,
     analyze_payment_receipt,
+    analyze_import_documents,
     PAYMENT_CATEGORIES,
     ACCOUNTS_LIST,
     PAYMENT_METHODS
@@ -380,7 +381,7 @@ def init_db():
 def ensure_sales_columns():
     try:
         with db() as conn:
-            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model", "chassis_photo_file"]:
+            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model", "chassis_photo_file", "warranty_term_file", "signed_stub_file"]:
                 try:
                     conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
                 except Exception:
@@ -1037,18 +1038,57 @@ def imports():
             invoice_file = save_upload(request.files.get("invoice_file"), "invoice")
             bl_file = save_upload(request.files.get("bl_file"), "bl")
             nf_entry_file = save_upload(request.files.get("nf_entry_file"), "nfentrada")
+            chassis_file_obj = request.files.get("chassis_file")
+            chassis_file_name = save_upload(chassis_file_obj, "chassis") if chassis_file_obj and chassis_file_obj.filename else None
         except ValueError as e:
             flash(str(e), "danger")
             return redirect(url_for("imports"))
+
         with db() as conn:
-            conn.execute(
-                """INSERT INTO imports(reference,invoice_no,bl_no,supplier_name,seller_name,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,notes,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (reference, invoice_no, bl_no, supplier_name, seller_name, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, notes, session["user_id"]),
+            cur = conn.execute(
+                """INSERT INTO imports(reference,invoice_no,bl_no,supplier_name,seller_name,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,chassis_file,notes,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (reference, invoice_no, bl_no, supplier_name, seller_name, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, chassis_file_name, notes, session["user_id"]),
             )
+            iid = cur.lastrowid
+
+            if chassis_file_name:
+                try:
+                    class FS:
+                        pass
+                    obj = FS()
+                    obj.filename = chassis_file_name
+                    obj.read = lambda: (UPLOAD_DIR / chassis_file_name).read_bytes()
+                    rows = parse_chassis_file(obj)
+                    inserted = 0
+                    for row in rows:
+                        existing = conn.execute("SELECT id FROM stock_units WHERE chassis=?", (row["chassis"],)).fetchone()
+                        if not existing:
+                            prod = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (row["model"],)).fetchone()
+                            if not prod:
+                                sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
+                                sku = sku_base
+                                n = 1
+                                while conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
+                                    n += 1
+                                    sku = f"{sku_base}-{n}"
+                                cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(?,?,?)", (row["model"], sku, "Importado"))
+                                product_id = cur_p.lastrowid
+                            else:
+                                product_id = prod["id"]
+                            conn.execute(
+                                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(?,?,?,?,?,?,?)",
+                                (row["chassis"], row["motor"], product_id, row["color"], iid, "unreleased", arrival_date),
+                            )
+                            inserted += 1
+                    flash(f"Importação criada com {inserted} chassis cadastrados.", "success")
+                except Exception as ex:
+                    flash(f"Importação criada, porém erro ao processar planilha de chassis: {ex}", "warning")
+            else:
+                flash("Importação criada com sucesso. Carregue a planilha de chassis para liberar o estoque.", "success")
             conn.commit()
+
         audit("import.created", reference)
-        flash("Importação criada. Agora carregue os comprovantes de pagamento e planilha de chassis.", "success")
         return redirect(url_for("imports"))
 
     with db() as conn:
@@ -1148,10 +1188,46 @@ def edit_import(iid):
             flash(str(e), "danger")
             return redirect(url_for("imports"))
 
+        chassis_file = imp["chassis_file"]
+        chassis_file_obj = request.files.get("chassis_file")
+        if chassis_file_obj and chassis_file_obj.filename:
+            try:
+                chassis_file = save_upload(chassis_file_obj, "chassis")
+                class FS:
+                    pass
+                obj = FS()
+                obj.filename = chassis_file
+                obj.read = lambda: (UPLOAD_DIR / chassis_file).read_bytes()
+                rows = parse_chassis_file(obj)
+                inserted = 0
+                for row in rows:
+                    existing = conn.execute("SELECT id FROM stock_units WHERE chassis=?", (row["chassis"],)).fetchone()
+                    if not existing:
+                        prod = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (row["model"],)).fetchone()
+                        if not prod:
+                            sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
+                            sku = sku_base
+                            n = 1
+                            while conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
+                                n += 1
+                                sku = f"{sku_base}-{n}"
+                            cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(?,?,?)", (row["model"], sku, "Importado"))
+                            product_id = cur_p.lastrowid
+                        else:
+                            product_id = prod["id"]
+                        conn.execute(
+                            "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(?,?,?,?,?,?,?)",
+                            (row["chassis"], row["motor"], product_id, row["color"], iid, "available" if imp["status"] == "released" else "unreleased", arrival_date),
+                        )
+                        inserted += 1
+                flash(f"Planilha de chassis atualizada ({inserted} novos chassis).", "info")
+            except Exception as ex:
+                flash(f"Erro ao ler planilha de chassis: {ex}", "warning")
+
         conn.execute(
-            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, supplier_name=?, seller_name=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, notes=?
+            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, supplier_name=?, seller_name=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, chassis_file=?, notes=?
                WHERE id=?""",
-            (reference or imp["reference"], invoice_no, bl_no, supplier_name, seller_name, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, notes, iid)
+            (reference or imp["reference"], invoice_no, bl_no, supplier_name, seller_name, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, chassis_file, notes, iid)
         )
         conn.commit()
     audit("import.updated", f"import_id={iid}")
@@ -1325,15 +1401,41 @@ def release_import(iid):
         count = conn.execute("SELECT COUNT(*) c FROM stock_units WHERE import_id=?", (iid,)).fetchone()["c"]
         if not imp:
             flash("Importação não encontrada.", "danger")
-        elif not imp["invoice_no"] or not imp["bl_no"] or count == 0:
-            flash("Para liberar, informe Invoice, BL e carregue a planilha de chassis.", "danger")
+        elif count == 0:
+            flash("BLOQUEIO DE SEGURANÇA: Não é possível liberar a importação para venda sem cadastrar os chassis da remessa. Carregue a planilha de chassis primeiro.", "danger")
+        elif not imp["invoice_no"] or not imp["bl_no"]:
+            flash("Para liberar a importação, é necessário informar Invoice e BL.", "danger")
         else:
             conn.execute("UPDATE imports SET status='released' WHERE id=?", (iid,))
             conn.execute("UPDATE stock_units SET status='available' WHERE import_id=? AND status='unreleased'", (iid,))
             conn.commit()
             audit("import.released", f"import_id={iid}")
-            flash("Estoque desta importação foi liberado para venda.", "success")
+            flash("Estoque desta importação foi liberado com sucesso para venda.", "success")
     return redirect(url_for("imports"))
+
+
+@app.route("/api/imports/analyze-docs", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_analyze_import_docs():
+    file_objs = []
+    for key in ["invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
+        f = request.files.get(key)
+        if f and f.filename:
+            content = f.read()
+            ext = f.filename.rsplit(".", 1)[-1].lower()
+            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
+            file_objs.append({
+                "bytes": content,
+                "mime_type": mime,
+                "filename": f.filename
+            })
+
+    if not file_objs:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado para análise da IA."})
+
+    res = analyze_import_documents(file_objs)
+    return jsonify(res)
 
 
 @app.route("/stock")
@@ -1448,6 +1550,40 @@ def sales():
                     flash(f"Arquivo de comprovante da DANFE inválido: {str(e)}", "danger")
                     return redirect(url_for("sales"))
 
+            # Processamento do Termo de Ciência da Garantia (Obrigatório no Varejo)
+            warranty_term_file_obj = request.files.get("warranty_term_file")
+            warranty_term_captured = request.form.get("warranty_term_captured_image")
+            warranty_term_filename = None
+            if warranty_term_captured:
+                warranty_term_filename = save_base64_upload(warranty_term_captured, "garantia")
+            elif warranty_term_file_obj and warranty_term_file_obj.filename:
+                try:
+                    warranty_term_filename = save_upload(warranty_term_file_obj, "garantia")
+                except ValueError as e:
+                    flash(f"Termo de Garantia inválido: {str(e)}", "danger")
+                    return redirect(url_for("sales"))
+
+            # Processamento do Canhoto da NF Assinado (Obrigatório no Atacado)
+            signed_stub_file_obj = request.files.get("signed_stub_file")
+            signed_stub_captured = request.form.get("signed_stub_captured_image")
+            signed_stub_filename = None
+            if signed_stub_captured:
+                signed_stub_filename = save_base64_upload(signed_stub_captured, "canhoto")
+            elif signed_stub_file_obj and signed_stub_file_obj.filename:
+                try:
+                    signed_stub_filename = save_upload(signed_stub_file_obj, "canhoto")
+                except ValueError as e:
+                    flash(f"Canhoto da NF inválido: {str(e)}", "danger")
+                    return redirect(url_for("sales"))
+
+            # Regra estrita de documentos por canal:
+            if channel == "varejo" and not warranty_term_filename:
+                flash("Para vendas no Varejo, é obrigatório anexar o Termo de Ciência da Garantia.", "danger")
+                return redirect(url_for("sales"))
+            elif channel == "atacado" and not signed_stub_filename:
+                flash("Para vendas no Atacado, é obrigatório anexar o Canhoto da NF Assinado.", "danger")
+                return redirect(url_for("sales"))
+
             # Processamento do Termo de Entrega (Permite múltiplas fotos / arquivos)
             term_filenames = []
             term_file_objs = request.files.getlist("delivery_term_files")
@@ -1497,7 +1633,7 @@ def sales():
 
             # Bloqueio estrito no backend: se não veio validado pelo modal, valida agora nos documentos disponíveis
             if not ai_verified:
-                target_filename = chassis_photo_filename or danfe_filename or (term_filenames[0] if term_filenames else None)
+                target_filename = chassis_photo_filename or danfe_filename or warranty_term_filename or signed_stub_filename or (term_filenames[0] if term_filenames else None)
                 if target_filename:
                     doc_path = UPLOAD_DIR / target_filename
                     if doc_path.exists():
@@ -1513,9 +1649,9 @@ def sales():
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,chassis_photo_file,ai_chassis_verified,ai_extracted_chassis,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, chassis_photo_filename, ai_verified, ai_extracted, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,chassis_photo_file,warranty_term_file,signed_stub_file,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, chassis_photo_filename, warranty_term_filename, signed_stub_filename, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -2031,6 +2167,24 @@ def verify_sales_chassis():
             b = chassis_photo_file.read()
             m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
             items_to_check.append((b, m))
+
+    for key_file, key_cap in [("warranty_term_file", "warranty_term_captured_image"), ("signed_stub_file", "signed_stub_captured_image")]:
+        cap_val = request.form.get(key_cap)
+        if cap_val and "," in cap_val:
+            try:
+                header, data_str = cap_val.split(",", 1)
+                b = base64.b64decode(data_str)
+                m = "image/png" if "png" in header else ("image/webp" if "webp" in header else "image/jpeg")
+                items_to_check.append((b, m))
+            except Exception:
+                pass
+        f_val = request.files.get(key_file)
+        if f_val and f_val.filename:
+            ext = f_val.filename.rsplit(".", 1)[-1].lower()
+            if ext in ALLOWED_EXTENSIONS:
+                b = f_val.read()
+                m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
+                items_to_check.append((b, m))
 
     if not items_to_check:
         return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400

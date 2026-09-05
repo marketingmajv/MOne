@@ -148,9 +148,13 @@
     {% if me.role in ['admin', 'support'] %}
       <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
       {% if i.status != 'released' %}
-        <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
-          <button class="btn primary">Liberar estoque para venda</button>
-        </form>
+        {% if i.chassis_count > 0 %}
+          <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
+            <button class="btn primary">Liberar estoque para venda</button>
+          </form>
+        {% else %}
+          <button class="btn" disabled title="Carregue a planilha de chassis antes de liberar para venda" style="opacity:0.55;cursor:not-allowed;">🔒 0 Chassis (Não liberável)</button>
+        {% endif %}
       {% endif %}
     {% endif %}
   </div>
@@ -164,7 +168,14 @@
       <h3>Editar Importação • {{ i.reference }}</h3>
       <button onclick="closeModal('editImport{{ i.id }}')">×</button>
     </div>
-    <form method="post" action="{{ url_for('edit_import', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+    <form method="post" action="{{ url_for('edit_import', iid=i.id) }}" enctype="multipart/form-data" class="form-grid" id="editImportForm{{ i.id }}">
+      <div class="span-2" style="background:rgba(157, 78, 255, 0.08);border:1px solid rgba(157, 78, 255, 0.25);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:13px;color:var(--text);">Anexe os arquivos (Invoice, BL, NF Entrada ou Chassis) e clique no botão para a IA ler e preencher os dados:</span>
+        <button type="button" class="btn" onclick="analyzeImportDocs('editImportForm{{ i.id }}')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
+          ⚡ Preencher com IA (Gemini)
+        </button>
+      </div>
+
       <label>Identificador / Ref. Contêiner
         <input name="reference" value="{{ i.reference }}" required>
       </label>
@@ -198,8 +209,12 @@
       <label>Substituir BL (PDF/Imagem)
         <input type="file" name="bl_file" accept="image/*,.pdf">
       </label>
-      <label class="span-2">Substituir NF Entrada (PDF/XML)
+      <label>Substituir NF Entrada (PDF/XML)
         <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
+      </label>
+      <label class="span-2">Substituir / Carregar Planilha de Chassis da Importação (.csv, .xlsx)
+        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls">
+        <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
       </label>
       <label class="span-2">Observações da importação
         <textarea name="notes">{{ i.notes or '' }}</textarea>
@@ -300,7 +315,14 @@
       <h3>Nova Importação / Contêiner</h3>
       <button onclick="closeModal('newImport')">×</button>
     </div>
-    <form method="post" enctype="multipart/form-data" class="form-grid">
+    <form method="post" enctype="multipart/form-data" class="form-grid" id="newImportForm">
+      <div class="span-2" style="background:rgba(157, 78, 255, 0.08);border:1px solid rgba(157, 78, 255, 0.25);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:13px;color:var(--text);">Selecione os arquivos abaixo (Invoice, BL, NF Entrada ou Chassis) e clique no botão ao lado para a IA ler e preencher tudo automaticamente:</span>
+        <button type="button" class="btn" onclick="analyzeImportDocs('newImportForm')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
+          ⚡ Preencher com IA (Gemini)
+        </button>
+      </div>
+
       <label>Identificador / Ref. Contêiner
         <input name="reference" required placeholder="Ex.: CONT-2026-01">
       </label>
@@ -334,8 +356,12 @@
       <label>Arquivo BL (PDF/Imagem)
         <input type="file" name="bl_file" accept="image/*,.pdf">
       </label>
-      <label class="span-2">Arquivo NF Entrada (PDF/XML)
+      <label>Arquivo NF Entrada (PDF/XML)
         <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
+      </label>
+      <label class="span-2">Planilha de Chassis da Importação (.csv, .xlsx)
+        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls">
+        <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
       </label>
       <label class="span-2">Observações da importação
         <textarea name="notes" placeholder="Detalhes do fornecedor, navio, porto de desembarque..."></textarea>
@@ -348,4 +374,97 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+async function analyzeImportDocs(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  const invoiceInput = form.querySelector('input[name="invoice_file"]');
+  const blInput = form.querySelector('input[name="bl_file"]');
+  const nfInput = form.querySelector('input[name="nf_entry_file"]');
+  const chassisInput = form.querySelector('input[name="chassis_file"]');
+
+  const hasFiles = (invoiceInput && invoiceInput.files.length) ||
+                   (blInput && blInput.files.length) ||
+                   (nfInput && nfInput.files.length) ||
+                   (chassisInput && chassisInput.files.length);
+
+  if (!hasFiles) {
+    alert('Por favor, selecione pelo menos um arquivo (Invoice, BL, NF Entrada ou Planilha de Chassis) no formulário antes de acionar a análise de IA.');
+    return;
+  }
+
+  const btn = form.querySelector('button[onclick*="analyzeImportDocs"]');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Gemini Analisando Documentos...';
+  }
+
+  const fd = new FormData();
+  if (invoiceInput && invoiceInput.files[0]) fd.append('invoice_file', invoiceInput.files[0]);
+  if (blInput && blInput.files[0]) fd.append('bl_file', blInput.files[0]);
+  if (nfInput && nfInput.files[0]) fd.append('nf_entry_file', nfInput.files[0]);
+  if (chassisInput && chassisInput.files[0]) fd.append('chassis_file', chassisInput.files[0]);
+
+  try {
+    const res = await fetch('/api/imports/analyze-docs', {
+      method: 'POST',
+      body: fd
+    });
+    const result = await res.json();
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+
+    if (!result.success) {
+      alert('Aviso da IA: ' + (result.message || 'Não foi possível extrair os campos automaticamente.'));
+      return;
+    }
+
+    const data = result.data || {};
+    if (data.reference && form.querySelector('input[name="reference"]')) {
+      form.querySelector('input[name="reference"]').value = data.reference;
+    }
+    if (data.invoice_no && form.querySelector('input[name="invoice_no"]')) {
+      form.querySelector('input[name="invoice_no"]').value = data.invoice_no;
+    }
+    if (data.supplier_name && form.querySelector('input[name="supplier_name"]')) {
+      form.querySelector('input[name="supplier_name"]').value = data.supplier_name;
+    }
+    if (data.seller_name && form.querySelector('input[name="seller_name"]')) {
+      form.querySelector('input[name="seller_name"]').value = data.seller_name;
+    }
+    if (data.invoice_amount_usd && form.querySelector('input[name="invoice_amount_usd"]')) {
+      form.querySelector('input[name="invoice_amount_usd"]').value = data.invoice_amount_usd;
+    }
+    if (data.bl_no && form.querySelector('input[name="bl_no"]')) {
+      form.querySelector('input[name="bl_no"]').value = data.bl_no;
+    }
+    if (data.nf_entry && form.querySelector('input[name="nf_entry"]')) {
+      form.querySelector('input[name="nf_entry"]').value = data.nf_entry;
+    }
+    if (data.arrival_date && form.querySelector('input[name="arrival_date"]')) {
+      form.querySelector('input[name="arrival_date"]').value = data.arrival_date;
+    }
+
+    let chassisMsg = '';
+    if (data.extracted_chassis && data.extracted_chassis.length) {
+      chassisMsg = `\n• ${data.extracted_chassis.length} chassis identificados: ${data.extracted_chassis.slice(0, 5).join(', ')}${data.extracted_chassis.length > 5 ? '...' : ''}`;
+    }
+
+    alert(`✓ Documentos analisados com sucesso pelo Gemini!\n\n${data.summary || 'Campos preenchidos automaticamente.'}${chassisMsg}`);
+
+  } catch (err) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+    alert('Erro ao comunicar com a API da IA: ' + err.message);
+  }
+}
+</script>
 {% endblock %}

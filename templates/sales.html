@@ -128,6 +128,22 @@
         {% endif %}
       </div>
       <div class="detail-block">
+        <small>Termo de Ciência da Garantia (Varejo)</small>
+        {% if s.warranty_term_file %}
+          <a class="link-btn" href="{{ url_for('uploads', filename=s.warranty_term_file) }}" target="_blank" style="font-weight:bold;">🛡️ Abrir Termo de Garantia</a>
+        {% else %}
+          <span class="muted">Sem anexo</span>
+        {% endif %}
+      </div>
+      <div class="detail-block">
+        <small>Canhoto da NF Assinado (Atacado)</small>
+        {% if s.signed_stub_file %}
+          <a class="link-btn" href="{{ url_for('uploads', filename=s.signed_stub_file) }}" target="_blank" style="font-weight:bold;">✍️ Abrir Canhoto NF</a>
+        {% else %}
+          <span class="muted">Sem anexo</span>
+        {% endif %}
+      </div>
+      <div class="detail-block">
         <small>Termo de Entrega</small>
         {% if s.term_files_list %}
           <div style="display:flex;flex-direction:column;gap:4px;margin-top:2px;">
@@ -235,7 +251,7 @@
       </label>
       <label>Nota fiscal<input name="invoice_number" id="invoiceNumberInput" required placeholder="Ex.: NF-00982"></label>
       <label>Canal
-        <select name="channel" id="channelInput">
+        <select name="channel" id="channelInput" onchange="onChannelChange()">
           <option value="varejo">Varejo</option>
           <option value="atacado">Atacado</option>
         </select>
@@ -290,12 +306,82 @@
         <input type="hidden" name="danfe_captured_image" id="danfeCapturedImage">
       </div>
 
-      <!-- SEÇÃO 2: TERMO DE ENTREGA (MÚLTIPLAS FOTOS / DOCUMENTOS) -->
+      <!-- SEÇÃO 2: TERMO DE CIÊNCIA DA GARANTIA (VAREJO) -->
+      <div class="span-2" id="warrantyTermSection" style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--accent);">🛡️</span> 2. Termo de Ciência da Garantia (Obrigatório para Varejo)
+            </strong>
+            <small style="color:var(--muted);display:block;">Anexe o termo de ciência da garantia assinado pelo cliente do Varejo.</small>
+          </div>
+          <span id="warrantyTermBadge" class="badge muted">Obrigatório Varejo</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <input type="file" id="warrantyTermFileInput" name="warranty_term_file" accept="image/*,.pdf" capture="environment" onchange="onWarrantyTermFileSelected(event)">
+          <button type="button" class="btn" id="warrantyTermCameraBtn" onclick="toggleWarrantyTermCamera()" style="display:flex;align-items:center;gap:6px;">
+            📷 Câmera Garantia
+          </button>
+        </div>
+
+        <div id="warrantyTermCameraBox" style="display:none;margin-top:12px;background:#070b10;padding:12px;border-radius:10px;border:1px solid var(--line);text-align:center;">
+          <video id="warrantyTermVideo" style="width:100%;max-height:240px;border-radius:8px;background:#000;object-fit:cover;" autoplay playsinline></video>
+          <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+            <button type="button" class="btn primary small" onclick="captureWarrantyTermPhoto()">📸 Capturar Foto Garantia</button>
+            <button type="button" class="btn small" onclick="closeWarrantyTermCamera()">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="warrantyTermPreviewBox" style="display:none;margin-top:10px;text-align:center;">
+          <img id="warrantyTermPreviewImg" src="" style="max-height:160px;border-radius:8px;border:1px solid var(--line);margin:0 auto;display:inline-block;" alt="Preview Garantia">
+          <div style="margin-top:4px;"><small style="color:var(--muted);" id="warrantyTermPreviewLabel"></small></div>
+        </div>
+
+        <input type="hidden" name="warranty_term_captured_image" id="warrantyTermCapturedImage">
+      </div>
+
+      <!-- SEÇÃO 3: CANHOTO DA NF ASSINADO (ATACADO) -->
+      <div class="span-2" id="signedStubSection" style="display:none;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--accent);">✍️</span> 2. Canhoto da NF Assinado (Obrigatório para Atacado)
+            </strong>
+            <small style="color:var(--muted);display:block;">Anexe o canhoto da Nota Fiscal assinado e carimbado pelo comprador do Atacado.</small>
+          </div>
+          <span id="signedStubBadge" class="badge muted">Obrigatório Atacado</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+          <input type="file" id="signedStubFileInput" name="signed_stub_file" accept="image/*,.pdf" capture="environment" onchange="onSignedStubFileSelected(event)">
+          <button type="button" class="btn" id="signedStubCameraBtn" onclick="toggleSignedStubCamera()" style="display:flex;align-items:center;gap:6px;">
+            📷 Câmera Canhoto
+          </button>
+        </div>
+
+        <div id="signedStubCameraBox" style="display:none;margin-top:12px;background:#070b10;padding:12px;border-radius:10px;border:1px solid var(--line);text-align:center;">
+          <video id="signedStubVideo" style="width:100%;max-height:240px;border-radius:8px;background:#000;object-fit:cover;" autoplay playsinline></video>
+          <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;">
+            <button type="button" class="btn primary small" onclick="captureSignedStubPhoto()">📸 Capturar Foto Canhoto</button>
+            <button type="button" class="btn small" onclick="closeSignedStubCamera()">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="signedStubPreviewBox" style="display:none;margin-top:10px;text-align:center;">
+          <img id="signedStubPreviewImg" src="" style="max-height:160px;border-radius:8px;border:1px solid var(--line);margin:0 auto;display:inline-block;" alt="Preview Canhoto">
+          <div style="margin-top:4px;"><small style="color:var(--muted);" id="signedStubPreviewLabel"></small></div>
+        </div>
+
+        <input type="hidden" name="signed_stub_captured_image" id="signedStubCapturedImage">
+      </div>
+
+      <!-- SEÇÃO 4: TERMO DE ENTREGA (MÚLTIPLAS FOTOS / DOCUMENTOS) -->
       <div class="span-2" style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
           <div>
             <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
-              <span style="color:var(--accent);">📋</span> 2. Termo de Entrega (Permite Múltiplas Fotos / Documentos)
+              <span style="color:var(--accent);">📋</span> 3. Termo de Entrega (Permite Múltiplas Fotos / Documentos)
             </strong>
             <small style="color:var(--muted);display:block;">Tire ou anexe uma ou mais fotos do termo assinado, foto da entrega ou documento com chassi.</small>
           </div>
@@ -324,12 +410,12 @@
         <input type="hidden" name="delivery_term_captured_images" id="deliveryTermCapturedImages" value="[]">
       </div>
 
-      <!-- SEÇÃO 3: FOTO DO CHASSI DO VEÍCULO OU CAIXA -->
+      <!-- SEÇÃO 5: FOTO DO CHASSI DO VEÍCULO OU CAIXA -->
       <div class="span-2" style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
           <div>
             <strong style="color:var(--text);font-size:14px;display:flex;align-items:center;gap:8px;">
-              <span style="color:var(--accent);">🏷️</span> 3. Foto do Chassi (Plaqueta do Veículo ou Etiqueta da Caixa)
+              <span style="color:var(--accent);">🏷️</span> 4. Foto do Chassi (Plaqueta do Veículo ou Etiqueta da Caixa)
             </strong>
             <small style="color:var(--muted);display:block;">Tire uma foto nítida do chassi gravado na plaqueta do veículo ou na etiqueta da caixa.</small>
           </div>
@@ -473,12 +559,33 @@ let chassisDebounceTimer = null;
 let danfeCameraStream = null;
 let termCameraStream = null;
 let chassisPhotoCameraStream = null;
+let warrantyTermCameraStream = null;
+let signedStubCameraStream = null;
 
 let currentDanfeFile = null;
 let currentDanfeBase64 = null;
 let currentChassisPhotoFile = null;
 let currentChassisPhotoBase64 = null;
+let currentWarrantyTermFile = null;
+let currentWarrantyTermBase64 = null;
+let currentSignedStubFile = null;
+let currentSignedStubBase64 = null;
 let termCapturedPhotos = [];
+
+function onChannelChange() {
+  const ch = document.getElementById('channelInput').value;
+  const warrantySec = document.getElementById('warrantyTermSection');
+  const stubSec = document.getElementById('signedStubSection');
+
+  if (ch === 'varejo') {
+    warrantySec.style.display = 'block';
+    stubSec.style.display = 'none';
+  } else {
+    warrantySec.style.display = 'none';
+    stubSec.style.display = 'block';
+  }
+  onChassisInputChange();
+}
 
 function resetAiValidation() {
   document.getElementById('aiChassisVerified').value = '0';
@@ -499,7 +606,7 @@ function resetAiValidation() {
 
 function hasAnyDocumentAttached() {
   const termFiles = document.getElementById('termFileInput').files;
-  return currentDanfeFile || currentDanfeBase64 || currentChassisPhotoFile || currentChassisPhotoBase64 || (termFiles && termFiles.length > 0) || (termCapturedPhotos && termCapturedPhotos.length > 0);
+  return currentDanfeFile || currentDanfeBase64 || currentChassisPhotoFile || currentChassisPhotoBase64 || currentWarrantyTermFile || currentWarrantyTermBase64 || currentSignedStubFile || currentSignedStubBase64 || (termFiles && termFiles.length > 0) || (termCapturedPhotos && termCapturedPhotos.length > 0);
 }
 
 function onChassisInputChange() {
@@ -604,6 +711,184 @@ function captureDanfePhoto() {
   previewImg.style.display = 'inline-block';
   previewLabel.innerText = '📷 Foto da DANFE capturada';
   previewBox.style.display = 'block';
+
+  onChassisInputChange();
+}
+
+/* ================= TERMO DE GARANTIA LOGIC (VAREJO) ================= */
+function onWarrantyTermFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  currentWarrantyTermFile = file;
+  currentWarrantyTermBase64 = null;
+  document.getElementById('warrantyTermCapturedImage').value = '';
+
+  const previewBox = document.getElementById('warrantyTermPreviewBox');
+  const previewImg = document.getElementById('warrantyTermPreviewImg');
+  const previewLabel = document.getElementById('warrantyTermPreviewLabel');
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'inline-block';
+      previewLabel.innerText = file.name;
+      previewBox.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewImg.style.display = 'none';
+    previewLabel.innerText = '📄 Documento: ' + file.name;
+    previewBox.style.display = 'block';
+  }
+
+  const badge = document.getElementById('warrantyTermBadge');
+  badge.className = 'badge available';
+  badge.innerText = '✓ Termo Anexado';
+
+  onChassisInputChange();
+}
+
+async function toggleWarrantyTermCamera() {
+  const box = document.getElementById('warrantyTermCameraBox');
+  if (box.style.display === 'none') {
+    try {
+      warrantyTermCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      document.getElementById('warrantyTermVideo').srcObject = warrantyTermCameraStream;
+      box.style.display = 'block';
+    } catch (err) {
+      alert('Não foi possível acessar a câmera para Termo de Garantia: ' + err.message);
+    }
+  } else {
+    closeWarrantyTermCamera();
+  }
+}
+
+function closeWarrantyTermCamera() {
+  if (warrantyTermCameraStream) {
+    warrantyTermCameraStream.getTracks().forEach(t => t.stop());
+    warrantyTermCameraStream = null;
+  }
+  document.getElementById('warrantyTermCameraBox').style.display = 'none';
+}
+
+function captureWarrantyTermPhoto() {
+  const video = document.getElementById('warrantyTermVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  closeWarrantyTermCamera();
+
+  currentWarrantyTermBase64 = dataUrl;
+  currentWarrantyTermFile = null;
+  document.getElementById('warrantyTermFileInput').value = '';
+  document.getElementById('warrantyTermCapturedImage').value = dataUrl;
+
+  const previewBox = document.getElementById('warrantyTermPreviewBox');
+  const previewImg = document.getElementById('warrantyTermPreviewImg');
+  const previewLabel = document.getElementById('warrantyTermPreviewLabel');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'inline-block';
+  previewLabel.innerText = '📷 Foto do Termo de Garantia capturada';
+  previewBox.style.display = 'block';
+
+  const badge = document.getElementById('warrantyTermBadge');
+  badge.className = 'badge available';
+  badge.innerText = '✓ Termo Capturado';
+
+  onChassisInputChange();
+}
+
+/* ================= CANHOTO NF LOGIC (ATACADO) ================= */
+function onSignedStubFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  currentSignedStubFile = file;
+  currentSignedStubBase64 = null;
+  document.getElementById('signedStubCapturedImage').value = '';
+
+  const previewBox = document.getElementById('signedStubPreviewBox');
+  const previewImg = document.getElementById('signedStubPreviewImg');
+  const previewLabel = document.getElementById('signedStubPreviewLabel');
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'inline-block';
+      previewLabel.innerText = file.name;
+      previewBox.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    previewImg.style.display = 'none';
+    previewLabel.innerText = '📄 Documento: ' + file.name;
+    previewBox.style.display = 'block';
+  }
+
+  const badge = document.getElementById('signedStubBadge');
+  badge.className = 'badge available';
+  badge.innerText = '✓ Canhoto Anexado';
+
+  onChassisInputChange();
+}
+
+async function toggleSignedStubCamera() {
+  const box = document.getElementById('signedStubCameraBox');
+  if (box.style.display === 'none') {
+    try {
+      signedStubCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      document.getElementById('signedStubVideo').srcObject = signedStubCameraStream;
+      box.style.display = 'block';
+    } catch (err) {
+      alert('Não foi possível acessar a câmera para Canhoto NF: ' + err.message);
+    }
+  } else {
+    closeSignedStubCamera();
+  }
+}
+
+function closeSignedStubCamera() {
+  if (signedStubCameraStream) {
+    signedStubCameraStream.getTracks().forEach(t => t.stop());
+    signedStubCameraStream = null;
+  }
+  document.getElementById('signedStubCameraBox').style.display = 'none';
+}
+
+function captureSignedStubPhoto() {
+  const video = document.getElementById('signedStubVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+  closeSignedStubCamera();
+
+  currentSignedStubBase64 = dataUrl;
+  currentSignedStubFile = null;
+  document.getElementById('signedStubFileInput').value = '';
+  document.getElementById('signedStubCapturedImage').value = dataUrl;
+
+  const previewBox = document.getElementById('signedStubPreviewBox');
+  const previewImg = document.getElementById('signedStubPreviewImg');
+  const previewLabel = document.getElementById('signedStubPreviewLabel');
+  previewImg.src = dataUrl;
+  previewImg.style.display = 'inline-block';
+  previewLabel.innerText = '📷 Foto do Canhoto NF capturada';
+  previewBox.style.display = 'block';
+
+  const badge = document.getElementById('signedStubBadge');
+  badge.className = 'badge available';
+  badge.innerText = '✓ Canhoto Capturado';
 
   onChassisInputChange();
 }
@@ -798,7 +1083,7 @@ async function runChassisAiVerification() {
   statusBox.style.background = '#1b232c';
   statusBox.style.borderColor = '#384756';
   statusBox.style.color = '#e2ecf7';
-  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini está examinando os comprovantes (DANFE, Foto do Chassi do Veículo/Caixa e Termo) e realizando a triangulação do chassi...</span></div>';
+  statusBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot" style="animation-delay:0s"></div><span>O Gemini está examinando os comprovantes (DANFE, Foto do Chassi, Termo de Entrega e Garantia/Canhoto) e realizando a triangulação do chassi...</span></div>';
 
   saveBtn.disabled = true;
   saveBtn.innerHTML = '⏳ Conferindo chassi com documento...';
@@ -820,6 +1105,18 @@ async function runChassisAiVerification() {
     fd.append('chassis_photo_file', currentChassisPhotoFile);
   } else if (currentChassisPhotoBase64) {
     fd.append('chassis_photo_captured_image', currentChassisPhotoBase64);
+  }
+
+  if (currentWarrantyTermFile) {
+    fd.append('warranty_term_file', currentWarrantyTermFile);
+  } else if (currentWarrantyTermBase64) {
+    fd.append('warranty_term_captured_image', currentWarrantyTermBase64);
+  }
+
+  if (currentSignedStubFile) {
+    fd.append('signed_stub_file', currentSignedStubFile);
+  } else if (currentSignedStubBase64) {
+    fd.append('signed_stub_captured_image', currentSignedStubBase64);
   }
 
   const termFilesInput = document.getElementById('termFileInput');
@@ -922,6 +1219,23 @@ async function runChassisAiVerification() {
 }
 
 function validateSaleBeforeSubmit(event) {
+  const channel = document.getElementById('channelInput').value;
+  if (channel === 'varejo') {
+    const hasWarranty = currentWarrantyTermFile || currentWarrantyTermBase64 || document.getElementById('warrantyTermFileInput').files.length > 0;
+    if (!hasWarranty) {
+      event.preventDefault();
+      alert('Atenção: Para vendas no Varejo, é OBRIGATÓRIO anexar o Termo de Ciência da Garantia.');
+      return false;
+    }
+  } else if (channel === 'atacado') {
+    const hasStub = currentSignedStubFile || currentSignedStubBase64 || document.getElementById('signedStubFileInput').files.length > 0;
+    if (!hasStub) {
+      event.preventDefault();
+      alert('Atenção: Para vendas no Atacado, é OBRIGATÓRIO anexar o Canhoto da NF Assinado.');
+      return false;
+    }
+  }
+
   const verified = document.getElementById('aiChassisVerified').value === '1';
   if (!verified) {
     event.preventDefault();
