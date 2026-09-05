@@ -192,13 +192,23 @@ def ensure_freight_tables(conn):
                 except Exception:
                     pass
 
-    # Se não existir nenhuma tabela cadastrada, semear a tabela oficial do Transporte Generoso
+    # Se não existirem tabelas ou se Vinislog/Generoso estiverem ausentes, semear automaticamente
     try:
         cur_check = conn.execute("SELECT COUNT(*) AS total FROM freight_tables")
         row_check = cur_check.fetchone()
-        tot = row_check.get("total") if row_check else 0
+        tot = (row_check["total"] if hasattr(row_check, "keys") or isinstance(row_check, dict) else row_check[0]) if row_check else 0
         if tot == 0:
             seed_generoso_rate_table(conn)
+            seed_vinislog_rate_table(conn)
+        else:
+            # Verificar se a Vinislog está semeada
+            cur_v_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE ?", ("%vinislog%",))
+            if not cur_v_check.fetchone():
+                seed_vinislog_rate_table(conn)
+            # Verificar se Generoso está semeada
+            cur_g_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE ?", ("%generoso%",))
+            if not cur_g_check.fetchone():
+                seed_generoso_rate_table(conn)
     except Exception as e:
         print("[Freight Auto-Seed Check Error]:", e)
 
@@ -323,6 +333,188 @@ def seed_generoso_rate_table(conn):
         import traceback
         traceback.print_exc()
         print("[Generoso Seeder Error]:", e)
+
+
+VINISLOG_DATA = [
+    # (uf, city_type, p20, p30, p50, p70, p100, over100_per_kg, ad_val_pct, gris_pct, taxa_fixa, pedagio, days)
+    ("ES", "Capital", 21.08, 29.89, 34.09, 45.09, 50.03, 0.52, 0.20, 0.15, 16.0, 0.0, 2),
+    ("ES", "Interior I", 43.64, 50.81, 60.23, 70.26, 104.61, 1.10, 0.20, 0.15, 20.0, 5.10, 3),
+    ("ES", "Interior II", 43.64, 50.81, 60.23, 70.26, 104.61, 1.10, 0.20, 0.15, 20.0, 5.10, 3),
+    ("RJ", "Capital", 41.78, 45.64, 55.63, 65.33, 100.23, 0.90, 0.20, 0.15, 20.0, 5.10, 4),
+    ("RJ", "Interior I", 51.63, 59.33, 65.33, 77.91, 115.10, 1.05, 0.25, 0.20, 20.0, 5.10, 5),
+    ("RJ", "Interior II", 51.63, 59.33, 65.33, 77.91, 115.10, 1.05, 0.25, 0.20, 20.0, 5.10, 5),
+    ("SP", "Capital", 29.11, 32.55, 44.10, 55.22, 61.42, 0.70, 0.20, 0.15, 15.0, 4.10, 2),
+    ("SP", "Interior I", 43.64, 50.81, 60.23, 70.26, 104.61, 1.05, 0.20, 0.15, 20.0, 4.10, 4),
+    ("SP", "Interior II", 51.63, 59.33, 65.33, 77.91, 115.10, 1.15, 0.25, 0.20, 20.0, 5.10, 5),
+]
+
+
+def seed_vinislog_rate_table(conn):
+    """Semeia automaticamente a tabela oficial da Vinislog Transportes no banco de dados."""
+    try:
+        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%vinislog%",))
+        row_c = cur_c.fetchone()
+
+        if row_c:
+            carrier_id = row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]
+        else:
+            try:
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", ("Vinislog Transportes",))
+                carrier_id = cur_ins.lastrowid
+            except Exception:
+                if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+                    try:
+                        conn.conn.rollback()
+                    except Exception:
+                        pass
+                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%vinislog%",))
+                row_c = cur_c.fetchone()
+                carrier_id = (row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]) if row_c else 2
+
+        # Verificar se já existe a tabela da Vinislog
+        cur_t_check = conn.execute("SELECT id FROM freight_tables WHERE carrier_id = ?", (carrier_id,))
+        if cur_t_check.fetchone():
+            return
+
+        # Criar Tabela de Frete Oficial Vinislog
+        cur_t = conn.execute(
+            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (?, ?, ?)",
+            (carrier_id, "Tabela MAJ Vinislog (Origem VIX - ES, RJ, SP)", "Tabela de Frete Fracionado oficial Vinislog com Ad-valorem, GRIS e Taxa")
+        )
+        table_id = cur_t.lastrowid
+
+        weight_brackets = [
+            (0.0, 20.0),
+            (20.01, 30.0),
+            (30.01, 50.0),
+            (50.01, 70.0),
+            (70.01, 100.0)
+        ]
+
+        rates_to_insert = []
+        for row in VINISLOG_DATA:
+            uf = row[0]
+            city_type = row[1]
+            p_bracket_prices = [row[2], row[3], row[4], row[5], row[6]]
+            over100_per_kg = row[7]
+            ad_val_pct = row[8]
+            gris_pct = row[9]
+            taxa_fixa = row[10]
+            pedagio = row[11]
+            days = row[12]
+
+            # Faixas de peso fixo até 100kg
+            for idx, (w_min, w_max) in enumerate(weight_brackets):
+                p_fixed = p_bracket_prices[idx] + taxa_fixa
+                rates_to_insert.append((
+                    table_id, uf, city_type, w_min, w_max,
+                    p_fixed, 0.0, ad_val_pct, gris_pct, days, f"Vinislog {uf} {city_type}"
+                ))
+
+            # Faixa acima de 100kg (preço base dos 100kg + valor por kg excedente)
+            p100_fixed = p_bracket_prices[4] + taxa_fixa - (100.0 * over100_per_kg)
+            rates_to_insert.append((
+                table_id, uf, city_type, 100.01, 999999.0,
+                p100_fixed, over100_per_kg, ad_val_pct, gris_pct, days, f"Vinislog {uf} {city_type} Excedente"
+            ))
+
+        sql_ins = """
+            INSERT INTO freight_rates (
+                table_id, uf, city, min_weight, max_weight, 
+                fixed_price, weight_price_per_kg, ad_valorem_percent, 
+                gris_percent, delivery_days, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        for r_item in rates_to_insert:
+            conn.execute(sql_ins, r_item)
+
+        if hasattr(conn, "commit"):
+            conn.commit()
+        print(f"✅ Tabela da Vinislog Transportes semeada com sucesso ({len(rates_to_insert)} regras)!")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print("[Vinislog Seeder Error]:", e)
+
+
+def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> list:
+    """
+    Utiliza o Gemini para analisar arquivos PDF/Excel/CSV de transportadoras
+    e extrair automaticamente as regras de CEP, peso, valores e prazos.
+    """
+    api_key = get_gemini_api_key()
+    if not api_key:
+        print("[Gemini Freight Parser] API key não configurada.")
+        return []
+
+    file_path = str(file_path)
+    if not os.path.exists(file_path):
+        return []
+
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+
+    # Determinar tipo de arquivo e converter se necessário
+    mime_type = "application/pdf"
+    if file_path.lower().endswith((".xlsx", ".xls", ".csv")):
+        mime_type = "text/csv"
+        # Tentar ler CSV/Planilha se possível ou converter para texto
+        try:
+            if file_path.lower().endswith((".xlsx", ".xls")):
+                import openpyxl
+                wb = openpyxl.load_workbook(file_path, data_only=True)
+                lines = []
+                for sheet in wb.sheetnames:
+                    ws = wb[sheet]
+                    lines.append(f"--- ABA: {sheet} ---")
+                    for row in ws.iter_rows(values_only=True):
+                        if any(v is not None for v in row):
+                            lines.append(" | ".join([str(v) if v is not None else "" for v in row]))
+                csv_sample = "\n".join(lines)[:50000]
+            else:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    csv_sample = f.read(50000)
+            file_data = csv_sample.encode("utf-8")
+        except Exception:
+            with open(file_path, "rb") as f:
+                file_data = f.read()
+    else:
+        with open(file_path, "rb") as f:
+            file_data = f.read()
+
+    b64_file = base64.b64encode(file_data).decode("utf-8")
+
+    prompt = f"""
+    Você é um especialista em logística e cálculo de frete rodoviário brasileiro.
+    Analise a tabela de frete da transportadora '{carrier_name}' enviada em anexo.
+
+    Extraia TODAS as regras de frete presentes no documento em formato JSON estrito:
+    Uma lista de objetos com o seguinte esquema:
+    [
+      {{
+        "uf": "UF de destino (ex: ES, RJ, SP, MG, etc. ou null se for por CEP)",
+        "city": "Nome da cidade se especificado ou null",
+        "cep_start": "CEP inicial de 8 dígitos numéricos (ex: 29000000) ou null",
+        "cep_end": "CEP final de 8 dígitos numéricos (ex: 29999999) ou null",
+        "min_weight": 0.0,
+        "max_weight": 100.0,
+        "fixed_price": 150.0,
+        "weight_price_per_kg": 1.5,
+        "ad_valorem_percent": 0.5,
+        "gris_percent": 0.2,
+        "min_freight_price": 50.0,
+        "delivery_days": 3,
+        "notes": "Observações adicionais se houver"
+      }}
+    ]
+
+    Regras importantes:
+    - Retorne APENAS o JSON puro dentro do bloco ```json ```, sem conversas.
+    - Se a tabela usar faixas de peso (ex: 0 a 50kg, 51 a 100kg), crie uma regra separada para cada faixa.
+    - Se houver taxa de ad-valorem/seguro em %, informe em 'ad_valorem_percent'.
+    - Se o CEP for informado com traço (ex: 29000-000), remova o traço e deixe apenas os 8 números.
+    """
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
 
 
 
@@ -474,8 +666,9 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
                 cur = db_conn.execute("SELECT id, name, wholesale_price FROM products WHERE id = ?", (int(p_id),))
                 p = cur.fetchone()
                 if p:
-                    p_name = p.get("name") or ""
-                    w_price = float(p.get("wholesale_price") or 0)
+                    p_dict = dict(p) if hasattr(p, "keys") else p
+                    p_name = p_dict["name"] if isinstance(p_dict, dict) else p_dict[1]
+                    w_price = float(p_dict["wholesale_price"] if isinstance(p_dict, dict) else (p_dict[2] or 0))
             except Exception as e:
                 print("[Freight Service] Erro ao buscar produto:", e)
 
@@ -539,9 +732,10 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
     dest_int = int(clean_dest)
     carrier_best_rates = {}
 
-    for r in all_rates:
-        c_id = r.get("carrier_id")
-        c_name = r.get("carrier_name")
+    for r_raw in all_rates:
+        r = dict(r_raw) if hasattr(r_raw, "keys") else r_raw
+        c_id = r["carrier_id"]
+        c_name = r["carrier_name"]
         
         # Filtro de CEP
         r_cep_start = clean_cep(r.get("cep_start"))
