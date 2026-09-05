@@ -389,3 +389,166 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
     except Exception as e:
         return {"success": False, "is_valid": False, "message": f"Erro ao auditar comprovante: {str(e)}"}
 
+
+PAYMENT_CATEGORIES = [
+    "Importações & Desembaraço",
+    "Lojas & Aluguéis",
+    "Oficina & Peças",
+    "Folha & Pró-Labore",
+    "Marketing & Anúncios",
+    "Impostos & Taxas",
+    "Utilidades & Serviços",
+    "Frete & Logística",
+    "Manutenção & Infraestrutura",
+    "Outras Despesas Operacionais"
+]
+
+ACCOUNTS_LIST = [
+    "PhntonPay",
+    "Conta Davi",
+    "Sicoob Maj Colatina",
+    "Sicoob Maj Antiga em Vitória",
+    "Sicoob Maj Vitória",
+    "Sicoob Maj Veículos",
+    "Sicoob MAP Colatina",
+    "Conta Jam",
+    "Conta Geysa",
+    "Caixa Dinheiro Marisa",
+    "Cartão Warley",
+    "Outro Cartão / Conta"
+]
+
+PAYMENT_METHODS = [
+    "Pix",
+    "Transferência Bancária (TED/DOC)",
+    "Cartão de Crédito",
+    "Cartão de Débito",
+    "Dinheiro em Espécie"
+]
+
+
+def analyze_payment_receipt(image_bytes: bytes, mime_type: str = "image/jpeg", form_data: dict = None) -> dict:
+    """
+    Analisa comprovante de pagamento / Nota Fiscal / Recibo com Gemini 3.6 Flash.
+    Sugere a categoria do negócio da MAJ Mobilidade, extrai valor, data, forma de pagamento, conta e fornecedor,
+    e realiza a checagem de divergências cruzadas.
+    """
+    api_key = get_gemini_api_key()
+    if not api_key:
+        return {
+            "success": False,
+            "message": "A chave GEMINI_API_KEY não está configurada no servidor."
+        }
+
+    form_data = form_data or {}
+    b64_data = base64.b64encode(image_bytes).decode("utf-8")
+
+    categories_str = ", ".join([f'"{c}"' for c in PAYMENT_CATEGORIES])
+    accounts_str = ", ".join([f'"{a}"' for a in ACCOUNTS_LIST])
+    methods_str = ", ".join([f'"{m}"' for m in PAYMENT_METHODS])
+
+    prompt = f"""
+Você é o auditor de notas fiscais e comprovantes de pagamento do grupo MAJ Mobilidade Elétrica (fabricante e distribuidora de veículos elétricos, peças, lojas e oficinas).
+
+EXAMINE O COMPROVANTE / NOTA FISCAL / RECIBO ANEXO E EXTRAIA TODOS OS DADOS COM PRECISÃO:
+
+1. CATEGORIA SUGERIDA DO NEGÓCIO:
+Escolha exatamente UMA das categorias abaixo que melhor corresponda à despesa:
+[{categories_str}]
+
+2. CONTA / ORIGEM SUGERIDA:
+Escolha exatamente UMA das opções abaixo ou identifique a conta/banco/cartão se legível:
+[{accounts_str}]
+
+3. FORMA DE PAGAMENTO SUGERIDA:
+Escolha exatamente UMA das opções abaixo:
+[{methods_str}]
+
+4. FINAL DO CARTÃO (SE APLICÁVEL):
+Se for pagamento em cartão de crédito/débito, extraia os 4 últimos dígitos do cartão (ex: "1234"). Caso contrário, retorne "".
+
+5. FORNECEDOR / RAZÃO SOCIAL:
+Nome da empresa/fornecedor ou favorecido do pagamento.
+
+6. NÚMERO DA NOTA FISCAL / RECIBO:
+Número da NF-e, NFS-e, comprovante Pix ou recibo.
+
+7. VALOR TOTAL PAGO (R$):
+Valor numérico do pagamento (ex: 1250.00).
+
+8. DATA DO PAGAMENTO:
+Data no formato YYYY-MM-DD.
+
+9. AUDITORIA DE DIVERGÊNCIAS CRUZADAS:
+Compare os dados do comprovante com os dados inseridos no formulário pelo usuário:
+DADOS DIGITADOS NO FORMULÁRIO:
+- Valor no formulário: {form_data.get('amount', 'Não informado')}
+- Data no formulário: {form_data.get('paid_at', 'Não informada')}
+- Categoria no formulário: {form_data.get('category', 'Não informada')}
+- Conta no formulário: {form_data.get('account', 'Não informada')}
+- Forma no formulário: {form_data.get('payment_method', 'Não informada')}
+- Final cartão no formulário: {form_data.get('card_last4', 'Não informado')}
+
+Retorne se existe divergência crítica de valores ou dados e liste as divergências encontradas.
+
+FORMATO DA RESPOSTA (JSON ESTRITO):
+{{
+  "suggested_category": "Categoria da lista acima",
+  "suggested_account": "Conta/Origem identificada",
+  "payment_method": "Pix / Transferência Bancária (TED/DOC) / Cartão de Crédito / Cartão de Débito / Dinheiro em Espécie",
+  "card_last4": "últimos 4 dígitos ou vazio",
+  "supplier": "Nome do Fornecedor / Favorecido",
+  "document_no": "Número da NF ou Recibo",
+  "extracted_amount": 0.00,
+  "extracted_date": "YYYY-MM-DD",
+  "has_divergence": true ou false,
+  "divergences": ["lista de divergências encontradas entre o comprovante e o formulário, se houver"],
+  "summary": "Resumo executivo do comprovante em português"
+}}
+"""
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type or "image/jpeg",
+                            "data": b64_data
+                        }
+                    },
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.1,
+            "responseMimeType": "application/json"
+        }
+    }
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            candidates = res_data.get("candidates", [])
+            if candidates and "content" in candidates[0]:
+                raw_json = "".join([p.get("text", "") for p in candidates[0]["content"].get("parts", [])]).strip()
+                parsed = json.loads(raw_json)
+                return {
+                    "success": True,
+                    "data": parsed
+                }
+            return {"success": False, "message": "O modelo não retornou conteúdo textual compreensível."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro ao analisar comprovante: {str(e)}"}
+
+

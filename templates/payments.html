@@ -1,16 +1,32 @@
 {% extends 'base.html' %}
 {% block title %}M-One • Pagamentos{% endblock %}
 {% block page_title %}Pagamentos realizados{% endblock %}
-{% block page_subtitle %}Aqui não existe conta futura: só entra o que já foi pago.{% endblock %}
+{% block page_subtitle %}Auditoria de despesas, conferência de comprovantes e controle de contas.{% endblock %}
+
 {% block top_actions %}
   {% if me.role in ['admin', 'finance', 'support'] %}
     <a href="{{ url_for('export_payments') }}" class="btn">Exportar CSV</a>
     <button class="btn primary" onclick="openModal('newPayment')">+ Registros de pagamento</button>
   {% endif %}
 {% endblock %}
+
 {% block content %}
-<div class="filter-bar">
-  <input id="paymentsSearch" onkeyup="filterPaymentsTable()" placeholder="Buscar por descrição, categoria ou conta...">
+<div class="filter-bar" style="display: flex; gap: 12px; flex-wrap: wrap;">
+  <input id="paymentsSearch" onkeyup="filterPaymentsTable()" placeholder="Buscar por descrição, fornecedor, categoria, conta ou NF..." style="flex: 1; min-width: 260px;">
+  
+  <select id="categoryFilter" onchange="filterPaymentsTable()" style="max-width: 220px;">
+    <option value="">Todas as Categorias</option>
+    {% for cat in categories %}
+      <option value="{{ cat }}">{{ cat }}</option>
+    {% endfor %}
+  </select>
+
+  <select id="accountFilter" onchange="filterPaymentsTable()" style="max-width: 220px;">
+    <option value="">Todas as Contas / Origens</option>
+    {% for acc in accounts %}
+      <option value="{{ acc }}">{{ acc }}</option>
+    {% endfor %}
+  </select>
 </div>
 
 <div class="panel table-wrap">
@@ -18,9 +34,11 @@
     <thead>
       <tr>
         <th>Data</th>
-        <th>Descrição</th>
+        <th>Descrição / Fornecedor</th>
         <th>Categoria</th>
         <th>Conta / Origem</th>
+        <th>Forma / Cartão</th>
+        <th>NF / Recibo Nº</th>
         <th>Valor</th>
         {% if me.role in ['admin', 'support'] %}
           <th>Importação</th>
@@ -31,11 +49,23 @@
     <tbody>
     {% for p in payments %}
       <tr>
-        <td>{{ p.paid_at }}</td>
-        <td><b>{{ p.description }}</b></td>
-        <td><span class="badge">{{ p.category or 'Geral' }}</span></td>
-        <td>{{ p.account or '—' }}</td>
-        <td><b class="text-accent">{{ p.amount|money }}</b></td>
+        <td><b>{{ p.paid_at }}</b></td>
+        <td>
+          <b>{{ p.description }}</b>
+          {% if p.supplier %}
+            <small class="muted" style="display:block;">Favorecido: {{ p.supplier }}</small>
+          {% endif %}
+        </td>
+        <td><span class="badge" style="background: rgba(0, 204, 136, 0.1); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.2);">{{ p.category or 'Geral' }}</span></td>
+        <td><b>{{ p.account or '—' }}</b></td>
+        <td>
+          <span>{{ p.payment_method or '—' }}</span>
+          {% if p.card_last4 %}
+            <small class="muted" style="display:block;">Final {{ p.card_last4 }}</small>
+          {% endif %}
+        </td>
+        <td><span class="mono">{{ p.document_no or '—' }}</span></td>
+        <td><b class="text-accent" style="font-size: 1.05rem;">{{ p.amount|money }}</b></td>
         {% if me.role in ['admin', 'support'] %}
           <td>{{ p.import_ref or '—' }}</td>
         {% endif %}
@@ -48,7 +78,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="{{ '7' if me.role in ['admin', 'support'] else '6' }}" class="empty">Nenhum pagamento registrado.</td></tr>
+      <tr><td colspan="{{ '9' if me.role in ['admin', 'support'] else '8' }}" class="empty">Nenhum pagamento registrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -56,26 +86,105 @@
 
 <!-- New Payment Modal -->
 <div class="modal" id="newPayment">
-  <div class="modal-card">
+  <div class="modal-card" style="max-width: 720px;">
     <div class="modal-head">
       <h3>Registrar pagamento realizado</h3>
       <button onclick="closeModal('newPayment'); stopLiveCamera(this)">×</button>
     </div>
-    <form method="post" enctype="multipart/form-data" class="form-grid">
+    <form method="post" enctype="multipart/form-data" class="form-grid" id="paymentForm">
+      
+      <!-- Upload & Camera Widget (Obrigatório) -->
+      <div class="span-2 camera-widget-container" style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.2); padding: 14px; border-radius: 10px;">
+        <label class="section-label" style="font-weight: 700; color: #00cc88;">
+          📄 Comprovante de Pagamento / NF / Recibo <span style="color: #ff4757;">(Obrigatório)</span>
+        </label>
+        <input type="hidden" name="captured_image_data" id="capturedImageDataInput">
+        
+        <div id="cameraControls" class="camera-controls-box" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
+          <button type="button" class="btn primary camera-btn" onclick="startLiveCamera(this)">
+            📷 Tirar Foto com Câmera
+          </button>
+          <span class="muted-text">ou selecione arquivo:</span>
+          <input type="file" name="receipt_file" id="receiptFileInput" accept="image/*,.pdf" capture="environment" onchange="handleFileSelected(this)">
+          
+          <button type="button" class="btn accent" id="aiAnalyzeBtn" onclick="runAiReceiptAnalysis()" style="display: inline-flex; align-items: center; gap: 6px;">
+            ⚡ Auditar & Preencher com IA
+          </button>
+        </div>
+
+        <div id="cameraStreamBox" class="camera-stream-box" style="display:none; margin-top: 10px;">
+          <video id="liveVideo" autoplay playsinline class="video-preview" style="width: 100%; max-height: 260px; border-radius: 8px; background: #000;"></video>
+          <div class="camera-actions" style="margin-top: 8px; display: flex; gap: 10px;">
+            <button type="button" class="btn primary" onclick="takeSnapshot(this)">📸 Capturar Foto Agora</button>
+            <button type="button" class="btn warn-btn" onclick="stopLiveCamera(this)">Cancelar Câmera</button>
+          </div>
+        </div>
+
+        <div id="cameraPreviewBox" class="camera-preview-box" style="display:none; margin-top: 10px;">
+          <img id="capturedImagePreview" class="img-preview" alt="Foto capturada" style="max-height: 180px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+          <div class="preview-actions" style="margin-top: 6px; display: flex; gap: 10px; align-items: center;">
+            <span class="badge available">✓ Foto pronta para salvar</span>
+            <button type="button" class="btn small" onclick="retakePhoto(this)">🔄 Tirar outra foto</button>
+          </div>
+        </div>
+
+        <div id="aiAnalysisStatus" style="display: none; margin-top: 10px; padding: 10px; border-radius: 8px; font-size: 0.85rem;"></div>
+      </div>
+
+      <!-- Banner de Alertas / Divergências da IA -->
+      <div id="aiDivergenceAlert" class="span-2" style="display: none; background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.4); padding: 12px; border-radius: 8px; color: #ff4757; font-size: 0.85rem;">
+        <b>⚠️ Atenção: Divergência Detectada pela IA!</b>
+        <ul id="aiDivergenceList" style="margin: 6px 0 0 18px; padding: 0;"></ul>
+      </div>
+
       <label>Data do pagamento
-        <input type="date" name="paid_at">
+        <input type="date" name="paid_at" id="paidAtInput" required>
       </label>
-      <label>Valor (R$)
-        <input type="number" step="0.01" name="amount" required placeholder="0,00">
+      <label>Valor Pago (R$)
+        <input type="number" step="0.01" name="amount" id="amountInput" required placeholder="0,00">
       </label>
+
       <label class="span-2">Descrição da despesa / pagamento
-        <input name="description" placeholder="Ex.: Aluguel loja Consolação, frete, impostos, tarifas..." required>
+        <input name="description" id="descriptionInput" placeholder="Ex.: Aluguel loja Consolação, frete, impostos, tarifas..." required>
       </label>
-      <label>Categoria
-        <input name="category" placeholder="Ex.: Aluguel, folha, frete, impostos...">
+
+      <label>Fornecedor / Razão Social
+        <input name="supplier" id="supplierInput" placeholder="Ex.: Energisa, EDP, Prefeitura, Mercado Pago...">
       </label>
-      <label>Conta / Plataforma
-        <input name="account" placeholder="Ex.: Sicoob, Cartão, Caixa...">
+      <label>Número NF / Recibo
+        <input name="document_no" id="documentNoInput" placeholder="Ex.: NF-10928 ou Recibo 482">
+      </label>
+
+      <label>Categoria do Negócio
+        <select name="category" id="categorySelect" required>
+          <option value="">Selecione a categoria...</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Conta / Origem do Pagamento
+        <select name="account" id="accountSelect" required>
+          <option value="">Selecione a conta/origem...</option>
+          {% for acc in accounts %}
+            <option value="{{ acc }}">{{ acc }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Forma de Pagamento
+        <select name="payment_method" id="paymentMethodSelect" onchange="toggleCardLast4Field()">
+          <option value="Pix">Pix</option>
+          <option value="Transferência Bancária (TED/DOC)">Transferência Bancária (TED/DOC)</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
+          <option value="Dinheiro em Espécie">Dinheiro em Espécie</option>
+        </select>
+      </label>
+
+      <label id="cardLast4Container">Final do Cartão (4 dígitos)
+        <input name="card_last4" id="cardLast4Input" placeholder="Ex.: 1234" maxlength="4" class="mono">
       </label>
 
       {% if me.role in ['admin', 'support'] and imports %}
@@ -89,39 +198,9 @@
         </label>
       {% endif %}
 
-      <!-- Interactive WebCam Camera Widget -->
-      <div class="span-2 camera-widget-container">
-        <label class="section-label">Comprovante de Pagamento (Tirar Foto ou Anexar)</label>
-        <input type="hidden" name="captured_image_data" id="capturedImageDataInput">
-        
-        <div id="cameraControls" class="camera-controls-box">
-          <button type="button" class="btn primary camera-btn" onclick="startLiveCamera(this)">
-            📷 Abrir Câmera para Tirar Foto
-          </button>
-          <span class="muted-text">ou escolha um arquivo:</span>
-          <input type="file" name="receipt_file" accept="image/*,.pdf" capture="environment">
-        </div>
-
-        <div id="cameraStreamBox" class="camera-stream-box" style="display:none;">
-          <video id="liveVideo" autoplay playsinline class="video-preview"></video>
-          <div class="camera-actions">
-            <button type="button" class="btn primary" onclick="takeSnapshot(this)">📸 Capturar Foto Agora</button>
-            <button type="button" class="btn warn-btn" onclick="stopLiveCamera(this)">Cancelar Câmera</button>
-          </div>
-        </div>
-
-        <div id="cameraPreviewBox" class="camera-preview-box" style="display:none;">
-          <img id="capturedImagePreview" class="img-preview" alt="Foto capturada">
-          <div class="preview-actions">
-            <span class="badge available">✓ Foto capturada e pronta para salvar</span>
-            <button type="button" class="btn small" onclick="retakePhoto(this)">🔄 Tirar outra foto</button>
-          </div>
-        </div>
-      </div>
-
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('newPayment'); stopLiveCamera(this)">Cancelar</button>
-        <button class="btn primary">Salvar pagamento</button>
+        <button class="btn primary" type="submit">Salvar pagamento</button>
       </div>
     </form>
   </div>
@@ -132,11 +211,155 @@
 <script>
 function filterPaymentsTable() {
   const q = document.getElementById('paymentsSearch').value.toLowerCase();
+  const category = document.getElementById('categoryFilter').value.toLowerCase();
+  const account = document.getElementById('accountFilter').value.toLowerCase();
+  
   const rows = document.querySelectorAll('#paymentsTable tbody tr');
   rows.forEach(r => {
     const text = r.textContent.toLowerCase();
-    r.style.display = text.includes(q) ? '' : 'none';
+    const matchQ = !q || text.includes(q);
+    const matchCat = !category || text.includes(category);
+    const matchAcc = !account || text.includes(account);
+    r.style.display = (matchQ && matchCat && matchAcc) ? '' : 'none';
   });
+}
+
+function toggleCardLast4Field() {
+  const method = document.getElementById('paymentMethodSelect').value;
+  const container = document.getElementById('cardLast4Container');
+  if (method.includes('Cartão')) {
+    container.style.display = '';
+  } else {
+    container.style.display = '';
+  }
+}
+
+function handleFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const statusBox = document.getElementById('aiAnalysisStatus');
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'rgba(0, 204, 136, 0.1)';
+    statusBox.style.border = '1px solid rgba(0, 204, 136, 0.3)';
+    statusBox.style.color = '#00cc88';
+    statusBox.innerHTML = `📎 Arquivo <b>${input.files[0].name}</b> selecionado. Clique em <b>⚡ Auditar & Preencher com IA</b> para análise automática.`;
+  }
+}
+
+async function runAiReceiptAnalysis() {
+  const fileInput = document.getElementById('receiptFileInput');
+  const capturedInput = document.getElementById('capturedImageDataInput');
+  const statusBox = document.getElementById('aiAnalysisStatus');
+  const btn = document.getElementById('aiAnalyzeBtn');
+
+  if (!capturedInput.value && (!fileInput.files || !fileInput.files[0])) {
+    alert('Por favor, tire uma foto ou escolha um arquivo de comprovante antes de acionar a IA.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Analisando com Gemini 3.6...';
+  statusBox.style.display = 'block';
+  statusBox.style.background = 'rgba(255, 255, 255, 0.05)';
+  statusBox.style.color = '#fff';
+  statusBox.innerHTML = '🧠 Lendo comprovante e cruzando informações com Gemini AI...';
+
+  const formData = new FormData();
+  if (capturedInput.value) {
+    formData.append('captured_image_data', capturedInput.value);
+  } else if (fileInput.files && fileInput.files[0]) {
+    formData.append('receipt_file', fileInput.files[0]);
+  }
+
+  formData.append('amount', document.getElementById('amountInput').value || '');
+  formData.append('paid_at', document.getElementById('paidAtInput').value || '');
+  formData.append('category', document.getElementById('categorySelect').value || '');
+  formData.append('account', document.getElementById('accountSelect').value || '');
+  formData.append('payment_method', document.getElementById('paymentMethodSelect').value || '');
+  formData.append('card_last4', document.getElementById('cardLast4Input').value || '');
+
+  try {
+    const resp = await fetch('/api/payments/analyze-receipt', {
+      method: 'POST',
+      body: formData
+    });
+    const result = await resp.json();
+
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Auditar & Preencher com IA';
+
+    if (result.success && result.data) {
+      const data = result.data;
+      statusBox.style.background = 'rgba(0, 204, 136, 0.1)';
+      statusBox.style.border = '1px solid rgba(0, 204, 136, 0.3)';
+      statusBox.style.color = '#00cc88';
+      statusBox.innerHTML = `✅ <b>Análise da IA Concluída:</b> ${data.summary || 'Comprovante auditado com sucesso.'}`;
+
+      // Preencher campos automaticamente se vazios ou sugeridos
+      if (data.extracted_date && !document.getElementById('paidAtInput').value) {
+        document.getElementById('paidAtInput').value = data.extracted_date;
+      }
+      if (data.extracted_amount && (!document.getElementById('amountInput').value || parseFloat(document.getElementById('amountInput').value) === 0)) {
+        document.getElementById('amountInput').value = data.extracted_amount;
+      }
+      if (data.supplier && !document.getElementById('supplierInput').value) {
+        document.getElementById('supplierInput').value = data.supplier;
+      }
+      if (data.document_no && !document.getElementById('documentNoInput').value) {
+        document.getElementById('documentNoInput').value = data.document_no;
+      }
+      if (data.suggested_category) {
+        const catSelect = document.getElementById('categorySelect');
+        for (let opt of catSelect.options) {
+          if (opt.value.toLowerCase().includes(data.suggested_category.toLowerCase()) || data.suggested_category.toLowerCase().includes(opt.value.toLowerCase())) {
+            catSelect.value = opt.value;
+            break;
+          }
+        }
+      }
+      if (data.suggested_account) {
+        const accSelect = document.getElementById('accountSelect');
+        for (let opt of accSelect.options) {
+          if (opt.value.toLowerCase().includes(data.suggested_account.toLowerCase()) || data.suggested_account.toLowerCase().includes(opt.value.toLowerCase())) {
+            accSelect.value = opt.value;
+            break;
+          }
+        }
+      }
+      if (data.payment_method) {
+        const methodSelect = document.getElementById('paymentMethodSelect');
+        for (let opt of methodSelect.options) {
+          if (opt.value.toLowerCase().includes(data.payment_method.toLowerCase()) || data.payment_method.toLowerCase().includes(opt.value.toLowerCase())) {
+            methodSelect.value = opt.value;
+            break;
+          }
+        }
+      }
+      if (data.card_last4 && !document.getElementById('cardLast4Input').value) {
+        document.getElementById('cardLast4Input').value = data.card_last4;
+      }
+
+      // Tratar divergências cruzadas
+      const alertBox = document.getElementById('aiDivergenceAlert');
+      const alertList = document.getElementById('aiDivergenceList');
+      if (data.has_divergence && data.divergences && data.divergences.length > 0) {
+        alertList.innerHTML = data.divergences.map(d => `<li>${d}</li>`).join('');
+        alertBox.style.display = 'block';
+      } else {
+        alertBox.style.display = 'none';
+      }
+    } else {
+      statusBox.style.background = 'rgba(255, 71, 87, 0.1)';
+      statusBox.style.border = '1px solid rgba(255, 71, 87, 0.3)';
+      statusBox.style.color = '#ff4757';
+      statusBox.innerHTML = `⚠️ ${result.message || 'Falha ao analisar o comprovante.'}`;
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Auditar & Preencher com IA';
+    statusBox.style.background = 'rgba(255, 71, 87, 0.1)';
+    statusBox.style.color = '#ff4757';
+    statusBox.innerHTML = `⚠️ Erro de comunicação: ${err.message}`;
+  }
 }
 </script>
 {% endblock %}

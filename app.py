@@ -45,7 +45,15 @@ try:
 except Exception:
     load_workbook = None
 
-from gemini_service import ask_gemini_copilot, get_gemini_api_key, extract_and_match_chassis
+from gemini_service import (
+    ask_gemini_copilot,
+    get_gemini_api_key,
+    extract_and_match_chassis,
+    analyze_payment_receipt,
+    PAYMENT_CATEGORIES,
+    ACCOUNTS_LIST,
+    PAYMENT_METHODS
+)
 import bling_service
 
 
@@ -367,6 +375,7 @@ def init_db():
         conn.commit()
     ensure_sales_columns()
     ensure_product_columns()
+    ensure_payments_columns()
 
 def ensure_sales_columns():
     try:
@@ -386,6 +395,24 @@ def ensure_product_columns():
             for col, col_type in [("bling_stock", "INTEGER DEFAULT 0"), ("bling_updated_at", "TEXT")]:
                 try:
                     conn.execute(f"ALTER TABLE products ADD COLUMN {col} {col_type}")
+                except Exception:
+                    pass
+            conn.commit()
+    except Exception:
+        pass
+
+def ensure_payments_columns():
+    try:
+        with db() as conn:
+            for col, col_type in [
+                ("payment_method", "TEXT"),
+                ("card_last4", "TEXT"),
+                ("supplier", "TEXT"),
+                ("document_no", "TEXT"),
+                ("ai_verified", "INTEGER DEFAULT 0")
+            ]:
+                try:
+                    conn.execute(f"ALTER TABLE payments ADD COLUMN {col} {col_type}")
                 except Exception:
                     pass
             conn.commit()
@@ -1583,8 +1610,13 @@ def payments():
         amount = float(request.form.get("amount") or 0)
         category = request.form.get("category", "").strip()
         account = request.form.get("account", "").strip()
+        payment_method = request.form.get("payment_method", "").strip()
+        card_last4 = request.form.get("card_last4", "").strip()
+        supplier = request.form.get("supplier", "").strip()
+        document_no = request.form.get("document_no", "").strip()
         import_id = request.form.get("import_id") or None
         visibility = "admin_only" if import_id else "finance"
+
         try:
             receipt = save_base64_upload(request.form.get("captured_image_data"), "pagamento")
             if not receipt:
@@ -1592,17 +1624,25 @@ def payments():
         except ValueError as e:
             flash(str(e), "danger")
             return redirect(url_for("payments"))
+
+        # Exigência estrita de comprovante/recibo
+        if not receipt:
+            flash("⚠️ É OBRIGATÓRIO anexar a Nota Fiscal do Fornecedor ou Recibo de Pagamento (por foto ou arquivo).", "danger")
+            return redirect(url_for("payments"))
+
         if not description or amount <= 0:
             flash("Descrição e valor são obrigatórios.", "danger")
             return redirect(url_for("payments"))
+
         with db() as conn:
             conn.execute(
-                "INSERT INTO payments(paid_at,description,category,amount,account,receipt_file,import_id,visibility,created_by) VALUES(?,?,?,?,?,?,?,?,?)",
-                (paid_at, description, category, amount, account, receipt, import_id, visibility, session["user_id"]),
+                """INSERT INTO payments(paid_at, description, category, amount, account, payment_method, card_last4, supplier, document_no, receipt_file, import_id, visibility, created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (paid_at, description, category, amount, account, payment_method, card_last4, supplier, document_no, receipt, import_id, visibility, session["user_id"]),
             )
             conn.commit()
-        audit("payment.created", f"{description}; {amount}")
-        flash("Pagamento realizado registrado.", "success")
+        audit("payment.created", f"{description}; R$ {amount}; Categoria: {category}; Conta: {account}")
+        flash("🎉 Pagamento realizado registrado com sucesso!", "success")
         return redirect(url_for("payments"))
 
     u = current_user()
@@ -1613,7 +1653,49 @@ def payments():
         else:
             rows = conn.execute("SELECT p.*,NULL import_ref FROM payments p WHERE visibility='finance' ORDER BY p.paid_at DESC,p.id DESC LIMIT 300").fetchall()
             imports_rows = []
-    return render_template("payments.html", payments=rows, imports=imports_rows)
+    return render_template(
+        "payments.html",
+        payments=rows,
+        imports=imports_rows,
+        categories=PAYMENT_CATEGORIES,
+        accounts=ACCOUNTS_LIST,
+        payment_methods=PAYMENT_METHODS
+    )
+
+
+@app.route("/api/payments/analyze-receipt", methods=["POST"])
+@login_required
+def api_analyze_payment_receipt():
+    try:
+        image_bytes = None
+        mime_type = "image/jpeg"
+
+        base64_str = request.form.get("captured_image_data")
+        if base64_str and "," in base64_str:
+            header, data = base64_str.split(",", 1)
+            image_bytes = base64.b64decode(data)
+            mime_type = "image/png" if "png" in header else "image/jpeg"
+        elif "receipt_file" in request.files:
+            f = request.files["receipt_file"]
+            image_bytes = f.read()
+            mime_type = f.content_type or "image/jpeg"
+
+        if not image_bytes:
+            return jsonify({"success": False, "message": "Nenhum arquivo ou foto foi enviado para análise."}), 400
+
+        form_data = {
+            "amount": request.form.get("amount"),
+            "paid_at": request.form.get("paid_at"),
+            "category": request.form.get("category"),
+            "account": request.form.get("account"),
+            "payment_method": request.form.get("payment_method"),
+            "card_last4": request.form.get("card_last4")
+        }
+
+        analysis = analyze_payment_receipt(image_bytes, mime_type=mime_type, form_data=form_data)
+        return jsonify(analysis)
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
 
 
 @app.route("/users", methods=["GET", "POST"])
