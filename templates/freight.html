@@ -8,7 +8,7 @@
 <div class="max-w-[1600px] mx-auto space-y-6 text-slate-200 font-sans">
 
   <!-- HEADER COMPACTO SAAS COM ESTATÍSTICAS E AÇÕES RÁPIDAS -->
-  <div class="bg-[#0A0A0A] border border-[#222222] rounded-xl p-4 md:p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+  <div class="bg-[#091120] border border-[#1B2A4A] rounded-xl p-4 md:p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div class="flex items-center gap-3.5">
       <div class="w-10 h-10 rounded-lg bg-[#0070F3]/15 text-[#0070F3] border border-[#0070F3]/30 flex items-center justify-center icon-svg">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -28,7 +28,7 @@
     </div>
     
     <div class="flex items-center gap-2.5 w-full md:w-auto">
-      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-3.5 py-2 rounded-lg bg-[#111111] hover:bg-[#161616] text-slate-300 text-xs font-semibold border border-[#222222] flex items-center justify-center gap-2 transition-all">
+      <button type="button" onclick="resetFreightForm()" class="flex-1 md:flex-none px-3.5 py-2 rounded-lg bg-[#111C30] hover:bg-[#182642] text-slate-300 text-xs font-semibold border border-[#23355A] flex items-center justify-center gap-2 transition-all">
         <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         <span>Limpar tudo</span>
       </button>
@@ -43,16 +43,16 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
     <!-- COLUNA DA ESQUERDA: SIMULADOR DE FRETE (7 COLUNAS) -->
-    <div class="lg:col-span-7 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-5">
+    <div class="lg:col-span-7 bg-[#070D18] border border-[#16233B] rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-5">
       
       <form id="freightCalcForm" onsubmit="event.preventDefault(); runFreightCalculation();" class="space-y-5 flex-1 flex flex-col justify-between">
         
         <div class="space-y-4">
-          <!-- CAIXA GEOMÉTRICA 1: DADOS DO CLIENTE E CEPS -->
-          <div class="bg-[#111111] border border-[#222222] rounded-xl p-4.5 space-y-3 shadow-md">
-            <div class="flex items-center justify-between border-b border-[#222222] pb-2.5">
+          <!-- CAIXA GEOMÉTRICA 1: DADOS DO CLIENTE E CEPS (Obsidian Navy) -->
+          <div class="bg-[#0D1628] border border-[#1E2E4A] rounded-xl p-4.5 space-y-3 shadow-md">
+            <div class="flex items-center justify-between border-b border-[#1E2E4A] pb-2.5">
               <div class="flex items-center gap-2">
-                <span class="bg-[#0070F3]/15 text-[#38BDF8] border border-[#0070F3]/30 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                <span class="bg-[#0070F3]/20 text-[#38BDF8] border border-[#0070F3]/40 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
                   PASSO 1
                 </span>
                 <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -70,14 +70,14 @@
                   <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   </span>
-                  <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-[#0A0A0A] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3] transition-all">
+                  <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-[#070D18] border border-[#1B2A47] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] focus:ring-1 focus:ring-[#0070F3] transition-all">
                 </div>
               </div>
 
               <!-- CEP DESTINO -->
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">CEP de Destino *</label>
-                <div class="flex items-center bg-[#0A0A0A] border border-[#222222] rounded-lg overflow-hidden focus-within:border-[#0070F3] focus-within:ring-1 focus-within:ring-[#0070F3] transition-all">
+                <div class="flex items-center bg-[#070D18] border border-[#1B2A47] rounded-lg overflow-hidden focus-within:border-[#0070F3] focus-within:ring-1 focus-within:ring-[#0070F3] transition-all">
                   <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="w-full bg-transparent px-3 py-2 text-xs text-white font-bold placeholder:text-slate-500 focus:outline-none" onblur="lookupViaCEP(this.value)">
                   <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="bg-[#0070F3] hover:bg-[#0068D6] text-white px-3 py-2 text-xs font-bold transition-all flex items-center justify-center icon-svg">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -89,17 +89,17 @@
               <!-- CEP ORIGEM -->
               <div>
                 <label class="block text-[11px] font-semibold text-slate-400 mb-1">CEP Origem (Loja MAJ)</label>
-                <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-[#0A0A0A]/60 border border-[#222222] rounded-lg px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
+                <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-[#070D18]/60 border border-[#1B2A47] rounded-lg px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
               </div>
             </div>
           </div>
 
-          <!-- CAIXA GEOMÉTRICA 2: PRODUTOS DA COTAÇÃO -->
-          <div class="bg-[#111111] border border-[#222222] rounded-xl p-4.5 space-y-3 shadow-md">
+          <!-- CAIXA GEOMÉTRICA 2: PRODUTOS DA COTAÇÃO (Obsidian Teal/Emerald) -->
+          <div class="bg-[#0A1A22] border border-[#153435] rounded-xl p-4.5 space-y-3 shadow-md">
             
-            <div class="flex justify-between items-center border-b border-[#222222] pb-2.5">
+            <div class="flex justify-between items-center border-b border-[#153435] pb-2.5">
               <div class="flex items-center gap-2">
-                <span class="bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                <span class="bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
                   PASSO 2
                 </span>
                 <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
@@ -114,10 +114,10 @@
             </div>
 
             <!-- TABELA DE ITENS COM CAIXAS BRANCAS NÍTIDAS -->
-            <div class="overflow-x-auto border border-[#222222] rounded-lg bg-[#0A0A0A] p-2">
+            <div class="overflow-x-auto border border-[#153435] rounded-lg bg-[#061016] p-2">
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr class="border-b border-[#222222] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <tr class="border-b border-[#153435] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     <th class="py-2 px-2" style="width: 38%;">MODELO DO VEÍCULO / PRODUTO</th>
                     <th class="py-2 px-2 text-center" style="width: 10%;">QTD</th>
                     <th class="py-2 px-2 text-center" style="width: 14%;">PESO (KG)</th>
@@ -126,7 +126,7 @@
                     <th class="py-2 px-2 text-center" style="width: 5%;">AÇÕES</th>
                   </tr>
                 </thead>
-                <tbody id="productRowsTableBody" class="divide-y divide-[#222222]">
+                <tbody id="productRowsTableBody" class="divide-y divide-[#153435]">
                   <!-- Linhas dinâmicas via JS -->
                 </tbody>
               </table>
@@ -134,8 +134,8 @@
 
             <!-- PAINEL RESUMO DAS MÉTRICAS EM MINI-CARDS GEOMÉTRICOS -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs pt-1">
-              <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-2.5 flex items-center gap-2.5">
-                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/10">
+              <div class="bg-[#0B1E28] border border-[#1A3D4D] rounded-lg p-2.5 flex items-center gap-2.5">
+                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/15">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 </div>
                 <div>
@@ -144,8 +144,8 @@
                 </div>
               </div>
 
-              <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-2.5 flex items-center gap-2.5">
-                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/10">
+              <div class="bg-[#0B1E28] border border-[#1A3D4D] rounded-lg p-2.5 flex items-center gap-2.5">
+                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/15">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 </div>
                 <div>
@@ -154,8 +154,8 @@
                 </div>
               </div>
 
-              <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-2.5 flex items-center gap-2.5">
-                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/10">
+              <div class="bg-[#0B1E28] border border-[#1A3D4D] rounded-lg p-2.5 flex items-center gap-2.5">
+                <div class="text-[#0070F3] icon-svg p-1.5 rounded-md bg-[#0070F3]/15">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                 </div>
                 <div>
@@ -164,8 +164,8 @@
                 </div>
               </div>
 
-              <div class="bg-[#0A0A0A] border border-[#222222] rounded-lg p-2.5 flex items-center gap-2.5">
-                <div class="text-[#00E599] icon-svg p-1.5 rounded-md bg-[#00E599]/10">
+              <div class="bg-[#0B1E28] border border-[#1A3D4D] rounded-lg p-2.5 flex items-center gap-2.5">
+                <div class="text-[#00E599] icon-svg p-1.5 rounded-md bg-[#00E599]/15">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <div>
@@ -188,11 +188,11 @@
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
             <p class="text-[10px] text-slate-500">Ordenadas da opção mais econômica para a mais rápida</p>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-              <button type="button" onclick="copyWhatsAppMessage()" class="flex-1 sm:flex-none border border-[#00E599]/40 text-[#00E599] bg-[#111111] hover:bg-[#00E599]/10 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all">
+              <button type="button" onclick="copyWhatsAppMessage()" class="flex-1 sm:flex-none border border-[#00E599]/40 text-[#00E599] bg-[#0D1A1E] hover:bg-[#00E599]/15 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all">
                 <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 <span>WhatsApp</span>
               </button>
-              <button type="button" onclick="exportFreightPDF()" class="flex-1 sm:flex-none border border-[#0070F3]/40 text-[#38BDF8] bg-[#111111] hover:bg-[#0070F3]/10 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all">
+              <button type="button" onclick="exportFreightPDF()" class="flex-1 sm:flex-none border border-[#0070F3]/40 text-[#38BDF8] bg-[#0A162B] hover:bg-[#0070F3]/15 text-xs font-semibold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all">
                 <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                 <span>Exportar PDF</span>
               </button>
@@ -204,10 +204,10 @@
 
     </div>
 
-    <!-- COLUNA DA DIREITA: PAINEL DE RESULTADOS DAS TRANSPORTADORAS (5 COLUNAS) -->
-    <div class="lg:col-span-5 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl flex flex-col justify-between">
+    <!-- COLUNA DA DIREITA: PAINEL DE RESULTADOS DAS TRANSPORTADORAS (5 COLUNAS - Deep Obsidian Navy) -->
+    <div class="lg:col-span-5 bg-[#0C1425] border border-[#1D2B48] rounded-xl p-5 shadow-xl flex flex-col justify-between">
       
-      <div class="mb-3 border-b border-[#222222] pb-3 flex justify-between items-center gap-2">
+      <div class="mb-3 border-b border-[#1D2B48] pb-3 flex justify-between items-center gap-2">
         <div>
           <h2 class="text-sm font-bold text-white flex items-center gap-2">
             <svg class="icon-svg text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -215,7 +215,7 @@
           </h2>
           <p class="text-[11px] text-slate-400 mt-0.5">Opções ordenadas da mais econômica para a mais rápida</p>
         </div>
-        <button type="button" onclick="exportFreightPDF()" class="bg-[#0070F3]/15 text-[#38BDF8] border border-[#0070F3]/30 hover:bg-[#0070F3]/25 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all">
+        <button type="button" onclick="exportFreightPDF()" class="bg-[#0070F3]/20 text-[#38BDF8] border border-[#0070F3]/40 hover:bg-[#0070F3]/30 text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all">
           <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
           <span>PDF</span>
         </button>
@@ -224,8 +224,8 @@
       <!-- CONTAINER DINÂMICO DOS RESULTADOS -->
       <div id="freightResultsArea" class="flex-1 flex flex-col justify-center my-auto">
         
-        <div id="freightEmptyState" class="border border-dashed border-[#0070F3]/40 bg-[#111111] rounded-xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[360px]">
-          <div class="w-12 h-12 rounded-full bg-[#0070F3]/10 border border-[#0070F3]/30 text-[#0070F3] flex items-center justify-center mb-3 icon-svg">
+        <div id="freightEmptyState" class="border border-dashed border-[#0070F3]/40 bg-[#080E1B] rounded-xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[360px]">
+          <div class="w-12 h-12 rounded-full bg-[#0070F3]/15 border border-[#0070F3]/35 text-[#0070F3] flex items-center justify-center mb-3 icon-svg">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           </div>
           <p class="text-xs text-slate-300">
@@ -248,8 +248,8 @@
   <!-- SEÇÃO INFERIOR: GESTÃO DE TABELAS E IMPORTAÇÃO IA LADO A LADO (2 COLUNAS DE 6) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
     
-    <!-- CARD 3: IMPORTAR TABELA COM IA (6 COLUNAS) -->
-    <div class="lg:col-span-6 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl space-y-4 flex flex-col justify-between">
+    <!-- CARD 3: IMPORTAR TABELA COM IA (6 COLUNAS - Dark Slate) -->
+    <div class="lg:col-span-6 bg-[#0E1526] border border-[#1E2E4C] rounded-xl p-5 shadow-xl space-y-4 flex flex-col justify-between">
       
       <div>
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
@@ -268,7 +268,7 @@
               <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
               </span>
-              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-[#111111] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all" list="carrier_list">
+              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-[#080E1A] border border-[#1C2C4A] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all" list="carrier_list">
             </div>
             <datalist id="carrier_list">
               {% for c in carriers %}
@@ -283,14 +283,14 @@
               <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </span>
-              <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="w-full bg-[#111111] border border-[#222222] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all">
+              <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="w-full bg-[#080E1A] border border-[#1C2C4A] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3] transition-all">
             </div>
           </div>
         </div>
 
         <div>
           <label class="block text-[11px] font-semibold text-slate-400 mb-1">Arquivo da Tabela *</label>
-          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-[#111111] border border-[#222222] rounded-lg py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#0070F3]/20 file:text-[#38BDF8] hover:file:bg-[#0070F3]/30 transition-all">
+          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-[#080E1A] border border-[#1C2C4A] rounded-lg py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#0070F3]/20 file:text-[#38BDF8] hover:file:bg-[#0070F3]/30 transition-all">
         </div>
 
         <button class="w-full bg-[#0070F3] hover:bg-[#0068D6] text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all">
@@ -302,15 +302,15 @@
 
     </div>
 
-    <!-- CARD 4: TABELAS ATIVAS NO SISTEMA (6 COLUNAS) -->
-    <div class="lg:col-span-6 bg-[#0A0A0A] border border-[#222222] rounded-xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
+    <!-- CARD 4: TABELAS ATIVAS NO SISTEMA (6 COLUNAS - Deep Obsidian Navy) -->
+    <div class="lg:col-span-6 bg-[#0B1222] border border-[#1A2845] rounded-xl p-5 shadow-xl space-y-3 flex flex-col justify-between">
       
-      <div class="flex justify-between items-center border-b border-[#222222] pb-2.5">
+      <div class="flex justify-between items-center border-b border-[#1A2845] pb-2.5">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
           <svg class="icon-svg text-[#0070F3]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           <span>Tabelas Ativas no Sistema</span>
         </h2>
-        <span class="bg-[#0070F3]/15 text-[#38BDF8] border border-[#0070F3]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+        <span class="bg-[#0070F3]/20 text-[#38BDF8] border border-[#0070F3]/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
           {{ tables|length }} ATIVAS
         </span>
       </div>
@@ -318,9 +318,9 @@
       {% if tables %}
       <div class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
         {% for t in tables %}
-        <div class="p-3 bg-[#111111] border border-[#222222] rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-slate-700 transition-all">
+        <div class="p-3 bg-[#131E34] border border-[#203152] rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-slate-600 transition-all">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-[#0070F3]/15 text-[#0070F3] flex items-center justify-center icon-svg">
+            <div class="w-8 h-8 rounded-lg bg-[#0070F3]/20 text-[#0070F3] flex items-center justify-center icon-svg">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             </div>
             <div>
@@ -330,11 +330,11 @@
           </div>
 
           <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
-            <span class="bg-[#00E599]/10 text-[#00E599] border border-[#00E599]/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+            <span class="bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/35 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
               ATIVA
             </span>
             <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');">
-              <button type="submit" class="bg-[#161616] hover:bg-[#222222] text-slate-300 border border-[#333333] text-xs px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-semibold">
+              <button type="submit" class="bg-[#0B1324] hover:bg-[#162545] text-slate-300 border border-[#23355A] text-xs px-2.5 py-1 rounded-md transition-all flex items-center gap-1 font-semibold">
                 <svg class="icon-svg text-red-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 <span>Excluir</span>
               </button>
@@ -344,7 +344,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <div class="py-8 text-center text-slate-500 border border-dashed border-[#222222] rounded-xl">
+      <div class="py-8 text-center text-slate-500 border border-dashed border-[#1A2845] rounded-xl">
         <p class="text-xs">Nenhuma tabela de frete importada ainda.</p>
       </div>
       {% endif %}
