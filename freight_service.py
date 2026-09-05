@@ -33,28 +33,67 @@ def format_cep(cep_raw: str) -> str:
     return cep_raw
 
 def lookup_cep_viacep(cep_raw: str) -> dict:
-    """Consulta estado (UF) e cidade do CEP via API gratuita ViaCEP."""
+    """Consulta estado (UF) e cidade do CEP via API gratuita ViaCEP com fallback offline instantâneo."""
     c = clean_cep(cep_raw)
     if len(c) != 8:
         return {"found": False}
+    uf_fallback = get_uf_from_cep(c)
     url = f"https://viacep.com.br/ws/{c}/json/"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "M-One-ERP/1.0"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             if data.get("erro"):
-                return {"found": False}
+                return {"found": True, "uf": uf_fallback, "city": ""}
             return {
                 "found": True,
                 "cep": data.get("cep"),
-                "uf": data.get("uf"),
+                "uf": data.get("uf") or uf_fallback,
                 "city": data.get("localidade"),
                 "bairro": data.get("bairro"),
                 "street": data.get("logradouro")
             }
-    except Exception as e:
-        print(f"[ViaCEP] Erro ao consultar CEP {c}: {e}")
-        return {"found": False}
+    except Exception:
+        return {"found": True, "uf": uf_fallback, "city": ""}
+
+def get_uf_from_cep(cep_raw: str) -> str:
+    """Retorna a UF de destino instantaneamente a partir dos 8 dígitos do CEP."""
+    c = clean_cep(cep_raw)
+    if len(c) != 8:
+        return ""
+    try:
+        prefix = int(c[:5])
+        if 1000 <= prefix <= 19999: return "SP"
+        if 20000 <= prefix <= 28999: return "RJ"
+        if 29000 <= prefix <= 29999: return "ES"
+        if 30000 <= prefix <= 39999: return "MG"
+        if 40000 <= prefix <= 48999: return "BA"
+        if 49000 <= prefix <= 49999: return "SE"
+        if 50000 <= prefix <= 56999: return "PE"
+        if 57000 <= prefix <= 57999: return "AL"
+        if 58000 <= prefix <= 58999: return "PB"
+        if 59000 <= prefix <= 59999: return "RN"
+        if 60000 <= prefix <= 63999: return "CE"
+        if 64000 <= prefix <= 64999: return "PI"
+        if 65000 <= prefix <= 65999: return "MA"
+        if 66000 <= prefix <= 68899: return "PA"
+        if 68900 <= prefix <= 68999: return "AP"
+        if 69000 <= prefix <= 69299 or 69400 <= prefix <= 69899: return "AM"
+        if 69300 <= prefix <= 69399: return "RR"
+        if 69900 <= prefix <= 69999: return "AC"
+        if 70000 <= prefix <= 72799: return "DF"
+        if 72800 <= prefix <= 76799: return "GO"
+        if 76800 <= prefix <= 76999 or 78900 <= prefix <= 78999: return "RO"
+        if 77000 <= prefix <= 77999: return "TO"
+        if 78000 <= prefix <= 78899: return "MT"
+        if 79000 <= prefix <= 79999: return "MS"
+        if 80000 <= prefix <= 87999: return "PR"
+        if 88000 <= prefix <= 89999: return "SC"
+        if 90000 <= prefix <= 99999: return "RS"
+    except Exception:
+        pass
+    return ""
+
 
 def ensure_freight_tables(conn):
     """Inicializa as tabelas do banco de dados para o módulo de fretes de forma 100% compatível com SQLite e PostgreSQL."""
@@ -152,6 +191,141 @@ def ensure_freight_tables(conn):
                     conn.conn.rollback()
                 except Exception:
                     pass
+
+    # Se não existir nenhuma tabela cadastrada, semear a tabela oficial do Transporte Generoso
+    try:
+        cur_check = conn.execute("SELECT COUNT(*) AS total FROM freight_tables")
+        row_check = cur_check.fetchone()
+        tot = row_check.get("total") if row_check else 0
+        if tot == 0:
+            seed_generoso_rate_table(conn)
+    except Exception as e:
+        print("[Freight Auto-Seed Check Error]:", e)
+
+
+GENEROSO_DATA = [
+    # (uf, city_type, w0_10, w11_20, w21_30, w31_50, w51_70, w71_100, w101_150, w151_200, over200_per_kg, days)
+    ("RJ", "Capital", 54.73, 62.60, 66.60, 77.63, 94.09, 111.45, 150.12, 184.86, 0.925, 3),
+    ("RJ", "Interior I", 59.51, 67.11, 71.46, 83.21, 101.43, 120.01, 159.48, 199.08, 0.996, 4),
+    ("RJ", "Interior II", 59.51, 67.11, 71.46, 83.21, 101.43, 120.01, 159.48, 199.08, 0.996, 5),
+    ("ES", "Capital", 38.12, 39.94, 41.94, 49.05, 58.86, 69.47, 99.44, 132.57, 0.664, 1),
+    ("ES", "Interior I", 38.12, 39.94, 41.94, 49.05, 58.86, 69.47, 99.44, 132.57, 0.664, 2),
+    ("ES", "Interior II", 75.04, 85.75, 90.06, 105.31, 127.74, 154.54, 207.62, 246.52, 1.233, 3),
+    ("SP", "Capital", 101.39, 130.16, 144.68, 174.40, 207.08, 224.55, 336.71, 448.86, 2.241, 2),
+    ("SP", "Interior I", 68.45, 87.86, 97.65, 117.72, 139.78, 151.58, 227.28, 302.98, 1.518, 3),
+    ("SP", "Interior II", 42.24, 63.82, 74.71, 97.01, 121.51, 134.62, 218.73, 302.85, 1.600, 4),
+    ("MG", "Capital", 42.24, 63.82, 74.71, 97.01, 121.51, 134.62, 218.73, 302.85, 1.600, 2),
+    ("MG", "Interior I", 59.06, 80.28, 92.65, 117.58, 145.12, 160.09, 256.62, 353.15, 1.836, 3),
+    ("MG", "Interior II", 71.98, 98.68, 110.35, 136.79, 167.59, 183.65, 291.61, 399.59, 2.062, 4),
+    ("PR", "Capital", 42.24, 63.82, 74.71, 97.01, 121.51, 134.62, 218.73, 302.85, 1.600, 3),
+    ("PR", "Interior I", 59.06, 80.28, 92.65, 117.58, 145.12, 160.09, 256.62, 353.15, 1.836, 4),
+    ("PR", "Interior II", 71.98, 98.68, 110.35, 136.79, 167.59, 183.65, 291.61, 399.59, 2.062, 5),
+    ("SC", "Capital", 42.24, 63.82, 74.71, 97.01, 121.51, 134.62, 218.73, 302.85, 1.600, 3),
+    ("SC", "Interior I", 59.06, 80.28, 92.65, 117.58, 145.12, 160.09, 256.62, 353.15, 1.836, 4),
+    ("SC", "Interior II", 71.98, 98.68, 110.35, 136.79, 167.59, 183.65, 291.61, 399.59, 2.062, 5),
+    ("RS", "Capital", 68.85, 97.98, 112.69, 142.78, 175.87, 193.55, 307.11, 420.67, 2.163, 4),
+    ("RS", "Interior I", 91.56, 120.20, 136.92, 170.58, 207.74, 227.95, 358.27, 488.59, 2.478, 5),
+    ("RS", "Interior II", 109.00, 145.05, 160.79, 196.48, 238.08, 259.75, 405.52, 551.27, 2.783, 6),
+    ("DF", "Capital", 68.85, 97.98, 112.69, 142.78, 175.87, 193.55, 307.11, 420.67, 2.163, 3),
+    ("GO", "Capital", 68.85, 97.98, 112.69, 142.78, 175.87, 193.55, 307.11, 420.67, 2.163, 3),
+    ("GO", "Interior I", 91.56, 120.20, 136.92, 170.58, 207.74, 227.95, 358.27, 488.59, 2.478, 4),
+    ("GO", "Interior II", 109.00, 145.05, 160.79, 196.48, 238.08, 259.75, 405.52, 551.27, 2.783, 5),
+    ("MS", "Capital", 108.37, 132.98, 143.73, 168.08, 196.47, 211.27, 269.71, 336.68, 1.684, 4),
+    ("MS", "Interior I", 133.67, 148.12, 160.34, 187.73, 217.43, 231.95, 290.42, 386.95, 1.933, 5),
+    ("MS", "Interior II", 148.12, 164.92, 178.44, 208.97, 242.63, 259.24, 295.66, 386.95, 1.933, 6),
+    ("MT", "Capital", 160.23, 178.49, 178.49, 226.47, 263.07, 281.13, 321.12, 361.09, 1.755, 5),
+    ("MT", "Interior I", 178.77, 196.68, 213.56, 250.87, 290.74, 310.13, 353.99, 397.85, 1.933, 6),
+    ("MT", "Interior II", 223.73, 224.09, 257.54, 303.52, 358.14, 392.53, 448.39, 504.26, 2.467, 7),
+    ("RO", "Capital", 210.18, 230.80, 250.46, 293.94, 340.53, 363.29, 415.40, 467.51, 2.289, 6),
+    ("RO", "Interior I", 313.75, 324.57, 396.86, 425.12, 501.82, 550.26, 629.81, 709.34, 3.486, 7),
+    ("AC", "Capital", 313.75, 324.57, 396.86, 425.12, 501.82, 550.26, 629.81, 709.34, 3.486, 7),
+    ("AC", "Interior", 349.94, 361.76, 442.14, 473.54, 558.91, 612.88, 701.74, 790.61, 3.901, 8),
+]
+
+def seed_generoso_rate_table(conn):
+    """Semeia automaticamente a tabela oficial do Transporte Generoso no banco de dados."""
+    try:
+        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ? OR LOWER(name) LIKE ?", ("%generoso%", "transporte generoso"))
+        row_c = cur_c.fetchone()
+
+        if row_c:
+            carrier_id = row_c["id"]
+        else:
+            try:
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", ("Transporte Generoso",))
+                carrier_id = cur_ins.lastrowid
+            except Exception:
+                if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+                    try:
+                        conn.conn.rollback()
+                    except Exception:
+                        pass
+                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%generoso%",))
+                row_c = cur_c.fetchone()
+                carrier_id = row_c["id"] if row_c else 1
+
+
+        # Criar Tabela de Frete Oficial Generoso
+        cur_t = conn.execute(
+            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (?, ?, ?)",
+            (carrier_id, "Proposta Comercial Oficial (CIF ES / Nível Brasil)", "Tabela com Seguro 0.30%, GRIS 0.20%, Pedágio e TEC")
+        )
+        table_id = cur_t.lastrowid
+
+        weight_brackets = [
+            (0.0, 10.0),
+            (10.01, 20.0),
+            (20.01, 30.0),
+            (30.01, 50.0),
+            (51.01, 70.0),
+            (70.01, 100.0),
+            (100.01, 150.0),
+            (150.01, 200.0),
+        ]
+
+        rates_to_insert = []
+        for row in GENEROSO_DATA:
+            uf = row[0]
+            city_type = row[1]
+            prices = row[2:10]
+            over200_per_kg = row[10]
+            days = row[11]
+
+            # Faixas de peso fixo até 200kg
+            for idx, (w_min, w_max) in enumerate(weight_brackets):
+                p_fixed = prices[idx]
+                rates_to_insert.append((
+                    table_id, uf, city_type, w_min, w_max,
+                    p_fixed, 0.0, 0.30, 0.20, days, f"Generoso {uf} {city_type}"
+                ))
+
+            # Faixa acima de 200kg (preço base da faixa 151-200 + valor por kg excedente)
+            p_base_200 = prices[7]
+            rates_to_insert.append((
+                table_id, uf, city_type, 200.01, 999999.0,
+                p_base_200, over200_per_kg, 0.30, 0.20, days, f"Generoso {uf} {city_type} Excedente"
+            ))
+
+        sql_ins = """
+            INSERT INTO freight_rates (
+                table_id, uf, city, min_weight, max_weight, 
+                fixed_price, weight_price_per_kg, ad_valorem_percent, 
+                gris_percent, delivery_days, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        for r_item in rates_to_insert:
+            conn.execute(sql_ins, r_item)
+
+        if hasattr(conn, "commit"):
+            conn.commit()
+        print(f"✅ Tabela do Transporte Generoso semeada com sucesso ({len(rates_to_insert)} regras)!")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print("[Generoso Seeder Error]:", e)
+
+
+
 
 
 def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> list:
