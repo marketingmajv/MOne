@@ -55,50 +55,102 @@ def lookup_cep_viacep(cep_raw: str) -> dict:
         return {"found": False}
 
 def ensure_freight_tables(conn):
-    """Inicializa as tabelas do banco de dados para o módulo de fretes."""
-    try:
-        conn.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS carriers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
+    """Inicializa as tabelas do banco de dados para o módulo de fretes de forma 100% compatível com SQLite e PostgreSQL."""
+    is_pg = hasattr(conn, "conn")  # PGConnWrapper
 
-            CREATE TABLE IF NOT EXISTS freight_tables (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                carrier_id INTEGER NOT NULL,
-                name TEXT NOT NULL,
-                file_url TEXT,
-                notes TEXT,
-                active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
-            );
+    carrier_sql = """
+        CREATE TABLE IF NOT EXISTS carriers (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """ if is_pg else """
+        CREATE TABLE IF NOT EXISTS carriers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """
 
-            CREATE TABLE IF NOT EXISTS freight_rates (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                table_id INTEGER NOT NULL,
-                uf TEXT,
-                city TEXT,
-                cep_start TEXT,
-                cep_end TEXT,
-                min_weight REAL NOT NULL DEFAULT 0,
-                max_weight REAL NOT NULL DEFAULT 999999,
-                fixed_price REAL NOT NULL DEFAULT 0,
-                weight_price_per_kg REAL NOT NULL DEFAULT 0,
-                ad_valorem_percent REAL NOT NULL DEFAULT 0,
-                gris_percent REAL NOT NULL DEFAULT 0,
-                min_freight_price REAL NOT NULL DEFAULT 0,
-                delivery_days INTEGER NOT NULL DEFAULT 1,
-                notes TEXT,
-                FOREIGN KEY(table_id) REFERENCES freight_tables(id) ON DELETE CASCADE
-            );
-            """
-        )
-    except Exception as e:
-        print("[Freight DB Init Error]:", e)
+    tables_sql = """
+        CREATE TABLE IF NOT EXISTS freight_tables (
+            id SERIAL PRIMARY KEY,
+            carrier_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            file_url TEXT,
+            notes TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
+        );
+    """ if is_pg else """
+        CREATE TABLE IF NOT EXISTS freight_tables (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            carrier_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            file_url TEXT,
+            notes TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
+        );
+    """
+
+    rates_sql = """
+        CREATE TABLE IF NOT EXISTS freight_rates (
+            id SERIAL PRIMARY KEY,
+            table_id INTEGER NOT NULL,
+            uf TEXT,
+            city TEXT,
+            cep_start TEXT,
+            cep_end TEXT,
+            min_weight REAL NOT NULL DEFAULT 0,
+            max_weight REAL NOT NULL DEFAULT 999999,
+            fixed_price REAL NOT NULL DEFAULT 0,
+            weight_price_per_kg REAL NOT NULL DEFAULT 0,
+            ad_valorem_percent REAL NOT NULL DEFAULT 0,
+            gris_percent REAL NOT NULL DEFAULT 0,
+            min_freight_price REAL NOT NULL DEFAULT 0,
+            delivery_days INTEGER NOT NULL DEFAULT 1,
+            notes TEXT,
+            FOREIGN KEY(table_id) REFERENCES freight_tables(id) ON DELETE CASCADE
+        );
+    """ if is_pg else """
+        CREATE TABLE IF NOT EXISTS freight_rates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_id INTEGER NOT NULL,
+            uf TEXT,
+            city TEXT,
+            cep_start TEXT,
+            cep_end TEXT,
+            min_weight REAL NOT NULL DEFAULT 0,
+            max_weight REAL NOT NULL DEFAULT 999999,
+            fixed_price REAL NOT NULL DEFAULT 0,
+            weight_price_per_kg REAL NOT NULL DEFAULT 0,
+            ad_valorem_percent REAL NOT NULL DEFAULT 0,
+            gris_percent REAL NOT NULL DEFAULT 0,
+            min_freight_price REAL NOT NULL DEFAULT 0,
+            delivery_days INTEGER NOT NULL DEFAULT 1,
+            notes TEXT,
+            FOREIGN KEY(table_id) REFERENCES freight_tables(id) ON DELETE CASCADE
+        );
+    """
+
+    for stmt in [carrier_sql, tables_sql, rates_sql]:
+        try:
+            conn.execute(stmt)
+            if hasattr(conn, "commit"):
+                conn.commit()
+        except Exception as e:
+            print("[Freight DB Init Warning]:", e)
+            if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+                try:
+                    conn.conn.rollback()
+                except Exception:
+                    pass
+
 
 def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> list:
     """
