@@ -239,9 +239,11 @@ def search_bling_order(order_number: str) -> dict:
 
 def find_matching_nfe_for_order(order: dict) -> str:
     """
-    Varredura completa e infalível da Nota Fiscal referente ao Pedido no Bling.
-    Varre notas fiscais pela data do pedido, nome do cliente, id do contato, valor e observações.
-    Garante que se existir uma NF emitida para o cliente ou pedido, ela será localizada.
+    Varredura orientada a regras estritas para localizar a Nota Fiscal do Pedido de Venda (PV):
+    1. Filtra NFs com dataEmissao >= data do Pedido (PV).
+    2. PASSAGEM 1: Busca o número do PV no vínculo direto ou na DESCRIÇÃO (observações) da NF.
+       Assim que encontrar referência segura (PV na descrição), PARAR a busca e retornar a NF.
+    3. PASSAGEM 2: Caso não encontre o PV na descrição de nenhuma NF, busca pelo NOME DO CLIENTE.
     """
     order_num = str(order.get("numero", "")).strip()
     order_id = str(order.get("id", "") or "").strip()
@@ -258,25 +260,10 @@ def find_matching_nfe_for_order(order: dict) -> str:
     if direct_num and direct_num != "0":
         return f"NF-{direct_num}"
 
-    # 2. Varredura por lotes na API de NFes do Bling
+    # 2. Coletar candidatos a NF a partir da data do pedido
     candidates_raw = []
 
-    # Busca NFs mais recentes da conta Bling (últimas 100)
-    try:
-        nfe_recent = make_bling_api_request("/nfe", params={"limite": 100})
-        candidates_raw.extend(nfe_recent.get("data", []))
-    except Exception:
-        pass
-
-    # Busca NFs específicas do cliente se houver contato_id
-    if contato_id:
-        try:
-            nfe_contact = make_bling_api_request("/nfe", params={"idContato": contato_id, "limite": 100})
-            candidates_raw.extend(nfe_contact.get("data", []))
-        except Exception:
-            pass
-
-    # Busca NFs a partir da data do pedido
+    # Busca NFs a partir da data do pedido no Bling
     if order_date_str:
         try:
             nfe_date = make_bling_api_request("/nfe", params={"dataEmissaoInicial": order_date_str, "limite": 100})
@@ -284,10 +271,25 @@ def find_matching_nfe_for_order(order: dict) -> str:
         except Exception:
             pass
 
+    # Busca NFs do cliente se houver contato_id
+    if contato_id:
+        try:
+            nfe_contact = make_bling_api_request("/nfe", params={"idContato": contato_id, "limite": 100})
+            candidates_raw.extend(nfe_contact.get("data", []))
+        except Exception:
+            pass
+
+    # Fallback: busca NFs mais recentes da conta Bling (últimas 100)
+    try:
+        nfe_recent = make_bling_api_request("/nfe", params={"limite": 100})
+        candidates_raw.extend(nfe_recent.get("data", []))
+    except Exception:
+        pass
+
     if not candidates_raw:
         return ""
 
-    # Remover duplicados pelo ID da NFe
+    # Remover duplicados preservando a ordem
     seen = set()
     unique_candidates = []
     for c in candidates_raw:
@@ -296,15 +298,42 @@ def find_matching_nfe_for_order(order: dict) -> str:
             seen.add(cid)
             unique_candidates.append(c)
 
-    scored_candidates = []
+    # Filtrar candidatos estritamente com dataEmissao >= order_date_str
+    valid_candidates = []
+    d_order = None
+    if order_date_str:
+        try:
+            d_order = datetime.strptime(order_date_str, "%Y-%m-%d")
+        except Exception:
+            pass
 
     for c in unique_candidates:
-        cid = c.get("id")
         c_num = str(c.get("numero", "")).strip()
         if not c_num or c_num == "0":
             continue
+        c_date_str = str(c.get("dataEmissao") or c.get("data", "")).strip()[:10]
+        if d_order and c_date_str:
+            try:
+                d_nf = datetime.strptime(c_date_str, "%Y-%m-%d")
+                if d_nf < d_order:
+                    # Ignorar NFs emitidas ANTES da data do pedido
+                    continue
+            except Exception:
+                pass
+        valid_candidates.append(c)
 
-        # Busca detalhes completos da NFe para ler observações, itens e vínculo de venda
+    if not valid_candidates:
+        return ""
+
+    # =========================================================================
+    # PASSAGEM 1: BUSCAR O NÚMERO DO PV NA DESCRIÇÃO / OBSERVAÇÕES / VÍNCULO DA NF
+    # Se encontrar referência segura, PARAR a busca e retornar a NF imediatamente!
+    # =========================================================================
+    for c in valid_candidates:
+        cid = c.get("id")
+        c_num = str(c.get("numero", "")).strip()
+
+        # Busca detalhes completos da NFe para ler observações e vínculos
         c_detail = c
         if cid:
             try:
@@ -318,59 +347,56 @@ def find_matching_nfe_for_order(order: dict) -> str:
         c_venda_id = str(c_venda.get("id", "") or "").strip()
         c_venda_num = str(c_venda.get("numero", "") or "").strip()
         c_obs = str(c_detail.get("observacoes", "") or "") + " " + str(c_detail.get("observacoesSistema", "") or "")
-        c_total = float(c_detail.get("valorNota", 0) or c_detail.get("total", 0) or 0)
-        c_date_str = str(c_detail.get("dataEmissao") or c_detail.get("data", "")).strip()[:10]
-        
-        c_contato = c_detail.get("contato") or {}
-        c_contato_id = c_contato.get("id")
-        c_cliente_nome = str(c_contato.get("nome", "")).strip()
 
-        score = 0
-
-        # MATCH DE VÍNCULO DIRETO OU NÚMERO DO PEDIDO NO TEXTO DA NF (+1000 pts)
         if order_num:
+            # Vínculo direto de venda ou número do pedido na observação/descrição da NF
             if (c_venda_num and c_venda_num == order_num) or (order_id and c_venda_id == order_id):
-                score += 1000
+                return f"NF-{c_num}"
             elif re.search(r'\b' + re.escape(order_num) + r'\b', c_obs, re.IGNORECASE):
-                score += 800
+                return f"NF-{c_num}"
 
-        # MATCH DE NOME DO CLIENTE / CONTATO (+150 pts)
-        if contato_id and c_contato_id and str(contato_id) == str(c_contato_id):
-            score += 150
-        elif cliente_nome and c_cliente_nome and (cliente_nome.lower() in c_cliente_nome.lower() or c_cliente_nome.lower() in cliente_nome.lower()):
-            score += 120
+    # =========================================================================
+    # PASSAGEM 2: CASO NÃO ENCONTRE PV NA DESCRIÇÃO, BUSCAR PELO NOME DO CLIENTE
+    # (em NFs com dataEmissao >= data do pedido)
+    # =========================================================================
+    customer_matches = []
+    for c in valid_candidates:
+        cid = c.get("id")
+        c_num = str(c.get("numero", "")).strip()
 
-        # MATCH DE VALOR TOTAL (+100 pts)
-        if order_total > 0 and c_total > 0:
-            diff_val = abs(order_total - c_total)
-            if diff_val <= 0.05:
-                score += 100
-            elif diff_val <= 5.00:
-                score += 50
-
-        # MATCH DE DATA DA NF (A partir ou próxima da data do pedido +50 pts)
-        if order_date_str and c_date_str:
+        c_detail = c
+        if cid:
             try:
-                d_order = datetime.strptime(order_date_str, "%Y-%m-%d")
-                d_nf = datetime.strptime(c_date_str, "%Y-%m-%d")
-                if d_nf >= d_order:
-                    score += 50
-                elif (d_order - d_nf).days <= 30:
-                    score += 20  # Margem para pedidos faturados retroativamente
+                res_det = make_bling_api_request(f"/nfe/{cid}")
+                if res_det and "data" in res_det:
+                    c_detail = res_det["data"]
             except Exception:
                 pass
 
-        # Se encontrou o número do pedido vinculado ou no texto da NF, retorna IMEDIATAMENTE!
-        if score >= 800:
-            return f"NF-{c_num}"
+        c_contato = c_detail.get("contato") or {}
+        c_contato_id = c_contato.get("id")
+        c_cliente_nome = str(c_contato.get("nome", "")).strip()
+        c_total = float(c_detail.get("valorNota", 0) or c_detail.get("total", 0) or 0)
+        c_date_str = str(c_detail.get("dataEmissao") or c_detail.get("data", "")).strip()[:10]
 
-        if score > 0:
-            scored_candidates.append((score, c_num))
+        is_customer = False
+        if contato_id and c_contato_id and str(contato_id) == str(c_contato_id):
+            is_customer = True
+        elif cliente_nome and c_cliente_nome and (cliente_nome.lower() in c_cliente_nome.lower() or c_cliente_nome.lower() in cliente_nome.lower()):
+            is_customer = True
 
-    if scored_candidates:
-        scored_candidates.sort(key=lambda x: x[0], reverse=True)
-        best_score, best_num = scored_candidates[0]
-        return f"NF-{best_num}"
+        if is_customer:
+            score = 100
+            if order_total > 0 and c_total > 0:
+                if abs(order_total - c_total) <= 0.05:
+                    score += 50
+            customer_matches.append((score, c_date_str, c_num))
+
+    if customer_matches:
+        # Ordena por maior pontuação e data mais antiga (mais próxima do pedido)
+        customer_matches.sort(key=lambda x: (-x[0], x[1]))
+        best_match = customer_matches[0]
+        return f"NF-{best_match[2]}"
 
     return ""
 
