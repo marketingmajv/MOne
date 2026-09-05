@@ -105,7 +105,7 @@
             📷 Tirar Foto com Câmera
           </button>
           <span class="muted-text">ou selecione arquivo:</span>
-          <input type="file" name="receipt_file" id="receiptFileInput" accept="image/*,.pdf" capture="environment" onchange="handleFileSelected(this)">
+          <input type="file" name="receipt_file" id="receiptFileInput" accept="image/*,.pdf" onchange="handleFileSelected(this)">
           
           <button type="button" class="btn accent" id="aiAnalyzeBtn" onclick="runAiReceiptAnalysis()" style="display: inline-flex; align-items: center; gap: 6px;">
             ⚡ Auditar & Preencher com IA
