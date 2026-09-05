@@ -5,39 +5,40 @@
 {% block page_subtitle %}Simulação instantânea multi-produtos com dimensões, peso e 1/3 do valor de atacado{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="w-full space-y-6 text-slate-200 font-sans">
 
-  <!-- HEADER TOP BAR COM AÇÕES DA COTAÇÃO -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/80 p-5 rounded-2xl border border-slate-800 shadow-xl">
+  <!-- TOP HEADER COM AÇÕES E TÍTULO -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div class="flex items-center gap-4">
-      <div class="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-2xl shadow-lg shadow-blue-900/20">
+      <div class="w-12 h-12 rounded-2xl bg-[#0066FF] text-white flex items-center justify-center text-2xl shadow-lg shadow-blue-600/30">
         🚚
       </div>
       <div>
-        <h1 class="text-xl md:text-2xl font-extrabold text-white tracking-tight">Consulta de Fretes & Transportadoras</h1>
+        <h1 class="text-xl md:text-2xl font-black text-white tracking-tight">Consulta de Fretes & Transportadoras</h1>
         <p class="text-xs text-slate-400 mt-0.5">Simulação instantânea multi-produtos com dimensões, peso e 1/3 do valor de atacado</p>
       </div>
     </div>
+    
     <div class="flex items-center gap-3 w-full sm:w-auto">
-      <button type="button" onclick="resetFreightForm()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700/60 flex items-center justify-center gap-2 transition-all">
+      <button type="button" onclick="resetFreightForm()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-[#141F33] hover:bg-[#1C2C47] text-slate-300 text-xs font-semibold border border-[#233352] flex items-center justify-center gap-2 transition-all">
         <span>🗑️</span> Limpar tudo
       </button>
-      <button type="button" onclick="resetFreightForm()" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all">
+      <button type="button" onclick="resetFreightForm()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0055D4] text-white text-xs font-bold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all">
         <span>📄</span> Nova Cotação
       </button>
     </div>
   </div>
 
-  <!-- GRID PRINCIPAL EM 2 PAINÉIS -->
+  <!-- LAYOUT DE 2 COLUNAS PRINCIPAIS -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-    <!-- PAINEL ESQUERDO: FORMULÁRIO E ITENS DA COTAÇÃO (7 COLUNAS NO DESKTOP) -->
+    <!-- PAINEL ESQUERDO (COLUNA DA ESQUERDA - 7 COLUNAS NO DESKTOP) -->
     <div class="lg:col-span-7 space-y-6">
 
       <!-- CARD 1: DADOS DO CLIENTE E DESTINO -->
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="bg-[#0E1726] border border-[#1B2A47] rounded-2xl p-5 shadow-2xl space-y-4">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-blue-500">📍</span> Dados do Cliente e Destino
+          <span class="text-[#0066FF] text-base">📍</span> Dados do Cliente e Destino
         </h2>
 
         <form id="freightCalcForm" onsubmit="event.preventDefault(); runFreightCalculation();" class="space-y-5">
@@ -48,35 +49,35 @@
               <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Cliente (Opcional)</label>
               <div class="relative">
                 <span class="absolute left-3 top-2.5 text-slate-500 text-xs">👤</span>
-                <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-all">
+                <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="w-full bg-[#141F33] border border-[#233352] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] transition-all">
               </div>
             </div>
 
-            <!-- CEP DESTINO -->
+            <!-- CEP DESTINO COM BOTÃO INTEGRADOR -->
             <div>
               <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">CEP de Destino *</label>
-              <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl overflow-hidden focus-within:border-blue-500 transition-all">
-                <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="w-full bg-transparent px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none" onblur="lookupViaCEP(this.value)">
-                <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 text-xs font-bold transition-all flex items-center justify-center">
+              <div class="flex items-center bg-[#141F33] border border-[#233352] rounded-xl overflow-hidden focus-within:border-[#0066FF] transition-all">
+                <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="w-full bg-transparent px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none" onblur="lookupViaCEP(this.value)">
+                <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="bg-[#0066FF] hover:bg-[#0055D4] text-white px-3.5 py-2 text-xs font-bold transition-all flex items-center justify-center">
                   🔍
                 </button>
               </div>
-              <small id="cepLocationText" class="text-[10px] text-blue-400 block mt-1 min-h-[14px]"></small>
+              <small id="cepLocationText" class="text-[10px] text-[#0066FF] block mt-1 min-h-[14px] font-medium"></small>
             </div>
 
             <!-- CEP ORIGEM -->
             <div>
               <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">CEP Origem (Loja MAJ)</label>
-              <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
+              <input type="text" id="cep_orig" value="{{ default_cep }}" placeholder="29045-660" class="w-full bg-[#141F33]/60 border border-[#233352]/70 rounded-xl px-3 py-2 text-xs text-slate-400 focus:outline-none cursor-not-allowed">
             </div>
           </div>
 
           <!-- CARD 2: PRODUTOS DA COTAÇÃO -->
-          <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+          <div class="bg-[#090F1C] border border-[#1B2A47] rounded-2xl p-4 space-y-4">
             
-            <div class="flex justify-between items-center border-b border-slate-800/60 pb-3">
+            <div class="flex justify-between items-center border-b border-[#1B2A47] pb-3">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-sm">
+                <div class="w-8 h-8 rounded-xl bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center text-sm">
                   📦
                 </div>
                 <div>
@@ -84,16 +85,16 @@
                   <p class="text-[10px] text-slate-400">Adicione quantos modelos e quantidades quiser</p>
                 </div>
               </div>
-              <button type="button" onclick="addProductRow()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-md shadow-emerald-500/20 transition-all">
+              <button type="button" onclick="addProductRow()" class="bg-[#00E676] hover:bg-[#00C853] text-[#0A101D] font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition-all">
                 <span>+</span> ADICIONAR PRODUTO
               </button>
             </div>
 
-            <!-- TABELA DE PRODUTOS -->
+            <!-- TABELA DE PRODUTOS COM INPUTS BRANCOS IGUAL AO PRINT DA IMAGEM -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr class="border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <tr class="border-b border-[#1B2A47] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     <th class="py-2 px-2" style="width: 38%;">MODELO DO VEÍCULO / PRODUTO</th>
                     <th class="py-2 px-2 text-center" style="width: 10%;">QTD</th>
                     <th class="py-2 px-2 text-center" style="width: 14%;">PESO (KG)</th>
@@ -102,16 +103,16 @@
                     <th class="py-2 px-2 text-center" style="width: 5%;">AÇÕES</th>
                   </tr>
                 </thead>
-                <tbody id="productRowsTableBody" class="divide-y divide-slate-800/60">
+                <tbody id="productRowsTableBody" class="divide-y divide-[#1B2A47]/60">
                   <!-- Linhas dinâmicas via JS -->
                 </tbody>
               </table>
             </div>
 
-            <!-- PAINEL DE MÉTRICAS EM TEMPO REAL DA CARGA -->
-            <div class="bg-slate-900 border border-slate-800/80 rounded-xl p-3.5 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <!-- PAINEL DE MÉTRICAS DA CARGA -->
+            <div class="bg-[#0E1726] border border-[#1B2A47] rounded-xl p-3.5 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               <div class="flex items-center gap-3">
-                <div class="text-blue-400 text-lg">📦</div>
+                <div class="text-[#0066FF] text-lg">📦</div>
                 <div>
                   <span class="text-[10px] text-slate-400 block">Total de Itens</span>
                   <strong id="summaryTotalQty" class="text-sm text-white font-bold">0</strong>
@@ -119,7 +120,7 @@
               </div>
 
               <div class="flex items-center gap-3">
-                <div class="text-blue-400 text-lg">⚖️</div>
+                <div class="text-[#0066FF] text-lg">⚖️</div>
                 <div>
                   <span class="text-[10px] text-slate-400 block">Peso Físico Total</span>
                   <strong id="summaryTotalWeight" class="text-sm text-white font-bold">0,0 kg</strong>
@@ -127,35 +128,35 @@
               </div>
 
               <div class="flex items-center gap-3">
-                <div class="text-blue-400 text-lg">📦</div>
+                <div class="text-[#0066FF] text-lg">📦</div>
                 <div>
                   <span class="text-[10px] text-slate-400 block">Peso Cúbico Est.</span>
-                  <strong id="summaryCubicWeight" class="text-sm text-blue-400 font-bold">0,0 kg</strong>
+                  <strong id="summaryCubicWeight" class="text-sm text-[#0066FF] font-bold">0,0 kg</strong>
                 </div>
               </div>
 
               <div class="flex items-center gap-3">
-                <div class="text-blue-400 text-lg">🛡️</div>
+                <div class="text-[#0066FF] text-lg">🛡️</div>
                 <div>
                   <span class="text-[10px] text-slate-400 block">Base de Seguro Total (1/3 Atacado)</span>
-                  <strong id="summaryTotalInsurance" class="text-sm text-emerald-400 font-bold">R$ 0,00</strong>
+                  <strong id="summaryTotalInsurance" class="text-sm text-[#00E676] font-bold">R$ 0,00</strong>
                 </div>
               </div>
             </div>
 
           </div>
 
-          <!-- BOTÃO PRINCIPAL DE CÁLCULO -->
+          <!-- BOTÃO VERDE VERDADEIRO E BRILHANTE "CALCULAR MELHORES OPÇÕES DE FRETE" -->
           <div class="space-y-1.5 pt-1">
-            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
+            <button type="submit" class="w-full bg-[#00E676] hover:bg-[#00C853] text-[#0A101D] font-black text-sm py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
               <span>📋</span> Calcular Melhores Opções de Frete
             </button>
             <p class="text-[10px] text-center text-slate-500">Ordenadas do menor para o maior preço total com taxas e seguro inclusos</p>
           </div>
 
-          <!-- AÇÃO DE WHATSAPP -->
+          <!-- BOTÃO GHOST WHATSAPP -->
           <div>
-            <button type="button" onclick="copyWhatsAppMessage()" class="border border-emerald-600/40 text-emerald-400 hover:bg-emerald-950/30 text-xs font-semibold py-2 px-4 rounded-xl flex items-center gap-2 transition-all">
+            <button type="button" onclick="copyWhatsAppMessage()" class="border border-[#00E676]/40 text-[#00E676] bg-[#0E1726] hover:bg-[#00E676]/10 text-xs font-semibold py-2 px-4 rounded-xl flex items-center gap-2 transition-all">
               <span>💬</span> Copiar Texto para WhatsApp
             </button>
           </div>
@@ -169,20 +170,20 @@
     <!-- PAINEL DIREITO: RESULTADOS DAS OPÇÕES DE FRETE (5 COLUNAS NO DESKTOP) -->
     <div class="lg:col-span-5 space-y-6">
 
-      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl min-h-[520px] flex flex-col">
+      <div class="bg-[#0E1726] border border-[#1B2A47] rounded-2xl p-5 shadow-2xl min-h-[520px] flex flex-col">
         
         <div class="mb-4">
           <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span class="text-amber-400">🏆</span> Opções Disponíveis de Frete
+            <span class="text-amber-400 text-base">🏆</span> Opções Disponíveis de Frete
           </h2>
           <p class="text-[11px] text-slate-400 mt-0.5">Após calcular, as opções aparecerão aqui, ordenadas da mais econômica para a mais completa.</p>
         </div>
 
-        <!-- ÁREA DINÂMICA DE RESULTADOS OU ESTADO VAZIO -->
+        <!-- QUADRO DAS OPÇÕES COM CAIXA TRACEJADA AZUL EXATAMENTE COMO NA IMAGEM -->
         <div id="freightResultsArea" class="flex-1 flex flex-col justify-center">
           
-          <div id="freightEmptyState" class="border border-dashed border-blue-900/40 bg-slate-950/40 rounded-xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto">
-            <div class="w-16 h-16 rounded-2xl bg-blue-950/60 border border-blue-800/40 text-blue-400 text-3xl flex items-center justify-center mb-3">
+          <div id="freightEmptyState" class="border border-dashed border-[#0066FF]/40 bg-[#070D18] rounded-2xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[360px]">
+            <div class="w-16 h-16 rounded-full bg-[#0066FF]/10 border border-[#0066FF]/30 text-[#0066FF] flex items-center justify-center text-3xl mb-4 shadow-lg shadow-blue-600/10">
               🚚
             </div>
             <p class="text-xs text-slate-300">
@@ -193,7 +194,7 @@
           </div>
 
           <div id="freightOptionsList" class="space-y-3 hidden">
-            <!-- Resultados inseridos via JS -->
+            <!-- Resultados dinâmicos da consulta -->
           </div>
 
         </div>
@@ -204,15 +205,15 @@
 
   </div>
 
-  <!-- SEÇÃO INFERIOR EM 2 CARD: IMPORTAÇÃO POR IA E TABELAS ATIVAS -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  <!-- SEÇÃO INFERIOR: IMPORTAR TABELA COM IA E TABELAS ATIVAS NO SISTEMA -->
+  <div class="space-y-6">
     
-    <!-- CARD 3: IMPORTAR TABELA COM IA (FULL ANCHO OU 6 COLS) -->
-    <div class="lg:col-span-12 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+    <!-- CARD 3: IMPORTAR TABELA COM IA -->
+    <div class="bg-[#0E1726] border border-[#1B2A47] rounded-2xl p-5 shadow-2xl space-y-4">
       
       <div>
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-blue-400">📄</span> Importar Tabela com IA
+          <span class="text-[#0066FF] text-base">📄</span> Importar Tabela com IA
         </h2>
         <p class="text-[11px] text-slate-400 mt-0.5">Faça upload da tabela em PDF, Excel (.xlsx) ou CSV</p>
       </div>
@@ -223,7 +224,7 @@
           <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Transportadora *</label>
           <div class="relative">
             <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🚚</span>
-            <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-all" list="carrier_list">
+            <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="w-full bg-[#141F33] border border-[#233352] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] transition-all" list="carrier_list">
           </div>
           <datalist id="carrier_list">
             {% for c in carriers %}
@@ -236,17 +237,17 @@
           <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Nome da Tabela / Região *</label>
           <div class="relative">
             <span class="absolute left-3 top-2.5 text-slate-500 text-xs">📅</span>
-            <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-all">
+            <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2024" class="w-full bg-[#141F33] border border-[#233352] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0066FF] transition-all">
           </div>
         </div>
 
         <div class="md:col-span-3">
           <label class="block text-[11px] font-semibold text-slate-400 mb-1.5">Arquivo da Tabela *</label>
-          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-slate-950 border border-slate-800 rounded-xl py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 transition-all">
+          <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="w-full text-xs text-slate-400 bg-[#141F33] border border-[#233352] rounded-xl py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0066FF]/20 file:text-[#0066FF] hover:file:bg-[#0066FF]/30 transition-all">
         </div>
 
         <div class="md:col-span-3">
-          <button class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all">
+          <button class="w-full bg-[#0066FF] hover:bg-[#0055D4] text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all">
             <span>✨</span> Ler Tabela com Gemini IA
           </button>
         </div>
@@ -256,13 +257,13 @@
     </div>
 
     <!-- CARD 4: TABELAS ATIVAS NO SISTEMA -->
-    <div class="lg:col-span-12 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+    <div class="bg-[#0E1726] border border-[#1B2A47] rounded-2xl p-5 shadow-2xl space-y-3">
       
-      <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
+      <div class="flex justify-between items-center border-b border-[#1B2A47] pb-3">
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <span class="text-blue-400">💾</span> Tabelas Ativas no Sistema
+          <span class="text-[#0066FF] text-base">💾</span> Tabelas Ativas no Sistema
         </h2>
-        <span class="bg-blue-950 text-blue-400 border border-blue-800/60 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+        <span class="bg-[#0066FF]/20 text-[#0066FF] border border-[#0066FF]/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
           {{ tables|length }} ATIVAS
         </span>
       </div>
@@ -270,23 +271,23 @@
       {% if tables %}
       <div class="space-y-2.5">
         {% for t in tables %}
-        <div class="p-3.5 bg-slate-950/60 border border-slate-800/80 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-slate-700 transition-all">
+        <div class="p-3.5 bg-[#090F1C] border border-[#1B2A47] rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-slate-700 transition-all">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-base">
+            <div class="w-9 h-9 rounded-xl bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center text-base">
               🚚
             </div>
             <div>
               <strong class="text-xs font-bold text-white block">{{ t.carrier_name }}</strong>
-              <span class="text-[11px] text-slate-400">{{ t.table_name }} — <span class="text-blue-400 font-semibold">{{ t.rates_count }} faixas cadastradas</span></span>
+              <span class="text-[11px] text-slate-400">{{ t.table_name }} — <span class="text-[#0066FF] font-semibold">{{ t.rates_count }} faixas cadastradas</span></span>
             </div>
           </div>
 
           <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <span class="bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
+            <span class="bg-[#052E16] text-[#4ADE80] border border-[#166534] text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
               ATIVA
             </span>
             <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir esta tabela de frete?');">
-              <button type="submit" class="bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-slate-700/60 hover:border-red-800/60 text-xs px-3 py-1 rounded-lg transition-all flex items-center gap-1 font-semibold">
+              <button type="submit" class="bg-[#182338] hover:bg-[#283857] text-slate-300 border border-[#2B3B5C] text-xs px-3 py-1 rounded-lg transition-all flex items-center gap-1 font-semibold">
                 <span>🗑️</span> Excluir
               </button>
             </form>
@@ -295,7 +296,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <div class="py-8 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl">
+      <div class="py-8 text-center text-slate-500 border border-dashed border-[#1B2A47] rounded-xl">
         <p class="text-xs">Nenhuma tabela de frete importada ainda.</p>
       </div>
       {% endif %}
@@ -314,7 +315,7 @@ let lastFreightCalculationResult = null;
 let itemRowCounter = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
-  addProductRow(); // Inicializa com a 1ª linha
+  addProductRow();
 });
 
 function resetFreightForm() {
@@ -351,34 +352,34 @@ function addProductRow() {
   const rowId = `productRow_${itemRowCounter}`;
   const tr = document.createElement("tr");
   tr.id = rowId;
-  tr.className = "hover:bg-slate-900/60 transition-all";
+  tr.className = "hover:bg-[#141F33]/40 transition-all";
 
   tr.innerHTML = `
     <td class="py-2.5 px-2">
-      <select class="product-select w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 transition-all" onchange="onProductSelectChange('${rowId}')">
+      <select class="product-select w-full bg-[#141F33] border border-[#233352] rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#0066FF] transition-all" onchange="onProductSelectChange('${rowId}')">
         ${optionsHtml}
       </select>
     </td>
     <td class="py-2.5 px-2 text-center">
-      <input type="number" min="1" value="1" class="product-qty bg-slate-950 border border-slate-800 rounded-xl text-center text-xs w-14 py-1.5 text-white focus:outline-none focus:border-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      <input type="number" min="1" value="1" class="product-qty bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
     <td class="py-2.5 px-2 text-center">
-      <input type="number" step="0.1" value="" placeholder="kg" class="product-weight bg-slate-950 border border-slate-800 rounded-xl text-center text-xs w-20 py-1.5 text-white focus:outline-none focus:border-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      <input type="number" step="0.1" value="" placeholder="kg" class="product-weight bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-20 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
     </td>
     <td class="py-2.5 px-2">
       <div class="flex items-center justify-center gap-1 text-xs">
-        <input type="number" value="" placeholder="175" class="product-length bg-slate-950 border border-slate-800 rounded-xl text-center text-xs w-14 py-1.5 text-white focus:outline-none focus:border-blue-500" onchange="updateTotalsSummary()">
-        <span class="text-slate-500">x</span>
-        <input type="number" value="" placeholder="70" class="product-width bg-slate-950 border border-slate-800 rounded-xl text-center text-xs w-14 py-1.5 text-white focus:outline-none focus:border-blue-500" onchange="updateTotalsSummary()">
-        <span class="text-slate-500">x</span>
-        <input type="number" value="" placeholder="105" class="product-height bg-slate-950 border border-slate-800 rounded-xl text-center text-xs w-14 py-1.5 text-white focus:outline-none focus:border-blue-500" onchange="updateTotalsSummary()">
+        <input type="number" value="" placeholder="175" class="product-length bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
+        <span class="text-slate-400 font-bold">x</span>
+        <input type="number" value="" placeholder="70" class="product-width bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
+        <span class="text-slate-400 font-bold">x</span>
+        <input type="number" value="" placeholder="105" class="product-height bg-white text-slate-900 border border-slate-300 font-bold rounded-lg text-center text-xs w-14 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="updateTotalsSummary()">
       </div>
     </td>
     <td class="py-2.5 px-2 text-right">
-      <span class="product-onethird-display text-xs font-bold text-blue-400 block">R$ 0,00</span>
+      <span class="product-onethird-display text-xs font-extrabold text-[#0066FF] block">R$ 0,00</span>
     </td>
     <td class="py-2.5 px-2 text-center">
-      <button type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-slate-700/60 hover:border-red-800/60 flex items-center justify-center transition-all" onclick="removeProductRow('${rowId}')">🗑️</button>
+      <button type="button" class="w-8 h-8 rounded-lg bg-[#4A1521] hover:bg-red-900/80 text-red-400 border border-[#7A1C2E] flex items-center justify-center transition-all mx-auto" onclick="removeProductRow('${rowId}')">🗑️</button>
     </td>
   `;
 
@@ -450,7 +451,6 @@ function updateTotalsSummary() {
     const h = floatVal(hInput.value, 0);
     const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
 
-    // Peso cúbico = (C x L x A / 6000) * Qtd
     const cubicWeightPerUnit = (l * w * h) / 6000.0;
 
     totalQty += qty;
@@ -505,7 +505,6 @@ async function runFreightCalculation() {
     return;
   }
 
-  // Coletar itens da tabela
   const rows = document.querySelectorAll("#productRowsTableBody > tr");
   const items = [];
 
@@ -551,8 +550,8 @@ async function runFreightCalculation() {
   if (optionsList) {
     optionsList.classList.remove("hidden");
     optionsList.innerHTML = `
-      <div class="p-8 text-center text-slate-400 bg-slate-950/60 rounded-xl border border-slate-800">
-        <div class="inline-block animate-spin text-3xl mb-2 text-blue-400">⚡</div>
+      <div class="p-8 text-center text-slate-400 bg-[#090F1C] rounded-xl border border-[#1B2A47]">
+        <div class="inline-block animate-spin text-3xl mb-2 text-[#0066FF]">⚡</div>
         <p class="text-sm font-semibold text-white">Calculando frete com seguro de 1/3 do atacado...</p>
         <small class="text-xs text-slate-500 block mt-1">Comparando regras entre todas as transportadoras ativas</small>
       </div>
@@ -579,10 +578,10 @@ async function runFreightCalculation() {
     }
 
     let html = `
-      <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs space-y-1 mb-3">
+      <div class="bg-[#090F1C] p-3.5 rounded-xl border border-[#1B2A47] text-xs space-y-1 mb-3">
         <div class="flex justify-between text-slate-400"><span>📦 Carga:</span> <strong class="text-white font-semibold">${data.product_name}</strong></div>
         <div class="flex justify-between text-slate-400"><span>⚖️ Peso Total:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
-        <div class="flex justify-between text-slate-400"><span>🛡️ Base Seguro (1/3 Atacado):</span> <strong class="text-emerald-400 font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
+        <div class="flex justify-between text-slate-400"><span>🛡️ Base Seguro (1/3 Atacado):</span> <strong class="text-[#00E676] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
       </div>
     `;
 
@@ -592,14 +591,14 @@ async function runFreightCalculation() {
         opt.badges.forEach(b => {
           const isCheap = b.includes("Barato");
           const badgeClass = isCheap 
-            ? "bg-emerald-950/90 text-emerald-300 border-emerald-800/80" 
-            : "bg-blue-950/90 text-blue-300 border-blue-800/80";
-          badgeHtml += `<span class="${badgeClass} border text-[10px] font-bold px-2 py-0.5 rounded-full ml-1">🏆 ${b}</span>`;
+            ? "bg-[#052E16] text-[#4ADE80] border-[#166534]" 
+            : "bg-[#0066FF]/20 text-[#0066FF] border-[#0066FF]/40";
+          badgeHtml += `<span class="${badgeClass} border text-[10px] font-bold px-2.5 py-0.5 rounded-full ml-1">🏆 ${b}</span>`;
         });
       }
 
       html += `
-        <div class="border border-slate-800 hover:border-blue-500/80 transition-all p-4 rounded-xl bg-slate-950/80 flex flex-wrap justify-between items-center gap-3">
+        <div class="border border-[#1B2A47] hover:border-[#0066FF] transition-all p-4 rounded-xl bg-[#090F1C] flex flex-wrap justify-between items-center gap-3">
           <div>
             <div class="flex items-center flex-wrap gap-1.5">
               <strong class="text-base font-bold text-white">${opt.carrier_name}</strong>
@@ -611,7 +610,7 @@ async function runFreightCalculation() {
             ${opt.insurance_cost > 0 ? `<small class="text-[10px] text-slate-500 block mt-0.5">Seguro (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
           </div>
           <div class="text-right">
-            <span class="text-2xl font-extrabold text-blue-400 block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
+            <span class="text-2xl font-extrabold text-[#0066FF] block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
             <small class="text-[10px] text-slate-500 block uppercase font-semibold">LÍQUIDO TOTAL</small>
           </div>
         </div>
