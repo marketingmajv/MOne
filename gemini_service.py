@@ -232,8 +232,8 @@ DIRETRIZES DE ATUAÇÃO:
         }
 
 
-def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassis_list: list) -> dict:
-    """Analisa imagem ou PDF da DANFE/comprovante com Gemini 3.6 Flash e valida os chassis informados."""
+def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassis_list: list, expected_model: str = "") -> dict:
+    """Analisa imagem ou PDF da DANFE/comprovante com Gemini 3.6 Flash, audita o modelo do veículo e valida os chassis."""
     api_key = get_gemini_api_key()
     if not api_key:
         return {
@@ -266,24 +266,29 @@ def extract_and_match_chassis(file_bytes: bytes, mime_type: str, expected_chassi
 Você é um auditor de documentação veicular e conferência fiscal da MAJ Mobilidade Elétrica.
 Analise a imagem ou documento PDF anexo (DANFE, Termo de Entrega, Recibo ou Foto).
 
-OBJETIVO:
-Identificar números de chassi de veículos (identificados no documento como CHASSI, CHASSIS, QUADRO, VIN, Nº DE SÉRIE ou em códigos de produtos) e verificar se correspondem à lista de chassis informada pelo vendedor.
+OBJETIVO DA AUDITORIA:
+1. Identificar números de chassi de veículos (identificados como CHASSI, CHASSIS, QUADRO, VIN, Nº DE SÉRIE ou em descrições de produtos) e comparar com a lista de chassis informados.
+2. Identificar a descrição do MODELO DO VEÍCULO / PRODUTO constante no documento e verificar se corresponde ao modelo informado pelo vendedor/pedido.
 
 CHASSIS INFORMADOS NA VENDA QUE DEVEM CONSTAR NO DOCUMENTO:
 {json.dumps(clean_expected, indent=2)}
 
+MODELO DE VEÍCULO ESPERADO NO PEDIDO / CADASTRO:
+"{expected_model or 'Não especificado'}"
+
 DIRETRIZES DE AUDITORIA:
-1. Faça uma varredura detalhada no documento: cabeçalho, descrição dos produtos/itens, dados adicionais da NF-e e campos de observações.
-2. Identifique todos os números de chassis legíveis no documento.
-3. Compare cada chassi informado com os chassis encontrados, desconsiderando pontuações, traços ou espaços.
-4. Responda ESTRITAMENTE em formato JSON com o seguinte schema:
+1. Faça uma varredura detalhada no documento: cabeçalho, descrição dos produtos/itens, dados adicionais da NF-e e observações.
+2. Identifique todos os números de chassis e o modelo/nome comercial do produto no documento.
+3. Responda ESTRITAMENTE em formato JSON com o seguinte schema:
 {{
-  "document_type": "Tipo de documento reconhecido (ex: DANFE NF-e, Termo de Entrega, Foto de Plaqueta, Recibo)",
+  "document_type": "Tipo de documento (ex: DANFE NF-e, Termo de Entrega, Foto de Plaqueta)",
   "extracted_chassis": ["lista de todos os chassis veiculares encontrados"],
   "matched_chassis": ["chassis esperados que foram encontrados no documento"],
   "missing_chassis": ["chassis esperados que NÃO foram encontrados no documento"],
-  "is_valid": true ou false (true se TODOS os chassis esperados foram localizados no documento),
-  "summary": "Resumo claro e objetivo em português do resultado da auditoria"
+  "extracted_model": "Modelo/Nome do produto identificado no documento (ex: Scooter Elétrica MAJ M1)",
+  "model_matched": true ou false (true se o modelo no documento for idêntico ou compatível com o modelo esperado),
+  "is_valid": true ou false (true se TODOS os chassis esperados foram localizados),
+  "summary": "Resumo claro e objetivo em português do resultado da auditoria de chassi e modelo"
 }}
 """
 
@@ -350,7 +355,9 @@ DIRETRIZES DE AUDITORIA:
                     "extracted_chassis": extracted_raw,
                     "matched_chassis": matched if matched else parsed.get("matched_chassis", []),
                     "missing_chassis": missing if not is_valid else [],
-                    "summary": parsed.get("summary", "Conferência de chassis concluída."),
+                    "extracted_model": parsed.get("extracted_model", ""),
+                    "model_matched": parsed.get("model_matched", True),
+                    "summary": parsed.get("summary", "Conferência de chassis e modelo concluída."),
                     "all_matched": is_valid
                 }
             return {"success": False, "is_valid": False, "message": "O modelo não retornou conteúdo textual compreensível."}

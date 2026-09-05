@@ -370,7 +370,7 @@ def init_db():
 def ensure_sales_columns():
     try:
         with db() as conn:
-            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis"]:
+            for col in ["danfe_file", "delivery_term_files", "ai_chassis_verified", "ai_extracted_chassis", "vehicle_model"]:
                 try:
                     conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
                 except Exception:
@@ -1391,6 +1391,7 @@ def sales():
                 return redirect(url_for("sales"))
 
             term_files_json = json.dumps(term_filenames) if term_filenames else None
+            vehicle_model = request.form.get("vehicle_model", "").strip()
 
             ai_verified = request.form.get("ai_chassis_verified") == "1"
             ai_extracted = request.form.get("ai_extracted_chassis", "").strip()
@@ -1403,7 +1404,7 @@ def sales():
                     if doc_path.exists():
                         ext = target_filename.rsplit(".", 1)[-1].lower()
                         mime = "application/pdf" if ext == "pdf" else f"image/{ext if ext != 'jpg' else 'jpeg'}"
-                        v_res = extract_and_match_chassis(doc_path.read_bytes(), mime, chassis_list)
+                        v_res = extract_and_match_chassis(doc_path.read_bytes(), mime, chassis_list, expected_model=vehicle_model)
                         if not v_res.get("is_valid"):
                             flash(f"Bloqueio da IA: {v_res.get('summary', 'O chassi do documento não confere com o digitado.')}", "danger")
                             return redirect(url_for("sales"))
@@ -1413,9 +1414,9 @@ def sales():
             default_total = sum(float(u["wholesale_price"] if channel == "atacado" else u["retail_price"]) for u in units)
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
-                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,ai_chassis_verified,ai_extracted_chassis,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, ai_verified, ai_extracted, session["user_id"]),
+                """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,ai_chassis_verified,ai_extracted_chassis,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, ai_verified, ai_extracted, session["user_id"]),
             )
             sale_id = cur.lastrowid
             per_unit = total_value / len(units) if units else 0
@@ -1866,12 +1867,11 @@ def verify_sales_chassis():
                 m = "application/pdf" if ext == "pdf" else ("image/png" if ext == "png" else "image/jpeg")
                 items_to_check.append((b, m))
 
-    if not items_to_check:
-        return jsonify({"success": False, "is_valid": False, "message": "Nenhum arquivo ou foto foi anexado para a conferência."}), 400
+    vehicle_model = request.form.get("vehicle_model", "").strip()
 
     last_res = None
     for file_bytes, mime_type in items_to_check:
-        res = extract_and_match_chassis(file_bytes, mime_type, chassis_list)
+        res = extract_and_match_chassis(file_bytes, mime_type, chassis_list, expected_model=vehicle_model)
         if res.get("is_valid"):
             return jsonify(res)
         last_res = res

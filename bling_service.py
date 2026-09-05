@@ -273,6 +273,9 @@ def parse_bling_order_data(order: dict) -> dict:
             "valor": float(it.get("valor", 0) or 0)
         })
 
+    modelos_lista = [it["descricao"] for it in itens if it.get("descricao")]
+    vehicle_model = ", ".join(modelos_lista) if modelos_lista else ""
+
     return {
         "found": True,
         "order_id": order_id,
@@ -282,7 +285,8 @@ def parse_bling_order_data(order: dict) -> dict:
         "sold_at": data_venda,
         "invoice_number": nota_fiscal,
         "notes": obs,
-        "items": itens
+        "items": itens,
+        "vehicle_model": vehicle_model
     }
 
 def search_bling_invoice(invoice_number: str) -> dict:

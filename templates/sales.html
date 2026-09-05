@@ -86,6 +86,12 @@
         <small>Canal</small>
         <b>{{ s.channel|title }}</b>
       </div>
+      {% if s.vehicle_model %}
+      <div class="detail-block">
+        <small>Modelo do Veículo</small>
+        <b>{{ s.vehicle_model }}</b>
+      </div>
+      {% endif %}
       <div class="detail-block">
         <small>Cliente</small>
         <b>{{ s.customer or 'Não informado' }}</b>
@@ -227,6 +233,10 @@
       <label>Data<input type="date" name="sold_at" id="soldAtInput" value="{{ request.args.get('date','') }}"></label>
       <label>Valor total<input type="number" step="0.01" name="total_value" id="totalValueInput" placeholder="deixe vazio para usar tabela"></label>
       
+      <label class="span-2">Modelo do veículo / produto
+        <input name="vehicle_model" id="vehicleModelInput" placeholder="Ex.: Scooter Elétrica MAJ M1 / S1 (preenchido automaticamente pelo pedido)">
+      </label>
+
       <label class="span-2">Chassis
         <textarea name="chassis" id="chassisInput" rows="2" placeholder="Cole um ou vários chassis separados por vírgula ou ponto-e-vírgula" required oninput="onChassisInputChange()"></textarea>
         <small>O sistema exige chassi válido e confere automaticamente contra a foto do comprovante anexo.</small>
@@ -386,6 +396,11 @@ async function fetchFromBling() {
     if (data.total_value) {
       document.getElementById('totalValueInput').value = data.total_value.toFixed(2);
     }
+    if (data.vehicle_model) {
+      document.getElementById('vehicleModelInput').value = data.vehicle_model;
+    } else if (data.items && data.items.length) {
+      document.getElementById('vehicleModelInput').value = data.items.map(i => i.descricao).join(', ');
+    }
     if (data.notes) {
       const notesEl = document.querySelector('#saleForm textarea[name="notes"]');
       if (notesEl && !notesEl.value) {
@@ -397,7 +412,7 @@ async function fetchFromBling() {
     if (data.items && data.items.length) {
       itemsMsg = '\n\nItens do pedido:\n' + data.items.map(i => `• ${i.quantidade}x ${i.descricao}`).join('\n');
     }
-    alert(`✓ Pedido #${data.order_number} encontrado no Bling!\n\nCliente: ${data.customer}\nNota Fiscal: ${data.invoice_number || 'Ainda não emitida'}\nValor Total: R$ ${data.total_value.toFixed(2)}${itemsMsg}`);
+    alert(`✓ Pedido #${data.order_number} encontrado no Bling!\n\nCliente: ${data.customer}\nNota Fiscal: ${data.invoice_number || 'Ainda não emitida'}\nModelo: ${data.vehicle_model || 'Identificado no item'}\nValor Total: R$ ${data.total_value.toFixed(2)}${itemsMsg}`);
 
   } catch (err) {
     btn.disabled = false;
@@ -647,8 +662,12 @@ async function runChassisAiVerification() {
   saveBtn.disabled = true;
   saveBtn.innerHTML = '⏳ Conferindo chassi com documento...';
 
+  const vehicleModelVal = document.getElementById('vehicleModelInput').value.trim();
   const fd = new FormData();
   fd.append('chassis', chassisVal);
+  if (vehicleModelVal) {
+    fd.append('vehicle_model', vehicleModelVal);
+  }
 
   if (currentDanfeFile) {
     fd.append('file', currentDanfeFile);
@@ -676,7 +695,12 @@ async function runChassisAiVerification() {
       document.getElementById('aiExtractedChassis').value = (data.extracted_chassis || []).join(', ');
 
       badge.className = 'badge available';
-      badge.innerHTML = '✓ Chassi Confirmado no Documento';
+      badge.innerHTML = '✓ Chassi e Modelo Confirmados';
+
+      let modelInfo = '';
+      if (data.extracted_model) {
+        modelInfo = `<br><strong>Modelo no Documento:</strong> <span style="color:var(--text);">${data.extracted_model}</span>`;
+      }
 
       statusBox.style.background = 'rgba(97, 243, 156, 0.12)';
       statusBox.style.borderColor = 'rgba(97, 243, 156, 0.4)';
@@ -685,7 +709,7 @@ async function runChassisAiVerification() {
         <div style="display:flex;align-items:flex-start;gap:8px;">
           <span style="font-size:16px;">✓</span>
           <div>
-            <strong>Confirmação Positiva por IA:</strong> O chassi localizado no comprovante (<em>${data.document_type || 'Documento de Venda'}</em>) corresponde exatamente ao chassi digitado!<br>
+            <strong>Confirmação Positiva por IA:</strong> O chassi localizado no comprovante (<em>${data.document_type || 'Documento de Venda'}</em>) corresponde exatamente ao chassi digitado!${modelInfo}<br>
             <div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.25);border-radius:6px;display:inline-block;">
               <strong>Chassi no Documento:</strong> <span class="mono" style="color:var(--accent);font-weight:bold;">${data.matched_chassis.join(', ')}</span>
             </div>
