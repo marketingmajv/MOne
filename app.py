@@ -1026,6 +1026,8 @@ def imports():
         reference = request.form["reference"].strip()
         invoice_no = request.form.get("invoice_no", "").strip()
         bl_no = request.form.get("bl_no", "").strip()
+        supplier_name = request.form.get("supplier_name", "").strip()
+        seller_name = request.form.get("seller_name", "").strip()
         arrival_date = request.form.get("arrival_date") or None
         usd_rate = float(request.form.get("usd_rate") or 0)
         invoice_amount_usd = float(request.form.get("invoice_amount_usd") or 0)
@@ -1040,9 +1042,9 @@ def imports():
             return redirect(url_for("imports"))
         with db() as conn:
             conn.execute(
-                """INSERT INTO imports(reference,invoice_no,bl_no,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,notes,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (reference, invoice_no, bl_no, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, notes, session["user_id"]),
+                """INSERT INTO imports(reference,invoice_no,bl_no,supplier_name,seller_name,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,notes,created_by)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (reference, invoice_no, bl_no, supplier_name, seller_name, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, notes, session["user_id"]),
             )
             conn.commit()
         audit("import.created", reference)
@@ -1069,6 +1071,7 @@ def imports():
 
             costs_list = [dict(c) for c in costs]
             supplier_brl = 0.0
+            supplier_usd = 0.0
             total_costs_brl = 0.0
 
             for c in costs_list:
@@ -1077,25 +1080,37 @@ def imports():
                 c_currency = (c.get("currency") or "BRL").upper()
 
                 if c_currency == "USD":
+                    amount_usd = amount
                     amount_brl = amount * (c_rate if c_rate > 0 else 1.0)
                 else:
                     amount_brl = amount
+                    amount_usd = amount / c_rate if c_rate > 0 else 0.0
 
                 c["amount_brl"] = amount_brl
+                c["amount_usd"] = amount_usd
                 total_costs_brl += amount_brl
 
-                # Check if this is a payment to supplier
                 c_type = (c.get("cost_type") or "").strip().lower()
-                if "fornecedor" in c_type or "sinal" in c_type or "inicial" in c_type or "intermedi" in c_type or "final" in c_type:
+                c_desc = (c.get("description") or "").strip().lower()
+                is_supplier_payment = any(kw in c_type or kw in c_desc for kw in ["fornecedor", "sinal", "inicial", "intermedi", "final", "invoice", "china", "chines", "fabricante"])
+
+                if is_supplier_payment or c_currency == "USD":
                     supplier_brl += amount_brl
+                    if c_currency == "USD":
+                        supplier_usd += amount
+                    elif c_rate > 0:
+                        supplier_usd += (amount / c_rate)
 
             imp_dict["costs_list"] = costs_list
             imp_dict["costs_brl"] = total_costs_brl
             imp_dict["supplier_brl"] = supplier_brl
+            imp_dict["supplier_usd"] = supplier_usd
 
-            inv_usd = float(imp_dict.get("invoice_amount_usd") or 0.0)
-            if inv_usd > 0 and supplier_brl > 0:
-                imp_dict["avg_usd_rate"] = round(supplier_brl / inv_usd, 4)
+            # Cálculo do Câmbio Médio (Dólar Médio dos pagamentos chineses)
+            if supplier_usd > 0 and supplier_brl > 0:
+                imp_dict["avg_usd_rate"] = round(supplier_brl / supplier_usd, 4)
+            elif float(imp_dict.get("invoice_amount_usd") or 0) > 0 and supplier_brl > 0:
+                imp_dict["avg_usd_rate"] = round(supplier_brl / float(imp_dict.get("invoice_amount_usd")), 4)
             else:
                 imp_dict["avg_usd_rate"] = float(imp_dict.get("usd_rate") or 0.0)
 
@@ -1111,6 +1126,8 @@ def edit_import(iid):
     reference = request.form.get("reference", "").strip()
     invoice_no = request.form.get("invoice_no", "").strip()
     bl_no = request.form.get("bl_no", "").strip()
+    supplier_name = request.form.get("supplier_name", "").strip()
+    seller_name = request.form.get("seller_name", "").strip()
     nf_entry = request.form.get("nf_entry", "").strip()
     arrival_date = request.form.get("arrival_date") or None
     usd_rate = float(request.form.get("usd_rate") or 0)
@@ -1132,9 +1149,9 @@ def edit_import(iid):
             return redirect(url_for("imports"))
 
         conn.execute(
-            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, notes=?
+            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, supplier_name=?, seller_name=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, notes=?
                WHERE id=?""",
-            (reference or imp["reference"], invoice_no, bl_no, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, notes, iid)
+            (reference or imp["reference"], invoice_no, bl_no, supplier_name, seller_name, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, notes, iid)
         )
         conn.commit()
     audit("import.updated", f"import_id={iid}")

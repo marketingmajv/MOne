@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}M-One • Importações{% endblock %}
 {% block page_title %}Importações e Contêineres{% endblock %}
-{% block page_subtitle %}Controle de lotes, Invoice, BL, comprovantes de pagamentos e custos.{% endblock %}
+{% block page_subtitle %}Controle de lotes, Invoice, BL, fornecedores, comprovantes de pagamentos e custos.{% endblock %}
 {% block top_actions %}
   {% if me.role in ['admin', 'support'] %}
     <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
@@ -14,7 +14,17 @@
   <div class="panel-head">
     <div>
       <h3>{{ i.reference }}</h3>
-      <p>Invoice: <strong>{{ i.invoice_no or '—' }}</strong> • BL: <strong>{{ i.bl_no or '—' }}</strong> • NF Entrada: <strong>{{ i.nf_entry or '—' }}</strong></p>
+      <p style="margin-top: 4px;">
+        Invoice: <strong>{{ i.invoice_no or '—' }}</strong> • BL: <strong>{{ i.bl_no or '—' }}</strong> • NF Entrada: <strong>{{ i.nf_entry or '—' }}</strong>
+      </p>
+      {% if i.supplier_name or i.seller_name %}
+        <p style="margin-top: 2px; color: #00cc88; font-size: 0.88rem;">
+          🏭 Fornecedor: <strong>{{ i.supplier_name or '—' }}</strong>
+          {% if i.seller_name %}
+            • 👤 Vendedor/Contato: <strong>{{ i.seller_name }}</strong>
+          {% endif %}
+        </p>
+      {% endif %}
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       {% if me.role == 'admin' %}
@@ -29,26 +39,30 @@
     {% if me.role in ['admin', 'support'] %}
       <span><small>Valor Invoice (USD)</small><b>{{ i.invoice_amount_usd|money_usd if i.invoice_amount_usd else '—' }}</b></span>
       <span><small>Total Pago Fornecedor</small><b>{{ i.supplier_brl|money }}</b></span>
-      <span><small>Câmbio Médio (R$/USD)</small><b class="text-accent" style="font-size: 1.1rem;">{{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}</b></span>
+      <span>
+        <small>Dólar Médio (Chineses)</small>
+        <b class="text-accent" style="font-size: 1.1rem;" title="Câmbio Médio = Total Pago em R$ / Total Pago em USD">
+          {{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}
+        </b>
+      </span>
       <span><small>Custos Landed (Total R$)</small><b>{{ i.costs_brl|money }}</b></span>
     {% endif %}
     <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
   </div>
 
-<<<<<<< HEAD
   {% if i.invoice_file or i.bl_file or i.nf_entry_file or i.chassis_file %}
   <div class="document-links" style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
     {% if i.invoice_file %}
-      <a href="{{ url_for('uploaded_file', filename=i.invoice_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Documento Invoice</a>
+      <a href="{{ url_for('uploads', filename=i.invoice_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Documento Invoice</a>
     {% endif %}
     {% if i.bl_file %}
-      <a href="{{ url_for('uploaded_file', filename=i.bl_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Bill of Lading (BL)</a>
+      <a href="{{ url_for('uploads', filename=i.bl_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Bill of Lading (BL)</a>
     {% endif %}
     {% if i.nf_entry_file %}
-      <a href="{{ url_for('uploaded_file', filename=i.nf_entry_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 NF Entrada</a>
+      <a href="{{ url_for('uploads', filename=i.nf_entry_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 NF Entrada</a>
     {% endif %}
     {% if i.chassis_file %}
-      <a href="{{ url_for('uploaded_file', filename=i.chassis_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📊 Planilha Chassis</a>
+      <a href="{{ url_for('uploads', filename=i.chassis_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📊 Planilha Chassis</a>
     {% endif %}
   </div>
   {% endif %}
@@ -101,7 +115,7 @@
             <td style="padding: 8px;"><strong>{{ c.amount_brl|money }}</strong></td>
             <td style="padding: 8px;">
               {% if c.receipt_file %}
-                <a href="{{ url_for('uploaded_file', filename=c.receipt_file) }}" target="_blank" class="btn sm outline" style="padding: 2px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                <a href="{{ url_for('uploads', filename=c.receipt_file) }}" target="_blank" class="btn sm outline" style="padding: 2px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
                   📄 Abrir Comprovante
                 </a>
               {% else %}
@@ -156,6 +170,12 @@
       </label>
       <label>Número Invoice
         <input name="invoice_no" value="{{ i.invoice_no or '' }}">
+      </label>
+      <label>Nome do Fornecedor / Fabricante
+        <input name="supplier_name" value="{{ i.supplier_name or '' }}" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+      </label>
+      <label>Nome do Vendedor / Contato Comercial
+        <input name="seller_name" value="{{ i.seller_name or '' }}" placeholder="Ex.: Chen, Linda, Jack...">
       </label>
       <label>Valor Total Invoice (USD)
         <input type="number" step="0.01" name="invoice_amount_usd" value="{{ i.invoice_amount_usd or 0 }}" placeholder="50000.00">
@@ -286,6 +306,12 @@
       </label>
       <label>Número Invoice
         <input name="invoice_no" placeholder="Ex.: INV-9988">
+      </label>
+      <label>Nome do Fornecedor / Fabricante
+        <input name="supplier_name" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+      </label>
+      <label>Nome do Vendedor / Contato Comercial
+        <input name="seller_name" placeholder="Ex.: Chen, Linda, Jack...">
       </label>
       <label>Valor Total Invoice (USD)
         <input type="number" step="0.01" name="invoice_amount_usd" placeholder="Ex.: 50000.00">
