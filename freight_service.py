@@ -179,7 +179,50 @@ def ensure_freight_tables(conn):
         );
     """
 
-    for stmt in [carrier_sql, tables_sql, rates_sql]:
+    quotes_sql = """
+        CREATE TABLE IF NOT EXISTS freight_quotes (
+            id SERIAL PRIMARY KEY,
+            quote_number TEXT UNIQUE,
+            customer_name TEXT,
+            cpf_cnpj TEXT,
+            company_name TEXT,
+            contact_phone TEXT,
+            contact_person TEXT,
+            full_address TEXT,
+            cep_dest TEXT,
+            cep_orig TEXT,
+            items_summary TEXT,
+            carrier_results_json TEXT,
+            selected_carrier TEXT,
+            selected_price REAL,
+            status TEXT DEFAULT 'cotado',
+            created_by INTEGER,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """ if is_pg else """
+        CREATE TABLE IF NOT EXISTS freight_quotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quote_number TEXT UNIQUE,
+            customer_name TEXT,
+            cpf_cnpj TEXT,
+            company_name TEXT,
+            contact_phone TEXT,
+            contact_person TEXT,
+            full_address TEXT,
+            cep_dest TEXT,
+            cep_orig TEXT,
+            items_summary TEXT,
+            carrier_results_json TEXT,
+            selected_carrier TEXT,
+            selected_price REAL,
+            status TEXT DEFAULT 'cotado',
+            created_by INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(created_by) REFERENCES users(id)
+        );
+    """
+
+    for stmt in [carrier_sql, tables_sql, rates_sql, quotes_sql]:
         try:
             conn.execute(stmt)
             if hasattr(conn, "commit"):

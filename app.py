@@ -514,10 +514,41 @@ def roles_required(*roles):
     return decorator
 
 
+def ensure_audit_log_table(conn):
+    try:
+        is_pg = hasattr(conn, "conn")
+        sql = """
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                action TEXT NOT NULL,
+                detail TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        """ if is_pg else """
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                action TEXT NOT NULL,
+                detail TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        """
+        conn.execute(sql)
+        if hasattr(conn, "commit"):
+            conn.commit()
+    except Exception as e:
+        print("[Audit Log Table Init Error]:", e)
+
+
 def audit(action, detail=""):
-    with db() as conn:
-        conn.execute("INSERT INTO audit_log(user_id,action,detail) VALUES(?,?,?)", (session.get("user_id"), action, detail))
-        conn.commit()
+    try:
+        with db() as conn:
+            ensure_audit_log_table(conn)
+            conn.execute("INSERT INTO audit_log(user_id,action,detail) VALUES(?,?,?)", (session.get("user_id"), action, detail))
+            conn.commit()
+    except Exception as e:
+        print("[Audit Log Error]:", e)
 
 
 def money(v):
