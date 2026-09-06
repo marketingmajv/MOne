@@ -113,23 +113,9 @@
               </button>
             </div>
 
-            <!-- TABELA DE ITENS COM CAIXAS BRANCAS NÍTIDAS -->
-            <div class="overflow-x-auto border border-[#153435] rounded-lg bg-[#061016] p-2">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr class="border-b border-[#153435] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th class="py-2 px-2" style="width: 38%;">MODELO DO VEÍCULO / PRODUTO</th>
-                    <th class="py-2 px-2 text-center" style="width: 10%;">QTD</th>
-                    <th class="py-2 px-2 text-center" style="width: 14%;">PESO (KG)</th>
-                    <th class="py-2 px-2 text-center" style="width: 23%;">MEDIDAS ( C X L X A CM )</th>
-                    <th class="py-2 px-2 text-right" style="width: 15%;">1/3 ATACADO UN.</th>
-                    <th class="py-2 px-2 text-center" style="width: 5%;">AÇÕES</th>
-                  </tr>
-                </thead>
-                <tbody id="productRowsTableBody" class="divide-y divide-[#153435]">
-                  <!-- Linhas dinâmicas via JS -->
-                </tbody>
-              </table>
+            <!-- CARDS DOS ITENS DA CARGA COM ESTRUTURA RESPONSIVA -->
+            <div id="productRowsContainer" class="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+              <!-- Cards dinâmicos gerados via JS -->
             </div>
 
             <!-- PAINEL RESUMO DAS MÉTRICAS EM MINI-CARDS GEOMÉTRICOS -->
@@ -377,8 +363,25 @@ function resetFreightForm() {
   document.getElementById("cep_orig").value = "{{ default_cep }}";
   document.getElementById("cepLocationText").innerText = "";
   
-  const tbody = document.getElementById("productRowsTableBody");
-  tbody.innerHTML = "";
+  const container = document.getElementById("productRowsContainer");
+  if (container) container.innerHTML = "";
+  itemRowCounter = 0;
+  addProductRow();
+
+  const emptyState = document.getElementById("freightEmptyState");
+  const optionsList = document.getElementById("freightOptionsList");
+  if (emptyState) emptyState.classList.remove("hidden");
+  if (optionsList) {
+    optionsList.classList.add("hidden");
+    optionsList.innerHTML = "";
+  }
+  lastFreightCalculationResult = null;
+}
+
+function resetFreightForm() {
+  document.getElementById("freightCalcForm").reset();
+  const container = document.getElementById("productRowsContainer");
+  container.innerHTML = "";
   itemRowCounter = 0;
   addProductRow();
 
@@ -394,56 +397,68 @@ function resetFreightForm() {
 
 function addProductRow() {
   itemRowCounter++;
-  const tbody = document.getElementById("productRowsTableBody");
+  const container = document.getElementById("productRowsContainer");
   
   let optionsHtml = `<option value="">-- Selecione o Veículo / Modelo --</option>`;
   productsCatalog.forEach(p => {
-    optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-wholesale="${p.wholesale_price}" data-onethird="${p.one_third_wholesale}" data-weight="${p.weight_kg}" data-l="${p.length_cm}" data-w="${p.width_cm}" data-h="${p.height_cm}">${p.name} (1/3 Atacado: R$ ${p.one_third_wholesale.toFixed(2)})</option>`;
+    optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-wholesale="${p.wholesale_price}" data-onethird="${p.one_third_wholesale}" data-weight="${p.weight_kg}" data-l="${p.length_cm}" data-w="${p.width_cm}" data-h="${p.height_cm}">${p.name} (1/3 Atacado: R$ ${p.one_third_wholesale.toFixed(2).replace('.', ',')})</option>`;
   });
 
   const rowId = `productRow_${itemRowCounter}`;
-  const tr = document.createElement("tr");
-  tr.id = rowId;
-  tr.className = "hover:bg-[#111111]/80 transition-all";
+  const card = document.createElement("div");
+  card.id = rowId;
+  card.className = "bg-[#080E19] border border-[#1E2F52] rounded-lg p-3 space-y-2.5 transition-all product-item-card";
 
-  tr.innerHTML = `
-    <td class="py-2.5 px-2">
-      <select class="product-select w-full bg-[#111111] border border-[#222222] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#0070F3] transition-all" onchange="onProductSelectChange('${rowId}')">
-        ${optionsHtml}
-      </select>
-    </td>
-    <td class="py-2.5 px-2 text-center">
-      <input type="number" min="1" value="1" class="product-qty input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
-    </td>
-    <td class="py-2.5 px-2 text-center">
-      <input type="number" step="0.1" value="" placeholder="kg" class="product-weight input-high-contrast rounded-md text-center text-xs w-20 py-1.5 focus:outline-none" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
-    </td>
-    <td class="py-2.5 px-2">
-      <div class="flex items-center justify-center gap-1 text-xs">
-        <input type="number" value="" placeholder="C" class="product-length input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
-        <span class="text-slate-500 font-bold">x</span>
-        <input type="number" value="" placeholder="L" class="product-width input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
-        <span class="text-slate-500 font-bold">x</span>
-        <input type="number" value="" placeholder="A" class="product-height input-high-contrast rounded-md text-center text-xs w-14 py-1.5 focus:outline-none" onchange="updateTotalsSummary()">
+  card.innerHTML = `
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex-1 min-w-0">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Modelo do Veículo / Produto</label>
+        <select class="product-select w-full bg-[#0D1628] border border-[#1E2F52] rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#0070F3] transition-all min-w-0" onchange="onProductSelectChange('${rowId}')">
+          ${optionsHtml}
+        </select>
       </div>
-    </td>
-    <td class="py-2.5 px-2 text-right">
-      <span class="product-onethird-display text-xs font-black text-[#0070F3] block">R$ 0,00</span>
-    </td>
-    <td class="py-2.5 px-2 text-center">
-      <button type="button" class="w-7 h-7 rounded-md bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/50 flex items-center justify-center transition-all mx-auto icon-svg" onclick="removeProductRow('${rowId}')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      </button>
-    </td>
+      <div class="pt-4 flex-shrink-0">
+        <button type="button" class="w-7 h-7 rounded-md bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-800/30 flex items-center justify-center transition-all icon-svg" onclick="removeProductRow('${rowId}')" title="Remover item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end text-xs">
+      <div class="min-w-0">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Qtd</label>
+        <input type="number" min="1" value="1" class="product-qty w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Peso (kg)</label>
+        <input type="number" step="0.1" value="" placeholder="kg" class="product-weight w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Compr. (cm)</label>
+        <input type="number" value="" placeholder="C" class="product-length w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Largura (cm)</label>
+        <input type="number" value="" placeholder="L" class="product-width w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Altura (cm)</label>
+        <input type="number" value="" placeholder="A" class="product-height w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+      </div>
+      <div class="min-w-0 col-span-2 sm:col-span-1 text-right">
+        <label class="block text-[10px] font-semibold text-slate-400 mb-1">1/3 Atacado</label>
+        <span class="product-onethird-display text-xs font-bold text-[#38BDF8] block py-1">R$ 0,00</span>
+      </div>
+    </div>
   `;
 
-  tbody.appendChild(tr);
+  container.appendChild(card);
   updateTotalsSummary();
 }
 
 function removeProductRow(rowId) {
-  const tbody = document.getElementById("productRowsTableBody");
-  if (tbody.children.length <= 1) {
+  const container = document.getElementById("productRowsContainer");
+  if (container.children.length <= 1) {
     alert("A cotação deve conter ao menos 1 item.");
     return;
   }
@@ -483,7 +498,7 @@ function onProductSelectChange(rowId) {
 }
 
 function updateTotalsSummary() {
-  const rows = document.querySelectorAll("#productRowsTableBody > tr");
+  const rows = document.querySelectorAll("#productRowsContainer > .product-item-card");
   let totalQty = 0;
   let totalPhysicalWeight = 0;
   let totalCubicWeight = 0;
@@ -559,7 +574,7 @@ async function runFreightCalculation() {
     return;
   }
 
-  const rows = document.querySelectorAll("#productRowsTableBody > tr");
+  const rows = document.querySelectorAll("#productRowsContainer > .product-item-card");
   const items = [];
 
   rows.forEach(row => {
