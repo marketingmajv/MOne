@@ -2318,6 +2318,7 @@ def bling_authorize():
 
 @app.route("/bling/callback")
 @login_required
+@roles_required("admin", "support")
 def bling_callback():
     code = request.args.get("code")
     err = request.args.get("error")
