@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Auditoria de Ações{% endblock %}
+{% block page_title %}Logs & Auditoria de Ações{% endblock %}
+{% block page_subtitle %}Histórico completo e tagueamento de todas as ações realizadas no sistema.{% endblock %}
+
+{% block content %}
+<div class="space-y-5 text-slate-200">
+  
+  <div class="bg-[#091120] border border-[#1B2A4A] rounded-xl p-4.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-[#0070F3]/15 text-[#0070F3] border border-[#0070F3]/30 flex items-center justify-center icon-svg">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-tight">Registro Oficial de Rastreabilidade</h1>
+        <p class="text-xs text-slate-400">Emissões, consultas, compras, pagamentos e alterações tagueadas por usuário.</p>
+      </div>
+    </div>
+
+    <form method="get" class="flex items-center gap-2 w-full md:w-auto">
+      <div class="relative w-full md:w-80">
+        <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por usuário, ação ou detalhe..." class="w-full bg-[#070D18] border border-[#1B2A47] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3]">
+      </div>
+      <button type="submit" class="bg-[#0070F3] hover:bg-[#0068D6] text-white px-3.5 py-2 rounded-lg text-xs font-bold transition-all">Buscar</button>
+      {% if q %}<a href="{{ url_for('audit_logs') }}" class="bg-[#111C30] hover:bg-[#182642] text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold border border-[#23355A]">Limpar</a>{% endif %}
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h3>Últimas Ações Registradas</h3>
+        <p>Mostrando até 300 registros mais recentes</p>
+      </div>
+      <span class="pill bg-[#0070F3]/20 text-[#38BDF8] border-[#0070F3]/40">{{ logs|length }} registros</span>
+    </div>
+
+    {% if logs %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:140px;">Data / Hora</th>
+            <th style="width:160px;">Usuário</th>
+            <th style="width:180px;">Ação / Categoria</th>
+            <th>Detalhes / Parâmetros</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="font-size:0.75rem; color:#94A3B8; font-family:monospace;">{{ log.created_at }}</td>
+            <td>
+              <b style="color:#FFF;">{{ log.user_name or 'Sistema / Anônimo' }}</b>
+              {% if log.user_role %}<small style="display:block; font-size:0.7rem; color:#64748B;">{{ role_labels.get(log.user_role, log.user_role) }}</small>{% endif %}
+            </td>
+            <td>
+              <span class="badge" style="background:#1E293B; color:#38BDF8; border:1px solid #334155; font-family:monospace; font-size:0.7rem;">
+                {{ log.action }}
+              </span>
+            </td>
+            <td style="font-size:0.8rem; color:#CBD5E1; font-family:monospace; word-break:break-all;">
+              {{ log.detail or '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">Nenhum log de auditoria encontrado para o filtro aplicado.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

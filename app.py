@@ -368,6 +368,27 @@ def init_db():
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(user_id) REFERENCES users(id)
             );
+
+            CREATE TABLE IF NOT EXISTS freight_quotes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quote_number TEXT UNIQUE,
+                customer_name TEXT,
+                cpf_cnpj TEXT,
+                company_name TEXT,
+                contact_phone TEXT,
+                contact_person TEXT,
+                full_address TEXT,
+                cep_dest TEXT,
+                cep_orig TEXT,
+                items_summary TEXT,
+                carrier_results_json TEXT,
+                selected_carrier TEXT,
+                selected_price REAL,
+                status TEXT DEFAULT 'cotado',
+                created_by INTEGER,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(created_by) REFERENCES users(id)
+            );
             """
         )
         # Default users only on first run.
@@ -543,6 +564,7 @@ def login():
             if user and user["password_hash"] == hash_password(password):
                 session.permanent = True
                 session["user_id"] = user["id"]
+                audit("auth.login", f"username={username}")
                 flash(f"Bem-vindo, {user['name']}.", "success")
                 return redirect(url_for("dashboard"))
             flash("Usuário ou senha inválidos.", "danger")
@@ -553,6 +575,7 @@ def login():
 
 @app.route("/logout")
 def logout():
+    audit("auth.logout", "")
     session.clear()
     return redirect(url_for("login"))
 
@@ -2021,6 +2044,31 @@ def delete_user(uid):
     return redirect(url_for("users"))
 
 
+@app.route("/audit-logs")
+@login_required
+@roles_required("admin", "support")
+def audit_logs():
+    q = request.args.get("q", "").strip()
+    with db() as conn:
+        if q:
+            rows = conn.execute(
+                """SELECT a.*, u.name user_name, u.role user_role 
+                   FROM audit_log a 
+                   LEFT JOIN users u ON u.id = a.user_id 
+                   WHERE a.action LIKE ? OR a.detail LIKE ? OR u.name LIKE ? 
+                   ORDER BY a.id DESC LIMIT 300""",
+                (f"%{q}%", f"%{q}%", f"%{q}%")
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                """SELECT a.*, u.name user_name, u.role user_role 
+                   FROM audit_log a 
+                   LEFT JOIN users u ON u.id = a.user_id 
+                   ORDER BY a.id DESC LIMIT 300"""
+            ).fetchall()
+    return render_template("audit_logs.html", logs=rows, q=q)
+
+
 
 
 @app.route("/change-password", methods=["POST"])
@@ -2033,6 +2081,7 @@ def change_password():
     with db() as conn:
         conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(new_password), session["user_id"]))
         conn.commit()
+    audit("auth.password_changed", "")
     flash("Senha alterada.", "success")
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -2046,6 +2095,7 @@ def uploads(filename):
 @app.route("/api/chassis/<path:chassis>")
 @login_required
 def api_chassis(chassis):
+    audit("chassis.queried", f"chassis={chassis}")
     with db() as conn:
         row = conn.execute(
             """SELECT st.chassis,st.status,st.color,st.motor_no,p.name product,i.reference import_ref,i.status import_status,s.invoice_number
@@ -2055,8 +2105,6 @@ def api_chassis(chassis):
     if not row:
         return jsonify({"ok": False, "message": "Chassi não encontrado. Importe a planilha do contêiner."}), 404
     return jsonify({"ok": True, "unit": dict(row)})
-
-
 
 
 @app.route("/stock/add", methods=["POST"])
@@ -2090,6 +2138,7 @@ def add_stock_unit():
 @app.route("/stock/export")
 @login_required
 def export_stock():
+    audit("stock.exported", "")
     with db() as conn:
         rows = conn.execute(
             """SELECT st.chassis, p.name product_name, st.color, st.motor_no, COALESCE(i.reference, 'Nacional') import_ref, st.location, st.status, st.received_at
@@ -2107,6 +2156,7 @@ def export_stock():
 @app.route("/sales/export")
 @login_required
 def export_sales():
+    audit("sales.exported", "")
     with db() as conn:
         rows = conn.execute(
             """SELECT s.sold_at, s.order_number, s.invoice_number, s.channel, s.customer, s.total_value,
@@ -2125,6 +2175,7 @@ def export_sales():
 @login_required
 @roles_required("admin", "finance", "support")
 def export_payments():
+    audit("payments.exported", "")
     u = current_user()
     with db() as conn:
         if u["role"] in ("admin", "support"):
@@ -2170,6 +2221,7 @@ def copilot_chat():
     history = data.get("history") or []
     if not message:
         return jsonify({"success": False, "message": "Mensagem não informada."}), 400
+    audit("copilot.chat", f"prompt={message[:50]}")
 
     u = current_user()
     if not u:
@@ -2455,6 +2507,15 @@ def freight():
         cur_c = conn.execute("SELECT id, name, active FROM carriers ORDER BY name ASC")
         carriers = cur_c.fetchall()
 
+        # Buscar cotações arquivadas
+        cur_fq = conn.execute(
+            """SELECT fq.*, u.name created_by_name 
+               FROM freight_quotes fq 
+               LEFT JOIN users u ON u.id = fq.created_by 
+               ORDER BY fq.id DESC LIMIT 50"""
+        )
+        archived_quotes = cur_fq.fetchall()
+
     return render_template(
         "freight.html",
         me=me,
@@ -2462,16 +2523,24 @@ def freight():
         products=products,
         tables=tables,
         carriers=carriers,
+        archived_quotes=archived_quotes,
         default_cep=freight_service.DEFAULT_MAJ_CEP
     )
 
 @app.route("/freight/calculate", methods=["POST"])
 @login_required
 def freight_calculate():
-    """API para cálculo de frete por CEP, peso e múltiplos produtos."""
+    """API para cálculo de frete por CEP, peso e múltiplos produtos com arquivamento de cotação."""
     try:
         data = request.get_json() if request.is_json else request.form
         cep_dest = data.get("cep_dest", "").strip()
+        customer_name = data.get("customer_name", "").strip()
+        cpf_cnpj = data.get("cpf_cnpj", "").strip()
+        company_name = data.get("company_name", "").strip()
+        contact_phone = data.get("contact_phone", "").strip()
+        contact_person = data.get("contact_person", "").strip()
+        full_address = data.get("full_address", "").strip()
+
         weight_kg = float(data.get("weight_kg", 0) or 0)
         product_id = data.get("product_id")
         if product_id:
@@ -2494,9 +2563,53 @@ def freight_calculate():
                 product_id=product_id,
                 cep_orig=cep_orig
             )
+
+            if res.get("success"):
+                import random
+                from datetime import datetime
+                quote_number = f"COT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100, 999)}"
+                items_json = json.dumps(items, ensure_ascii=False)
+                carrier_results_json = json.dumps(res.get("options", []), ensure_ascii=False)
+                best_opt = res.get("best_option") or {}
+
+                conn.execute(
+                    """INSERT INTO freight_quotes(
+                        quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
+                        contact_person, full_address, cep_dest, cep_orig, items_summary,
+                        carrier_results_json, selected_carrier, selected_price, status, created_by
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cotado', ?)""",
+                    (
+                        quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
+                        contact_person, full_address, cep_dest, cep_orig, items_json,
+                        carrier_results_json,
+                        best_opt.get("carrier_name", ""),
+                        best_opt.get("final_cost", 0),
+                        session.get("user_id")
+                    )
+                )
+                conn.commit()
+                res["quote_number"] = quote_number
+                audit("freight.calculated", f"quote={quote_number}; customer={customer_name}; cep={cep_dest}")
+
             return jsonify(res)
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 400
+
+
+@app.route("/freight/quotes/<int:qid>/status", methods=["POST"])
+@login_required
+def freight_quote_status(qid):
+    """Atualiza o status de envio de uma cotação de frete arquivada."""
+    status = request.form.get("status", "").strip().lower()
+    if status not in ["cotado", "aprovado", "enviado", "cancelado"]:
+        flash("Status de frete inválido.", "warning")
+        return redirect(url_for("freight"))
+    with db() as conn:
+        conn.execute("UPDATE freight_quotes SET status = ? WHERE id = ?", (status, qid))
+        conn.commit()
+    audit("freight.status_updated", f"quote_id={qid}; status={status}")
+    flash(f"Status da cotação de frete atualizado para '{status.upper()}'.", "success")
+    return redirect(url_for("freight"))
 
 
 @app.route("/freight/whatsapp", methods=["POST"])
@@ -2509,15 +2622,13 @@ def freight_whatsapp():
         cep_dest = data.get("cep_dest", "")
         product_name = data.get("product_name", "")
         options = data.get("options", [])
-        if isinstance(options, str):
-            options = json.loads(options)
-
         msg = freight_service.generate_whatsapp_budget(
             customer_name=customer_name,
             cep_dest=cep_dest,
             product_name=product_name,
             options=options
         )
+        audit("freight.whatsapp", f"customer={customer_name}; dest={cep_dest}")
         return jsonify({"success": True, "message": msg})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 400
