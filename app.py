@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 load_dotenv(".env.local")
 import os
+import json
 import csv
 import io
 import sqlite3
