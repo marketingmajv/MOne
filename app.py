@@ -206,6 +206,10 @@ def db():
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2:
         try:
+            pool = get_pg_pool()
+            if pool:
+                conn = pool.getconn()
+                return PGConnWrapper(conn, pool=pool)
             conn = connect_pg(db_url)
             if conn:
                 return PGConnWrapper(conn)
@@ -222,6 +226,21 @@ def db():
     return conn
 
 
+def ensure_indexes(conn):
+    """Cria índices de alta performance se ainda não existirem."""
+    index_queries = [
+        "CREATE INDEX IF NOT EXISTS idx_stock_units_product_status ON stock_units(product_id, status);",
+        "CREATE INDEX IF NOT EXISTS idx_stock_units_chassis ON stock_units(chassis);",
+        "CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_phone_sent ON whatsapp_messages(phone, sent_at);",
+        "CREATE INDEX IF NOT EXISTS idx_crm_leads_phone ON crm_leads(phone);",
+        "CREATE INDEX IF NOT EXISTS idx_freight_rates_table_uf ON freight_rates(table_id, uf);",
+        "CREATE INDEX IF NOT EXISTS idx_sales_created ON sales(created_at);"
+    ]
+    for q in index_queries:
+        try:
+            conn.execute(q)
+        except Exception as e:
+            pass
 
 
 def hash_password(password: str) -> str:
@@ -230,9 +249,16 @@ def hash_password(password: str) -> str:
 
 
 def init_db():
+    try:
+        with db() as conn:
+            ensure_indexes(conn)
+    except Exception as e:
+        print("[Init DB Indexes Warning]:", e)
+
     if os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL:
         # PostgreSQL / Supabase tables are initialized via Supabase SQL Editor
         return
+
     with db() as conn:
         conn.executescript(
             """
@@ -735,10 +761,17 @@ def products():
             SELECT p.*,
                    COALESCE(p.bling_stock, 0) as bling_stock,
                    p.bling_updated_at,
-                   SUM(CASE WHEN st.status='available' THEN 1 ELSE 0 END) local_available,
-                   SUM(CASE WHEN st.status='sold' THEN 1 ELSE 0 END) sold
-            FROM products p LEFT JOIN stock_units st ON st.product_id=p.id
-            GROUP BY p.id ORDER BY p.name
+                   COALESCE(st.local_available, 0) as local_available,
+                   COALESCE(st.sold, 0) as sold
+            FROM products p
+            LEFT JOIN (
+                SELECT product_id,
+                       SUM(CASE WHEN status='available' THEN 1 ELSE 0 END) as local_available,
+                       SUM(CASE WHEN status='sold' THEN 1 ELSE 0 END) as sold
+                FROM stock_units
+                GROUP BY product_id
+            ) st ON st.product_id = p.id
+            ORDER BY p.name
             """
         ).fetchall()
         

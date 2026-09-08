@@ -517,7 +517,22 @@ def sync_bling_products_stock() -> dict:
 
     part_keywords = ['assento', 'motor', 'acelerador', 'display', 'pastilha', 'banco', 'peca', 'peça', 'roda', 'bateria', 'carregador', 'capacete', 'chassi', 'retrovisor']
 
-    # 3. Atualizar no banco de dados do M-One
+    # 3. Pré-indexar produtos Bling por SKU e Nome Limpo para busca O(1)
+    bling_sku_map = {}
+    bling_clean_name_list = []
+    for bp in all_bling_prods:
+        b_id = bp.get("id")
+        b_name = str(bp.get("nome", "") or "").strip()
+        b_sku = str(bp.get("codigo", "") or "").strip()
+        st_qty = bling_stock_map.get(b_id, {}).get("virtual", 0)
+        b_name_lower = b_name.lower()
+        b_name_clean = b_name_lower.replace(" ", "")
+
+        if b_sku:
+            bling_sku_map[b_sku.lower()] = (bp, st_qty)
+        bling_clean_name_list.append((bp, b_name, b_name_lower, b_name_clean, st_qty))
+
+    # 4. Atualizar no banco de dados do M-One
     updated_count = 0
     now_iso = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     details = []
@@ -530,31 +545,38 @@ def sync_bling_products_stock() -> dict:
             m_sku = str(mp["sku"] or "").strip()
             matched_stock = 0
             matched_items = []
+            matched_ids = set()
 
-            for bp in all_bling_prods:
-                b_id = bp.get("id")
-                b_name = str(bp.get("nome", "") or "").strip()
-                b_sku = str(bp.get("codigo", "") or "").strip()
-                st_qty = bling_stock_map.get(b_id, {}).get("virtual", 0)
-
-                b_name_lower = b_name.lower()
+            # Tentar match direto por SKU (O(1))
+            if m_sku and m_sku.lower() in bling_sku_map:
+                bp, st_qty = bling_sku_map[m_sku.lower()]
+                matched_stock += st_qty
+                matched_items.append(f"{bp.get('nome')} (Estoque: {st_qty})")
+                matched_ids.add(bp.get("id"))
+            else:
                 m_name_lower = m_name.lower()
+                m_name_clean = m_name_lower.replace(" ", "")
+                m_is_part = any(kw in m_name_lower for kw in part_keywords)
 
-                # Ignora peças/acessórios se o produto M-One for modelo/veículo principal
-                if any(kw in b_name_lower for kw in part_keywords) and not any(kw in m_name_lower for kw in part_keywords):
-                    continue
+                for bp, b_name, b_name_lower, b_name_clean, st_qty in bling_clean_name_list:
+                    b_id = bp.get("id")
+                    if b_id in matched_ids:
+                        continue
 
-                is_match = False
-                if m_sku and b_sku and m_sku.lower() == b_sku.lower():
-                    is_match = True
-                elif m_name_lower in b_name_lower or b_name_lower in m_name_lower:
-                    is_match = True
-                elif m_name_lower.replace(" ", "") in b_name_lower.replace(" ", ""):
-                    is_match = True
+                    # Ignora peças/acessórios se o produto M-One for modelo principal
+                    if any(kw in b_name_lower for kw in part_keywords) and not m_is_part:
+                        continue
 
-                if is_match:
-                    matched_stock += st_qty
-                    matched_items.append(f"{b_name} (Estoque: {st_qty})")
+                    is_match = False
+                    if m_name_lower in b_name_lower or b_name_lower in m_name_lower:
+                        is_match = True
+                    elif m_name_clean in b_name_clean or b_name_clean in m_name_clean:
+                        is_match = True
+
+                    if is_match:
+                        matched_stock += st_qty
+                        matched_items.append(f"{b_name} (Estoque: {st_qty})")
+                        matched_ids.add(b_id)
 
             conn.execute(
                 "UPDATE products SET bling_stock = ?, bling_updated_at = ? WHERE id = ?",
