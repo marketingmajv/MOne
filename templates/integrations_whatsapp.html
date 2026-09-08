@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Configurações WhatsApp Oficial{% endblock %}
+{% block page_title %}WhatsApp Business API{% endblock %}
+{% block page_subtitle %}Conexão oficial da API Meta Cloud, automações, perfil empresarial e suporte.{% endblock %}
+
+{% block top_actions %}
+  <a href="{{ url_for('crm') }}" class="btn primary">🎯 Ir para o CRM & Chat</a>
+{% endblock %}
+
+{% block content %}
+<!-- Sub Tabs Bar -->
+<div class="sub-tabs-bar" style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+  <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; font-size: 0.9rem; padding: 6px 14px; cursor: pointer;">
+    🟢 Conta Conectada
+  </span>
+  <span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.9rem; padding: 6px 14px;">
+    💬 Moedas de mensagem / Créditos
+  </span>
+</div>
+
+<form method="post" class="form-grid-stack" style="display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Section 1: WhatsApp Account Top Status Grid -->
+  <section class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      
+      <!-- Display Name Card -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px;">
+        <div style="width: 44px; height: 44px; background: #059669; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+          📱
+        </div>
+        <div style="flex: 1;">
+          <small style="color: var(--text-muted); font-size: 0.78rem;">Nome de exibição</small>
+          <div style="font-weight: 600; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 6px;">
+            <input name="display_name" value="{{ cfg.display_name or 'Maj mobilidade elétrica' }}" style="background: transparent; border: none; color: #fff; font-weight: 600; font-size: 1rem; width: 100%;">
+            <span>✏️</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connected Number Card -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1;">
+          <small style="color: var(--text-muted); font-size: 0.78rem;">Número conectado</small>
+          <div style="font-weight: 600; font-size: 1.05rem; color: #4ade80;">
+            <input name="phone_number" value="{{ cfg.phone_number or '+55 27 99606-1538' }}" style="background: transparent; border: none; color: #4ade80; font-weight: 600; font-size: 1.05rem; width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- WABA ID Card -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <small style="color: var(--text-muted); font-size: 0.78rem;">ID da conta do WhatsApp Business (WABA)</small>
+          <div style="font-weight: 600; font-size: 0.95rem; color: #e2e8f0; font-family: monospace;">
+            <input name="waba_id" value="{{ cfg.waba_id or '10988893282731750' }}" style="background: transparent; border: none; color: #fff; font-family: monospace; font-size: 0.95rem; width: 100%;">
+          </div>
+        </div>
+        <button type="button" class="btn sm" onclick="navigator.clipboard.writeText('{{ cfg.waba_id or 10988893282731750 }}'); alert('ID WABA copiado!');" style="font-size: 0.75rem;">Copiar</button>
+      </div>
+
+      <!-- Message Limit Card -->
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 8px;">
+        <small style="color: var(--text-muted); font-size: 0.78rem;">Limites de mensagens</small>
+        <div style="font-weight: 600; font-size: 0.95rem; color: #38bdf8;">
+          {{ cfg.message_limit or "10.000 BIC's / 24 horas" }} ℹ️
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Badges Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 4px;">Status do número</small>
+        <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600;">🟢 {{ cfg.number_status or 'Conectado' }}</span>
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 4px;">Verificação da empresa ℹ️</small>
+        <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600;">🟢 {{ cfg.business_verification or 'Verificado' }}</span>
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 4px;">Status da conta</small>
+        <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600;">🟢 {{ cfg.account_status or 'Ativo' }}</span>
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 4px;">Linha de crédito</small>
+        <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; font-weight: 600;">🟢 {{ cfg.credit_line or 'Compartilhado' }}</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Section 2: Credenciais da API Meta Cloud (Tokens & Webhook) -->
+  <section class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+      🔑 Conexão com a API Meta Cloud (Credenciais)
+    </h3>
+    
+    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <label class="span-2">Token de Acesso Permanente Meta (Bearer Token)
+        <input type="password" name="token" value="{{ cfg.token or '' }}" placeholder="EAAG..." style="font-family: monospace;">
+        <small>Token permanente gerado no Painel Meta Business Suite.</small>
+      </label>
+
+      <label>ID do Número de Telefone (Phone Number ID)
+        <input name="phone_number_id" value="{{ cfg.phone_number_id or '' }}" placeholder="Ex.: 104928374829" style="font-family: monospace;">
+      </label>
+
+      <label>Token de Verificação do Webhook
+        <input name="verify_token" value="{{ cfg.verify_token or 'mone_whatsapp_verify_token_2026' }}" style="font-family: monospace;">
+      </label>
+
+      <label class="span-2">URL do Webhook para cadastrar no Meta
+        <div style="display: flex; gap: 10px; margin-top: 4px;">
+          <input value="{{ webhook_url }}" readonly style="flex: 1; font-family: monospace; background: rgba(0,0,0,0.5);">
+          <button type="button" class="btn" onclick="navigator.clipboard.writeText('{{ webhook_url }}'); alert('URL do Webhook copiada!');">Copiar URL</button>
+        </div>
+      </label>
+    </div>
+  </section>
+
+  <!-- Section 3: Automações e Fluxos de Mensagens -->
+  <section class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+      🤖 Automações de Atendimento
+    </h3>
+
+    <!-- Banner Ilustrativo -->
+    <div style="background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%); padding: 16px 20px; border-radius: 8px; color: #fff; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="margin: 0; font-size: 1.05rem;">Iniciadores de Conversa & Respostas Automáticas</h4>
+        <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.9;">Ajude seus clientes a iniciar o chat com respostas ágeis e bot interativo.</p>
+      </div>
+      <button type="button" class="btn small" style="background: rgba(255,255,255,0.2); color: #fff; border: none;">Configurar Iniciador</button>
+    </div>
+
+    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      
+      <label>Mensagem de Boas-vindas
+        <input name="welcome_message" value="{{ cfg.welcome_message or 'MAJ Fluxo Atacado Atual' }}" placeholder="Selecione o fluxo...">
+        <small>Enviada para novos contatos que nunca interagiram com o robô.</small>
+      </label>
+
+      <label>Resposta Padrão
+        <input name="default_response" value="{{ cfg.default_response or 'Atendimento Inicial' }}" placeholder="Selecionar fluxo...">
+        <small>Disparada para mensagens sem palavras-chave mapeadas.</small>
+      </label>
+
+      <label>Mensagem Padrão para Mídia
+        <input name="media_response" value="{{ cfg.media_response or 'Atendimento com Mídia' }}" placeholder="Selecionar fluxo...">
+        <small>Enviada ao receber imagens, vídeos ou documentos.</small>
+      </label>
+
+      <label>Fluxo Pós-suporte / Pesquisa
+        <input name="support_flow" value="{{ cfg.support_flow or 'Pós-Venda / Pesquisa' }}" placeholder="Selecionar fluxo...">
+        <small>Disparado automaticamente ao encerrar o atendimento.</small>
+      </label>
+
+    </div>
+  </section>
+
+  <!-- Section 4: Perfil do WhatsApp Business -->
+  <section class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+      🏢 Perfil do WhatsApp Business
+    </h3>
+
+    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      
+      <label class="span-2">Descrição da Empresa
+        <textarea name="profile_description" rows="3">{{ cfg.profile_description or 'Mobilidade descomplicada para o seu dia a dia.' }}</textarea>
+        <small>Exibido no perfil comercial do WhatsApp para todos os clientes.</small>
+      </label>
+
+      <label>Setor / Categoria
+        <select name="profile_sector">
+          <option value="Automotivo" {% if cfg.profile_sector == 'Automotivo' %}selected{% endif %}>Automotivo / Veículos Elétricos</option>
+          <option value="Comércio" {% if cfg.profile_sector == 'Comércio' %}selected{% endif %}>Comércio e Varejo</option>
+          <option value="Serviços" {% if cfg.profile_sector == 'Serviços' %}selected{% endif %}>Serviços</option>
+        </select>
+      </label>
+
+      <label>E-mail de Suporte
+        <input type="email" name="profile_email" value="{{ cfg.profile_email or 'atendimento@majmobilidade.com.br' }}">
+      </label>
+
+      <label>Website da Empresa
+        <input name="profile_website" value="{{ cfg.profile_website or 'https://m-one.majmobilidade.com.br' }}">
+      </label>
+
+      <label>Endereço Físico
+        <input name="profile_address" value="{{ cfg.profile_address or 'Consolação, Vitória - ES, Brasil' }}">
+      </label>
+
+    </div>
+  </section>
+
+  <!-- Section 5: Ações de Conexão e Salvar -->
+  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+    <div>
+      <h4 style="margin: 0; color: #ef4444;">Desconectar conta do WhatsApp</h4>
+      <small style="color: var(--text-muted);">Isso interromperá as mensagens automáticas mas manterá todos os contatos no CRM.</small>
+    </div>
+    <div style="display: flex; gap: 12px;">
+      <button type="submit" name="action_type" value="disconnect" class="btn text-danger" onclick="return confirm('Deseja realmente desconectar a conta do WhatsApp?');" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+        Desconectar Conta
+      </button>
+      <button type="submit" name="action_type" value="save" class="btn primary" style="padding: 10px 24px;">
+        💾 Salvar Configurações do WhatsApp
+      </button>
+    </div>
+  </div>
+
+</form>
+{% endblock %}

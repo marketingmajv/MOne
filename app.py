@@ -5,6 +5,8 @@ import os
 import json
 import csv
 import io
+import time
+import urllib.request
 import sqlite3
 import secrets
 import hashlib
@@ -2753,6 +2755,404 @@ def freight_table_delete(table_id):
     except Exception as e:
         flash(f"Erro ao excluir tabela: {str(e)}", "danger")
     return redirect(url_for("freight"))
+
+
+
+# ==========================================
+# META WHATSAPP CLOUD API & CRM INTEGRATION
+# ==========================================
+
+def get_whatsapp_config():
+    try:
+        with db() as conn:
+            cfg = conn.execute("SELECT * FROM whatsapp_config ORDER BY id DESC LIMIT 1").fetchone()
+            if not cfg:
+                conn.execute(
+                    "INSERT INTO whatsapp_config (display_name, phone_number, waba_id, verify_token) VALUES (?,?,?,?)",
+                    ("Maj mobilidade elétrica", "+55 27 99606-1538", "10988893282731750", "mone_whatsapp_verify_token_2026")
+                )
+                conn.commit()
+                cfg = conn.execute("SELECT * FROM whatsapp_config ORDER BY id DESC LIMIT 1").fetchone()
+            return dict(cfg) if cfg else {}
+    except Exception as e:
+        print("[WhatsApp Config Error]:", e)
+        return {}
+
+def send_whatsapp_message(to_phone: str, text: str):
+    cfg = get_whatsapp_config()
+    token = os.environ.get("WHATSAPP_TOKEN") or cfg.get("token")
+    phone_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID") or cfg.get("phone_number_id")
+    version = os.environ.get("WHATSAPP_API_VERSION", "v20.0")
+
+    clean_phone = "".join(ch for ch in str(to_phone) if ch.isdigit())
+    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
+        clean_phone = f"55{clean_phone}"
+
+    if not token or not phone_id or token == "SUA_CHAVE_META_TOKEN_AQUI":
+        print(f"[WhatsApp Mock Send] to={clean_phone}: {text}")
+        with db() as conn:
+            conn.execute(
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                (f"mock-{int(time.time()*1000)}", clean_phone, "outbound", "text", text, "sent"),
+            )
+            conn.commit()
+        return {"success": True, "mock": True}
+
+    url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": clean_phone,
+        "type": "text",
+        "text": {"body": text},
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            wam_id = res_data.get("messages", [{}])[0].get("id", f"wam-{int(time.time()*1000)}")
+            with db() as conn:
+                conn.execute(
+                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                    (wam_id, clean_phone, "outbound", "text", text, "sent"),
+                )
+                conn.commit()
+            return {"success": True, "data": res_data}
+    except Exception as e:
+        print("[WhatsApp Send Error]:", e)
+        return {"success": False, "error": str(e)}
+
+
+@app.route("/webhook/whatsapp", methods=["GET", "POST"])
+def whatsapp_webhook():
+    if request.method == "GET":
+        mode = request.args.get("hub.mode")
+        verify_token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
+        cfg = get_whatsapp_config()
+        expected_token = os.environ.get("WHATSAPP_VERIFY_TOKEN") or cfg.get("verify_token") or "mone_whatsapp_verify_token_2026"
+        if mode == "subscribe" and verify_token == expected_token:
+            print("[WhatsApp Webhook Verified Successfully!]")
+            return challenge, 200
+        return "Verification failed", 403
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        try:
+            entries = data.get("entry", [])
+            for entry in entries:
+                changes = entry.get("changes", [])
+                for change in changes:
+                    value = change.get("value", {})
+                    contacts = value.get("contacts", [])
+                    messages = value.get("messages", [])
+
+                    sender_name = contacts[0].get("profile", {}).get("name", "Cliente WhatsApp") if contacts else "Cliente WhatsApp"
+
+                    for msg in messages:
+                        wam_id = msg.get("id")
+                        from_phone = msg.get("from")
+                        msg_type = msg.get("type", "text")
+                        body = ""
+
+                        if msg_type == "text":
+                            body = msg.get("text", {}).get("body", "")
+                        elif msg_type in ["image", "video", "document", "audio"]:
+                            body = f"[{msg_type.upper()} recebido]"
+
+                        if from_phone:
+                            with db() as conn:
+                                conn.execute(
+                                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                                    (wam_id, from_phone, "inbound", msg_type, body, "received"),
+                                )
+                                lead = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (from_phone,)).fetchone()
+                                if not lead:
+                                    conn.execute(
+                                        "INSERT INTO crm_leads(name, phone, channel, status) VALUES(?,?,?,?)",
+                                        (sender_name, from_phone, "WhatsApp", "novo"),
+                                    )
+                                conn.commit()
+        except Exception as e:
+            print("[WhatsApp Webhook POST Error]:", e)
+
+        return jsonify({"status": "ok"}), 200
+
+
+# ==========================================
+# CRM & WHATSAPP ACCESS GUARD (PILOTO RESTRITO)
+# ==========================================
+
+def crm_pilot_required(fn):
+    @wraps(fn)
+    def inner(*args, **kwargs):
+        u = current_user()
+        if not u or str(u["username"]).strip().lower() not in ["jam", "fauzer"]:
+            flash("O módulo de CRM & WhatsApp está em fase piloto restrito exclusivamente a Jam e Fauzer.", "danger")
+            return redirect(url_for("dashboard"))
+        return fn(*args, **kwargs)
+    return inner
+
+
+@app.route("/api/whatsapp/send", methods=["POST"])
+@login_required
+@crm_pilot_required
+def api_send_whatsapp():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "").strip()
+    text = data.get("text", "").strip()
+    if not phone or not text:
+        return jsonify({"success": False, "error": "Telefone e texto são obrigatórios."}), 400
+    res = send_whatsapp_message(phone, text)
+    return jsonify(res)
+
+
+@app.route("/integrations/whatsapp", methods=["GET", "POST"])
+@login_required
+@crm_pilot_required
+def integrations_whatsapp():
+    cfg_dict = get_whatsapp_config()
+
+    if request.method == "POST":
+        display_name = request.form.get("display_name", "").strip()
+        phone_number = request.form.get("phone_number", "").strip()
+        waba_id = request.form.get("waba_id", "").strip()
+        phone_number_id = request.form.get("phone_number_id", "").strip()
+        token = request.form.get("token", "").strip()
+        verify_token = request.form.get("verify_token", "").strip()
+        welcome_message = request.form.get("welcome_message", "").strip()
+        default_response = request.form.get("default_response", "").strip()
+        media_response = request.form.get("media_response", "").strip()
+        support_flow = request.form.get("support_flow", "").strip()
+        profile_description = request.form.get("profile_description", "").strip()
+        profile_sector = request.form.get("profile_sector", "").strip()
+        profile_email = request.form.get("profile_email", "").strip()
+        profile_website = request.form.get("profile_website", "").strip()
+        profile_address = request.form.get("profile_address", "").strip()
+        action_type = request.form.get("action_type", "save")
+
+        with db() as conn:
+            if action_type == "disconnect":
+                conn.execute(
+                    """UPDATE whatsapp_config SET number_status='Desconectado', account_status='Inativo', updated_at=CURRENT_TIMESTAMP WHERE id=?""",
+                    (cfg_dict.get("id"),)
+                )
+                conn.commit()
+                flash("Conta do WhatsApp desconectada.", "warning")
+            else:
+                conn.execute(
+                    """UPDATE whatsapp_config SET display_name=?, phone_number=?, waba_id=?, phone_number_id=?, token=?,
+                       verify_token=?, welcome_message=?, default_response=?, media_response=?, support_flow=?,
+                       profile_description=?, profile_sector=?, profile_email=?, profile_website=?, profile_address=?,
+                       number_status='Conectado', account_status='Ativo', updated_at=CURRENT_TIMESTAMP
+                       WHERE id=?""",
+                    (display_name or cfg_dict.get("display_name"),
+                     phone_number or cfg_dict.get("phone_number"),
+                     waba_id or cfg_dict.get("waba_id"),
+                     phone_number_id or cfg_dict.get("phone_number_id"),
+                     token or cfg_dict.get("token"),
+                     verify_token or cfg_dict.get("verify_token"),
+                     welcome_message or cfg_dict.get("welcome_message"),
+                     default_response or cfg_dict.get("default_response"),
+                     media_response or cfg_dict.get("media_response"),
+                     support_flow or cfg_dict.get("support_flow"),
+                     profile_description or cfg_dict.get("profile_description"),
+                     profile_sector or cfg_dict.get("profile_sector"),
+                     profile_email or cfg_dict.get("profile_email"),
+                     profile_website or cfg_dict.get("profile_website"),
+                     profile_address or cfg_dict.get("profile_address"),
+                     cfg_dict.get("id"))
+                )
+                conn.commit()
+                flash("Configurações do WhatsApp Business salvas e atualizadas com sucesso!", "success")
+
+        return redirect(url_for("integrations_whatsapp"))
+
+    webhook_url = url_for("whatsapp_webhook", _external=True)
+    return render_template("integrations_whatsapp.html", cfg=cfg_dict, webhook_url=webhook_url)
+
+
+# ==========================================
+# CRM KANBAN & CONVERSATIONS ROUTE HANDLERS
+# ==========================================
+
+@app.route("/crm", methods=["GET"])
+@login_required
+@crm_pilot_required
+def crm():
+    with db() as conn:
+        leads_rows = conn.execute(
+            """
+            SELECT l.*, p.name AS product_name, u.name AS assigned_name,
+                   (SELECT body FROM whatsapp_messages WHERE phone=l.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT sent_at FROM whatsapp_messages WHERE phone=l.phone ORDER BY id DESC LIMIT 1) AS last_activity
+            FROM crm_leads l
+            LEFT JOIN products p ON p.name = l.product_interest
+            LEFT JOIN users u ON u.id = l.assigned_to
+            ORDER BY l.updated_at DESC
+            """
+        ).fetchall()
+
+        conversations_rows = conn.execute(
+            """
+            SELECT m.phone,
+                   MAX(m.sent_at) AS last_activity,
+                   (SELECT body FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT direction FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_direction,
+                   (SELECT message_type FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_type,
+                   l.id AS lead_id, l.name AS lead_name, l.status AS lead_status, l.product_interest
+            FROM whatsapp_messages m
+            LEFT JOIN crm_leads l ON l.phone = m.phone
+            GROUP BY m.phone, l.id, l.name, l.status, l.product_interest
+            ORDER BY MAX(m.sent_at) DESC
+            """
+        ).fetchall()
+
+        products_list = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name").fetchall()
+        users_list = conn.execute("SELECT id, name, role FROM users WHERE active=1 ORDER BY name").fetchall()
+
+    leads_by_status = {
+        "novo": [],
+        "qualificacao": [],
+        "proposta": [],
+        "negociacao": [],
+        "fechado": [],
+        "perdido": [],
+    }
+
+    total_leads = len(leads_rows)
+    new_count = 0
+
+    for l in leads_rows:
+        ld = dict(l)
+        st = ld.get("status") or "novo"
+        if st not in leads_by_status:
+            st = "novo"
+        leads_by_status[st].append(ld)
+        if st == "novo":
+            new_count += 1
+
+    conversations = [dict(c) for c in conversations_rows]
+
+    return render_template(
+        "crm.html",
+        leads_by_status=leads_by_status,
+        conversations=conversations,
+        products=products_list,
+        users=users_list,
+        total_leads=total_leads,
+        new_count=new_count,
+    )
+
+
+@app.route("/api/crm/conversations", methods=["GET"])
+@login_required
+@crm_pilot_required
+def api_crm_conversations():
+    with db() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.phone,
+                   MAX(m.sent_at) AS last_activity,
+                   (SELECT body FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_message,
+                   (SELECT direction FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_direction,
+                   (SELECT message_type FROM whatsapp_messages WHERE phone=m.phone ORDER BY id DESC LIMIT 1) AS last_type,
+                   l.id AS lead_id, l.name AS lead_name, l.status AS lead_status, l.product_interest
+            FROM whatsapp_messages m
+            LEFT JOIN crm_leads l ON l.phone = m.phone
+            GROUP BY m.phone, l.id, l.name, l.status, l.product_interest
+            ORDER BY MAX(m.sent_at) DESC
+            """
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/crm/messages/<phone>", methods=["GET"])
+@login_required
+@crm_pilot_required
+def api_crm_messages(phone):
+    clean_phone = "".join(ch for ch in str(phone) if ch.isdigit())
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC",
+            (clean_phone,)
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/crm/lead/new", methods=["POST"])
+@login_required
+@crm_pilot_required
+def crm_lead_new():
+    name = request.form.get("name", "").strip()
+    phone = request.form.get("phone", "").strip()
+    email = request.form.get("email", "").strip()
+    product_interest = request.form.get("product_interest", "").strip()
+    status = request.form.get("status", "novo").strip()
+    notes = request.form.get("notes", "").strip()
+    assigned_to = request.form.get("assigned_to") or None
+
+    if not name or not phone:
+        flash("Nome e telefone do Lead são obrigatórios.", "danger")
+        return redirect(url_for("crm"))
+
+    clean_phone = "".join(ch for ch in phone if ch.isdigit())
+    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
+        clean_phone = f"55{clean_phone}"
+
+    with db() as conn:
+        existing = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
+        if existing:
+            flash(f"Este número de telefone ({clean_phone}) já possui um Lead cadastrado.", "warning")
+            return redirect(url_for("crm"))
+
+        conn.execute(
+            "INSERT INTO crm_leads(name, phone, email, product_interest, status, notes, assigned_to, channel) VALUES(?,?,?,?,?,?,?,?)",
+            (name, clean_phone, email, product_interest, status, notes, assigned_to, "Manual"),
+        )
+        conn.commit()
+
+    audit("crm.lead_created", f"lead_phone={clean_phone}; name={name}")
+    flash("Novo Lead cadastrado no CRM com sucesso!", "success")
+    return redirect(url_for("crm"))
+
+
+@app.route("/crm/lead/<int:lid>/status", methods=["POST"])
+@login_required
+@crm_pilot_required
+def crm_lead_status(lid):
+    new_status = request.form.get("status", "novo")
+    with db() as conn:
+        conn.execute("UPDATE crm_leads SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_status, lid))
+        conn.commit()
+    audit("crm.lead_status_updated", f"lead_id={lid}; status={new_status}")
+    flash("Status do Lead atualizado.", "success")
+    return redirect(url_for("crm"))
+
+
+@app.route("/crm/chat/<phone>", methods=["GET", "POST"])
+@login_required
+@crm_pilot_required
+def crm_chat(phone):
+    clean_phone = "".join(ch for ch in str(phone) if ch.isdigit())
+
+    if request.method == "POST":
+        text = request.form.get("message", "").strip()
+        if text:
+            send_whatsapp_message(clean_phone, text)
+            flash("Mensagem enviada via WhatsApp!", "success")
+        return redirect(url_for("crm_chat", phone=clean_phone))
+
+    with db() as conn:
+        lead = conn.execute("SELECT * FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
+        messages = conn.execute("SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC", (clean_phone,)).fetchall()
+        products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
+
+    return render_template("crm_chat.html", phone=clean_phone, lead=lead or {}, messages=messages, products=products)
 
 
 if __name__ == "__main__":

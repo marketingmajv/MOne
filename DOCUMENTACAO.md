@@ -65,6 +65,7 @@ O sistema possui controle rigoroso de papéis (`roles`):
   - `unreleased` (*Em conferência*): Unidade recém-importada aguardando liberação documental da Diretoria. **Bloqueada para venda**.
   - `available` (*Disponível*): Unidade liberada e apta para venda.
   - `sold` (*Vendido*): Unidade vinculada a uma venda registrada.
+- **Sincronização com Bling ERP**: Exibição do estoque físico e disponível sincronizado em tempo real.
 - **Formato da Planilha de Importação de Chassis** (CSV ou Excel `.xlsx`):
   | MODELO | CHASSI | MOTOR | COR |
   | :--- | :--- | :--- | :--- |
@@ -73,23 +74,52 @@ O sistema possui controle rigoroso de papéis (`roles`):
 
 ### 4.2. Módulo de Importações e Contêineres (`/imports`)
 - Acesso restrito à **Diretoria** e **Suporte Técnico**.
-- Exige dados de controle: Número do Contêiner/Referência, Invoice, Bill of Lading (BL) e NF de Entrada.
-- **Liberação de Estoque**: Só é permitida após carregamento da planilha de chassis e conferência da Invoice e do BL.
-- **Custos Aduaneiros**: Permite cadastrar despesas atreladas ao contêiner em BRL (R$) ou USD ($) com taxa de câmbio informada e comprovante anexo.
+- Exige dados de controle: Número do Contêiner/Referência, Fornecedor, Vendedor, Invoice, Bill of Lading (BL) e NF de Entrada.
+- **Liberação de Estoque**: Só é permitida após carregamento da planilha de chassis e conferência documental.
+- **Inteligência Cambial e Alíquota**:
+  - Cálculo automático de **Dólar Médio** dos pagamentos à China.
+  - Alíquota Real do Dólar e Custo de Galpão FOB x Alíquota calculados dinamicamente.
+- **Custos Aduaneiros**: Despesas em BRL (R$) ou USD ($) com taxa de câmbio informada e comprovante anexo.
 
 ### 4.3. Módulo de Vendas (`/sales`)
 - Cada venda exige: Pedido Bling, Nota Fiscal, Canal (Varejo / Atacado), Cliente e **um ou mais chassis válidos**.
-- **Travas Automáticas**:
+- **Travas e Validações Rígidas**:
   - Chassi inexistente na base ➔ **Bloqueado**.
   - Chassi em status `unreleased` (não liberado) ➔ **Bloqueado**.
   - Chassi já com status `sold` (já vendido) ➔ **Bloqueado**.
-- **Múltiplos Recebimentos**: Uma venda pode ter mais de uma forma de pagamento (ex.: Entrada no Cartão + Saldo via Boleto Sicoob + Fonton Pay).
+- **Auditoria Visual e Triangulação com IA (Gemini)**:
+  - Foto obrigatória do chassi físico na moto/caixa.
+  - Anexo separado de DANFE e Termo de Entrega com suporte a múltiplas fotos.
+  - Leitura por IA confrontando o chassi digitado com o chassi presente no documento fiscal e no veículo.
+- **Múltiplos Recebimentos**: Suporte a divisão de valores (ex.: Entrada Cartão + Boleto Sicoob + Fonton Pay).
 
-### 4.4. Módulo de Pagamentos Realizados (`/payments`)
-- **Regra**: Somente pagamentos já quitados são registrados. Não funciona como contas a pagar futuro.
-- Suporta captura ao vivo pela câmera do celular/computador ou upload de comprovante (PDF/Imagem).
+### 4.4. Módulo de Fretes e Transportadoras (`/freight`)
+- **Simulador e Cotação em Tempo Real**:
+  - Seleção de múltiplos produtos e modelos com autopreenchimento de peso e dimensões (C x L x A).
+  - Cálculo instantâneo de cubagem (m³) e peso cubado baseado em regras de transportadoras.
+  - Cálculo de frete com regras oficiais de tabelas ativas (ex.: **Vinislog Transportes** e **Transporte Generoso**).
+  - Destaque automático da opção **Mais Barata** e **Mais Rápida**, com ordenação crescente de preço.
+  - Exportação instantânea da cotação em **PDF profissional** por transportadora ou geral.
+- **Importação de Tabelas com IA Gemini**:
+  - Upload de planilhas/PDFs de transportadoras com extração inteligente de faixas de CEP, prazos e taxas (GRIS, ADV, Pedágio).
 
-### 4.5. Produtos e Oportunidades (`/products` e `/dashboard`)
+### 4.5. Módulo de Pagamentos Realizados (`/payments`)
+- **Regra**: Somente pagamentos já quitados são registrados (não funciona como contas a pagar futuro).
+- Suporta captura ao vivo pela câmera ou upload de comprovante (PDF/Imagem).
+- **Auditoria Inteligente por IA (Gemini)**: Verificação estrita de comprovantes bancários, extração de valores, favorecido e alerta imediato de divergências.
+
+### 4.6. Módulo Copilot IA (`/copilot`)
+- Assistente operacional integrado alimentado por **Google Gemini 2.5 / Flash**.
+- Responde com contexto em tempo real do banco de dados (estoque de chassis, histórico de vendas, produtos e fretes).
+
+### 4.7. Integração Bling ERP API v3 (`/bling`)
+- Autenticação OAuth2 oficial do Bling API v3 com renovação automática de token.
+- Consulta e sincronização de estoque, pedidos e notas fiscais eletrônicas (NFe) vinculadas aos pedidos de venda.
+
+### 4.8. Auditoria do Sistema (`/audit-logs`)
+- Registro de auditoria (`audit_log`) para rastreabilidade de todas as ações sensíveis realizadas por colaboradores.
+
+### 4.9. Produtos e Radar de Oportunidades (`/products` e `/dashboard`)
 - Cadastro de produtos com Preço de Custo, Atacado e Varejo.
 - **Radar de Oportunidades**: O dashboard alerta automaticamente unidades com mais de 90 dias em estoque e sugere preço promocional (`Custo + 10%`).
 
