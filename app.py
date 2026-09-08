@@ -587,6 +587,12 @@ def inject_globals():
     return {"me": current_user(), "role_labels": ROLE_LABELS}
 
 
+@app.route("/politica-de-privacidade")
+@app.route("/termos-de-uso")
+def privacy_policy():
+    return render_template("privacy_policy.html")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
