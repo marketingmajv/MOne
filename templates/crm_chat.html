@@ -42,9 +42,9 @@
     </div>
 
     <!-- Send Message Form -->
-    <form method="post" style="padding: 14px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px;">
-      <input type="text" name="message" required placeholder="Digite sua mensagem aqui..." style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
-      <button class="btn primary" style="padding: 0 20px;">Enviar ✈️</button>
+    <form method="post" id="chatSendForm" onsubmit="handleChatSubmit(event, this)" style="padding: 14px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px;">
+      <input type="text" id="chatInputMessage" name="message" required autocomplete="off" placeholder="Digite sua mensagem aqui..." style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
+      <button type="submit" id="chatSendBtn" class="btn primary" style="padding: 0 20px;">Enviar ✈️</button>
     </form>
 
   </div>
@@ -102,6 +102,23 @@
 
 {% block scripts %}
 <script>
+let isSendingMessage = false;
+function handleChatSubmit(e, form) {
+  if (isSendingMessage) {
+    e.preventDefault();
+    return false;
+  }
+  isSendingMessage = true;
+  const btn = document.getElementById('chatSendBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Enviando...';
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+  }
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const box = document.getElementById('chatMessagesBox');
   if (box) {

@@ -2785,14 +2785,34 @@ def get_whatsapp_config():
         return {}
 
 def send_whatsapp_message(to_phone: str, text: str):
+    clean_phone = "".join(ch for ch in str(to_phone) if ch.isdigit())
+    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
+        clean_phone = f"55{clean_phone}"
+
+    # Prevenção contra duplo clique / envio duplicado (debouncing de 4s)
+    try:
+        with db() as conn:
+            last_msg = conn.execute(
+                "SELECT body, sent_at FROM whatsapp_messages WHERE phone=? AND direction='outbound' ORDER BY id DESC LIMIT 1",
+                (clean_phone,)
+            ).fetchone()
+            if last_msg and last_msg["body"] == text:
+                sent_at = last_msg["sent_at"]
+                if isinstance(sent_at, str):
+                    sent_dt = datetime.fromisoformat(sent_at.replace("Z", "+00:00"))
+                else:
+                    sent_dt = sent_at
+                now_dt = datetime.now(sent_dt.tzinfo) if (sent_dt and sent_dt.tzinfo) else datetime.utcnow()
+                if (now_dt - sent_dt).total_seconds() < 4:
+                    print(f"[WhatsApp] Mensagem duplicada prevenida para {clean_phone}: '{text}'")
+                    return {"success": True, "duplicate_prevented": True}
+    except Exception as e:
+        print("[WhatsApp Deduplication Error]:", e)
+
     cfg = get_whatsapp_config()
     token = os.environ.get("WHATSAPP_TOKEN") or cfg.get("token")
     phone_id = os.environ.get("WHATSAPP_PHONE_NUMBER_ID") or cfg.get("phone_number_id")
     version = os.environ.get("WHATSAPP_API_VERSION", "v20.0")
-
-    clean_phone = "".join(ch for ch in str(to_phone) if ch.isdigit())
-    if not clean_phone.startswith("55") and len(clean_phone) <= 11:
-        clean_phone = f"55{clean_phone}"
 
     if not token or not phone_id or token == "SUA_CHAVE_META_TOKEN_AQUI":
         print(f"[WhatsApp Mock Send] to={clean_phone}: {text}")
