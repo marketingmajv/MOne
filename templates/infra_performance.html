@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Infraestrutura & Vercel{% endblock %}
+{% block page_title %}Monitor de Infraestrutura & Limites Vercel{% endblock %}
+{% block page_subtitle %}Acompanhamento de consumo do plano gratuito e gatilho de migração para container (Passo 5).{% endblock %}
+
+{% block content %}
+<!-- Main Migration Trigger Status Card -->
+<div class="panel" style="margin-bottom: 24px; padding: 22px; border-radius: 12px; background: {% if report.is_critical %}rgba(239, 68, 68, 0.12){% else %}rgba(34, 197, 94, 0.08){% endif %}; border: 1px solid {% if report.is_critical %}rgba(239, 68, 68, 0.4){% else %}rgba(34, 197, 94, 0.25){% endif %};">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <span class="badge" style="background: {% if report.is_critical %}#ef4444{% else %}#22c55e{% endif %}; color: #fff; font-weight: 800; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;">
+        {{ report.status_zone }}
+      </span>
+      <h2 style="margin: 10px 0 4px 0; font-size: 1.6rem; font-weight: 800; color: #fff;">
+        Pico Atual: <span style="color: {% if report.is_critical %}#ef4444{% else %}#4ade80{% endif %};">{{ report.max_pct }}%</span> da cota máxima
+      </h2>
+      <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
+        {% if report.is_critical %}
+          🚨 <b>Atenção Jam e Fauzer:</b> O consumo ultrapassou o limiar de <b>{{ report.threshold }}%</b>. Este é o gatilho estratégico oficial para iniciar o plano de migração para <b>Container Contínuo (Docker / Railway / Render)</b>.
+        {% else %}
+          ✅ A operação do M-One está saudável e rodando com segurança dentro da cota gratuita da Vercel. Alertas serão enviados para Jam e Fauzer automaticamente ao atingir <b>{{ report.threshold }}%</b>.
+        {% endif %}
+      </p>
+    </div>
+
+    <div style="text-align: right; background: rgba(0,0,0,0.3); padding: 12px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+      <small style="color: var(--text-muted); display: block; font-size: 0.78rem;">Origem dos Dados</small>
+      <strong style="color: #38bdf8; font-size: 0.95rem;">
+        {% if report.raw.source == 'vercel_api' %}🟢 Conectado à API Vercel{% else %}⚙️ Telemetria M-One{% endif %}
+      </strong>
+      {% if report.last_alert_sent_at %}
+        <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: #facc15;">Último alerta: {{ report.last_alert_sent_at }}</small>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- 4 Quota Performance Progress Bars -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  {% for m in report.metrics %}
+  <div class="panel" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+      <strong style="font-size: 0.92rem; color: #fff;">{{ m.name }}</strong>
+      <span style="font-size: 1.15rem; font-weight: 800; color: {% if m.pct >= report.threshold %}#ef4444{% elif m.pct >= 50 %}#facc15{% else %}#4ade80{% endif %};">
+        {{ m.pct }}%
+      </span>
+    </div>
+
+    <!-- Progress Bar -->
+    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+      <div style="width: {{ m.pct }}%; height: 100%; background: {% if m.pct >= report.threshold %}linear-gradient(90deg, #f97316, #ef4444){% elif m.pct >= 50 %}linear-gradient(90deg, #eab308, #facc15){% else %}linear-gradient(90deg, #10b981, #22c55e){% endif %}; transition: width 0.5s ease-in-out;"></div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+      <span>Atual: <b style="color: #fff;">{{ m.current }}</b> {{ m.unit }}</span>
+      <span>Teto: {{ m.limit }} {{ m.unit }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Bottom Row: Configuration & Test Actions -->
+<div class="two-col" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start;">
+  
+  <!-- Config Form Card -->
+  <div class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.05rem;">⚙️ Configuração de Alertas & Vercel API</h3>
+      <small style="color: var(--text-muted);">Gerenciamento dos destinatários Jam e Fauzer</small>
+    </div>
+
+    <form method="post" action="{{ url_for('infra.infra_config_save') }}" class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+      <label class="span-2">
+        Token de Acesso Vercel (API Token)
+        <input type="password" name="vercel_api_token" value="{{ report.config.vercel_api_token or '' }}" placeholder="vercel_xxx (Opcional - para métricas oficiais em tempo real)">
+      </label>
+
+      <label>
+        Project ID Vercel
+        <input type="text" name="vercel_project_id" value="{{ report.config.vercel_project_id or '' }}" placeholder="prj_xxx (Opcional)">
+      </label>
+
+      <label>
+        Team ID Vercel
+        <input type="text" name="vercel_team_id" value="{{ report.config.vercel_team_id or '' }}" placeholder="team_xxx (Opcional)">
+      </label>
+
+      <label>
+        WhatsApp Jam Penitenti
+        <input type="text" name="phone_jam" value="{{ report.config.phone_jam or '' }}" placeholder="+55 27 99606-1538" required>
+      </label>
+
+      <label>
+        WhatsApp Fauzer
+        <input type="text" name="phone_fauzer" value="{{ report.config.phone_fauzer or '' }}" placeholder="+55 27 99999-9999" required>
+      </label>
+
+      <label class="span-2">
+        Limiar do Gatilho de Migração (%)
+        <input type="number" name="alert_threshold_pct" value="{{ report.config.alert_threshold_pct or 75 }}" min="50" max="95" required>
+        <small style="color: var(--text-muted); display: block; margin-top: 4px;">Padrão recomendado: 75%. Alerta dispara quando qualquer cota atingir esta marca.</small>
+      </label>
+
+      <div class="span-2" style="margin-top: 8px;">
+        <button type="submit" class="btn primary" style="width: 100%;">Salvar Configurações de Infraestrutura</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Test & Verification Actions Card -->
+  <div class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
+    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.05rem;">🧪 Validação Imediata de Alerta</h3>
+      <small style="color: var(--text-muted);">Teste do canal de envio via Meta WhatsApp</small>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+      Dispare uma mensagem de teste agora para comprovar que o WhatsApp de Jam e Fauzer receberão o alerta crítico de 75% quando o gatilho for acionado.
+    </p>
+
+    <form method="post" action="{{ url_for('infra.infra_test_alert') }}" style="display: flex; flex-direction: column; gap: 12px;">
+      <label style="font-size: 0.82rem; color: var(--text-muted);">Destinatário do Teste:</label>
+      <select name="target" style="padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
+        <option value="both">📲 Ambos (Jam Penitenti e Fauzer)</option>
+        <option value="jam">📲 Apenas Jam Penitenti</option>
+        <option value="fauzer">📲 Apenas Fauzer</option>
+      </select>
+
+      <button type="submit" class="btn accent" style="padding: 12px; font-weight: 700;">
+        Disparar Teste de Alerta WhatsApp ✈️
+      </button>
+    </form>
+
+    <div style="margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem; color: var(--text-muted);">
+      <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">Política de Cooldown:</strong>
+      Os alertas automáticos possuem intervalo mínimo de 24 horas por marco (75%, 85%, 95%) para evitar envios repetitivos.
+    </div>
+  </div>
+
+</div>
+{% endblock %}

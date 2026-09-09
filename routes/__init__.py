@@ -16,6 +16,7 @@ from routes.import_routes import import_bp
 from routes.bling_routes import bling_bp
 from routes.copilot_routes import copilot_bp
 from routes.user_routes import user_bp
+from routes.infra_routes import infra_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -31,6 +32,7 @@ ALL_BLUEPRINTS = [
     bling_bp,
     copilot_bp,
     user_bp,
+    infra_bp,
 ]
 
 
