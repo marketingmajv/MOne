@@ -601,6 +601,9 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
     total_weight = 0.0
     total_insurance_value = 0.0
     item_descriptions = []
+    processed_items = []
+    total_volumes_count = 0
+    total_volume_m3 = 0.0
 
     # Compatibilidade caso venha 1 unico produto
     if not items or not isinstance(items, list):
@@ -617,18 +620,29 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         p_id = it.get("product_id")
         qty = int(it.get("qty", 1) or 1)
         w = float(it.get("weight_kg", 0) or 0)
+        l = float(it.get("length_cm", 0) or 0)
+        w_dim = float(it.get("width_cm", 0) or 0)
+        h = float(it.get("height_cm", 0) or 0)
         d_val = float(it.get("declared_value", 0) or 0)
         w_price = 0.0
         p_name = it.get("name") or ""
 
         if p_id and db_conn:
             try:
-                cur = db_conn.execute("SELECT id, name, wholesale_price FROM products WHERE id = ?", (int(p_id),))
+                cur = db_conn.execute("SELECT id, name, wholesale_price, weight_kg, length_cm, width_cm, height_cm FROM products WHERE id = ?", (int(p_id),))
                 p = cur.fetchone()
                 if p:
                     p_dict = dict(p) if hasattr(p, "keys") else p
                     p_name = p_dict["name"] if isinstance(p_dict, dict) else p_dict[1]
                     w_price = float(p_dict["wholesale_price"] if isinstance(p_dict, dict) else (p_dict[2] or 0))
+                    if w == 0 and isinstance(p_dict, dict) and p_dict.get("weight_kg"):
+                        w = float(p_dict["weight_kg"])
+                    if l == 0 and isinstance(p_dict, dict) and p_dict.get("length_cm"):
+                        l = float(p_dict["length_cm"])
+                    if w_dim == 0 and isinstance(p_dict, dict) and p_dict.get("width_cm"):
+                        w_dim = float(p_dict["width_cm"])
+                    if h == 0 and isinstance(p_dict, dict) and p_dict.get("height_cm"):
+                        h = float(p_dict["height_cm"])
             except Exception as e:
                 print("[Freight Service] Erro ao buscar produto:", e)
 
@@ -640,8 +654,24 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         else:
             item_insurance = 0.0
 
+        vol_unit_m3 = (l * w_dim * h) / 1000000.0 if (l > 0 and w_dim > 0 and h > 0) else 0.0
+
+        processed_items.append({
+            "product_id": p_id,
+            "name": p_name or "Produto MAJ",
+            "qty": qty,
+            "weight_kg": w,
+            "length_cm": l,
+            "width_cm": w_dim,
+            "height_cm": h,
+            "volume_m3": round(vol_unit_m3, 4),
+            "total_volume_m3": round(vol_unit_m3 * qty, 4)
+        })
+
         total_weight += (w * qty)
         total_insurance_value += (item_insurance * qty)
+        total_volumes_count += qty
+        total_volume_m3 += (vol_unit_m3 * qty)
 
         if p_name:
             item_descriptions.append(f"{qty}x {p_name}")
@@ -764,8 +794,11 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "uf": uf_dest,
             "city": city_dest,
             "product_name": product_summary,
-            "total_weight_kg": total_weight,
+            "total_weight_kg": round(total_weight, 2),
+            "total_volumes_count": total_volumes_count,
+            "total_volume_m3": round(total_volume_m3, 3),
             "insurance_base_value": round(total_insurance_value, 2),
+            "items": processed_items,
             "options": [],
             "message": "Nenhuma transportadora atende este CEP / faixa de peso cadastrada."
         }
@@ -791,8 +824,11 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         "uf": uf_dest,
         "city": city_dest,
         "product_name": product_summary,
-        "total_weight_kg": total_weight,
+        "total_weight_kg": round(total_weight, 2),
+        "total_volumes_count": total_volumes_count,
+        "total_volume_m3": round(total_volume_m3, 3),
         "insurance_base_value": round(total_insurance_value, 2),
+        "items": processed_items,
         "options": options
     }
 

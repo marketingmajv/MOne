@@ -302,7 +302,7 @@ async function runFreightCalculation() {
     });
     
     const data = await resp.json();
-    lastFreightCalculationResult = { ...data, customer_name, cep_dest };
+    lastFreightCalculationResult = { ...data, items: data.items || items, customer_name, cep_dest };
 
     if (!data.success || !data.options || data.options.length === 0) {
       optionsList.innerHTML = `
@@ -316,7 +316,8 @@ async function runFreightCalculation() {
     let html = `
       <div class="bg-[#111111] p-3.5 rounded-xl border border-[#222222] text-xs space-y-1.5 mb-4 shadow-md">
         <div class="flex justify-between text-slate-400"><span>Carga:</span> <strong class="text-white font-semibold">${data.product_name}</strong></div>
-        <div class="flex justify-between text-slate-400"><span>Peso Total:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
+        <div class="flex justify-between text-slate-400"><span>Total de Volumes:</span> <strong class="text-[#38BDF8] font-semibold">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} vol(s)</strong></div>
+        <div class="flex justify-between text-slate-400"><span>Peso Total Físico:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
         <div class="flex justify-between text-slate-400"><span>Base Seguro (1/3 Atacado):</span> <strong class="text-[#00E599] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
       </div>
     `;
@@ -435,23 +436,62 @@ function exportFreightPDF(selectedIdx = null) {
   }
 
   let itemsHtml = "";
-  if (data.items && data.items.length > 0) {
-    data.items.forEach((item) => {
-      itemsHtml += `
-        <tr>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${item.name || 'Produto MAJ'}</td>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${item.qty}</td>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${item.weight_kg ? item.weight_kg.toFixed(1).replace('.', ',') + ' kg' : '-'}</td>
-          <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${item.length_cm || 0} x ${item.width_cm || 0} x ${item.height_cm || 0} cm</td>
-        </tr>
-      `;
+  let totalVolCount = 0;
+  let grandTotalWeight = 0;
+  let grandTotalCubicM3 = 0;
+
+  const rawItems = data.items && data.items.length > 0 ? data.items : [];
+
+  if (rawItems.length > 0) {
+    let volIndex = 0;
+    rawItems.forEach((item) => {
+      const qty = parseInt(item.qty || 1);
+      const weight = parseFloat(item.weight_kg || 0);
+      const l = parseFloat(item.length_cm || 0);
+      const w = parseFloat(item.width_cm || 0);
+      const h = parseFloat(item.height_cm || 0);
+      const volM3 = (l > 0 && w > 0 && h > 0) ? ((l * w * h) / 1000000.0) : 0;
+      
+      const dimStr = (l > 0 || w > 0 || h > 0) ? `${l} x ${w} x ${h} cm` : '-';
+      const volStr = volM3 > 0 ? `${volM3.toFixed(3).replace('.', ',')} m³` : '-';
+
+      for (let i = 1; i <= qty; i++) {
+        volIndex++;
+        itemsHtml += `
+          <tr>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-weight: bold; color: #0070F3; text-align: center;">Vol. ${volIndex}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${item.name || 'Produto MAJ'} ${qty > 1 ? `<span style="font-size: 10px; color: #64748B;">(Unidade ${i} de ${qty})</span>` : ''}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">1 ud</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${weight > 0 ? weight.toFixed(1).replace('.', ',') + ' kg' : '-'}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${dimStr}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center; font-weight: 600;">${volStr}</td>
+          </tr>
+        `;
+        grandTotalWeight += weight;
+        grandTotalCubicM3 += volM3;
+      }
+      totalVolCount += qty;
     });
+
+    itemsHtml += `
+      <tr style="background-color: #F8FAFC; font-weight: bold;">
+        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">
+          TOTAL DA CARGA: ${totalVolCount} VOLUME(S)
+        </td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${totalVolCount} ud</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${grandTotalWeight.toFixed(1).replace('.', ',')} kg</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #64748B;">-</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0070F3;">${grandTotalCubicM3 > 0 ? grandTotalCubicM3.toFixed(3).replace('.', ',') + ' m³' : '-'}</td>
+      </tr>
+    `;
   } else {
     itemsHtml = `
       <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-weight: bold; color: #0070F3; text-align: center;">Vol. 1</td>
         <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${data.product_name || 'Produtos MAJ'}</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">1</td>
-        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">1 ud</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${(data.total_weight_kg || 0).toFixed(1).replace('.', ',')} kg</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">-</td>
         <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">-</td>
       </tr>
     `;
@@ -543,6 +583,7 @@ function exportFreightPDF(selectedIdx = null) {
         </div>
         <div>
           <div class="section-title">Resumo da Carga & Seguro</div>
+          <strong>Total de Volumes:</strong> ${totalVolCount || 1} volume(s)<br>
           <strong>Peso Total Físico:</strong> ${data.total_weight_kg.toFixed(1).replace('.', ',')} kg<br>
           <strong>Base de Seguro (1/3 Atacado):</strong> R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}<br>
           <strong>Regra:</strong> 1/3 do valor de atacado dos produtos
@@ -550,14 +591,16 @@ function exportFreightPDF(selectedIdx = null) {
       </div>
 
       <div style="margin-bottom: 20px;">
-        <div class="section-title">Itens Inclusos na Cotação</div>
+        <div class="section-title">Discriminação Individual dos Volumes & Produtos</div>
         <table>
           <thead>
             <tr>
+              <th style="text-align: center; width: 70px;">Volume</th>
               <th>Produto / Veículo</th>
-              <th style="text-align: center;">Quantidade</th>
+              <th style="text-align: center;">Qtd</th>
               <th style="text-align: center;">Peso Unit.</th>
               <th style="text-align: center;">Dimensões (C x L x A)</th>
+              <th style="text-align: center;">Cubagem Unit.</th>
             </tr>
           </thead>
           <tbody>
@@ -596,43 +639,170 @@ function exportFreightPDF(selectedIdx = null) {
   pdfWin.document.close();
 }
 
-function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier, price, createdAt) {
+function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier, price, createdAt, itemsRaw = "") {
+  let items = [];
+  if (itemsRaw) {
+    try {
+      items = typeof itemsRaw === "string" ? JSON.parse(itemsRaw) : itemsRaw;
+    } catch (e) {
+      items = [];
+    }
+  }
+
+  let itemsHtml = "";
+  let totalVolCount = 0;
+  let grandTotalWeight = 0;
+  let grandTotalCubicM3 = 0;
+
+  if (Array.isArray(items) && items.length > 0) {
+    let volIndex = 0;
+    items.forEach((item) => {
+      const qty = parseInt(item.qty || 1);
+      const weight = parseFloat(item.weight_kg || 0);
+      const l = parseFloat(item.length_cm || 0);
+      const w = parseFloat(item.width_cm || 0);
+      const h = parseFloat(item.height_cm || 0);
+      const volM3 = (l > 0 && w > 0 && h > 0) ? ((l * w * h) / 1000000.0) : 0;
+      
+      const dimStr = (l > 0 || w > 0 || h > 0) ? `${l} x ${w} x ${h} cm` : '-';
+      const volStr = volM3 > 0 ? `${volM3.toFixed(3).replace('.', ',')} m³` : '-';
+
+      for (let i = 1; i <= qty; i++) {
+        volIndex++;
+        itemsHtml += `
+          <tr>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-weight: bold; color: #0070F3; text-align: center;">Vol. ${volIndex}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">${item.name || 'Produto MAJ'} ${qty > 1 ? `<span style="font-size: 10px; color: #64748B;">(Unidade ${i} de ${qty})</span>` : ''}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">1 ud</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${weight > 0 ? weight.toFixed(1).replace('.', ',') + ' kg' : '-'}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">${dimStr}</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center; font-weight: 600;">${volStr}</td>
+          </tr>
+        `;
+        grandTotalWeight += weight;
+        grandTotalCubicM3 += volM3;
+      }
+      totalVolCount += qty;
+    });
+
+    itemsHtml += `
+      <tr style="background-color: #F8FAFC; font-weight: bold;">
+        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">
+          TOTAL DA CARGA: ${totalVolCount} VOLUME(S)
+        </td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${totalVolCount} ud</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${grandTotalWeight.toFixed(1).replace('.', ',')} kg</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #64748B;">-</td>
+        <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0070F3;">${grandTotalCubicM3 > 0 ? grandTotalCubicM3.toFixed(3).replace('.', ',') + ' m³' : '-'}</td>
+      </tr>
+    `;
+  } else {
+    itemsHtml = `
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; font-weight: bold; color: #0070F3; text-align: center;">Vol. 1</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0;">Carga Arquivada MAJ</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">1 ud</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">-</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">-</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #E2E8F0; text-align: center;">-</td>
+      </tr>
+    `;
+  }
+
   const pdfHtml = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
       <meta charset="utf-8">
-      <title>Cotação Arquivada — ${refNum}</title>
+      <title>Cotação Arquivada — MAJ Mobilidade (${refNum})</title>
       <style>
         @page { size: A4; margin: 15mm; }
         body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background: #FFF; margin: 0; padding: 20px; font-size: 12px; line-height: 1.5; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0070F3; padding-bottom: 15px; margin-bottom: 20px; }
-        .brand-title { font-size: 22px; font-weight: 900; color: #0070F3; }
+        .brand-title { font-size: 22px; font-weight: 900; color: #0070F3; letter-spacing: -0.5px; }
+        .brand-sub { font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase; }
+        .doc-info { text-align: right; font-size: 11px; color: #64748B; }
+        .doc-info strong { color: #0F172A; font-size: 12px; }
         .section-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
-        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; }
+        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; letter-spacing: 0.5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        th { background: #F1F5F9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 2px solid #CBD5E1; }
+        .footer { margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 12px; font-size: 10px; color: #94A3B8; text-align: center; }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
       </style>
     </head>
     <body>
-      <div style="margin-bottom: 20px; text-align: right;">
+      <div class="no-print" style="margin-bottom: 20px; text-align: right;">
         <button onclick="window.print()" style="background: #0070F3; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-weight: bold; cursor: pointer;">🖨️ Imprimir / Salvar como PDF</button>
       </div>
+
       <div class="header">
         <div>
           <div class="brand-title">MAJ MOBILIDADE</div>
-          <div>M-One Operating System — Cotação Arquivada</div>
+          <div class="brand-sub">M-One Operating System — Cotação Arquivada de Frete</div>
         </div>
-        <div style="text-align: right;">
+        <div class="doc-info">
           <strong>Cotação Nº: ${refNum}</strong><br>
-          Data: ${createdAt}
+          Data: ${createdAt}<br>
+          Origem: Vitória / ES (29045-660)
         </div>
       </div>
-      <div class="section-box">
-        <div class="section-title">Dados da Cotação Arquivada</div>
-        <strong>Cliente:</strong> ${customerName || 'Não informado'}<br>
-        <strong>CEP / Endereço:</strong> ${address || cepDest || '-'}<br>
-        <strong>Transportadora Escolhida:</strong> ${carrier || 'Geral'}<br>
-        <strong>Valor Total de Frete:</strong> R$ ${parseFloat(price || 0).toFixed(2).replace('.', ',')}
+
+      <div style="background: #EFF6FF; border: 2px solid #0070F3; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px;">
+        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; letter-spacing: 0.5px;">✓ TRANSPORTADORA SELECIONADA</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <div>
+            <strong style="font-size: 16px; color: #0F172A;">${carrier || 'Transportadora Selecionada'}</strong>
+          </div>
+          <div style="text-align: right;">
+            <strong style="font-size: 20px; color: #0070F3;">R$ ${parseFloat(price || 0).toFixed(2).replace('.', ',')}</strong>
+            <div style="font-size: 10px; color: #64748B; font-weight: 700;">VALOR TOTAL DE FRETE ARQUIVADO</div>
+          </div>
+        </div>
       </div>
+
+      <div class="section-box grid-2">
+        <div>
+          <div class="section-title">Dados do Cliente & Destino</div>
+          <strong>Cliente:</strong> ${customerName || 'Não informado'}<br>
+          <strong>CEP / Endereço:</strong> ${address || cepDest || '-'}<br>
+          <strong>Rota:</strong> Vitória/ES ➔ Destino
+        </div>
+        <div>
+          <div class="section-title">Resumo da Carga & Seguro</div>
+          <strong>Total de Volumes:</strong> ${totalVolCount || 1} volume(s)<br>
+          <strong>Regra de Seguro:</strong> 1/3 do valor de atacado dos produtos
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div class="section-title">Discriminação Individual dos Volumes & Produtos</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: center; width: 70px;">Volume</th>
+              <th>Produto / Veículo</th>
+              <th style="text-align: center;">Qtd</th>
+              <th style="text-align: center;">Peso Unit.</th>
+              <th style="text-align: center;">Dimensões (C x L x A)</th>
+              <th style="text-align: center;">Cubagem Unit.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        MAJ Mobilidade — Sistema Operacional M-One. Cotação arquivada no histórico de fretes.<br>
+        Origem Vitória/ES. Todos os valores incluem taxas operacionais e seguro de transporte regulamentar.
+      </div>
+
       <script>window.onload = function() { setTimeout(function() { window.print(); }, 400); };<\/script>
     </body>
     </html>

@@ -438,7 +438,7 @@
                     <span class="text-slate-500 text-[11px] font-mono">Concluído</span>
                   {% endif %}
                 </form>
-                <button type="button" onclick="exportArchivedQuotePDF('{{ q.quote_number }}', '{{ q.customer_name or '' }}', '{{ q.cep_dest or '' }}', '{{ q.full_address or '' }}', '{{ q.selected_carrier or '' }}', {{ q.selected_price or 0 }}, '{{ q.created_at }}')" class="bg-[#0070F3]/20 hover:bg-[#0070F3]/35 text-[#38BDF8] border border-[#0070F3]/40 px-2 py-1 rounded text-[11px] font-semibold transition-all" title="Exportar PDF desta cotação arquivada">
+                <button type="button" onclick="exportArchivedQuotePDF('{{ q.quote_number }}', '{{ q.customer_name or '' }}', '{{ q.cep_dest or '' }}', '{{ q.full_address or '' }}', '{{ q.selected_carrier or '' }}', {{ q.selected_price or 0 }}, '{{ q.created_at }}', {{ (q.items_summary or '')|tojson }})" class="bg-[#0070F3]/20 hover:bg-[#0070F3]/35 text-[#38BDF8] border border-[#0070F3]/40 px-2 py-1 rounded text-[11px] font-semibold transition-all" title="Exportar PDF desta cotação arquivada">
                   📄 PDF
                 </button>
               </div>
