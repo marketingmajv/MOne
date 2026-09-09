@@ -88,7 +88,7 @@ def sales():
             notes = f"{notes} | Chassi(s) da NF: {chassis_str}"
 
         with db() as conn:
-            if conn.execute("SELECT 1 FROM sales WHERE invoice_number=?", (invoice_number,)).fetchone():
+            if conn.execute("SELECT 1 FROM sales WHERE invoice_number = %s", (invoice_number,)).fetchone():
                 flash("Essa Nota Fiscal já foi cadastrada no sistema.", "danger")
                 return redirect(url_for("sales"))
 
@@ -96,9 +96,11 @@ def sales():
             errors = []
             for ch in chassis_list:
                 u = conn.execute(
-                    """SELECT st.*,p.name product_name,p.retail_price,p.wholesale_price,i.status import_status
-                       FROM stock_units st JOIN products p ON p.id=st.product_id LEFT JOIN imports i ON i.id=st.import_id
-                       WHERE UPPER(st.chassis)=?""", (ch,)
+                    """SELECT st.*, p.name product_name, p.retail_price, p.wholesale_price, i.status import_status
+                       FROM stock_units st
+                       JOIN products p ON p.id = st.product_id
+                       LEFT JOIN imports i ON i.id = st.import_id
+                       WHERE UPPER(st.chassis) = %s""", (ch,)
                 ).fetchone()
                 if not u:
                     errors.append(f"{ch}: chassi não encontrado no estoque. Importe o lote antes de faturar a Nota Fiscal.")
@@ -223,14 +225,15 @@ def sales():
             total_value = float(request.form.get("total_value") or default_total)
             cur = conn.execute(
                 """INSERT INTO sales(order_number,invoice_number,channel,customer,sold_at,total_value,notes,danfe_file,delivery_term_files,vehicle_model,chassis_photo_file,warranty_term_file,signed_stub_file,ai_chassis_verified,ai_extracted_chassis,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
                 (order_number, invoice_number, channel, customer, sold_at, total_value, notes, danfe_filename, term_files_json, vehicle_model, chassis_photo_filename, warranty_term_filename, signed_stub_filename, ai_verified, ai_extracted, session["user_id"]),
             )
-            sale_id = cur.lastrowid
+            ret = cur.fetchone() if cur else None
+            sale_id = ret["id"] if ret else cur.lastrowid
             per_unit = total_value / len(units) if units else 0
             for u in units:
-                conn.execute("INSERT INTO sale_units(sale_id,stock_unit_id,product_id,unit_value) VALUES(?,?,?,?)", (sale_id, u["id"], u["product_id"], per_unit))
-                conn.execute("UPDATE stock_units SET status='sold',sold_at=?,sale_id=? WHERE id=?", (sold_at, sale_id, u["id"]))
+                conn.execute("INSERT INTO sale_units(sale_id,stock_unit_id,product_id,unit_value) VALUES(%s,%s,%s,%s)", (sale_id, u["id"], u["product_id"], per_unit))
+                conn.execute("UPDATE stock_units SET status='sold',sold_at=%s,sale_id=%s WHERE id=%s", (sold_at, sale_id, u["id"]))
 
             methods = request.form.getlist("payment_method[]")
             accounts = request.form.getlist("payment_account[]")
@@ -261,10 +264,10 @@ def sales():
 
                 method = methods[idx] if idx < len(methods) else "À vista"
                 account = accounts[idx] if idx < len(accounts) else ""
-                conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(?,?,?,?,?,?)", (sale_id, method, account, amount, sold_at, receipt))
+                conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(%s,%s,%s,%s,%s,%s)", (sale_id, method, account, amount, sold_at, receipt))
 
             if not amounts and sale_photo_receipt:
-                conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(?,?,?,?,?,?)", (sale_id, "À vista", "Geral", total_value, sold_at, sale_photo_receipt))
+                conn.execute("INSERT INTO sale_receipts(sale_id,method,account,amount,received_at,receipt_file) VALUES(%s,%s,%s,%s,%s,%s)", (sale_id, "À vista", "Geral", total_value, sold_at, sale_photo_receipt))
 
             conn.commit()
         audit("sale.created", f"sale_id={sale_id}; invoice={invoice_number}; chassis={','.join(chassis_list)}")
@@ -333,7 +336,7 @@ def export_sales():
     with db() as conn:
         rows = conn.execute(
             """SELECT s.sold_at, s.order_number, s.invoice_number, s.channel, s.customer, s.total_value,
-                      (SELECT GROUP_CONCAT(st.chassis, ', ') FROM sale_units su JOIN stock_units st ON st.id=su.stock_unit_id WHERE su.sale_id=s.id) chassis_list
+                      (SELECT STRING_AGG(st.chassis, ', ') FROM sale_units su JOIN stock_units st ON st.id = su.stock_unit_id WHERE su.sale_id = s.id) AS chassis_list
                FROM sales s ORDER BY s.sold_at DESC"""
         ).fetchall()
     out = io.StringIO()

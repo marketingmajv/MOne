@@ -77,7 +77,7 @@ def current_user() -> dict | None:
     if not uid:
         return None
     with db() as conn:
-        u = conn.execute("SELECT * FROM users WHERE id=? AND active=1", (uid,)).fetchone()
+        u = conn.execute("SELECT * FROM users WHERE id=%s AND active=TRUE", (uid,)).fetchone()
         return dict(u) if u else None
 
 
@@ -116,7 +116,6 @@ def crm_pilot_required(fn):
 
 def ensure_audit_log_table(conn):
     try:
-        is_pg = hasattr(conn, "conn")
         sql = """
             CREATE TABLE IF NOT EXISTS audit_log (
                 id SERIAL PRIMARY KEY,
@@ -124,14 +123,6 @@ def ensure_audit_log_table(conn):
                 action TEXT NOT NULL,
                 detail TEXT,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-        """ if is_pg else """
-            CREATE TABLE IF NOT EXISTS audit_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                action TEXT NOT NULL,
-                detail TEXT,
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
         """
         conn.execute(sql)
@@ -145,7 +136,7 @@ def audit(action, detail=""):
     try:
         with db() as conn:
             ensure_audit_log_table(conn)
-            conn.execute("INSERT INTO audit_log(user_id,action,detail) VALUES(?,?,?)", (session.get("user_id"), action, detail))
+            conn.execute("INSERT INTO audit_log(user_id,action,detail) VALUES(%s,%s,%s)", (session.get("user_id"), action, detail))
             conn.commit()
     except Exception as e:
         print("[Audit Log Error]:", e)

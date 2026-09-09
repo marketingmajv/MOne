@@ -22,7 +22,7 @@ def users():
         with db() as conn:
             try:
                 conn.execute(
-                    "INSERT INTO users(name,username,password_hash,role) VALUES(?,?,?,?)",
+                    "INSERT INTO users(name,username,password_hash,role) VALUES(%s,%s,%s,%s)",
                     (name, username, hash_password(password), role)
                 )
                 conn.commit()
@@ -40,10 +40,10 @@ def users():
 @roles_required("admin", "support")
 def toggle_user(uid):
     with db() as conn:
-        u = conn.execute("SELECT active FROM users WHERE id=?", (uid,)).fetchone()
+        u = conn.execute("SELECT active FROM users WHERE id=%s", (uid,)).fetchone()
         if u:
-            new_val = 0 if u["active"] else 1
-            conn.execute("UPDATE users SET active=? WHERE id=?", (new_val, uid))
+            new_val = False if u["active"] else True
+            conn.execute("UPDATE users SET active=%s WHERE id=%s", (new_val, uid))
             conn.commit()
             flash("Status do usuário alterado.", "success")
     return redirect(url_for("users"))
@@ -54,7 +54,7 @@ def toggle_user(uid):
 @roles_required("admin", "support")
 def reset_user_password(uid):
     with db() as conn:
-        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password("MOne2026!"), uid))
+        conn.execute("UPDATE users SET password_hash=%s WHERE id=%s", (hash_password("MOne2026!"), uid))
         conn.commit()
         flash("Senha resetada para MOne2026!.", "success")
     return redirect(url_for("users"))
@@ -71,12 +71,12 @@ def edit_user(uid):
     with db() as conn:
         if new_password:
             conn.execute(
-                "UPDATE users SET name=?, username=?, role=?, password_hash=? WHERE id=?",
+                "UPDATE users SET name=%s, username=%s, role=%s, password_hash=%s WHERE id=%s",
                 (name, username, role, hash_password(new_password), uid)
             )
         else:
             conn.execute(
-                "UPDATE users SET name=?, username=?, role=? WHERE id=?",
+                "UPDATE users SET name=%s, username=%s, role=%s WHERE id=%s",
                 (name, username, role, uid)
             )
         conn.commit()
@@ -94,12 +94,11 @@ def delete_user(uid):
         return redirect(url_for("users"))
     try:
         with db() as conn:
-            # Desvincula o usuário dos registros vinculados mantendo o histórico de vendas/importações intacto
-            conn.execute("UPDATE imports SET created_by=NULL WHERE created_by=?", (uid,))
-            conn.execute("UPDATE sales SET created_by=NULL WHERE created_by=?", (uid,))
-            conn.execute("UPDATE payments SET created_by=NULL WHERE created_by=?", (uid,))
-            conn.execute("UPDATE audit_log SET user_id=NULL WHERE user_id=?", (uid,))
-            conn.execute("DELETE FROM users WHERE id=?", (uid,))
+            conn.execute("UPDATE imports SET created_by=NULL WHERE created_by=%s", (uid,))
+            conn.execute("UPDATE sales SET created_by=NULL WHERE created_by=%s", (uid,))
+            conn.execute("UPDATE payments SET created_by=NULL WHERE created_by=%s", (uid,))
+            conn.execute("UPDATE audit_log SET user_id=NULL WHERE user_id=%s", (uid,))
+            conn.execute("DELETE FROM users WHERE id=%s", (uid,))
             conn.commit()
         audit("user.deleted", f"user_id={uid}")
         flash("Usuário excluído com sucesso.", "success")

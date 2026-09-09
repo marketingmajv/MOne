@@ -27,7 +27,7 @@ def login():
         try:
             with db() as conn:
                 user = conn.execute(
-                    "SELECT * FROM users WHERE lower(username)=lower(?) AND (active=1 OR active IS TRUE)",
+                    "SELECT * FROM users WHERE LOWER(username) = LOWER(%s) AND active = TRUE",
                     (username,)
                 ).fetchone()
             if user and user["password_hash"] == hash_password(password):
@@ -57,7 +57,7 @@ def change_password():
         flash("Use uma senha com pelo menos 8 caracteres.", "danger")
         return redirect(request.referrer or url_for("dashboard"))
     with db() as conn:
-        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (hash_password(new_password), session["user_id"]))
+        conn.execute("UPDATE users SET password_hash = %s WHERE id = %s", (hash_password(new_password), session["user_id"]))
         conn.commit()
     audit("auth.password_changed", "")
     flash("Senha alterada.", "success")

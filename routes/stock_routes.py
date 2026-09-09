@@ -25,20 +25,23 @@ def stock():
     params = []
     where = ["1=1"]
     if q:
-        where.append("(st.chassis LIKE ? OR p.name LIKE ? OR st.color LIKE ? OR st.motor_no LIKE ?)")
+        where.append("(st.chassis ILIKE %s OR p.name ILIKE %s OR st.color ILIKE %s OR st.motor_no ILIKE %s)")
         term = f"%{q}%"
         params += [term, term, term, term]
     if status and status != "all":
-        where.append("st.status=?")
+        where.append("st.status = %s")
         params.append(status)
     with db() as conn:
         rows = conn.execute(
             f"""
-            SELECT st.*,p.name product_name,i.reference import_ref,i.status import_status,s.invoice_number
-            FROM stock_units st JOIN products p ON p.id=st.product_id
-            LEFT JOIN imports i ON i.id=st.import_id
-            LEFT JOIN sales s ON s.id=st.sale_id
-            WHERE {' AND '.join(where)} ORDER BY st.created_at DESC LIMIT 500
+            SELECT st.*, p.name product_name, i.reference import_ref, i.status import_status, s.invoice_number
+            FROM stock_units st
+            JOIN products p ON p.id = st.product_id
+            LEFT JOIN imports i ON i.id = st.import_id
+            LEFT JOIN sales s ON s.id = st.sale_id
+            WHERE {' AND '.join(where)}
+            ORDER BY st.created_at DESC
+            LIMIT 500
             """,
             params
         ).fetchall()
@@ -52,9 +55,12 @@ def api_chassis(chassis):
     audit("chassis.queried", f"chassis={chassis}")
     with db() as conn:
         row = conn.execute(
-            """SELECT st.chassis,st.status,st.color,st.motor_no,p.name product,i.reference import_ref,i.status import_status,s.invoice_number
-               FROM stock_units st JOIN products p ON p.id=st.product_id LEFT JOIN imports i ON i.id=st.import_id LEFT JOIN sales s ON s.id=st.sale_id
-               WHERE st.chassis=?""",
+            """SELECT st.chassis, st.status, st.color, st.motor_no, p.name product, i.reference import_ref, i.status import_status, s.invoice_number
+               FROM stock_units st
+               JOIN products p ON p.id = st.product_id
+               LEFT JOIN imports i ON i.id = st.import_id
+               LEFT JOIN sales s ON s.id = st.sale_id
+               WHERE st.chassis = %s""",
             (chassis,)
         ).fetchone()
     if not row:
@@ -76,12 +82,12 @@ def add_stock_unit():
         flash("Chassi e produto são obrigatórios.", "danger")
         return redirect(url_for("stock"))
     with db() as conn:
-        if conn.execute("SELECT 1 FROM stock_units WHERE chassis=?", (chassis,)).fetchone():
+        if conn.execute("SELECT 1 FROM stock_units WHERE chassis = %s", (chassis,)).fetchone():
             flash("Chassi já cadastrado na base.", "danger")
             return redirect(url_for("stock"))
         conn.execute(
-            """INSERT INTO stock_units(chassis,motor_no,product_id,color,status,location,received_at)
-               VALUES(?,?,?,?,'available',?,?)""",
+            """INSERT INTO stock_units(chassis, motor_no, product_id, color, status, location, received_at)
+               VALUES(%s, %s, %s, %s, 'available', %s, %s)""",
             (chassis, motor_no, product_id, color, location, received_at)
         )
         conn.commit()
@@ -97,7 +103,9 @@ def export_stock():
     with db() as conn:
         rows = conn.execute(
             """SELECT st.chassis, p.name product_name, st.color, st.motor_no, COALESCE(i.reference, 'Nacional') import_ref, st.location, st.status, st.received_at
-               FROM stock_units st JOIN products p ON p.id=st.product_id LEFT JOIN imports i ON i.id=st.import_id
+               FROM stock_units st
+               JOIN products p ON p.id = st.product_id
+               LEFT JOIN imports i ON i.id = st.import_id
                ORDER BY st.created_at DESC"""
         ).fetchall()
     out = io.StringIO()

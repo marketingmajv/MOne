@@ -147,7 +147,7 @@ def freight_calculate():
                         quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
                         contact_person, full_address, cep_dest, cep_orig, items_summary,
                         carrier_results_json, selected_carrier, selected_price, status, created_by
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cotado', ?)""",
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'cotado', %s)""",
                     (
                         quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
                         contact_person, full_address, cep_dest, cep_orig, items_json,
@@ -175,7 +175,7 @@ def freight_quote_status(qid):
         flash("Status de frete inválido.", "warning")
         return redirect(url_for("freight"))
     with db() as conn:
-        conn.execute("UPDATE freight_quotes SET status = ? WHERE id = ?", (status, qid))
+        conn.execute("UPDATE freight_quotes SET status = %s WHERE id = %s", (status, qid))
         conn.commit()
     audit("freight.status_updated", f"quote_id={qid}; status={status}")
     flash(f"Status da cotação de frete atualizado para '{status.upper()}'.", "success")
@@ -227,19 +227,19 @@ def freight_table_upload():
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
 
-            cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) = LOWER(?)", (carrier_name,))
+            cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) = LOWER(%s)", (carrier_name,))
             row_c = cur_c.fetchone()
             if row_c:
                 carrier_id = row_c["id"]
             else:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", (carrier_name,))
-                carrier_id = cur_ins.lastrowid
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", (carrier_name,))
+                carrier_id = cur_ins.fetchone()["id"]
 
             cur_t = conn.execute(
-                "INSERT INTO freight_tables (carrier_id, name, file_url) VALUES (?, ?, ?)",
+                "INSERT INTO freight_tables (carrier_id, name, file_url) VALUES (%s, %s, %s) RETURNING id",
                 (carrier_id, table_name, str(file_path.name))
             )
-            table_id = cur_t.lastrowid
+            table_id = cur_t.fetchone()["id"]
 
             inserted_count = 0
             for r in rates:
@@ -249,7 +249,7 @@ def freight_table_upload():
                         table_id, uf, city, cep_start, cep_end, 
                         min_weight, max_weight, fixed_price, weight_price_per_kg, 
                         ad_valorem_percent, gris_percent, min_freight_price, delivery_days, notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         table_id,
@@ -284,7 +284,7 @@ def freight_table_delete(table_id: int):
     """Exclui uma tabela de frete cadastrada."""
     try:
         with db() as conn:
-            conn.execute("DELETE FROM freight_tables WHERE id = ?", (table_id,))
+            conn.execute("DELETE FROM freight_tables WHERE id = %s", (table_id,))
         flash("✅ Tabela de frete excluída com sucesso.", "success")
     except Exception as e:
         flash(f"Erro ao excluir tabela: {str(e)}", "danger")

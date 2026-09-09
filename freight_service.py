@@ -96,22 +96,13 @@ def get_uf_from_cep(cep_raw: str) -> str:
 
 
 def ensure_freight_tables(conn):
-    """Inicializa as tabelas do banco de dados para o módulo de fretes de forma 100% compatível com SQLite e PostgreSQL."""
-    is_pg = hasattr(conn, "conn")  # PGConnWrapper
-
+    """Inicializa as tabelas do banco de dados para o módulo de fretes de forma nativa no PostgreSQL."""
     carrier_sql = """
         CREATE TABLE IF NOT EXISTS carriers (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL UNIQUE,
             active INTEGER NOT NULL DEFAULT 1,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-    """ if is_pg else """
-        CREATE TABLE IF NOT EXISTS carriers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """
 
@@ -126,41 +117,11 @@ def ensure_freight_tables(conn):
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
         );
-    """ if is_pg else """
-        CREATE TABLE IF NOT EXISTS freight_tables (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            carrier_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            file_url TEXT,
-            notes TEXT,
-            active INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
-        );
     """
 
     rates_sql = """
         CREATE TABLE IF NOT EXISTS freight_rates (
             id SERIAL PRIMARY KEY,
-            table_id INTEGER NOT NULL,
-            uf TEXT,
-            city TEXT,
-            cep_start TEXT,
-            cep_end TEXT,
-            min_weight REAL NOT NULL DEFAULT 0,
-            max_weight REAL NOT NULL DEFAULT 999999,
-            fixed_price REAL NOT NULL DEFAULT 0,
-            weight_price_per_kg REAL NOT NULL DEFAULT 0,
-            ad_valorem_percent REAL NOT NULL DEFAULT 0,
-            gris_percent REAL NOT NULL DEFAULT 0,
-            min_freight_price REAL NOT NULL DEFAULT 0,
-            delivery_days INTEGER NOT NULL DEFAULT 1,
-            notes TEXT,
-            FOREIGN KEY(table_id) REFERENCES freight_tables(id) ON DELETE CASCADE
-        );
-    """ if is_pg else """
-        CREATE TABLE IF NOT EXISTS freight_rates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             table_id INTEGER NOT NULL,
             uf TEXT,
             city TEXT,
@@ -199,27 +160,6 @@ def ensure_freight_tables(conn):
             created_by INTEGER,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
-    """ if is_pg else """
-        CREATE TABLE IF NOT EXISTS freight_quotes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            quote_number TEXT UNIQUE,
-            customer_name TEXT,
-            cpf_cnpj TEXT,
-            company_name TEXT,
-            contact_phone TEXT,
-            contact_person TEXT,
-            full_address TEXT,
-            cep_dest TEXT,
-            cep_orig TEXT,
-            items_summary TEXT,
-            carrier_results_json TEXT,
-            selected_carrier TEXT,
-            selected_price REAL,
-            status TEXT DEFAULT 'cotado',
-            created_by INTEGER,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(created_by) REFERENCES users(id)
-        );
     """
 
     for stmt in [carrier_sql, tables_sql, rates_sql, quotes_sql]:
@@ -245,11 +185,11 @@ def ensure_freight_tables(conn):
             seed_vinislog_rate_table(conn)
         else:
             # Verificar se a Vinislog está semeada
-            cur_v_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE ?", ("%vinislog%",))
+            cur_v_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%vinislog%",))
             if not cur_v_check.fetchone():
                 seed_vinislog_rate_table(conn)
             # Verificar se Generoso está semeada
-            cur_g_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE ?", ("%generoso%",))
+            cur_g_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%generoso%",))
             if not cur_g_check.fetchone():
                 seed_generoso_rate_table(conn)
     except Exception as e:
@@ -298,32 +238,34 @@ GENEROSO_DATA = [
 def seed_generoso_rate_table(conn):
     """Semeia automaticamente a tabela oficial do Transporte Generoso no banco de dados."""
     try:
-        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ? OR LOWER(name) LIKE ?", ("%generoso%", "transporte generoso"))
+        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s OR LOWER(name) LIKE %s", ("%generoso%", "transporte generoso"))
         row_c = cur_c.fetchone()
 
         if row_c:
             carrier_id = row_c["id"]
         else:
             try:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", ("Transporte Generoso",))
-                carrier_id = cur_ins.lastrowid
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Transporte Generoso",))
+                row_ins = cur_ins.fetchone()
+                carrier_id = row_ins["id"] if row_ins else cur_ins.lastrowid
             except Exception:
                 if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
                     try:
                         conn.conn.rollback()
                     except Exception:
                         pass
-                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%generoso%",))
+                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%generoso%",))
                 row_c = cur_c.fetchone()
                 carrier_id = row_c["id"] if row_c else 1
 
 
         # Criar Tabela de Frete Oficial Generoso
         cur_t = conn.execute(
-            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (?, ?, ?)",
+            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (%s, %s, %s) RETURNING id",
             (carrier_id, "Proposta Comercial Oficial (CIF ES / Nível Brasil)", "Tabela com Seguro 0.30%, GRIS 0.20%, Pedágio e TEC")
         )
-        table_id = cur_t.lastrowid
+        row_t = cur_t.fetchone()
+        table_id = row_t["id"] if row_t else cur_t.lastrowid
 
         weight_brackets = [
             (0.0, 10.0),
@@ -364,7 +306,7 @@ def seed_generoso_rate_table(conn):
                 table_id, uf, city, min_weight, max_weight, 
                 fixed_price, weight_price_per_kg, ad_valorem_percent, 
                 gris_percent, delivery_days, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for r_item in rates_to_insert:
             conn.execute(sql_ins, r_item)
@@ -395,36 +337,38 @@ VINISLOG_DATA = [
 def seed_vinislog_rate_table(conn):
     """Semeia automaticamente a tabela oficial da Vinislog Transportes no banco de dados."""
     try:
-        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%vinislog%",))
+        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
         row_c = cur_c.fetchone()
 
         if row_c:
             carrier_id = row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]
         else:
             try:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (?)", ("Vinislog Transportes",))
-                carrier_id = cur_ins.lastrowid
+                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Vinislog Transportes",))
+                row_ins = cur_ins.fetchone()
+                carrier_id = row_ins["id"] if row_ins else cur_ins.lastrowid
             except Exception:
                 if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
                     try:
                         conn.conn.rollback()
                     except Exception:
                         pass
-                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE ?", ("%vinislog%",))
+                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
                 row_c = cur_c.fetchone()
                 carrier_id = (row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]) if row_c else 2
 
         # Verificar se já existe a tabela da Vinislog
-        cur_t_check = conn.execute("SELECT id FROM freight_tables WHERE carrier_id = ?", (carrier_id,))
+        cur_t_check = conn.execute("SELECT id FROM freight_tables WHERE carrier_id = %s", (carrier_id,))
         if cur_t_check.fetchone():
             return
 
         # Criar Tabela de Frete Oficial Vinislog
         cur_t = conn.execute(
-            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (?, ?, ?)",
+            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (%s, %s, %s) RETURNING id",
             (carrier_id, "Tabela MAJ Vinislog (Origem VIX - ES, RJ, SP)", "Tabela de Frete Fracionado oficial Vinislog com Ad-valorem, GRIS e Taxa")
         )
-        table_id = cur_t.lastrowid
+        row_t = cur_t.fetchone()
+        table_id = row_t["id"] if row_t else cur_t.lastrowid
 
         weight_brackets = [
             (0.0, 20.0),
@@ -466,7 +410,7 @@ def seed_vinislog_rate_table(conn):
                 table_id, uf, city, min_weight, max_weight, 
                 fixed_price, weight_price_per_kg, ad_valorem_percent, 
                 gris_percent, delivery_days, notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for r_item in rates_to_insert:
             conn.execute(sql_ins, r_item)
@@ -629,7 +573,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
         if p_id and db_conn:
             try:
-                cur = db_conn.execute("SELECT id, name, wholesale_price, weight_kg, length_cm, width_cm, height_cm FROM products WHERE id = ?", (int(p_id),))
+                cur = db_conn.execute("SELECT id, name, wholesale_price, weight_kg, length_cm, width_cm, height_cm FROM products WHERE id = %s", (int(p_id),))
                 p = cur.fetchone()
                 if p:
                     p_dict = dict(p) if hasattr(p, "keys") else p

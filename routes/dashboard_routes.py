@@ -26,17 +26,17 @@ def dashboard():
 
     with db() as conn:
         st_row = conn.execute(
-            "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=?",
+            "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s",
             (today_iso,)
         ).fetchone()
         sales_today = st_row["v"]
         sales_today_count = st_row["c"]
         sales_month = conn.execute(
-            "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=?",
+            "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s",
             (month_start,)
         ).fetchone()["v"]
         payments_month = conn.execute(
-            "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=?",
+            "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=%s",
             (month_start,)
         ).fetchone()["v"]
         stock_available = conn.execute(
@@ -44,42 +44,54 @@ def dashboard():
         ).fetchone()["c"]
         top_products = conn.execute(
             """
-            SELECT p.id,p.name,COUNT(su.id) units,COALESCE(SUM(su.unit_value),0) revenue
-            FROM sale_units su JOIN sales s ON s.id=su.sale_id JOIN products p ON p.id=su.product_id
-            WHERE s.sold_at>=?
-            GROUP BY p.id,p.name ORDER BY units DESC,revenue DESC LIMIT 6
+            SELECT p.id, p.name, COUNT(su.id) units, COALESCE(SUM(su.unit_value),0) revenue
+            FROM sale_units su
+            JOIN sales s ON s.id = su.sale_id
+            JOIN products p ON p.id = su.product_id
+            WHERE s.sold_at >= %s
+            GROUP BY p.id, p.name
+            ORDER BY units DESC, revenue DESC
+            LIMIT 6
             """,
             (month_start,)
         ).fetchall()
         opportunities = conn.execute(
             """
-            SELECT p.id,p.name,p.unit_cost,p.wholesale_price,p.retail_price,
-                   COUNT(st.id) available,
-                   MIN(COALESCE(st.received_at, substr(st.created_at,1,10))) oldest_date,
-                   COALESCE((SELECT COUNT(*) FROM sale_units su2 JOIN sales s2 ON s2.id=su2.sale_id
-                             WHERE su2.product_id=p.id AND s2.sold_at>=?),0) sold_30
-            FROM products p JOIN stock_units st ON st.product_id=p.id AND st.status='available'
-            WHERE p.promo_eligible=1
-            GROUP BY p.id
-            HAVING available>0 AND oldest_date<=?
-            ORDER BY sold_30 ASC, oldest_date ASC, available DESC LIMIT 6
+            SELECT p.id, p.name, p.unit_cost, p.wholesale_price, p.retail_price,
+                   COUNT(st.id) AS available,
+                   MIN(COALESCE(st.received_at::date, st.created_at::date)) AS oldest_date,
+                   COALESCE((SELECT COUNT(*) FROM sale_units su2 JOIN sales s2 ON s2.id = su2.sale_id
+                             WHERE su2.product_id = p.id AND s2.sold_at >= %s), 0) AS sold_30
+            FROM products p
+            JOIN stock_units st ON st.product_id = p.id AND st.status = 'available'
+            WHERE p.promo_eligible = TRUE
+            GROUP BY p.id, p.name, p.unit_cost, p.wholesale_price, p.retail_price
+            HAVING COUNT(st.id) > 0 AND MIN(COALESCE(st.received_at::date, st.created_at::date)) <= %s::date
+            ORDER BY sold_30 ASC, oldest_date ASC, available DESC
+            LIMIT 6
             """,
             (ago30, ago90)
         ).fetchall()
         chassis_alerts = conn.execute(
             """
             SELECT COUNT(*) c FROM stock_units st
-            LEFT JOIN imports i ON i.id=st.import_id
-            WHERE st.status='available' AND (i.id IS NULL OR i.status!='released')
+            LEFT JOIN imports i ON i.id = st.import_id
+            WHERE st.status = 'available' AND (i.id IS NULL OR i.status != 'released')
             """
         ).fetchone()["c"]
 
     opp = []
     for r in opportunities:
         d = dict(r)
-        d["suggested_price"] = round(float(d["unit_cost"] or 0) * 1.10, 2)
+        d["suggested_price"] = round(float(d.get("unit_cost") or 0) * 1.10, 2)
         try:
-            oldest = date.fromisoformat(d["oldest_date"])
+            oldest_val = d.get("oldest_date")
+            if isinstance(oldest_val, str):
+                oldest = date.fromisoformat(oldest_val)
+            elif isinstance(oldest_val, date):
+                oldest = oldest_val
+            else:
+                oldest = today
             d["days_in_stock"] = (today - oldest).days
         except Exception:
             d["days_in_stock"] = 0
@@ -109,7 +121,7 @@ def audit_logs():
                 """SELECT a.*, u.name user_name, u.role user_role 
                    FROM audit_log a 
                    LEFT JOIN users u ON u.id = a.user_id 
-                   WHERE a.action LIKE ? OR a.detail LIKE ? OR u.name LIKE ? 
+                   WHERE a.action ILIKE %s OR a.detail ILIKE %s OR u.name ILIKE %s 
                    ORDER BY a.id DESC LIMIT 300""",
                 (f"%{q}%", f"%{q}%", f"%{q}%")
             ).fetchall()

@@ -106,10 +106,11 @@ def imports():
         with db() as conn:
             cur = conn.execute(
                 """INSERT INTO imports(reference,invoice_no,bl_no,supplier_name,seller_name,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,chassis_file,notes,created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
                 (reference, invoice_no, bl_no, supplier_name, seller_name, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, chassis_file_name, notes, session["user_id"]),
             )
-            iid = cur.lastrowid
+            ret = cur.fetchone() if cur else None
+            iid = ret["id"] if ret else cur.lastrowid
 
             if chassis_file_name:
                 try:
@@ -121,22 +122,23 @@ def imports():
                     rows = parse_chassis_file(obj)
                     inserted = 0
                     for row in rows:
-                        existing = conn.execute("SELECT id FROM stock_units WHERE chassis=?", (row["chassis"],)).fetchone()
+                        existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
                         if not existing:
-                            prod = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (row["model"],)).fetchone()
+                            prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
                             if not prod:
                                 sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
                                 sku = sku_base
                                 n = 1
-                                while conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
+                                while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
                                     n += 1
                                     sku = f"{sku_base}-{n}"
-                                cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(?,?,?)", (row["model"], sku, "Importado"))
-                                product_id = cur_p.lastrowid
+                                cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
+                                p_ret = cur_p.fetchone() if cur_p else None
+                                product_id = p_ret["id"] if p_ret else cur_p.lastrowid
                             else:
                                 product_id = prod["id"]
                             conn.execute(
-                                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(?,?,?,?,?,?,?)",
+                                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                                 (row["chassis"], row["motor"], product_id, row["color"], iid, "unreleased", arrival_date),
                             )
                             inserted += 1
@@ -164,7 +166,7 @@ def imports():
         for row in import_rows:
             imp_dict = dict(row)
             costs = conn.execute(
-                "SELECT * FROM import_costs WHERE import_id=? ORDER BY paid_at ASC, id ASC",
+                "SELECT * FROM import_costs WHERE import_id=%s ORDER BY paid_at ASC, id ASC",
                 (imp_dict["id"],)
             ).fetchall()
 
@@ -243,7 +245,7 @@ def edit_import(iid):
     notes = request.form.get("notes", "").strip()
 
     with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
+        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
         if not imp:
             flash("Importação não encontrada.", "danger")
             return redirect(url_for("imports"))
@@ -269,22 +271,23 @@ def edit_import(iid):
                 rows = parse_chassis_file(obj)
                 inserted = 0
                 for row in rows:
-                    existing = conn.execute("SELECT id FROM stock_units WHERE chassis=?", (row["chassis"],)).fetchone()
+                    existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
                     if not existing:
-                        prod = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (row["model"],)).fetchone()
+                        prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
                         if not prod:
                             sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
                             sku = sku_base
                             n = 1
-                            while conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
+                            while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
                                 n += 1
                                 sku = f"{sku_base}-{n}"
-                            cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(?,?,?)", (row["model"], sku, "Importado"))
-                            product_id = cur_p.lastrowid
+                            cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
+                            p_ret = cur_p.fetchone() if cur_p else None
+                            product_id = p_ret["id"] if p_ret else cur_p.lastrowid
                         else:
                             product_id = prod["id"]
                         conn.execute(
-                            "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(?,?,?,?,?,?,?)",
+                            "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                             (row["chassis"], row["motor"], product_id, row["color"], iid, "available" if imp["status"] == "released" else "unreleased", arrival_date),
                         )
                         inserted += 1
@@ -293,8 +296,8 @@ def edit_import(iid):
                 flash(f"Erro ao ler planilha de chassis: {ex}", "warning")
 
         conn.execute(
-            """UPDATE imports SET reference=?, invoice_no=?, bl_no=?, supplier_name=?, seller_name=?, nf_entry=?, arrival_date=?, usd_rate=?, invoice_amount_usd=?, invoice_file=?, bl_file=?, nf_entry_file=?, chassis_file=?, notes=?
-               WHERE id=?""",
+            """UPDATE imports SET reference=%s, invoice_no=%s, bl_no=%s, supplier_name=%s, seller_name=%s, nf_entry=%s, arrival_date=%s, usd_rate=%s, invoice_amount_usd=%s, invoice_file=%s, bl_file=%s, nf_entry_file=%s, chassis_file=%s, notes=%s
+               WHERE id=%s""",
             (reference or imp["reference"], invoice_no, bl_no, supplier_name, seller_name, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, chassis_file, notes, iid)
         )
         conn.commit()
@@ -325,33 +328,34 @@ def import_chassis(iid):
     inserted = 0
     duplicates = []
     with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
+        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
         if not imp:
             flash("Importação não encontrada.", "danger")
             return redirect(url_for("imports"))
         for row in rows:
-            existing = conn.execute("SELECT id FROM stock_units WHERE chassis=?", (row["chassis"],)).fetchone()
+            existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
             if existing:
                 duplicates.append(row["chassis"])
                 continue
-            prod = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (row["model"],)).fetchone()
+            prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
             if not prod:
                 sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
                 sku = sku_base
                 n = 1
-                while conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
+                while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
                     n += 1
                     sku = f"{sku_base}-{n}"
-                cur = conn.execute("INSERT INTO products(name,sku,category) VALUES(?,?,?)", (row["model"], sku, "Importado"))
-                product_id = cur.lastrowid
+                cur = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
+                c_ret = cur.fetchone() if cur else None
+                product_id = c_ret["id"] if c_ret else cur.lastrowid
             else:
                 product_id = prod["id"]
             conn.execute(
-                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(?,?,?,?,?,?,?)",
+                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
                 (row["chassis"], row["motor"], product_id, row["color"], iid, "available" if imp["status"] == "released" else "unreleased", imp["arrival_date"]),
             )
             inserted += 1
-        conn.execute("UPDATE imports SET chassis_file=? WHERE id=?", (filename, iid))
+        conn.execute("UPDATE imports SET chassis_file=%s WHERE id=%s", (filename, iid))
         conn.commit()
     audit("import.chassis", f"import_id={iid}; inserted={inserted}; duplicates={len(duplicates)}")
     msg = f"{inserted} chassis importados."
@@ -372,7 +376,7 @@ def add_import_cost(iid):
         return redirect(url_for("imports"))
     with db() as conn:
         conn.execute(
-            "INSERT INTO import_costs(import_id,cost_type,description,amount,currency,usd_rate,paid_at,receipt_file) VALUES(?,?,?,?,?,?,?,?)",
+            "INSERT INTO import_costs(import_id,cost_type,description,amount,currency,usd_rate,paid_at,receipt_file) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
             (
                 iid,
                 request.form.get("cost_type", "Pagamento Extra / Outros"),
@@ -395,9 +399,9 @@ def add_import_cost(iid):
 @roles_required("admin")
 def delete_import_cost(cid):
     with db() as conn:
-        cost = conn.execute("SELECT import_id FROM import_costs WHERE id=?", (cid,)).fetchone()
+        cost = conn.execute("SELECT import_id FROM import_costs WHERE id=%s", (cid,)).fetchone()
         if cost:
-            conn.execute("DELETE FROM import_costs WHERE id=?", (cid,))
+            conn.execute("DELETE FROM import_costs WHERE id=%s", (cid,))
             conn.commit()
             audit("import.cost_deleted", f"cost_id={cid}")
             flash("Comprovante/Custo removido com sucesso.", "success")
@@ -409,8 +413,8 @@ def delete_import_cost(cid):
 @roles_required("admin", "support")
 def release_import(iid):
     with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=?", (iid,)).fetchone()
-        count = conn.execute("SELECT COUNT(*) c FROM stock_units WHERE import_id=?", (iid,)).fetchone()["c"]
+        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
+        count = conn.execute("SELECT COUNT(*) AS c FROM stock_units WHERE import_id=%s", (iid,)).fetchone()["c"]
         if not imp:
             flash("Importação não encontrada.", "danger")
         elif count == 0:
@@ -418,8 +422,8 @@ def release_import(iid):
         elif not imp["invoice_no"] or not imp["bl_no"]:
             flash("Para liberar a importação, é necessário informar Invoice e BL.", "danger")
         else:
-            conn.execute("UPDATE imports SET status='released' WHERE id=?", (iid,))
-            conn.execute("UPDATE stock_units SET status='available' WHERE import_id=? AND status='unreleased'", (iid,))
+            conn.execute("UPDATE imports SET status='released' WHERE id=%s", (iid,))
+            conn.execute("UPDATE stock_units SET status='available' WHERE import_id=%s AND status='unreleased'", (iid,))
             conn.commit()
             audit("import.released", f"import_id={iid}")
             flash("Estoque desta importação foi liberado com sucesso para venda.", "success")

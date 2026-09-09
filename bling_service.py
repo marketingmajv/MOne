@@ -43,12 +43,12 @@ def save_bling_credentials(client_id: str, client_secret: str):
         existing = conn.execute("SELECT id FROM integrations WHERE service_name = 'bling'").fetchone()
         if existing:
             conn.execute(
-                "UPDATE integrations SET client_id = ?, client_secret = ?, updated_at = CURRENT_TIMESTAMP WHERE service_name = 'bling'",
+                "UPDATE integrations SET client_id = %s, client_secret = %s, updated_at = CURRENT_TIMESTAMP WHERE service_name = 'bling'",
                 (client_id.strip(), client_secret.strip())
             )
         else:
             conn.execute(
-                "INSERT INTO integrations (service_name, client_id, client_secret) VALUES ('bling', ?, ?)",
+                "INSERT INTO integrations (service_name, client_id, client_secret) VALUES ('bling', %s, %s)",
                 (client_id.strip(), client_secret.strip())
             )
         conn.commit()
@@ -65,14 +65,14 @@ def save_bling_tokens(token_data: dict):
         if existing:
             conn.execute(
                 """UPDATE integrations 
-                   SET access_token = ?, refresh_token = ?, token_expires_at = ?, updated_at = CURRENT_TIMESTAMP
+                   SET access_token = %s, refresh_token = %s, token_expires_at = %s, updated_at = CURRENT_TIMESTAMP
                    WHERE service_name = 'bling'""",
                 (access_token, refresh_token, expires_at.isoformat())
             )
         else:
             conn.execute(
                 """INSERT INTO integrations (service_name, access_token, refresh_token, token_expires_at)
-                   VALUES ('bling', ?, ?, ?)""",
+                   VALUES ('bling', %s, %s, %s)""",
                 (access_token, refresh_token, expires_at.isoformat())
             )
         conn.commit()
@@ -579,7 +579,7 @@ def sync_bling_products_stock() -> dict:
                         matched_ids.add(b_id)
 
             conn.execute(
-                "UPDATE products SET bling_stock = ?, bling_updated_at = ? WHERE id = ?",
+                "UPDATE products SET bling_stock = %s, bling_updated_at = %s WHERE id = %s",
                 (matched_stock, now_iso, pid)
             )
             updated_count += 1

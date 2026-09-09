@@ -40,73 +40,77 @@ def get_pg_pool():
 
 
 class PGCursorWrapper:
-    def __init__(self, cur, lastrowid=None):
+    def __init__(self, cur, returned_row=None, lastrowid=None):
         self.cur = cur
-        self.lastrowid = lastrowid
+        self._returned_row = returned_row
+        self.lastrowid = lastrowid or (returned_row.get("id") if (returned_row and isinstance(returned_row, dict)) else None)
 
     @property
     def rowcount(self):
         return getattr(self.cur, "rowcount", -1)
 
     def fetchone(self):
+        if self._returned_row is not None:
+            row = self._returned_row
+            self._returned_row = None
+            return row
         return self.cur.fetchone()
+
     def fetchall(self):
+        if self._returned_row is not None:
+            extra = [self._returned_row]
+            self._returned_row = None
+            return extra + (self.cur.fetchall() or [])
         return self.cur.fetchall()
+
     def __iter__(self):
-        return iter(self.cur)
+        if self._returned_row is not None:
+            yield self._returned_row
+            self._returned_row = None
+        yield from self.cur
 
 
 class PGConnWrapper:
     def __init__(self, conn, pool=None):
         self.conn = conn
         self.pool = pool
-    def execute(self, sql, params=()):
-        pg_sql = sql.replace("?", "%s")
-        pg_sql = pg_sql.replace("active=1", "active=TRUE").replace("active=0", "active=FALSE")
-        pg_sql = pg_sql.replace("promo_eligible=1", "promo_eligible=TRUE").replace("promo_eligible=0", "promo_eligible=FALSE")
-        pg_sql = pg_sql.replace("COALESCE(st.received_at, substr(st.created_at,1,10))", "COALESCE(st.received_at, st.created_at::date)")
-        pg_sql = pg_sql.replace("HAVING available>0 AND oldest_date<=", "HAVING COUNT(st.id)>0 AND MIN(COALESCE(st.received_at, st.created_at::date))<=")
-        pg_sql = pg_sql.replace("GROUP_CONCAT(st.chassis, ', ')", "STRING_AGG(st.chassis, ', ')")
-        pg_sql = pg_sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
-        
-        if "INSERT OR IGNORE INTO" in pg_sql.upper():
-            pg_sql = pg_sql.replace("INSERT OR IGNORE INTO", "INSERT INTO")
-            if "ON CONFLICT" not in pg_sql.upper():
-                pg_sql += " ON CONFLICT DO NOTHING"
-        
-        is_insert = pg_sql.strip().upper().startswith("INSERT INTO") or pg_sql.strip().upper().startswith("INSERT ")
+
+    def execute(self, sql: str, params=()):
         cur = self.conn.cursor(cursor_factory=RealDictCursor)
-        lastrowid = None
-
-        if is_insert and "RETURNING" not in pg_sql.upper() and "ON CONFLICT" not in pg_sql.upper():
+        cur.execute(sql, params)
+        returned_row = None
+        if "RETURNING" in sql.upper():
             try:
-                cur.execute("SAVEPOINT try_returning_id;")
-                cur.execute(pg_sql + " RETURNING id", params)
-                row = cur.fetchone()
-                if row and isinstance(row, dict) and "id" in row:
-                    lastrowid = row["id"]
-                cur.execute("RELEASE SAVEPOINT try_returning_id;")
-                return PGCursorWrapper(cur, lastrowid)
-            except (RuntimeError, ValueError, TypeError, KeyError, AttributeError, OSError) as ex:
-                logger.debug("Erro em RETURNING id com SAVEPOINT: %s", ex)
-                cur.execute("ROLLBACK TO SAVEPOINT try_returning_id;")
+                returned_row = cur.fetchone()
+            except Exception:
+                returned_row = None
+        return PGCursorWrapper(cur, returned_row=returned_row)
 
-        cur.execute(pg_sql, params)
-        return PGCursorWrapper(cur, lastrowid)
-
-    def executescript(self, sql):
+    def executescript(self, sql: str):
         cur = self.conn.cursor()
         cur.execute(sql)
         return cur
+
     def commit(self):
         self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
-            self.conn.rollback()
+            try:
+                self.conn.rollback()
+            except Exception:
+                pass
         else:
-            self.conn.commit()
+            try:
+                self.conn.commit()
+            except Exception:
+                pass
         if self.pool:
             self.pool.putconn(self.conn)
         else:

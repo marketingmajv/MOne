@@ -64,13 +64,13 @@ def whatsapp_webhook():
                         if from_phone:
                             with db() as conn:
                                 conn.execute(
-                                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                                     (wam_id, from_phone, "inbound", msg_type, body, "received"),
                                 )
-                                lead = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (from_phone,)).fetchone()
+                                lead = conn.execute("SELECT id FROM crm_leads WHERE phone=%s", (from_phone,)).fetchone()
                                 if not lead:
                                     conn.execute(
-                                        "INSERT INTO crm_leads(name, phone, channel, status) VALUES(?,?,?,?)",
+                                        "INSERT INTO crm_leads(name, phone, channel, status) VALUES(%s,%s,%s,%s)",
                                         (sender_name, from_phone, "WhatsApp", "novo"),
                                     )
                                 conn.commit()

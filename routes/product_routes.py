@@ -189,12 +189,12 @@ def products():
             float(request.form.get("installment_12x") or 0),
             float(request.form.get("installment_18x") or 0)
         )
-        promo_eligible = 1 if request.form.get("promo_eligible") else 0
+        promo_eligible = True if request.form.get("promo_eligible") else False
 
         with db() as conn:
             conn.execute(
                 """INSERT INTO products(name,sku,category,fob_price_usd,aliquota_rate,unit_cost,retail_price,wholesale_price,installment_12x,installment_18x,promo_eligible)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
                 (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, retail_price, wholesale_price, installment_12x, installment_18x, promo_eligible),
             )
             conn.commit()
@@ -262,8 +262,8 @@ def edit_product(pid: int):
     )
     with db() as conn:
         conn.execute(
-            """UPDATE products SET name=?,sku=?,category=?,fob_price_usd=?,aliquota_rate=?,unit_cost=?,retail_price=?,wholesale_price=?,installment_12x=?,installment_18x=?,promo_eligible=?
-               WHERE id=?""",
+            """UPDATE products SET name=%s,sku=%s,category=%s,fob_price_usd=%s,aliquota_rate=%s,unit_cost=%s,retail_price=%s,wholesale_price=%s,installment_12x=%s,installment_18x=%s,promo_eligible=%s
+               WHERE id=%s""",
             fields,
         )
         conn.commit()
@@ -324,21 +324,21 @@ def import_products():
         for r in parsed_rows:
             existing = None
             if r["sku"]:
-                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(?)", (r["sku"],)).fetchone()
+                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(%s)", (r["sku"],)).fetchone()
             if not existing and r["name"]:
-                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (r["name"],)).fetchone()
+                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(%s)", (r["name"],)).fetchone()
 
             if existing:
                 conn.execute(
-                    """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
-                       fob_price_usd=?, aliquota_rate=?, unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
+                    """UPDATE products SET name=%s, sku=COALESCE(%s, sku), category=COALESCE(%s, category),
+                       fob_price_usd=%s, aliquota_rate=%s, unit_cost=%s, wholesale_price=%s, retail_price=%s, installment_12x=%s, installment_18x=%s, promo_eligible=%s WHERE id=%s""",
                     (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
                     """INSERT INTO products (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
                 )
                 created_count += 1
@@ -466,21 +466,21 @@ def api_sync_prices():
         for r in parsed_rows:
             existing = None
             if r["sku"]:
-                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(?)", (r["sku"],)).fetchone()
+                existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(%s)", (r["sku"],)).fetchone()
             if not existing and r["name"]:
-                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(?)", (r["name"],)).fetchone()
+                existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(%s)", (r["name"],)).fetchone()
 
             if existing:
                 conn.execute(
-                    """UPDATE products SET name=?, sku=COALESCE(?, sku), category=COALESCE(?, category),
-                       unit_cost=?, wholesale_price=?, retail_price=?, installment_12x=?, installment_18x=?, promo_eligible=? WHERE id=?""",
+                    """UPDATE products SET name=%s, sku=COALESCE(%s, sku), category=COALESCE(%s, category),
+                       unit_cost=%s, wholesale_price=%s, retail_price=%s, installment_12x=%s, installment_18x=%s, promo_eligible=%s WHERE id=%s""",
                     (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
                     """INSERT INTO products (name, sku, category, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (r["name"], r["sku"], r["category"], r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
                 )
                 created_count += 1

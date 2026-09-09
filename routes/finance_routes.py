@@ -88,7 +88,7 @@ def payments():
         with db() as conn:
             conn.execute(
                 """INSERT INTO payments(paid_at, description, category, amount, account, payment_method, card_last4, supplier, document_no, receipt_file, import_id, visibility, created_by)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
                 (paid_at, description, category, amount, account, payment_method, card_last4, supplier, document_no, receipt, import_id, visibility, session["user_id"]),
             )
             conn.commit()

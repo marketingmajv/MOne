@@ -24,7 +24,7 @@ def get_whatsapp_config() -> dict:
             if not _whatsapp_config_schema_initialized:
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS whatsapp_config (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id SERIAL PRIMARY KEY,
                         display_name TEXT,
                         phone_number TEXT,
                         waba_id TEXT,
@@ -41,7 +41,7 @@ def get_whatsapp_config() -> dict:
             cfg = conn.execute("SELECT * FROM whatsapp_config ORDER BY id DESC LIMIT 1").fetchone()
             if not cfg:
                 conn.execute(
-                    "INSERT INTO whatsapp_config (display_name, phone_number, waba_id, verify_token) VALUES (?,?,?,?)",
+                    "INSERT INTO whatsapp_config (display_name, phone_number, waba_id, verify_token) VALUES (%s,%s,%s,%s)",
                     ("Maj mobilidade elétrica", "+55 27 99606-1538", "10988893282731750", "mone_whatsapp_verify_token_2026")
                 )
                 conn.commit()
@@ -96,7 +96,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
     try:
         with db() as conn:
             last_msg = conn.execute(
-                "SELECT body, sent_at FROM whatsapp_messages WHERE phone=? AND direction='outbound' AND status='sent' ORDER BY id DESC LIMIT 1",
+                "SELECT body, sent_at FROM whatsapp_messages WHERE phone=%s AND direction='outbound' AND status='sent' ORDER BY id DESC LIMIT 1",
                 (clean_phone,)
             ).fetchone()
             if last_msg:
@@ -136,7 +136,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
                 err_msg = res_data.get("error") or "HTTP caller returned failure"
                 with db() as conn:
                     conn.execute(
-                        "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                        "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                         (f"err-{int(time.time()*1000)}", clean_phone, "outbound", msg_type, body_for_db, "failed"),
                     )
                     conn.commit()
@@ -145,7 +145,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
             wam_id = res_data.get("wam_id") or (res_data.get("messages", [{}])[0].get("id") if res_data.get("messages") else f"wam-{int(time.time()*1000)}")
             with db() as conn:
                 conn.execute(
-                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                     (wam_id, clean_phone, "outbound", msg_type, body_for_db, "sent"),
                 )
                 conn.commit()
@@ -165,7 +165,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
         print(f"[WhatsApp Local/Mock Send] to={clean_phone}: type={msg_type} body={body_for_db}")
         with db() as conn:
             conn.execute(
-                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                 (f"mock-{int(time.time()*1000)}", clean_phone, "outbound", msg_type, body_for_db, "sent"),
             )
             conn.commit()
@@ -176,7 +176,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
         print(f"[WhatsApp Real Error]: {err_msg}")
         with db() as conn:
             conn.execute(
-                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                 (f"err-{int(time.time()*1000)}", clean_phone, "outbound", msg_type, body_for_db, "failed"),
             )
             conn.commit()
@@ -190,7 +190,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
             wam_id = res_data.get("messages", [{}])[0].get("id", f"wam-{int(time.time()*1000)}") if res_data.get("messages") else f"wam-{int(time.time()*1000)}"
             with db() as conn:
                 conn.execute(
-                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                     (wam_id, clean_phone, "outbound", msg_type, body_for_db, "sent"),
                 )
                 conn.commit()
@@ -200,7 +200,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
         print("[WhatsApp HTTP Error]:", he.code, err_body)
         with db() as conn:
             conn.execute(
-                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                 (f"err-{int(time.time()*1000)}", clean_phone, "outbound", msg_type, body_for_db, "failed"),
             )
             conn.commit()
@@ -209,7 +209,7 @@ def send_whatsapp_message(to_phone: str, text=None, http_caller=None) -> dict:
         print("[WhatsApp Send Error]:", e)
         with db() as conn:
             conn.execute(
-                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(?,?,?,?,?,?)",
+                "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
                 (f"err-{int(time.time()*1000)}", clean_phone, "outbound", msg_type, body_for_db, "failed"),
             )
             conn.commit()

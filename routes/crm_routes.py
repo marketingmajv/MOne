@@ -54,18 +54,18 @@ def integrations_whatsapp():
         with db() as conn:
             if action_type == "disconnect":
                 conn.execute(
-                    """UPDATE whatsapp_config SET number_status='Desconectado', account_status='Inativo', updated_at=CURRENT_TIMESTAMP WHERE id=?""",
+                    """UPDATE whatsapp_config SET number_status='Desconectado', account_status='Inativo', updated_at=CURRENT_TIMESTAMP WHERE id=%s""",
                     (cfg_dict.get("id"),)
                 )
                 conn.commit()
                 flash("Conta do WhatsApp desconectada.", "warning")
             else:
                 conn.execute(
-                    """UPDATE whatsapp_config SET display_name=?, phone_number=?, waba_id=?, phone_number_id=?, token=?,
-                       verify_token=?, welcome_message=?, default_response=?, media_response=?, support_flow=?,
-                       profile_description=?, profile_sector=?, profile_email=?, profile_website=?, profile_address=?,
+                    """UPDATE whatsapp_config SET display_name=%s, phone_number=%s, waba_id=%s, phone_number_id=%s, token=%s,
+                       verify_token=%s, welcome_message=%s, default_response=%s, media_response=%s, support_flow=%s,
+                       profile_description=%s, profile_sector=%s, profile_email=%s, profile_website=%s, profile_address=%s,
                        number_status='Conectado', account_status='Ativo', updated_at=CURRENT_TIMESTAMP
-                       WHERE id=?""",
+                       WHERE id=%s""",
                     (
                         display_name or cfg_dict.get("display_name"),
                         phone_number or cfg_dict.get("phone_number"),
@@ -127,7 +127,7 @@ def crm():
         ).fetchall()
 
         products_list = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name").fetchall()
-        users_list = conn.execute("SELECT id, name, role FROM users WHERE active=1 ORDER BY name").fetchall()
+        users_list = conn.execute("SELECT id, name, role FROM users WHERE active=TRUE ORDER BY name").fetchall()
 
     leads_by_status = {
         "novo": [],
@@ -192,7 +192,7 @@ def api_crm_messages(phone):
     clean_phone = "".join(ch for ch in str(phone) if ch.isdigit())
     with db() as conn:
         rows = conn.execute(
-            "SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC",
+            "SELECT * FROM whatsapp_messages WHERE phone=%s ORDER BY sent_at ASC, id ASC",
             (clean_phone,)
         ).fetchall()
     return jsonify([dict(r) for r in rows])
@@ -219,13 +219,13 @@ def crm_lead_new():
         clean_phone = f"55{clean_phone}"
 
     with db() as conn:
-        existing = conn.execute("SELECT id FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
+        existing = conn.execute("SELECT id FROM crm_leads WHERE phone=%s", (clean_phone,)).fetchone()
         if existing:
             flash(f"Este número de telefone ({clean_phone}) já possui um Lead cadastrado.", "warning")
             return redirect(url_for("crm"))
 
         conn.execute(
-            "INSERT INTO crm_leads(name, phone, email, product_interest, status, notes, assigned_to, channel) VALUES(?,?,?,?,?,?,?,?)",
+            "INSERT INTO crm_leads(name, phone, email, product_interest, status, notes, assigned_to, channel) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
             (name, clean_phone, email, product_interest, status, notes, assigned_to, "Manual"),
         )
         conn.commit()
@@ -241,7 +241,7 @@ def crm_lead_new():
 def crm_lead_status(lid: int):
     new_status = request.form.get("status", "novo")
     with db() as conn:
-        conn.execute("UPDATE crm_leads SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?", (new_status, lid))
+        conn.execute("UPDATE crm_leads SET status=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s", (new_status, lid))
         conn.commit()
     audit("crm.lead_status_updated", f"lead_id={lid}; status={new_status}")
     flash("Status do Lead atualizado.", "success")
@@ -259,14 +259,14 @@ def crm_chat(phone):
         if text:
             send_whatsapp_message(clean_phone, text)
             with db() as conn:
-                conn.execute("UPDATE crm_leads SET bot_paused=1 WHERE phone=?", (clean_phone,))
+                conn.execute("UPDATE crm_leads SET bot_paused=1 WHERE phone=%s", (clean_phone,))
                 conn.commit()
             flash("Mensagem enviada via WhatsApp! (Bot pausado para este atendimento)", "success")
         return redirect(url_for("crm_chat", phone=clean_phone))
 
     with db() as conn:
-        lead = conn.execute("SELECT * FROM crm_leads WHERE phone=?", (clean_phone,)).fetchone()
-        messages = conn.execute("SELECT * FROM whatsapp_messages WHERE phone=? ORDER BY sent_at ASC, id ASC", (clean_phone,)).fetchall()
+        lead = conn.execute("SELECT * FROM crm_leads WHERE phone=%s", (clean_phone,)).fetchone()
+        messages = conn.execute("SELECT * FROM whatsapp_messages WHERE phone=%s ORDER BY sent_at ASC, id ASC", (clean_phone,)).fetchall()
         products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
 
     return render_template("crm_chat.html", phone=clean_phone, lead=lead or {}, messages=messages, products=products)

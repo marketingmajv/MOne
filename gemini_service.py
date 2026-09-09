@@ -71,13 +71,13 @@ def build_operational_context(db_conn, role: str, name: str) -> str:
         sales_today = db_conn.execute("""
             SELECT COUNT(*) as qtd, COALESCE(SUM(total_value), 0) as total
             FROM sales
-            WHERE sold_at = ?
+            WHERE sold_at = %s
         """, (today,)).fetchone()
         
         sales_month = db_conn.execute("""
             SELECT COUNT(*) as qtd, COALESCE(SUM(total_value), 0) as total
             FROM sales
-            WHERE sold_at >= ?
+            WHERE sold_at >= %s
         """, (month_start,)).fetchone()
         
         lines.append("\n=== DESEMPENHO DE VENDAS ===")
