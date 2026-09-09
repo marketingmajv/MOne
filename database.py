@@ -15,7 +15,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     psycopg2 = None
 
-DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "m_one.db"
 pg_pool = None
@@ -23,7 +23,7 @@ pg_pool = None
 
 def get_pg_pool():
     global pg_pool
-    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2 and pg_pool is None:
         try:
             pg_pool = psycopg2.pool.ThreadedConnectionPool(1, 10, dsn=db_url)
@@ -145,7 +145,7 @@ def db():
     use_remote_db = (os.environ.get("VERCEL") or os.environ.get("USE_PRODUCTION_DB") == "1") and not os.environ.get("USE_LOCAL_DB")
     
     if use_remote_db:
-        db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
+        db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
         if not db_url:
             raise RuntimeError("Ambiente configurado para banco remoto (USE_PRODUCTION_DB/VERCEL), mas DATABASE_URL/SUPABASE_DB_URL não foi configurada.")
         if not psycopg2:
