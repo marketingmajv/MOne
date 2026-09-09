@@ -25,8 +25,14 @@
       </a>
     </div>
 
-    <!-- Messages List Thread -->
-    <div id="chatMessagesBox" style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+    <!-- Messages List Thread (HTMX auto-polling every 5s) -->
+    <div id="chatMessagesBox" 
+         hx-get="{{ url_for('crm_chat', phone=phone) }}" 
+         hx-select="#chatMessagesBox" 
+         hx-target="#chatMessagesBox" 
+         hx-swap="outerHTML" 
+         hx-trigger="every 5s"
+         style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
       {% for m in messages %}
         <div class="message-bubble {{ m.direction }}" style="max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; {% if m.direction == 'outbound' %}align-self: flex-end; background: #059669; color: #fff; border-bottom-right-radius: 2px;{% else %}align-self: flex-start; background: rgba(255,255,255,0.08); color: #e2e8f0; border-bottom-left-radius: 2px;{% endif %}">
           <div>{{ m.body }}</div>
@@ -41,8 +47,14 @@
       {% endfor %}
     </div>
 
-    <!-- Send Message Form -->
-    <form method="post" id="chatSendForm" onsubmit="handleChatSubmit(event, this)" style="padding: 14px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px;">
+    <!-- Send Message Form with HTMX -->
+    <form method="post" id="chatSendForm"
+          hx-post="{{ url_for('crm_chat', phone=phone) }}"
+          hx-select="#chatMessagesBox"
+          hx-target="#chatMessagesBox"
+          hx-swap="outerHTML"
+          hx-on::after-request="document.getElementById('chatInputMessage').value = ''; const box = document.getElementById('chatMessagesBox'); if(box) box.scrollTop = box.scrollHeight;"
+          style="padding: 14px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 10px;">
       <input type="text" id="chatInputMessage" name="message" required autocomplete="off" placeholder="Digite sua mensagem aqui..." style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
       <button type="submit" id="chatSendBtn" class="btn primary" style="padding: 0 20px;">Enviar ✈️</button>
     </form>
@@ -66,8 +78,10 @@
     <div>
       <label style="font-size: 0.78rem; color: var(--text-muted);">Status no Funil</label>
       {% if lead.id %}
-        <form method="post" action="{{ url_for('crm_lead_status', lid=lead.id) }}" style="margin-top: 4px;">
-          <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
+        <form method="post" action="{{ url_for('crm_lead_status', lid=lead.id) }}"
+              hx-post="{{ url_for('crm_lead_status', lid=lead.id) }}"
+              style="margin-top: 4px;">
+          <select name="status" hx-trigger="change" onchange="if(!window.htmx) this.form.submit()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
             <option value="novo" {% if lead.status == 'novo' %}selected{% endif %}>Novo Lead</option>
             <option value="qualificacao" {% if lead.status == 'qualificacao' %}selected{% endif %}>Qualificação</option>
             <option value="proposta" {% if lead.status == 'proposta' %}selected{% endif %}>Proposta</option>

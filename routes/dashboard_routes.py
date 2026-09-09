@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from flask import Blueprint, render_template, request, send_from_directory
+from flask import Blueprint, jsonify, render_template, request, send_from_directory
 
 from database import db
 from routes.helpers import UPLOAD_DIR, login_required, roles_required
@@ -139,3 +139,86 @@ def audit_logs():
 @login_required
 def uploads(filename: str):
     return send_from_directory(UPLOAD_DIR, filename, as_attachment=False)
+
+
+@dashboard_bp.route("/api/dashboard/chart-data")
+@login_required
+def api_dashboard_chart_data():
+    """Retorna dados agregados de vendas e categorias para renderização de gráficos no dashboard."""
+    period = request.args.get("period", "30d").strip().lower()
+    today = date.today()
+
+    if period == "7d":
+        start_date = today - timedelta(days=6)
+    elif period == "month":
+        start_date = today.replace(day=1)
+    elif period == "year":
+        start_date = today.replace(month=1, day=1)
+    else:  # default 30d
+        period = "30d"
+        start_date = today - timedelta(days=29)
+
+    start_iso = start_date.isoformat()
+
+    with db() as conn:
+        # Tendência diária de vendas
+        daily_rows = conn.execute(
+            """
+            SELECT s.sold_at::date AS dia, COALESCE(SUM(s.total_value), 0) AS total, COUNT(s.id) AS count
+            FROM sales s
+            WHERE s.sold_at >= %s
+            GROUP BY s.sold_at::date
+            ORDER BY s.sold_at::date ASC
+            """,
+            (start_iso,)
+        ).fetchall()
+
+        # Distribuição por categoria/produto
+        cat_rows = conn.execute(
+            """
+            SELECT COALESCE(NULLIF(TRIM(p.category), ''), 'Outros') AS cat,
+                   COUNT(su.id) AS units,
+                   COALESCE(SUM(su.unit_value), 0) AS revenue
+            FROM sale_units su
+            JOIN sales s ON s.id = su.sale_id
+            JOIN products p ON p.id = su.product_id
+            WHERE s.sold_at >= %s
+            GROUP BY COALESCE(NULLIF(TRIM(p.category), ''), 'Outros')
+            ORDER BY revenue DESC
+            LIMIT 5
+            """,
+            (start_iso,)
+        ).fetchall()
+
+    # Mapear dias para garantir gráfico contínuo sem buracos
+    day_map = {str(r["dia"]): {"total": float(r["total"]), "count": int(r["count"])} for r in daily_rows}
+    labels = []
+    values = []
+    counts = []
+
+    curr = start_date
+    while curr <= today:
+        curr_str = curr.isoformat()
+        labels.append(curr.strftime("%d/%m"))
+        data_day = day_map.get(curr_str, {"total": 0.0, "count": 0})
+        values.append(data_day["total"])
+        counts.append(data_day["count"])
+        curr += timedelta(days=1)
+
+    return jsonify({
+        "success": True,
+        "period": period,
+        "trend": {
+            "labels": labels,
+            "values": values,
+            "counts": counts,
+            "total_revenue": sum(values),
+            "total_orders": sum(counts),
+        },
+        "categories": {
+            "labels": [r["cat"] for r in cat_rows] or ["Sem vendas"],
+            "values": [float(r["revenue"]) for r in cat_rows] or [0],
+            "units": [int(r["units"]) for r in cat_rows] or [0],
+        }
+    })
+

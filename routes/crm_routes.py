@@ -245,6 +245,9 @@ def crm_lead_status(lid: int):
         conn.commit()
     audit("crm.lead_status_updated", f"lead_id={lid}; status={new_status}")
     flash("Status do Lead atualizado.", "success")
+    referer = request.headers.get("Referer", "")
+    if "crm/chat" in referer:
+        return redirect(referer)
     return redirect(url_for("crm"))
 
 

@@ -12,18 +12,26 @@
   {% endif %}
 {% endblock %}
 {% block content %}
-<form class="filter-bar" method="get">
-  <input name="q" value="{{ q }}" placeholder="Buscar chassi, modelo, cor ou motor">
-  <select name="status">
+<form class="filter-bar" method="get"
+      hx-get="{{ url_for('stock') }}"
+      hx-target="#stockTableWrap"
+      hx-select="#stockTableWrap"
+      hx-swap="outerHTML"
+      hx-push-url="true">
+  <input name="q" value="{{ q }}" placeholder="Buscar chassi, modelo, cor ou motor"
+         hx-trigger="keyup changed delay:300ms, search"
+         autocomplete="off">
+  <select name="status" hx-trigger="change">
     <option value="available" {{ 'selected' if status=='available' }}>Disponíveis</option>
     <option value="unreleased" {{ 'selected' if status=='unreleased' }}>Em conferência (não liberados)</option>
     <option value="sold" {{ 'selected' if status=='sold' }}>Vendidos</option>
     <option value="all" {{ 'selected' if status=='all' }}>Todos</option>
   </select>
   <button class="btn primary">Filtrar</button>
+  <span class="htmx-indicator" style="font-size: 0.85rem; color: #38bdf8; align-self: center;">⏳ Buscando...</span>
 </form>
 
-<div class="panel table-wrap">
+<div class="panel table-wrap" id="stockTableWrap">
   <table>
     <thead>
       <tr>

@@ -17,9 +17,13 @@
   </div>
 
   <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
-    <!-- Form to change status dynamically -->
-    <form method="post" action="{{ url_for('crm_lead_status', lid=l.id) }}" style="display:inline;">
-      <select name="status" onchange="this.form.submit()" style="font-size: 0.78rem; padding: 2px 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
+    <!-- Form to change status dynamically with HTMX -->
+    <form hx-post="{{ url_for('crm_lead_status', lid=l.id) }}"
+          hx-target="#kanbanView"
+          hx-select="#kanbanView"
+          hx-swap="outerHTML"
+          style="display:inline;">
+      <select name="status" hx-trigger="change" onchange="if(!window.htmx) this.form.submit()" style="font-size: 0.78rem; padding: 2px 6px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 4px;">
         <option value="novo" {% if l.status == 'novo' %}selected{% endif %}>Novo Lead</option>
         <option value="qualificacao" {% if l.status == 'qualificacao' %}selected{% endif %}>Qualificação</option>
         <option value="proposta" {% if l.status == 'proposta' %}selected{% endif %}>Proposta</option>

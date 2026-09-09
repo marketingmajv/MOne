@@ -12,6 +12,42 @@
 
 {% if chassis_alerts %}<div class="banner warning"><b>Atenção:</b> há {{ chassis_alerts }} chassis ainda ligados a importações não liberadas ou sem importação válida.</div>{% endif %}
 
+<!-- Seção de Gráficos Analíticos com Alpine.js + Chart.js -->
+<div x-data="dashboardAnalytics()" x-init="init()" class="panel" style="margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+        📈 Desempenho & Evolução de Vendas
+      </h3>
+      <p style="margin: 4px 0 0; font-size: 0.82rem; color: var(--text-muted);">
+        Faturamento realizado: <strong style="color: #4ade80;" x-text="formatMoney(totalRevenue)">R$ 0,00</strong> • <span x-text="totalOrders">0</span> pedido(s)
+      </p>
+    </div>
+
+    <!-- Botões de período reativos (Alpine.js) -->
+    <div class="period-switcher" style="display: inline-flex; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 3px; gap: 4px;">
+      <button type="button" @click="setPeriod('7d')" :class="period === '7d' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px;">7 Dias</button>
+      <button type="button" @click="setPeriod('30d')" :class="period === '30d' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px;">30 Dias</button>
+      <button type="button" @click="setPeriod('month')" :class="period === 'month' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px;">Mês Atual</button>
+      <button type="button" @click="setPeriod('year')" :class="period === 'year' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 6px;">Ano</button>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: center;" class="charts-grid">
+    <div style="position: relative; height: 260px; width: 100%;">
+      <div x-show="loading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(15,23,42,0.6); z-index: 10; border-radius: 8px;">
+        <span style="font-size: 0.85rem; color: #38bdf8;">⏳ Atualizando gráfico...</span>
+      </div>
+      <canvas id="salesTrendChart"></canvas>
+    </div>
+
+    <div style="position: relative; height: 260px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <canvas id="categoryDonutChart"></canvas>
+      <small style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); text-align: center;">Receita por Categoria</small>
+    </div>
+  </div>
+</div>
+
 <div class="two-col">
   <section class="panel">
     <div class="panel-head"><div><h3>Mais vendidos</h3><p>Ranking do mês atual</p></div><a href="{{ url_for('sales') }}">ver vendas</a></div>
@@ -41,4 +77,145 @@
   <a class="quick" href="{{ url_for('stock') }}"><span>⌕</span><div><b>Consultar chassi</b><small>Fonte única da verdade</small></div></a>
   {% if me.role in ['admin','support'] %}<a class="quick" href="{{ url_for('imports') }}"><span>⇩</span><div><b>Nova importação</b><small>Invoice + BL + chassis + custos</small></div></a>{% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboardAnalytics() {
+  return {
+    period: '30d',
+    loading: false,
+    totalRevenue: 0,
+    totalOrders: 0,
+    trendChart: null,
+    categoryChart: null,
+
+    init() {
+      this.fetchData();
+    },
+
+    formatMoney(val) {
+      return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    },
+
+    setPeriod(p) {
+      if (this.period === p) return;
+      this.period = p;
+      this.fetchData();
+    },
+
+    async fetchData() {
+      this.loading = true;
+      try {
+        const res = await fetch(`/api/dashboard/chart-data?period=${this.period}`);
+        const data = await res.json();
+        if (data.success) {
+          this.totalRevenue = data.trend.total_revenue;
+          this.totalOrders = data.trend.total_orders;
+          this.renderTrendChart(data.trend);
+          this.renderCategoryChart(data.categories);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados do gráfico:', err);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    renderTrendChart(trend) {
+      const ctx = document.getElementById('salesTrendChart');
+      if (!ctx) return;
+
+      if (this.trendChart) {
+        this.trendChart.destroy();
+      }
+
+      this.trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: trend.labels,
+          datasets: [{
+            label: 'Faturamento (R$)',
+            data: trend.values,
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#38bdf8',
+            pointRadius: trend.labels.length > 20 ? 1.5 : 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Faturamento: ${Number(ctx.parsed.y).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 11 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#94a3b8',
+                font: { size: 11 },
+                callback: (val) => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val)
+              }
+            }
+          }
+        }
+      });
+    },
+
+    renderCategoryChart(categories) {
+      const ctx = document.getElementById('categoryDonutChart');
+      if (!ctx) return;
+
+      if (this.categoryChart) {
+        this.categoryChart.destroy();
+      }
+
+      const colors = ['#38bdf8', '#4ade80', '#a855f7', '#facc15', '#f87171', '#94a3b8'];
+
+      this.categoryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: categories.labels,
+          datasets: [{
+            data: categories.values.every(v => v === 0) ? [1] : categories.values,
+            backgroundColor: categories.values.every(v => v === 0) ? ['rgba(255,255,255,0.08)'] : colors.slice(0, categories.labels.length),
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 8 }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${Number(ctx.parsed).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+              }
+            }
+          }
+        }
+      });
+    }
+  };
+}
+</script>
 {% endblock %}
