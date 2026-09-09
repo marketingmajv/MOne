@@ -24,6 +24,7 @@ from flask import (
 from database import db
 from services.automation.schema import (
     ensure_automation_schema,
+    seed_default_flows_if_empty,
 )
 
 automation_bp = Blueprint("automation", __name__)
@@ -34,18 +35,19 @@ def current_user():
     if not uid:
         return None
     with db() as conn:
-        return conn.execute("SELECT * FROM users WHERE id=? AND active=1", (uid,)).fetchone()
+        u = conn.execute("SELECT id, username, role FROM users WHERE id=?", (uid,)).fetchone()
+        return dict(u) if u else None
 
 
 def crm_pilot_required(fn):
     @wraps(fn)
     def inner(*args, **kwargs):
         u = current_user()
-        if not u or str(u["username"]).strip().lower() not in ["jam", "fauzer"]:
+        if not u or str(u.get("username", "")).strip().lower() not in ["jam", "fauzer"]:
             if request.is_json or request.path.startswith("/api/"):
-                return jsonify({"success": False, "error": "Acesso restrito aos diretores Jam e Fauzer."}), 403
-            flash("O módulo de Automações & WhatsApp é restrito exclusivamente a Jam e Fauzer.", "danger")
-            return redirect(url_for("dashboard"))
+                return jsonify({"success": False, "error": "Acesso restrito a Jam e Fauzer."}), 403
+            flash("O módulo de Automações é restrito a Jam e Fauzer.", "warning")
+            return redirect(url_for("login"))
         return fn(*args, **kwargs)
     return inner
 
@@ -58,6 +60,8 @@ def crm_pilot_required(fn):
 @automation_bp.route("/automation/studio", methods=["GET"])
 @crm_pilot_required
 def automation_studio():
+    ensure_automation_schema()
+    seed_default_flows_if_empty()
     with db() as conn:
         flows = conn.execute("SELECT * FROM automation_flows ORDER BY updated_at DESC").fetchall()
         flows_list = [dict(f) for f in flows]
@@ -160,6 +164,7 @@ def validate_flow_graph(graph_data: dict) -> list:
 @automation_bp.route("/api/automation/flows/save", methods=["POST"])
 @crm_pilot_required
 def api_save_flow():
+    ensure_automation_schema()
     data = request.get_json(silent=True) or {}
     flow_id = data.get("id")
     name = data.get("name", "").strip() or "Novo Fluxo de Automação"
@@ -203,6 +208,7 @@ def api_save_flow():
 @automation_bp.route("/api/automation/flows/<int:fid>/activate", methods=["POST"])
 @crm_pilot_required
 def api_activate_flow(fid):
+    ensure_automation_schema()
     with db() as conn:
         flow = conn.execute("SELECT * FROM automation_flows WHERE id=?", (fid,)).fetchone()
         if not flow:
@@ -236,6 +242,7 @@ def api_activate_flow(fid):
 @automation_bp.route("/api/automation/flows/<int:fid>/duplicate", methods=["POST"])
 @crm_pilot_required
 def api_duplicate_flow(fid):
+    ensure_automation_schema()
     with db() as conn:
         flow = conn.execute("SELECT * FROM automation_flows WHERE id=?", (fid,)).fetchone()
         if not flow:
@@ -258,6 +265,7 @@ def api_duplicate_flow(fid):
 @automation_bp.route("/api/automation/simulate", methods=["POST"])
 @crm_pilot_required
 def api_simulate_flow():
+    ensure_automation_schema()
     """
     Simulador de conversa completo em memória com suporte a opções clicáveis e resumo final.
     """
