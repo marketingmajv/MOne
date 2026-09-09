@@ -12,7 +12,7 @@ BLING_OAUTH_TOKEN_URL = "https://www.bling.com.br/Api/v3/oauth/token"
 BLING_API_BASE_URL = "https://api.bling.com.br/v3"
 
 def get_db_connection():
-    from app import db
+    from database import db
     return db()
 
 def get_bling_integration_record():

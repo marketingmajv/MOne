@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block title %}M-One • Estúdio Visual de Automação WhatsApp{% endblock %}
+
+{% block content %}
+<style>
+/* Reset de Layout para modo Estúdio Full-Screen */
+.main {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+.topbar {
+    display: none !important;
+}
+.content {
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* ESTÚDIO CSS SYSTEM */
+.studio-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #070d19;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+}
+
+/* Sobrescrever altura/padding padrão de botões do app.css dentro do estúdio */
+.studio-toolbar button, .studio-toolbar .btn,
+.sidebar-library button, .sidebar-library .btn,
+.node-card button, .node-card .btn,
+.sidebar-inspector button, .sidebar-inspector .btn {
+    min-height: 32px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+}
+
+/* TOPBAR TOOLBAR */
+.studio-toolbar {
+    height: 56px;
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 30;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.toolbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.toolbar-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #0ea5e9, #10b981);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 800;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+    flex-shrink: 0;
+}
+.flow-title-input {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    width: 240px;
+    height: 32px;
+    transition: all 0.15s;
+}
+.flow-title-input:hover, .flow-title-input:focus {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: #0ea5e9 !important;
+    outline: none;
+}
+.status-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.status-active {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.status-draft {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.tool-btn-group {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 2px;
+}
+.tool-btn {
+    background: transparent !important;
+    border: 0 !important;
+    color: #cbd5e1 !important;
+    padding: 4px 8px !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: none !important;
+}
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+}
+
+/* WORKSPACE BODY */
+.studio-workspace {
+    display: flex;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* SIDEBAR BIBLIOTECA */
+.sidebar-library {
+    width: 260px;
+    background: rgba(15, 23, 42, 0.98);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 20;
+    user-select: none;
+}
+.library-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.25);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.library-header h3 {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.library-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.category-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.block-item {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.15s ease;
+}
+.block-item:hover {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.block-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.block-info strong {
+    display: block;
+    font-size: 0.82rem;
+    color: #f1f5f9;
+}
+.block-info small {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+/* CANVAS & GRID */
+.canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: #070d19;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+    cursor: grab;
+}
+.canvas-container:active {
+    cursor: grabbing;
+}
+
+/* NODE CARDS VANILLA CSS */
+.node-card {
+    position: absolute;
+    width: 270px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 10;
+    user-select: none;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    box-sizing: border-box;
+}
+.node-card.selected {
+    border: 2px solid #0070F3 !important;
+    box-shadow: 0 0 20px rgba(0, 112, 243, 0.6) !important;
+}
+.node-header {
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+.node-type-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.node-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.node-action-btn {
+    background: transparent !important;
+    border: 0 !important;
+    color: #94a3b8 !important;
+    padding: 2px 4px !important;
+    font-size: 0.75rem !important;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.node-action-btn:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+.node-body {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    word-break: break-word;
+}
+.node-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #ffffff;
+    margin-bottom: 4px;
+    display: block;
+}
+.node-preview {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
+/* PORT HANDLES */
+.port-input {
+    position: absolute;
+    left: -8px;
+    top: 28px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #38bdf8;
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 8px #38bdf8;
+    z-index: 15;
+    cursor: crosshair;
+}
+.port-output {
+    position: absolute;
+    right: -8px;
+    top: 28px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 8px #10b981;
+    z-index: 15;
+    cursor: crosshair;
+}
+.multi-port-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-top: 1px dashed rgba(255,255,255,0.08);
+    position: relative;
+    font-size: 0.72rem;
+    color: #cbd5e1;
+}
+.multi-port-handle {
+    position: absolute;
+    right: -8px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fbbf24;
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 6px #fbbf24;
+    cursor: crosshair;
+}
+
+/* INSPECTOR SIDEBAR */
+.sidebar-inspector {
+    width: 320px;
+    background: rgba(15, 23, 42, 0.98);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    z-index: 20;
+}
+.inspector-field {
+    margin-bottom: 14px;
+}
+.inspector-field label {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+.inspector-input, .inspector-select, .inspector-textarea {
+    width: 100%;
+    padding: 8px 10px !important;
+    font-size: 0.82rem !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+    box-sizing: border-box;
+}
+.inspector-input:focus, .inspector-select:focus, .inspector-textarea:focus {
+    border-color: #0ea5e9 !important;
+    outline: none !important;
+}
+</style>
+
+<div class="studio-container">
+    
+    <!-- TOOLBAR SUPERIOR RESPONSIVA -->
+    <header class="studio-toolbar" id="studioToolbar">
+        <div class="toolbar-brand">
+            <div class="toolbar-logo">⚡</div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="text" id="flowNameInput" value="Menu Principal & Qualificação MAJ" class="flow-title-input" placeholder="Nome do Fluxo...">
+                    <span id="flowStatusBadge" class="status-badge status-draft">Rascunho</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">Estúdio Visual de Automações & Grafo de Atendimento</div>
+            </div>
+        </div>
+
+        <div class="toolbar-actions">
+            <!-- FERRAMENTAS DE TELA -->
+            <div class="tool-btn-group">
+                <button type="button" class="tool-btn" onclick="undoCanvas()" title="Desfazer">↩️</button>
+                <button type="button" class="tool-btn" onclick="redoCanvas()" title="Refazer">↪️</button>
+                <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+                <button type="button" class="tool-btn" onclick="zoomCanvas(1.15)" title="Aumentar Zoom">🔍+</button>
+                <button type="button" class="tool-btn" onclick="zoomCanvas(0.85)" title="Diminuir Zoom">🔍-</button>
+                <button type="button" class="tool-btn" onclick="resetCanvasView()" title="Centralizar">🎯 Centralizar</button>
+                <button type="button" class="tool-btn" onclick="openFlowManagerModal()" title="Gerenciar Fluxos">📋 Fluxos</button>
+            </div>
+
+            <!-- SIMULADOR & AÇÕES -->
+            <button type="button" class="btn secondary tiny" onclick="openSimulatorModal()">🧪 Simulador</button>
+            <button type="button" class="btn tiny" onclick="saveFlowDraft()">💾 Salvar</button>
+            <button type="button" class="btn primary tiny" onclick="activateFlowVersion()">⚡ Publicar</button>
+        </div>
+    </header>
+
+    <!-- ÁREA DE TRABALHO -->
+    <div class="studio-workspace">
+        
+        <!-- SIDEBAR ESQUERDA: BIBLIOTECA DE BLOCOS COMPLETA -->
+        <aside class="sidebar-library" id="librarySidebar">
+            <div class="library-header">
+                <h3>Biblioteca de Blocos</h3>
+                <span style="font-size: 0.68rem; color: #38bdf8;">Arraste para a tela</span>
+            </div>
+
+            <div class="library-body">
+                
+                <!-- GATILHOS -->
+                <div>
+                    <div class="category-title" style="color: #38bdf8;">⚡ Gatilhos de Entrada</div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'trigger', 'Palavras-chave')" class="block-item">
+                        <div class="block-icon" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">⚡</div>
+                        <div class="block-info">
+                            <strong>Palavras-chave</strong>
+                            <small>Dispara por texto de entrada</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENSAGENS -->
+                <div>
+                    <div class="category-title" style="color: #34d399;">💬 Mensagens & Mídia</div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'send_message', 'Enviar Mensagem')" class="block-item">
+                        <div class="block-icon" style="background: rgba(52, 211, 153, 0.2); color: #34d399;">💬</div>
+                        <div class="block-info">
+                            <strong>Enviar Mensagem</strong>
+                            <small>Texto simples ou formatado</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'send_menu', 'Menu de Opções')" class="block-item">
+                        <div class="block-icon" style="background: rgba(52, 211, 153, 0.2); color: #34d399;">📋</div>
+                        <div class="block-info">
+                            <strong>Menu de Opções</strong>
+                            <small>Lista/Botões com ramificação</small>
+                        </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'send_media', 'Enviar Mídia (Meta)')" class="block-item">
+                        <div class="block-icon" style="background: rgba(52, 211, 153, 0.2); color: #34d399;">🖼️</div>
+                        <div class="block-info">
+                            <strong>Enviar Mídia (Meta)</strong>
+                            <small>Imagem, PDF, Áudio ou Vídeo</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PERGUNTAS -->
+                <div>
+                    <div class="category-title" style="color: #fbbf24;">❓ Coleta de Dados</div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'ask_question', 'Perguntar Dado')" class="block-item">
+                        <div class="block-icon" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">❓</div>
+                        <div class="block-info">
+                            <strong>Perguntar Dado</strong>
+                            <small>Valida Texto, E-mail, Fone, Nº</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LÓGICA -->
+                <div>
+                    <div class="category-title" style="color: #c084fc;">🔀 Lógica & Controle</div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'condition', 'Condição (Branch)')" class="block-item">
+                        <div class="block-icon" style="background: rgba(192, 132, 252, 0.2); color: #c084fc;">🔀</div>
+                        <div class="block-info">
+                            <strong>Condição Lógica</strong>
+                            <small>Desvio por regras/variáveis</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'delay', 'Delay (Pausa)')" class="block-item">
+                        <div class="block-icon" style="background: rgba(192, 132, 252, 0.2); color: #c084fc;">⏳</div>
+                        <div class="block-info">
+                            <strong>Delay Persistido</strong>
+                            <small>Pausa cronometrada</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'webhook', 'Webhook HTTP')" class="block-item">
+                        <div class="block-icon" style="background: rgba(192, 132, 252, 0.2); color: #c084fc;">🌐</div>
+                        <div class="block-info">
+                            <strong>Webhook HTTP</strong>
+                            <small>Requisição externa de API</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AÇÕES CRM & INTELIGÊNCIA -->
+                <div>
+                    <div class="category-title" style="color: #f43f5e;">🛠️ Ações do CRM & IA</div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'action', 'Ação no CRM')" class="block-item">
+                        <div class="block-icon" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e;">🛠️</div>
+                        <div class="block-info">
+                            <strong>Atualizar CRM</strong>
+                            <small>Etapa, vendedor ou tarefa</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'transfer_agent', 'Transferir Humano')" class="block-item">
+                        <div class="block-icon" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e;">👨‍💼</div>
+                        <div class="block-info">
+                            <strong>Transferir Humano</strong>
+                            <small>Pausa bot e notifica equipe</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'ai_reply', 'Assistente IA Copilot')" class="block-item">
+                        <div class="block-icon" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">🤖</div>
+                        <div class="block-info">
+                            <strong>Resposta IA Copilot</strong>
+                            <small>Atendimento inteligente</small>
+                        </div>
+                    </div>
+                    <div draggable="true" ondragstart="onBlockDragStart(event, 'end', 'Finalizar Fluxo')" class="block-item">
+                        <div class="block-icon" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8;">🏁</div>
+                        <div class="block-info">
+                            <strong>Finalizar Fluxo</strong>
+                            <small>Encerra atendimento robô</small>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- CANVAS GRÁFICO CENTRAL -->
+        <main class="canvas-container" id="canvasContainer" 
+              ondragover="onCanvasDragOver(event)" 
+              ondrop="onCanvasDrop(event)"
+              onmousedown="onCanvasMouseDown(event)">
+            
+            <!-- CAMADA DE LINHAS DE CONEXÃO SVG -->
+            <svg id="svgConnectionsLayer" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 1;"></svg>
+
+            <!-- CAMADA DE CARDS E BLOCOS -->
+            <div id="nodesLayer" style="position: absolute; top:0; left:0; width:100%; height:100%; transform-origin: 0 0; z-index: 2;"></div>
+        </main>
+
+        <!-- INSPECTOR LATERAL DIREITO -->
+        <aside class="sidebar-inspector" id="nodeInspectorPanel" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px; margin-bottom: 14px;">
+                <h4 id="inspectorNodeTitle" style="margin: 0; font-size: 0.95rem; color: #fff;">Configuração do Bloco</h4>
+                <button type="button" class="btn tiny" onclick="closeInspector()">✕</button>
+            </div>
+
+            <div id="inspectorFormContent">
+                <!-- FORMULARIO DINAMICO GERADO PELO JS -->
+            </div>
+        </aside>
+
+    </div>
+</div>
+
+<!-- MODAL SIMULADOR -->
+<div class="modal" id="simulatorModal">
+    <div class="modal-card" style="max-width: 600px; height: 580px; display: flex; flex-direction: column;">
+        <div class="modal-head">
+            <h3>🧪 Simulador de Conversa em Memória</h3>
+            <button onclick="closeSimulatorModal()">×</button>
+        </div>
+        <div style="flex: 1; padding: 14px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;" id="simFeed">
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.82rem;">
+                Simulador pronto. Digite uma mensagem para testar o fluxo!
+            </div>
+        </div>
+        <div style="padding: 10px 0 0 0; display: flex; gap: 8px;">
+            <input type="text" id="simInputMsg" placeholder="Digite uma mensagem ou selecione uma opção..." class="form-control" style="flex: 1;" onkeypress="if(event.key==='Enter') sendSimulatorMessage()">
+            <button type="button" class="btn primary" onclick="sendSimulatorMessage()">Enviar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL GERENCIADOR DE FLUXOS -->
+<div class="modal" id="flowManagerModal">
+    <div class="modal-card" style="max-width: 700px;">
+        <div class="modal-head">
+            <h3>📋 Gerenciador de Fluxos da MAJ</h3>
+            <button onclick="closeModal('flowManagerModal')">×</button>
+        </div>
+        <div style="padding: 10px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center;">
+                <span style="font-size: 0.84rem; color: var(--text-muted);">Alterne entre os fluxos cadastrados ou crie um novo:</span>
+                <button class="btn tiny primary" onclick="createNewFlow()">+ Criar Novo Fluxo</button>
+            </div>
+            <div id="flowManagerList" style="display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto;">
+                {% for f in flows %}
+                <div style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: #fff;">{{ f.name }}</strong>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);">{{ f.description or 'Sem descrição' }} &bull; Versão v{{ f.version }}</div>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="status-badge {% if f.status == 'active' %}status-active{% else %}status-draft{% endif %}">
+                            {{ f.status }}
+                        </span>
+                        <button class="btn tiny" onclick="loadFlowToStudio({{ f.id }})">Editar</button>
+                    </div>
+                </div>
+                {% else %}
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                    Nenhum fluxo encontrado.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/automation_studio.js', v='20260908_v4') }}"></script>
+{% endblock %}
