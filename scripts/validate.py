@@ -54,11 +54,15 @@ def validate_all():
 
     print("🛡️ [4/4] Validação da configuração de banco de dados (IPv4 Pooler)...")
     try:
-        from app import DEFAULT_DB_URL
-        if "aws-0-us-west-2.pooler.supabase.com" not in DEFAULT_DB_URL:
-            print("  ✗ AVISO: DEFAULT_DB_URL não aponta para o pooler IPv4 verificado do Supabase.")
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        load_dotenv(".env.local")
+        db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+        if "aws-0-us-west-2.pooler.supabase.com" not in db_url:
+            print("  ✗ AVISO: DATABASE_URL no ambiente (.env) não aponta para o pooler IPv4 verificado do Supabase.")
             return False
-        print("  ✓ Pooler IPv4 Supabase verificado")
+        print("  ✓ Pooler IPv4 Supabase verificado no ambiente (.env)")
     except Exception as e:
         print(f"  ✗ ERRO na checagem de banco de dados: {e}")
         return False

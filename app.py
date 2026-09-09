@@ -69,8 +69,8 @@ try:
 except Exception:
     psycopg2 = None
 
-DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
-DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
+DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+DATABASE_URL = DEFAULT_DB_URL
 pg_pool = None
 
 def get_pg_pool():
@@ -157,13 +157,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
-try:
-    from routes.automation_routes import automation_bp
-    app.register_blueprint(automation_bp)
-    from services.automation.engine import process_inbound_automation
-except Exception as _e:
-    print("[Automation Blueprint Load Error]:", _e)
-    process_inbound_automation = None
+
 
 
 @app.after_request
@@ -185,7 +179,7 @@ ROLE_LABELS = {
 }
 
 
-DEFAULT_DB_URL = "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres"
+DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
 
 def connect_pg(db_url: str):
     if not db_url or not psycopg2:
@@ -3055,12 +3049,7 @@ def whatsapp_webhook():
                                     )
                                 conn.commit()
 
-                            # Trigger Visual WhatsApp Automation Engine!
-                            try:
-                                wam_id = msg.get("id") if isinstance(msg, dict) else None
-                                process_inbound_automation(from_phone, body, wam_id=wam_id)
-                            except Exception as _aut_err:
-                                print("[Automation Engine Webhook Error]:", _aut_err)
+
         except Exception as e:
             print("[WhatsApp Webhook POST Error]:", e)
 

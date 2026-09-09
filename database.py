@@ -6,6 +6,12 @@ import sqlite3
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente locais se presentes
+load_dotenv()
+load_dotenv(".env.local")
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -15,7 +21,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     psycopg2 = None
 
-DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
+DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "m_one.db"
 pg_pool = None
@@ -140,16 +146,20 @@ def db():
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
 
-    # Isolamento de segurança estrito: Por padrão em ambiente local/testes, força uso do SQLite local m_one.db
-    # Para conectar ao PostgreSQL remoto do Supabase em produção, exige VERCEL=1 ou USE_PRODUCTION_DB=1
-    use_remote_db = (os.environ.get("VERCEL") or os.environ.get("USE_PRODUCTION_DB") == "1") and not os.environ.get("USE_LOCAL_DB")
-    
-    if use_remote_db:
-        db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
-        if not db_url:
-            raise RuntimeError("Ambiente configurado para banco remoto (USE_PRODUCTION_DB/VERCEL), mas DATABASE_URL/SUPABASE_DB_URL não foi configurada.")
-        if not psycopg2:
-            raise RuntimeError("Driver psycopg2 não disponível para conexão PostgreSQL.")
+    # Forçar SQLite apenas se USE_LOCAL_DB estiver explicitamente ativado
+    if os.environ.get("USE_LOCAL_DB") == "1":
+        if os.environ.get("VERCEL"):
+            tmp_db_path = Path("/tmp/m_one.db")
+            conn = sqlite3.connect(tmp_db_path)
+        else:
+            conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
+    # Conexão padrão ao PostgreSQL remoto do Supabase (IPv4 Pooler verificado)
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
+    if db_url and psycopg2:
         try:
             pool = get_pg_pool()
             if pool:
@@ -158,9 +168,10 @@ def db():
             conn = connect_pg(db_url)
             if conn:
                 return PGConnWrapper(conn)
-            raise RuntimeError("Não foi possível conectar ao banco de dados PostgreSQL remoto.")
         except Exception as e:
-            raise RuntimeError(f"Falha de conexão com banco de dados remoto PostgreSQL: {e}") from e
+            logger.warning("Falha ao obter conexão PostgreSQL via pool/direto: %s", e)
+            if os.environ.get("VERCEL"):
+                raise RuntimeError(f"Falha de conexão com banco de dados remoto PostgreSQL: {e}") from e
 
     if os.environ.get("VERCEL"):
         tmp_db_path = Path("/tmp/m_one.db")

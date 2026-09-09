@@ -30,7 +30,15 @@ Este protocolo deve ser executado obrigatoriamente e imediatamente sempre que o 
    *(Ou executar `./dev.sh`)*.
 3. Validar se a rota `/login` responde com HTTP 200 via `curl -sI http://localhost:5001/login`.
 
-### Passo 03 — Relatório de Sincronização e Links de Teste
+### Passo 03 — Varredura e Auditoria Anti-Monólito
+1. Executar a varredura estática de monólitos:
+   ```bash
+   .venv/bin/python3 scripts/monolith_watcher.py --scan
+   ```
+2. Analisar se há arquivos excedendo o limite de 500 linhas (como `app.py`).
+3. Registrar no relatório os arquivos críticos e alertar para a necessidade de refatoração/extração caso sejam modificados.
+
+### Passo 04 — Relatório de Sincronização e Links de Teste
 Apresentar ao usuário um relatório estruturado contendo:
 1. **Status de Sincronização Git**:
    - Resumo do `git fetch` (Commits locais x Remotos).
@@ -39,9 +47,12 @@ Apresentar ao usuário um relatório estruturado contendo:
 2. **Status dos Serviços**:
    - Servidor local (porta 5001) ➔ Ativo.
    - Banco de Dados (Supabase PostgreSQL) ➔ Conectado.
-3. **Links Diretos para Teste**:
+3. **Auditoria Anti-Monólito**:
+   - Diagnóstico dos arquivos que ultrapassam 500 linhas.
+   - Alerta para uso da skill `proactive_refactoring` antes de novas adições.
+4. **Links Diretos para Teste**:
    - 💻 **Ambiente Local**: `http://localhost:5001`
    - 🚀 **Produção Oficial**: `https://m-one.majmobilidade.com.br`
-4. **Credenciais Rápidas**:
+5. **Credenciais Rápidas**:
    - `fauzer` / `MOne2026!` (Suporte Técnico)
    - `jean` / `MOne2026!` (Diretoria)

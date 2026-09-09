@@ -15,10 +15,16 @@ O agente DEVE executar imediatamente o **Protocolo START** em 3 etapas sequencia
    - Se não estiver ativo, iniciá-lo imediatamente (`PORT=5001 .venv/bin/python3 app.py` ou `./dev.sh`).
    - Validar com `curl` que o serviço está respondendo HTTP 200.
 
-3. **Passo 03 — Relatório e Links de Teste**:
+3. **Passo 03 — Varredura e Auditoria Anti-Monólito**:
+   - Executar o auditor de monólitos: `.venv/bin/python3 scripts/monolith_watcher.py --scan`.
+   - Identificar arquivos que ultrapassam a marca de 500 linhas (ex: `app.py`).
+   - Alertar o usuário e disponibilizar a lista de arquivos para aplicação do padrão de refatoração modular.
+
+4. **Passo 04 — Relatório Consolidado e Links de Teste**:
    - Gerar um relatório claro com:
      - Situação da sincronização do código (commits à frente/atrás, alterações pendentes).
      - Status dos serviços locais e conexão com o Supabase.
+     - Diagnóstico de monólitos (arquivos críticos detectados).
      - Link para teste local: `http://localhost:5001`
      - Link oficial de produção: `https://m-one.majmobilidade.com.br`
 
@@ -53,3 +59,12 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
   `aws-0-us-west-2.pooler.supabase.com:6543` com `sslmode=require`.
 - **Regra de Vendas**: Toda venda exige chassi existente, liberado (`available`) e não duplicado.
 - **Sigilo**: Custos de contêineres e importações são restritos à Diretoria (`admin`) e Suporte Técnico (`support`).
+
+---
+
+## Auditoria Anti-Monolito Contínua
+Você deve combater ativamente o inchaço e a formação de monólitos de código no M-One:
+- **Limite de Linhas**: Arquivos de rotas, scripts e templates não devem ultrapassar a marca de **500 linhas**.
+- **Pausa Proativa**: Ao realizar alterações ou adicionar novas funcionalidades em arquivos que ultrapassem 500 linhas (especialmente o `app.py`), a IA deve pausar e propor a extração cirúrgica de rotas em Blueprints modulares (`routes/`).
+- **Watcher em Segundo Plano**: O projeto conta com o agente de monitoração `scripts/monolith_watcher.py` (ou `scripts/monolith-watcher.js`), que alerta no terminal e via notificações nativas do sistema operacional sempre que um arquivo exceder o limite.
+
