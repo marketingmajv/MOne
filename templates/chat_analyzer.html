@@ -224,16 +224,16 @@
         </thead>
         <tbody>
           {% for l in monitored_lines %}
-          <tr style="border-bottom:1px solid var(--line);">
+          <tr id="line-row-{{ l.id }}" style="border-bottom:1px solid var(--line);">
             <td style="padding:10px 14px;"><strong style="color:#fff;">{{ l.account_name }}</strong><div style="font-size:0.75rem;color:#38bdf8;">{{ l.assigned_seller_name }}</div></td>
             <td style="padding:10px 14px;"><span style="font-family:monospace;color:#cbd5e1;">{{ l.display_phone_number }}</span></td>
             <td style="padding:10px 14px;"><code style="font-size:0.75rem;color:var(--text-muted);">{{ l.waba_id }}</code></td>
-            <td style="padding:10px 14px;">{% if l.is_monitored %}<span class="badge" style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:700;">🟢 Monitorando</span>{% else %}<span class="badge" style="background:rgba(148,163,184,0.12);color:#94a3b8;">⚪ Desplugado</span>{% endif %}</td>
-            <td style="padding:10px 14px;text-align:right;">
+            <td id="line-status-{{ l.id }}" style="padding:10px 14px;">{% if l.is_monitored %}<span class="badge" style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:700;">🟢 Monitorando</span>{% else %}<span class="badge" style="background:rgba(148,163,184,0.12);color:#94a3b8;">⚪ Desplugado</span>{% endif %}</td>
+            <td id="line-action-{{ l.id }}" style="padding:10px 14px;text-align:right;">
               {% if l.is_monitored %}
-                <button type="button" class="btn sm" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="toggleLine({{ l.id }}, false)">⏸️ Desplugar</button>
+                <button type="button" class="btn sm" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="toggleLine({{ l.id }}, false, this)">⏸️ Desplugar</button>
               {% else %}
-                <button type="button" class="btn sm" style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;color:#86efac;" onclick="toggleLine({{ l.id }}, true)">⚡ Plugar Linha</button>
+                <button type="button" class="btn sm" style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;color:#86efac;" onclick="toggleLine({{ l.id }}, true, this)">⚡ Plugar Linha</button>
               {% endif %}
             </td>
           </tr>
@@ -443,7 +443,6 @@ function formatMarkdown(md) {
     .replace(/\n\n/g, '<br><br>');
   return h;
 }
-
 function switchSubTab(t) {
   const a = document.getElementById('subtab-auditoria'), l = document.getElementById('subtab-linhas');
   const ba = document.getElementById('tabAuditoriaBtn'), bl = document.getElementById('tabLinhasBtn');
@@ -452,9 +451,14 @@ function switchSubTab(t) {
   if (l) l.style.display = isAud ? 'none' : 'block';
   if (ba) ba.className = isAud ? 'btn sm primary' : 'btn sm secondary';
   if (bl) bl.className = isAud ? 'btn sm secondary' : 'btn sm primary';
+  sessionStorage.setItem('mone_chat_tab', t);
 }
-
-async function toggleLine(id, enable) {
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTab = sessionStorage.getItem('mone_chat_tab');
+  if (savedTab === 'linhas' && document.getElementById('tabLinhasBtn')) switchSubTab('linhas');
+});
+async function toggleLine(id, enable, btn) {
+  if (btn) { btn.disabled = true; btn.innerText = 'Aguarde...'; }
   try {
     const res = await fetch('/api/chat-analyzer/toggle-line', {
       method: 'POST',
@@ -462,11 +466,21 @@ async function toggleLine(id, enable) {
       body: JSON.stringify({ line_id: id, enable: enable })
     });
     const d = await res.json();
-    if (d.success) window.location.reload();
-    else alert('Erro: ' + (d.error || 'Falha ao alterar status'));
-  } catch (err) { alert('Erro: ' + err.message); }
+    if (d.success) {
+      const st = document.getElementById(`line-status-${id}`), ac = document.getElementById(`line-action-${id}`);
+      if (st && ac) {
+        st.innerHTML = enable ? '<span class="badge" style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:700;">🟢 Monitorando</span>' : '<span class="badge" style="background:rgba(148,163,184,0.12);color:#94a3b8;">⚪ Desplugado</span>';
+        ac.innerHTML = enable ? `<button type="button" class="btn sm" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="toggleLine(${id}, false, this)">⏸️ Desplugar</button>` : `<button type="button" class="btn sm" style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;color:#86efac;" onclick="toggleLine(${id}, true, this)">⚡ Plugar Linha</button>`;
+      }
+    } else {
+      alert('Erro: ' + (d.error || 'Falha ao alterar status'));
+      if (btn) { btn.disabled = false; btn.innerText = enable ? '⚡ Plugar Linha' : '⏸️ Desplugar'; }
+    }
+  } catch (err) {
+    alert('Erro: ' + err.message);
+    if (btn) { btn.disabled = false; btn.innerText = enable ? '⚡ Plugar Linha' : '⏸️ Desplugar'; }
+  }
 }
-
 async function syncLines() {
   const btn = document.getElementById('syncLinesBtn');
   if (btn) { btn.disabled = true; btn.innerText = 'Sincronizando...'; }
