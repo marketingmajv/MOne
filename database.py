@@ -21,7 +21,11 @@ try:
 except (ImportError, ModuleNotFoundError):
     psycopg2 = None
 
-DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+DEFAULT_DB_URL = (
+    os.environ.get("DATABASE_URL")
+    or os.environ.get("SUPABASE_DB_URL")
+    or "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
+)
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "m_one.db"
 pg_pool = None
@@ -178,6 +182,8 @@ def db():
                 raise RuntimeError(f"Falha de conexão com banco de dados remoto PostgreSQL: {e}") from e
 
     if os.environ.get("VERCEL"):
+        if not psycopg2:
+            raise RuntimeError("Ambiente Vercel exige psycopg2-binary instalado para conectar ao Supabase.")
         tmp_db_path = Path("/tmp/m_one.db")
         conn = sqlite3.connect(tmp_db_path)
     else:

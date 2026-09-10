@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import Flask, jsonify
 
@@ -18,7 +18,13 @@ from routes.helpers import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+app.secret_key = (
+    os.environ.get("FLASK_SECRET_KEY")
+    or os.environ.get("SECRET_KEY")
+    or "maj-m-one-production-fixed-secret-key-2026-v1"
+)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=60)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
 
 

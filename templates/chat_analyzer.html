@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Analisador de Chats por Período{% endblock %}
+{% block page_title %}Analisador de Chats & Inteligência Comercial{% endblock %}
+{% block page_subtitle %}Auditoria de conversas de WhatsApp com Copilot IA • Identificação de gargalos e objeções.{% endblock %}
+
+{% block top_actions %}
+  <button type="button" class="btn secondary" onclick="openModal('importChatModal')">📥 Importar Conversa Externa</button>
+  <a href="{{ url_for('crm') }}" class="btn primary">🎯 Ver Funil CRM</a>
+{% endblock %}
+
+{% block content %}
+<!-- Top Period Selector & Filter Bar -->
+<div class="panel" style="padding:16px 20px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:20px;">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+    
+    <!-- Period Buttons -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:0.85rem;color:var(--text-muted);font-weight:600;margin-right:4px;">Período:</span>
+      <a href="{{ url_for('chat_analyzer.chat_analyzer', period='1d', status=current_status_filter, seller=current_seller_filter) }}" 
+         class="btn sm {% if period == '1d' %}primary{% else %}secondary{% endif %}" style="font-weight:600;">
+        ⚡ 01 Dia (24h)
+      </a>
+      <a href="{{ url_for('chat_analyzer.chat_analyzer', period='7d', status=current_status_filter, seller=current_seller_filter) }}" 
+         class="btn sm {% if period == '7d' %}primary{% else %}secondary{% endif %}" style="font-weight:600;">
+        📅 01 Semana (7d)
+      </a>
+      <a href="{{ url_for('chat_analyzer.chat_analyzer', period='30d', status=current_status_filter, seller=current_seller_filter) }}" 
+         class="btn sm {% if period == '30d' %}primary{% else %}secondary{% endif %}" style="font-weight:600;">
+        📊 01 Mês (30d)
+      </a>
+    </div>
+
+    <!-- Secondary Filters (Seller & Status) -->
+    <form method="get" action="{{ url_for('chat_analyzer.chat_analyzer') }}" style="display:flex;align-items:center;gap:10px;">
+      <input type="hidden" name="period" value="{{ period }}">
+      
+      <select name="seller" onchange="this.form.submit()" style="background:rgba(0,0,0,0.3);border:1px solid var(--line);color:#fff;border-radius:6px;padding:6px 12px;font-size:0.85rem;">
+        <option value="">Todos os Vendedores</option>
+        {% for s in sellers %}
+          <option value="{{ s.id }}" {% if current_seller_filter == (s.id|string) %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="status" onchange="this.form.submit()" style="background:rgba(0,0,0,0.3);border:1px solid var(--line);color:#fff;border-radius:6px;padding:6px 12px;font-size:0.85rem;">
+        <option value="">Todas as Situações</option>
+        <option value="active" {% if current_status_filter == 'active' %}selected{% endif %}>🟢 Em Andamento</option>
+        <option value="lead_stopped" {% if current_status_filter == 'lead_stopped' %}selected{% endif %}>🔴 Lead Parou de Responder</option>
+        <option value="waiting_seller" {% if current_status_filter == 'waiting_seller' %}selected{% endif %}>🟡 Aguardando Vendedor</option>
+      </select>
+    </form>
+
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:24px;">
+  <div class="panel" style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+    <small style="color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">Total de Chats ({{ period_label }})</small>
+    <div style="font-size:1.8rem;font-weight:800;color:#fff;margin-top:4px;">{{ chats_data.total_chats }}</div>
+  </div>
+  <div class="panel" style="padding:16px;border:1px solid rgba(34, 197, 94, 0.2);border-radius:10px;background:rgba(34, 197, 94, 0.03);">
+    <small style="color:#4ade80;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">🟢 Em Andamento</small>
+    <div style="font-size:1.8rem;font-weight:800;color:#4ade80;margin-top:4px;">{{ chats_data.active_count }}</div>
+  </div>
+  <div class="panel" style="padding:16px;border:1px solid rgba(239, 68, 68, 0.2);border-radius:10px;background:rgba(239, 68, 68, 0.03);">
+    <small style="color:#f87171;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">🔴 Lead Parou de Responder</small>
+    <div style="font-size:1.8rem;font-weight:800;color:#f87171;margin-top:4px;">{{ chats_data.lead_stopped_count }}</div>
+  </div>
+  <div class="panel" style="padding:16px;border:1px solid rgba(234, 179, 8, 0.2);border-radius:10px;background:rgba(234, 179, 8, 0.03);">
+    <small style="color:#facc15;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;">🟡 Aguardando Vendedor</small>
+    <div style="font-size:1.8rem;font-weight:800;color:#facc15;margin-top:4px;">{{ chats_data.waiting_seller_count }}</div>
+  </div>
+</div>
+
+<!-- Main 2-Column Grid -->
+<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start;">
+  
+  <!-- LEFT: Chat Conversations List -->
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h3 style="margin:0;font-size:1.05rem;">💬 Conversas Registradas ({{ chats_data.chats|length }})</h3>
+      <span style="font-size:0.8rem;color:var(--text-muted);">Clique no card para abrir o histórico</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      {% for c in chats_data.chats %}
+      <div class="panel chat-card-item" style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--card);transition:transform 0.15s, border-color 0.15s;cursor:pointer;" onclick="openChatDetailModal('{{ c.phone }}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;">
+          <div>
+            <strong style="font-size:0.95rem;color:#fff;">{{ c.lead_name }}</strong>
+            <span style="font-size:0.82rem;color:var(--text-muted);margin-left:6px;">📱 {{ c.phone }}</span>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">
+              Vendedor: <span style="color:#38bdf8;">{{ c.seller_name }}</span> | Mensagens: <b>{{ c.total_messages }}</b> ({{ c.inbound_count }} recebidas, {{ c.outbound_count }} enviadas)
+            </div>
+          </div>
+          <div style="text-align:right;">
+            {% if c.situation == 'lead_stopped' %}
+              <span class="badge" style="background:rgba(239, 68, 68, 0.15);color:#f87171;">🔴 Lead Sumiu ({{ c.silence_hours|int }}h sem resposta)</span>
+            {% elif c.situation == 'waiting_seller' %}
+              <span class="badge" style="background:rgba(234, 179, 8, 0.15);color:#facc15;">🟡 Aguardando Vendedor ({{ c.silence_hours|int }}h)</span>
+            {% else %}
+              <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Ativo</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if c.ad_headline or c.ad_id %}
+        <div style="margin-bottom:8px;font-size:0.75rem;padding:4px 8px;background:rgba(56, 189, 248, 0.08);border:1px solid rgba(56, 189, 248, 0.2);border-radius:6px;display:inline-block;color:#7dd3fc;">
+          🎯 Meta Ad: <b>{{ c.ad_headline or c.ad_id }}</b> ({{ c.traffic_source }})
+        </div>
+        {% endif %}
+
+        <!-- Last Message Snippet -->
+        <div style="font-size:0.85rem;color:#cbd5e1;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:6px;border-left:3px solid {% if c.last_direction == 'outbound' %}#38bdf8{% else %}#4ade80{% endif %};">
+          <small style="color:var(--text-muted);display:block;margin-bottom:2px;">
+            Última mensagem {% if c.last_direction == 'outbound' %}(Vendedor){% else %}(Cliente){% endif %}:
+          </small>
+          <span>{{ c.last_message_body or 'Sem mensagens registradas' }}</span>
+        </div>
+
+      </div>
+      {% else %}
+      <div class="panel" style="padding:32px;text-align:center;color:var(--text-muted);border:1px solid var(--line);border-radius:10px;">
+        <div style="font-size:2rem;margin-bottom:8px;">📭</div>
+        <p style="margin:0;font-size:0.9rem;">Nenhuma conversa localizada para este período ({{ period_label }}).<br>
+        Você pode alterar o período no topo ou importar conversas usando o botão acima.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- RIGHT: Copilot Sales Intelligence -->
+  <div style="position:sticky;top:20px;">
+    <div class="panel" style="padding:22px;border:1px solid rgba(56, 189, 248, 0.3);border-radius:14px;background:linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.8));box-shadow:0 12px 32px rgba(0,0,0,0.4);">
+      
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg, #0284c7, #38bdf8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">🧠</div>
+        <div>
+          <strong style="font-size:1rem;color:#fff;display:block;">Copilot • Auditor de Vendas</strong>
+          <small style="color:#7dd3fc;">Base: {{ chats_data.chats|length }} conversas em {{ period_label }}</small>
+        </div>
+      </div>
+
+      <!-- Quick Strategic Prompts -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <small style="color:var(--text-muted);font-weight:600;font-size:0.78rem;">ANÁLISES ESTRATÉGICAS RÁPIDAS:</small>
+        <button type="button" class="btn sm secondary prompt-pill" onclick="sendAnalyzerPrompt('Quais leads pararam de responder e exatamente em qual momento ou assunto da negociação eles sumiram? Liste nomes, telefones e a última mensagem.')">
+          🛑 Onde os leads pararam de responder?
+        </button>
+        <button type="button" class="btn sm secondary prompt-pill" onclick="sendAnalyzerPrompt('Quais foram as principais objeções que impediram a conversão dos leads neste período? (ex: preço, frete, parcelamento, falta de cor em estoque).')">
+          📉 Mapear maiores objeções de perda
+        </button>
+        <button type="button" class="btn sm secondary prompt-pill" onclick="sendAnalyzerPrompt('Avalie o tempo de resposta e o pitch dos vendedores. Eles foram consultivos ou apenas mandaram a tabela de preços? Quem teve melhor postura?')">
+          ⏱️ Avaliar postura e conduta dos vendedores
+        </button>
+        <button type="button" class="btn sm secondary prompt-pill" onclick="sendAnalyzerPrompt('Gere mensagens personalizadas de reativação (scripts prontos para copiar e colar no WhatsApp) para recuperar os leads que estão há mais de 24h sem responder.')">
+          💡 Gerar mensagens de reativação para leads frios
+        </button>
+      </div>
+
+      <!-- Analysis Result Area -->
+      <div id="aiResponseBox" style="min-height:180px;max-height:480px;overflow-y:auto;background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:8px;padding:16px;font-size:0.88rem;line-height:1.6;color:#e2e8f0;margin-bottom:14px;">
+        <div style="text-align:center;color:var(--text-muted);padding:24px 10px;">
+          <span>Clique em uma das análises rápidas acima ou digite uma pergunta livre para a IA auditar os diálogos.</span>
+        </div>
+      </div>
+
+      <!-- Custom Prompt Input -->
+      <form id="analyzerForm" onsubmit="handleCustomSubmit(event)" style="display:flex;gap:8px;">
+        <input type="text" id="analyzerCustomInput" placeholder="Pergunte qualquer coisa sobre as conversas..." style="flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--line);color:#fff;border-radius:8px;padding:10px 14px;font-size:0.88rem;outline:none;">
+        <button type="submit" id="analyzerSendBtn" class="btn primary" style="padding:0 18px;">Analisar</button>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: DETALHES DO CHAT COMPLETO -->
+<div id="chatDetailModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7);">
+    
+    <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);">
+      <div>
+        <h3 id="modalChatLeadName" style="margin:0;font-size:1.1rem;color:#fff;">Conversa</h3>
+        <span id="modalChatPhone" style="font-size:0.82rem;color:var(--text-muted);"></span>
+      </div>
+      <button type="button" class="btn sm secondary" onclick="closeModal('chatDetailModal')">✕ Fechar</button>
+    </div>
+
+    <div id="modalChatMessages" style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;max-height:55vh;background:rgba(0,0,0,0.2);">
+      <div style="text-align:center;color:var(--text-muted);">Carregando histórico...</div>
+    </div>
+
+    <div style="padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.02);">
+      <a id="modalChatWppLink" href="#" target="_blank" class="btn sm primary">Abrir no WhatsApp Web ↗</a>
+      <button type="button" class="btn sm secondary" onclick="closeModal('chatDetailModal')">Voltar</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: IMPORTAR CONVERSA EXTERNA -->
+<div id="importChatModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:560px;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;">📥 Importar Histórico de Conversa</h3>
+      <button type="button" class="btn sm secondary" onclick="closeModal('importChatModal')">✕</button>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px 0;">
+      Cole abaixo o texto de uma conversa exportada do WhatsApp ou de negociações feitas fora da API oficial para que o Copilot faça a auditoria:
+    </p>
+
+    <form onsubmit="handleImportSubmit(event)">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Nome do Lead / Cliente:</label>
+        <input type="text" id="importLeadName" placeholder="Ex: Roberto Construtora" required style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Telefone com DDD:</label>
+        <input type="text" id="importPhone" placeholder="Ex: 27999990000" required style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Conteúdo da Conversa (Cole aqui):</label>
+        <textarea id="importText" rows="6" placeholder="[10/09, 14:00] Cliente: Olá, gostaria de cotação...&#10;[10/09, 14:02] Vendedor: Boa tarde! Segue a tabela..." required style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;font-family:monospace;font-size:0.8rem;"></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn secondary" onclick="closeModal('importChatModal')">Cancelar</button>
+        <button type="submit" class="btn primary">Importar e Processar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.chat-card-item:hover {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  transform: translateY(-2px);
+}
+.prompt-pill {
+  text-align: left !important;
+  white-space: normal !important;
+  line-height: 1.3 !important;
+  padding: 8px 12px !important;
+  font-size: 0.82rem !important;
+}
+.prompt-pill:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+}
+</style>
+
+<script>
+async function sendAnalyzerPrompt(promptText) {
+  const box = document.getElementById('aiResponseBox');
+  const btn = document.getElementById('analyzerSendBtn');
+  box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:20px 0;"><div class="typing-dot"></div><span>O Copilot está lendo e auditando todas as conversas do período selecionado...</span></div>';
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('{{ url_for("chat_analyzer.ask_chat_analyzer") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: promptText,
+        period: '{{ period }}',
+        status: '{{ current_status_filter }}',
+        seller: '{{ current_seller_filter }}'
+      })
+    });
+    const data = await res.json();
+    if (btn) btn.disabled = false;
+
+    if (data.success && data.analysis) {
+      box.innerHTML = `<div style="margin-bottom:12px;color:#38bdf8;font-weight:700;">📋 Pergunta: "${promptText}"</div><div>${formatMarkdown(data.analysis)}</div>`;
+    } else {
+      box.innerHTML = `<span style="color:#f87171;">Erro: ${data.message || 'Falha ao processar.'}</span>`;
+    }
+  } catch (err) {
+    if (btn) btn.disabled = false;
+    box.innerHTML = `<span style="color:#f87171;">Erro de conexão com o Copilot: ${err.message}</span>`;
+  }
+}
+
+function handleCustomSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('analyzerCustomInput');
+  const txt = input ? input.value.trim() : '';
+  if (!txt) return;
+  sendAnalyzerPrompt(txt);
+  input.value = '';
+}
+
+async function openChatDetailModal(phone) {
+  const modal = document.getElementById('chatDetailModal');
+  const box = document.getElementById('modalChatMessages');
+  const leadName = document.getElementById('modalChatLeadName');
+  const phoneSpan = document.getElementById('modalChatPhone');
+  const wppLink = document.getElementById('modalChatWppLink');
+
+  modal.style.display = 'flex';
+  box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Carregando conversa...</div>';
+
+  try {
+    const res = await fetch(`/api/chat-analyzer/chat-detail/${encodeURIComponent(phone)}`);
+    const data = await res.json();
+
+    if (data.success) {
+      leadName.innerText = data.lead.name || 'Cliente WhatsApp';
+      phoneSpan.innerText = `📱 ${phone}`;
+      wppLink.href = `https://wa.me/${phone}`;
+
+      if (data.messages && data.messages.length > 0) {
+        let html = '';
+        data.messages.forEach(m => {
+          const isOut = m.direction === 'outbound';
+          html += `
+            <div style="max-width:75%;padding:8px 12px;border-radius:10px;font-size:0.88rem;line-height:1.4;${isOut ? 'align-self:flex-end;background:#0369a1;color:#fff;' : 'align-self:flex-start;background:rgba(255,255,255,0.08);color:#e2e8f0;'}">
+              <div>${m.body}</div>
+              <div style="font-size:0.7rem;opacity:0.7;text-align:right;margin-top:4px;">${m.sent_at} ${isOut ? '✓✓' : ''}</div>
+            </div>
+          `;
+        });
+        box.innerHTML = html;
+        box.scrollTop = box.scrollHeight;
+      } else {
+        box.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Nenhuma mensagem registrada.</div>';
+      }
+    }
+  } catch (err) {
+    box.innerHTML = `<div style="color:#f87171;">Erro ao carregar detalhes: ${err.message}</div>`;
+  }
+}
+
+async function handleImportSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('importLeadName').value;
+  const phone = document.getElementById('importPhone').value;
+  const text = document.getElementById('importText').value;
+
+  try {
+    const res = await fetch('{{ url_for("chat_analyzer.import_chat") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_name: name, phone: phone, text: text })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`Conversa importada com sucesso! (${data.imported_count} mensagens salvas). A página será recarregada.`);
+      window.location.reload();
+    } else {
+      alert(`Erro ao importar: ${data.message}`);
+    }
+  } catch (err) {
+    alert(`Erro na requisição: ${err.message}`);
+  }
+}
+
+function formatMarkdown(md) {
+  if (!md) return '';
+  let h = md
+    .replace(/### (.*?)\n/g, '<h4 style="color:#38bdf8;margin:12px 0 6px 0;">$1</h4>')
+    .replace(/## (.*?)\n/g, '<h3 style="color:#fff;margin:16px 0 8px 0;">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.*?)$/gm, '<li style="margin-left:16px;">$1</li>')
+    .replace(/\n\n/g, '<br><br>');
+  return h;
+}
+</script>
+{% endblock %}

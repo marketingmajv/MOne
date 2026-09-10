@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Centro de Conexões{% endblock %}
+{% block page_title %}Centro de Conexões & Integrações{% endblock %}
+{% block page_subtitle %}Gestão centralizada de Meta Ads, WhatsApp Cloud API, Instagram, Bling ERP e Webhooks.{% endblock %}
+
+{% block top_actions %}
+  <button type="button" class="btn secondary" onclick="runMetaLiveTest()">⚡ Testar Conexão Meta</button>
+  <a href="{{ url_for('crm') }}" class="btn primary">🎯 Ir para o CRM</a>
+{% endblock %}
+
+{% block content %}
+<!-- Sub Tabs Bar -->
+<div class="sub-tabs-bar" style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto;">
+  <button type="button" class="tab-btn active" id="tabBtn-overview" onclick="switchConnTab('overview')">🌐 Visão Geral</button>
+  <button type="button" class="tab-btn" id="tabBtn-meta" onclick="switchConnTab('meta')">🎯 Meta Ads & Campanhas</button>
+  <button type="button" class="tab-btn" id="tabBtn-whatsapp" onclick="switchConnTab('whatsapp')">💬 WhatsApp Cloud API</button>
+  <button type="button" class="tab-btn" id="tabBtn-bling" onclick="switchConnTab('bling')">📦 Bling ERP</button>
+  <button type="button" class="tab-btn" id="tabBtn-logs" onclick="switchConnTab('logs')">📡 Monitor de Webhooks</button>
+</div>
+
+<!-- TAB 1: VISÃO GERAL -->
+<div id="connTab-overview" class="conn-tab-pane">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:24px;">
+    
+    <!-- Meta Ads Card -->
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg, #1877f2, #0062e0);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">🎯</div>
+          <div>
+            <strong style="display:block;font-size:0.95rem;">Meta Ads & Instagram</strong>
+            <small style="color:var(--text-muted);">Campanhas & Conversões</small>
+          </div>
+        </div>
+        <span class="badge" id="metaBadgeOverview" style="background:rgba(234, 179, 8, 0.15);color:#facc15;">🟡 Diagnóstico</span>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Conexão direta com a Meta Marketing API para rastrear qual anúncio gerou cada lead no WhatsApp.</p>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn sm primary" onclick="switchConnTab('meta')">Configurar Ads</button>
+        <button type="button" class="btn sm secondary" onclick="runMetaLiveTest()">Testar</button>
+      </div>
+    </div>
+
+    <!-- WhatsApp Card -->
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg, #25d366, #128c7e);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">💬</div>
+          <div>
+            <strong style="display:block;font-size:0.95rem;">WhatsApp Oficial</strong>
+            <small style="color:var(--text-muted);">Meta Cloud API</small>
+          </div>
+        </div>
+        <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Webhook Ativo</span>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Número: <strong>{{ whatsapp_cfg.phone_number or '+55 27 99867-6366' }}</strong><br>WABA ID: <code class="mono" style="font-size:0.75rem;">{{ whatsapp_cfg.waba_id or '638446228813266' }}</code></p>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn sm primary" onclick="switchConnTab('whatsapp')">Ver Parâmetros</button>
+        <a href="{{ url_for('crm') }}" class="btn sm secondary">Abrir Chat</a>
+      </div>
+    </div>
+
+    <!-- Bling Card -->
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg, #0284c7, #0369a1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">📦</div>
+          <div>
+            <strong style="display:block;font-size:0.95rem;">Bling ERP</strong>
+            <small style="color:var(--text-muted);">Faturamento & Pedidos</small>
+          </div>
+        </div>
+        <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Conectado</span>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Sincronização bidirecional de notas fiscais, pedidos e dados de clientes para faturamento de chassis.</p>
+      <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('integrations_bling') }}" class="btn sm secondary">Configuração Bling</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Realtime Diagnostics Banner -->
+  <div id="liveDiagnosisCard" class="panel" style="display:none;padding:18px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:20px;"></div>
+</div>
+
+<!-- TAB 2: META ADS & CAMPANHAS -->
+<div id="connTab-meta" class="conn-tab-pane" style="display:none;">
+  
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:20px;">
+    
+    <!-- Formulário de Configuração Meta -->
+    <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="margin:0;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+          <span>🎯</span> Configurações da Meta (Ads + WhatsApp)
+        </h3>
+        <button type="button" class="btn sm secondary" onclick="runMetaLiveTest()">🔍 Diagnosticar Token</button>
+      </div>
+
+      <form method="post" action="{{ url_for('connections.save_meta') }}">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          
+          <div>
+            <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">
+              Token de Acesso Permanente da Meta (System User Token) <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="password" id="metaAccessTokenInput" name="access_token" value="{{ meta_cfg.access_token }}" placeholder="EAA..." style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            <small style="color:var(--text-muted);font-size:0.75rem;">Token que nunca expira, gerado em <em>Usuários do Sistema</em> no Meta Business Manager.</small>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID da Conta de Anúncios</label>
+              <input type="text" name="ad_account_id" value="{{ meta_cfg.ad_account_id }}" placeholder="ex: 120205849382901" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+              <small style="color:var(--text-muted);font-size:0.75rem;">Apenas os números (sem act_).</small>
+            </div>
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">ID do Pixel / Dataset (CAPI)</label>
+              <input type="text" name="pixel_id" value="{{ meta_cfg.pixel_id }}" placeholder="ex: 948271038472910" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">WABA ID (WhatsApp Account)</label>
+              <input type="text" name="waba_id" value="{{ meta_cfg.waba_id }}" placeholder="638446228813266" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            </div>
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Phone Number ID</label>
+              <input type="text" name="phone_number_id" value="{{ meta_cfg.phone_number_id }}" placeholder="760559493804375" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Meta App ID (Opcional)</label>
+              <input type="text" name="app_id" value="{{ meta_cfg.app_id }}" placeholder="10988893282731750" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            </div>
+            <div>
+              <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">App Secret (Opcional)</label>
+              <input type="password" name="app_secret" value="{{ meta_cfg.app_secret }}" placeholder="••••••••" style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            </div>
+          </div>
+
+          <div style="margin-top:8px;">
+            <button type="submit" class="btn primary" style="width:100%;">Salvar Credenciais da Meta</button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- Guia Rápido: Como Gerar o Token Permanente -->
+    <div class="panel" style="padding:20px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,0.02);font-size:0.85rem;">
+      <h4 style="margin:0 0 12px 0;color:#38bdf8;font-size:0.95rem;">🔑 Como gerar o Token Permanente (Nunca expira):</h4>
+      <ol style="margin:0;padding-left:18px;line-height:1.6;color:var(--text-muted);">
+        <li>Acesse o <a href="https://business.facebook.com/settings/system-users" target="_blank" style="color:var(--accent);">Meta Business Manager</a> > <strong>Configurações do Negócio</strong>.</li>
+        <li>No menu lateral, clique em <strong>Usuários do Sistema</strong>.</li>
+        <li>Crie um usuário (ex: <em>M-One Integrator</em> com função de Administrador).</li>
+        <li>Em <strong>Ativos Atribuídos</strong>, dê acesso total à <strong>Conta de Anúncios</strong> e à <strong>Conta do WhatsApp</strong>.</li>
+        <li>Clique em <strong>Gerar Novo Token</strong>, marque <em>Nunca Expira</em> e selecione as permissões:
+          <div style="margin:6px 0;display:flex;flex-wrap:wrap;gap:4px;">
+            <span class="badge" style="font-size:0.7rem;background:rgba(56, 189, 248, 0.15);color:#38bdf8;">whatsapp_business_messaging</span>
+            <span class="badge" style="font-size:0.7rem;background:rgba(56, 189, 248, 0.15);color:#38bdf8;">whatsapp_business_management</span>
+            <span class="badge" style="font-size:0.7rem;background:rgba(56, 189, 248, 0.15);color:#38bdf8;">ads_read</span>
+            <span class="badge" style="font-size:0.7rem;background:rgba(56, 189, 248, 0.15);color:#38bdf8;">ads_management</span>
+          </div>
+        </li>
+        <li>Copie o token gerado e cole no formulário ao lado!</li>
+      </ol>
+    </div>
+
+  </div>
+
+  <!-- Campanhas Ativas da Meta -->
+  <div class="panel" style="margin-top:20px;padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h4 style="margin:0;font-size:1rem;">📊 Campanhas Ativas no Meta Ads</h4>
+      <button type="button" class="btn sm secondary" onclick="loadMetaCampaigns()">🔄 Atualizar Campanhas</button>
+    </div>
+    <div id="campaignsContainer">
+      <p style="color:var(--text-muted);font-size:0.85rem;margin:0;">Clique em <strong>Atualizar Campanhas</strong> para consultar métricas e gastos em tempo real.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- TAB 3: WHATSAPP CLOUD API -->
+<div id="connTab-whatsapp" class="conn-tab-pane" style="display:none;">
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+    <h3 style="margin:0 0 16px 0;font-size:1.1rem;">💬 Parâmetros Oficiais do WhatsApp Cloud API</h3>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border:1px solid var(--line);">
+        <small style="color:var(--text-muted);display:block;">URL Oficial do Webhook (Cole no Meta Developers):</small>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <input type="text" readonly value="{{ webhook_url }}" id="webhookUrlDisplay" style="flex:1;font-family:monospace;font-size:0.85rem;background:transparent;border:none;color:#38bdf8;">
+          <button type="button" class="btn sm secondary" onclick="copyToClipboard('{{ webhook_url }}', 'URL do Webhook copiada!')">Copiar</button>
+        </div>
+      </div>
+      <div style="background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border:1px solid var(--line);">
+        <small style="color:var(--text-muted);display:block;">Token de Verificação (Verify Token):</small>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <input type="text" readonly value="{{ whatsapp_cfg.verify_token or 'mone_whatsapp_verify_token_2026' }}" style="flex:1;font-family:monospace;font-size:0.85rem;background:transparent;border:none;color:#4ade80;">
+          <button type="button" class="btn sm secondary" onclick="copyToClipboard('{{ whatsapp_cfg.verify_token or 'mone_whatsapp_verify_token_2026' }}', 'Token de verificação copiado!')">Copiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:rgba(34, 197, 94, 0.08);border:1px solid rgba(34, 197, 94, 0.3);border-radius:8px;padding:14px;font-size:0.85rem;color:#86efac;">
+      ✓ <strong>Atribuição Automática Ativa:</strong> Quando um cliente clica em um anúncio Click-to-WhatsApp no Instagram/Facebook e inicia uma conversa, o M-One captura o <code>ad_id</code>, <code>ctwa_clid</code> e o texto do anúncio, gravando-os automaticamente no perfil do lead no CRM.
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: BLING ERP -->
+<div id="connTab-bling" class="conn-tab-pane" style="display:none;">
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+    <h3 style="margin:0 0 16px 0;font-size:1.1rem;">📦 Conexão com Bling ERP</h3>
+    <p style="color:var(--text-muted);font-size:0.88rem;">Integração via OAuth2 com a API v3 do Bling para importação de pedidos, controle fiscal e baixa de chassis faturados.</p>
+    <a href="{{ url_for('integrations_bling') }}" class="btn primary">Ir para Configuração Detalhada do Bling</a>
+  </div>
+</div>
+
+<!-- TAB 5: MONITOR DE WEBHOOKS -->
+<div id="connTab-logs" class="conn-tab-pane" style="display:none;">
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;">📡 Monitor de Eventos Recebidos em Tempo Real</h3>
+      <span class="badge" style="background:rgba(56, 189, 248, 0.15);color:#38bdf8;">Últimos 15 Eventos</span>
+    </div>
+
+    {% if webhook_logs %}
+    <div style="overflow-x:auto;">
+      <table class="data-table" style="width:100%;font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Serviço</th>
+            <th>Remetente</th>
+            <th>Resumo do Evento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in webhook_logs %}
+          <tr>
+            <td style="white-space:nowrap;color:var(--text-muted);">{{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '-' }}</td>
+            <td><span class="badge" style="font-size:0.75rem;">{{ log.service }}</span></td>
+            <td><span class="mono" style="color:var(--accent);">{{ log.sender or '-' }}</span></td>
+            <td>{{ log.summary }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);font-size:0.85rem;margin:0;">Nenhum evento registrado recentemente. Os novos leads e mensagens recebidos da Meta aparecerão aqui instantaneamente.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+}
+.tab-btn.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-weight: 600;
+}
+</style>
+
+<script>
+function switchConnTab(tabId) {
+  document.querySelectorAll('.conn-tab-pane').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  
+  const targetPane = document.getElementById('connTab-' + tabId);
+  const targetBtn = document.getElementById('tabBtn-' + tabId);
+  if (targetPane) targetPane.style.display = 'block';
+  if (targetBtn) targetBtn.classList.add('active');
+}
+
+function copyToClipboard(text, msg) {
+  navigator.clipboard.writeText(text);
+  alert(msg || 'Copiado para a área de transferência!');
+}
+
+async function runMetaLiveTest() {
+  const card = document.getElementById('liveDiagnosisCard');
+  card.style.display = 'block';
+  card.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="typing-dot"></div><span>Consultando Graph API da Meta em tempo real...</span></div>';
+
+  const tokenInput = document.getElementById('metaAccessTokenInput');
+  const token = tokenInput ? tokenInput.value.trim() : '';
+
+  try {
+    const res = await fetch('{{ url_for("connections.test_meta") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token })
+    });
+    const data = await res.json();
+    const diag = data.diagnosis;
+
+    if (diag.valid) {
+      card.style.background = 'rgba(34, 197, 94, 0.08)';
+      card.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+      card.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:1.5rem;color:#4ade80;">✓</span>
+          <div style="flex:1;">
+            <strong style="color:#4ade80;font-size:1rem;">Conexão Meta Validada com Sucesso!</strong><br>
+            <span style="font-size:0.85rem;color:#e2e8f0;">Usuário/App: <b>${diag.user_name}</b> | Tipo: <b>${diag.token_type}</b></span><br>
+            <span style="font-size:0.85rem;color:#86efac;">Expiração do Token: <b>${diag.expires_in}</b></span>
+            <div style="margin-top:8px;font-size:0.82rem;color:var(--text-muted);">
+              📱 WhatsApp WABA: ${diag.waba_health}<br>
+              🎯 Conta de Anúncios: ${diag.ad_account_health}
+            </div>
+          </div>
+        </div>
+      `;
+      const badge = document.getElementById('metaBadgeOverview');
+      if (badge) {
+        badge.className = 'badge available';
+        badge.innerText = '🟢 Conectado';
+      }
+    } else {
+      card.style.background = 'rgba(239, 68, 68, 0.08)';
+      card.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      card.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:1.5rem;color:#ef4444;">✕</span>
+          <div>
+            <strong style="color:#ef4444;font-size:1rem;">Falha na Conexão com a Meta:</strong><br>
+            <span style="font-size:0.85rem;color:#fca5a5;">${diag.error_message || 'Token expirado ou inválido.'}</span>
+            <div style="margin-top:6px;font-size:0.8rem;color:var(--text-muted);">
+              Dica: Gere um <em>Token de Usuário do Sistema Permanente</em> no Meta Business Manager conforme as instruções ao lado.
+            </div>
+          </div>
+        </div>
+      `;
+      const badge = document.getElementById('metaBadgeOverview');
+      if (badge) {
+        badge.className = 'badge warn-btn';
+        badge.innerText = '🔴 Token Expirado';
+      }
+    }
+  } catch (err) {
+    card.style.background = 'rgba(239, 68, 68, 0.08)';
+    card.innerHTML = `<span style="color:#ef4444;">Erro ao testar conexão: ${err.message}</span>`;
+  }
+}
+
+async function loadMetaCampaigns() {
+  const container = document.getElementById('campaignsContainer');
+  container.innerHTML = '<span style="color:var(--text-muted);">Carregando campanhas ativas...</span>';
+
+  try {
+    const res = await fetch('{{ url_for("connections.get_campaigns") }}');
+    const data = await res.json();
+    if (data.campaigns && data.campaigns.length > 0) {
+      let html = `
+        <table class="data-table" style="width:100%;font-size:0.85rem;">
+          <thead>
+            <tr>
+              <th>Nome da Campanha</th>
+              <th>Status</th>
+              <th>Objetivo</th>
+              <th>Gasto (30d)</th>
+              <th>Impressões</th>
+              <th>Cliques</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      data.campaigns.forEach(c => {
+        html += `
+          <tr>
+            <td><strong>${c.name}</strong></td>
+            <td><span class="badge ${c.status === 'ACTIVE' ? 'available' : 'muted'}">${c.status}</span></td>
+            <td>${c.objective}</td>
+            <td>R$ ${c.spend.toFixed(2)}</td>
+            <td>${c.impressions.toLocaleString()}</td>
+            <td>${c.clicks.toLocaleString()}</td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem;">Nenhuma campanha localizada ou conta de anúncios não configurada. Verifique o ID da Conta de Anúncios.</span>';
+    }
+  } catch (err) {
+    container.innerHTML = `<span style="color:#ef4444;font-size:0.85rem;">Erro ao carregar campanhas: ${err.message}</span>`;
+  }
+}
+</script>
+{% endblock %}

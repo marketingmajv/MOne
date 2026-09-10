@@ -9,13 +9,16 @@
 
 {% block content %}
 <!-- View Switcher Tabs -->
-<div class="view-tabs" style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+<div class="view-tabs" style="display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; flex-wrap: wrap;">
   <button type="button" id="tabKanban" class="btn primary" onclick="switchCrmView('kanban')" style="font-size: 0.9rem;">
     📋 Funil Kanban de Vendas
   </button>
   <button type="button" id="tabConversations" class="btn" onclick="switchCrmView('conversations')" style="font-size: 0.9rem;">
     💬 Monitor de Conversas WhatsApp ({{ conversations|length }})
   </button>
+  <a href="{{ url_for('chat_analyzer.chat_analyzer') }}" class="btn" style="font-size: 0.9rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    🧠 Analisador de Chats (01d / 7d / 30d)
+  </a>
 </div>
 
 <!-- Top Metrics Stack -->

@@ -21,9 +21,13 @@ def privacy_policy():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "GET" and session.get("user_id"):
+        return redirect(url_for("dashboard"))
+
     if request.method == "POST":
         username = request.form.get("username", "").strip().lower()
         password = request.form.get("password", "")
+        remember = request.form.get("remember") in ["1", "on", "true", True]
         try:
             with db() as conn:
                 user = conn.execute(
@@ -31,7 +35,7 @@ def login():
                     (username,)
                 ).fetchone()
             if user and user["password_hash"] == hash_password(password):
-                session.permanent = True
+                session.permanent = remember
                 session["user_id"] = user["id"]
                 audit("auth.login", f"username={username}")
                 flash(f"Bem-vindo, {user['name']}.", "success")
