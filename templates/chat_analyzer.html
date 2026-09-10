@@ -248,7 +248,7 @@
 {% endif %}
 
 <!-- MODAL: DETALHES DO CHAT COMPLETO -->
-<div id="chatDetailModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+<div id="chatDetailModal" class="modal" onclick="if(event.target === this) closeModal('chatDetailModal')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;padding:0;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7);">
     
     <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.02);">
@@ -272,7 +272,7 @@
 </div>
 
 <!-- MODAL: IMPORTAR CONVERSA EXTERNA -->
-<div id="importChatModal" class="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+<div id="importChatModal" class="modal" onclick="if(event.target === this) closeModal('importChatModal')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:560px;padding:24px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h3 style="margin:0;font-size:1.1rem;">📥 Importar Histórico de Conversa</h3>

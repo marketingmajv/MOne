@@ -13,6 +13,7 @@ function closeModal(id) {
   const el = document.getElementById(id);
   if (el) {
     el.classList.remove('show');
+    el.style.display = 'none';
     if (typeof stopLiveCamera === 'function') {
       stopLiveCamera(el);
     }
@@ -22,6 +23,10 @@ function closeModal(id) {
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('modal')) {
     e.target.classList.remove('show');
+    e.target.style.display = 'none';
+    if (typeof stopLiveCamera === 'function') {
+      stopLiveCamera(e.target);
+    }
   }
 });
 
