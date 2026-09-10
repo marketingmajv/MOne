@@ -12,8 +12,15 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 def get_gemini_api_key() -> str:
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
-        key = DEFAULT_GEMINI_KEY
-    return key
+        try:
+            from database import db
+            with db() as conn:
+                row = conn.execute("SELECT access_token FROM integrations WHERE service_name = 'gemini'").fetchone()
+                if row and row.get("access_token"):
+                    key = row["access_token"].strip()
+        except Exception:
+            pass
+    return key or DEFAULT_GEMINI_KEY
 
 
 def build_operational_context(db_conn, role: str, name: str) -> str:
