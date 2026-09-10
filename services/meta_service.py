@@ -290,3 +290,110 @@ def fetch_meta_campaigns(limit: int = 10) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.warning("[fetch_meta_campaigns warning]: %s", e)
         return []
+
+
+def get_monitored_lines() -> List[Dict[str, Any]]:
+    """Retorna a lista de contas e linhas do WhatsApp com status de monitoramento."""
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, waba_id, account_name, phone_number_id, display_phone_number,
+                       quality_rating, is_monitored, assigned_seller_name, updated_at
+                FROM whatsapp_monitored_lines
+                ORDER BY id ASC
+                """
+            ).fetchall()
+            return [dict(r) for r in rows]
+    except Exception as e:
+        logger.error("[get_monitored_lines error]: %s", e)
+        return []
+
+
+def toggle_monitored_line(line_id: int, enable: bool) -> Dict[str, Any]:
+    """Ativa (pluga) ou desativa (despluga) o monitoramento de uma linha/conta."""
+    try:
+        with db() as conn:
+            row = conn.execute(
+                "SELECT * FROM whatsapp_monitored_lines WHERE id = %s",
+                (line_id,),
+            ).fetchone()
+            if not row:
+                return {"success": False, "error": "Linha não encontrada"}
+
+            conn.execute(
+                """
+                UPDATE whatsapp_monitored_lines
+                SET is_monitored = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """,
+                (enable, line_id),
+            )
+            conn.commit()
+
+            waba_id = row.get("waba_id")
+            # Se ativando e o waba_id for válido na Meta (não placeholder)
+            if enable and waba_id and not waba_id.startswith("waba_"):
+                cfg = get_meta_config()
+                token = cfg.get("access_token")
+                if token:
+                    sub_url = f"{META_GRAPH_BASE}/{waba_id}/subscribed_apps"
+                    sub_data = urllib.parse.urlencode({"access_token": token}).encode()
+                    req = urllib.request.Request(sub_url, data=sub_data, method="POST")
+                    try:
+                        with urllib.request.urlopen(req, timeout=10) as resp:
+                            pass
+                    except Exception as sub_err:
+                        logger.warning("[WABA Subscribed Apps Warning]: %s", sub_err)
+
+            return {"success": True, "is_monitored": enable, "account_name": row.get("account_name")}
+    except Exception as e:
+        logger.error("[toggle_monitored_line error]: %s", e)
+        return {"success": False, "error": str(e)}
+
+
+def sync_meta_lines() -> Dict[str, Any]:
+    """Consulta a Meta Graph API e sincroniza números de telefone disponíveis para monitoramento."""
+    cfg = get_meta_config()
+    token = cfg.get("access_token")
+    waba_id = cfg.get("waba_id") or "638446228813266"
+
+    if not token:
+        return {"success": False, "error": "Token da Meta não configurado"}
+
+    synced_count = 0
+    try:
+        # 1. Buscar números da WABA configurada
+        url = f"{META_GRAPH_BASE}/{waba_id}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,platform_type&access_token={urllib.parse.quote(token)}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+            phones = data.get("data", [])
+
+            with db() as conn:
+                for p in phones:
+                    p_id = p.get("id")
+                    disp_num = p.get("display_phone_number")
+                    v_name = p.get("verified_name") or "Linha WhatsApp Meta"
+                    q_rating = p.get("quality_rating", "GREEN")
+
+                    conn.execute(
+                        """
+                        INSERT INTO whatsapp_monitored_lines (waba_id, account_name, phone_number_id, display_phone_number, quality_rating, is_monitored, assigned_seller_name)
+                        VALUES (%s, %s, %s, %s, %s, TRUE, %s)
+                        ON CONFLICT (waba_id, COALESCE(phone_number_id, ''))
+                        DO UPDATE SET 
+                            display_phone_number = EXCLUDED.display_phone_number,
+                            quality_rating = EXCLUDED.quality_rating,
+                            updated_at = CURRENT_TIMESTAMP
+                        """,
+                        (waba_id, v_name, p_id, disp_num, q_rating, v_name),
+                    )
+                    synced_count += 1
+                conn.commit()
+
+        return {"success": True, "synced_count": synced_count}
+    except Exception as e:
+        logger.error("[sync_meta_lines error]: %s", e)
+        return {"success": False, "error": str(e)}
+

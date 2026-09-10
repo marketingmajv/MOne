@@ -56,6 +56,26 @@ def run_migrations():
         conn.commit()
     print("  ✓ Tabela webhook_event_logs pronta.")
 
+    print("📱 [4/4] Criando tabela de linhas e contas monitoradas do WhatsApp...")
+    with db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS whatsapp_monitored_lines (
+                id SERIAL PRIMARY KEY,
+                waba_id TEXT NOT NULL,
+                account_name TEXT NOT NULL,
+                phone_number_id TEXT,
+                display_phone_number TEXT,
+                quality_rating TEXT DEFAULT 'GREEN',
+                is_monitored BOOLEAN DEFAULT TRUE,
+                assigned_seller_name TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_monitored_lines_waba_phone ON whatsapp_monitored_lines(waba_id, COALESCE(phone_number_id, ''));
+        """)
+        conn.commit()
+    print("  ✓ Tabela whatsapp_monitored_lines pronta.")
+
     print("\n✅ MIGRAÇÃO CONCLUÍDA COM SUCESSO!")
 
 

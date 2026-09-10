@@ -14,6 +14,11 @@ from services.chat_analyzer_service import (
     get_chats_by_period,
     import_external_chat_log,
 )
+from services.meta_service import (
+    get_monitored_lines,
+    sync_meta_lines,
+    toggle_monitored_line,
+)
 
 chat_analyzer_bp = Blueprint("chat_analyzer", __name__)
 
@@ -24,6 +29,9 @@ def chat_analyzer():
     me = current_user()
     if not me:
         return redirect(url_for("login"))
+
+    username = (me.get("username") or "").strip().lower()
+    can_manage_lines = username in ["jam", "fauzer"]
 
     period = request.args.get("period", "7d").lower()
     if period not in ["1d", "7d", "30d", "all"]:
@@ -49,9 +57,14 @@ def chat_analyzer():
     except Exception:
         sellers = []
 
+    # Obter linhas monitoradas apenas se for Jam ou Fauzer
+    monitored_lines = get_monitored_lines() if can_manage_lines else []
+
     return render_template(
         "chat_analyzer.html",
         me=me,
+        can_manage_lines=can_manage_lines,
+        monitored_lines=monitored_lines,
         period=period,
         period_label=chats_data["period_label"],
         chats_data=chats_data,
@@ -132,3 +145,43 @@ def chat_detail(phone: str):
         return jsonify({"success": False, "error": str(e)}), 500
 
     return jsonify({"success": True, "lead": lead_info, "messages": messages})
+
+
+@chat_analyzer_bp.route("/api/chat-analyzer/toggle-line", methods=["POST"])
+@login_required
+def api_toggle_line():
+    """Ativa (pluga) ou desativa (despluga) uma linha WhatsApp. Restrito a Jam e Fauzer."""
+    me = current_user()
+    if not me:
+        return jsonify({"success": False, "error": "Não autenticado"}), 401
+
+    username = (me.get("username") or "").strip().lower()
+    if username not in ["jam", "fauzer"]:
+        return jsonify({"success": False, "error": "Acesso negado. Restrito a Jam e Fauzer."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    line_id = payload.get("line_id")
+    enable = bool(payload.get("enable", False))
+
+    if not line_id:
+        return jsonify({"success": False, "error": "ID da linha não informado"}), 400
+
+    result = toggle_monitored_line(int(line_id), enable)
+    return jsonify(result)
+
+
+@chat_analyzer_bp.route("/api/chat-analyzer/sync-lines", methods=["POST"])
+@login_required
+def api_sync_lines():
+    """Sincroniza números e contas WABA da Meta Graph API. Restrito a Jam e Fauzer."""
+    me = current_user()
+    if not me:
+        return jsonify({"success": False, "error": "Não autenticado"}), 401
+
+    username = (me.get("username") or "").strip().lower()
+    if username not in ["jam", "fauzer"]:
+        return jsonify({"success": False, "error": "Acesso negado. Restrito a Jam e Fauzer."}), 403
+
+    result = sync_meta_lines()
+    return jsonify(result)
+

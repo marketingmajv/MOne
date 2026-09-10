@@ -44,6 +44,21 @@ def whatsapp_webhook():
                     contacts = value.get("contacts", [])
                     messages = value.get("messages", [])
 
+                    metadata = value.get("metadata", {})
+                    recipient_phone_id = metadata.get("phone_number_id")
+                    if recipient_phone_id:
+                        try:
+                            with db() as conn:
+                                line_check = conn.execute(
+                                    "SELECT is_monitored FROM whatsapp_monitored_lines WHERE phone_number_id = %s",
+                                    (recipient_phone_id,),
+                                ).fetchone()
+                                if line_check and not line_check["is_monitored"]:
+                                    print(f"[WhatsApp Webhook]: Linha {recipient_phone_id} desplugada. Ignorando mensagem.")
+                                    continue
+                        except Exception as check_err:
+                            print("[Monitored Line Check Warning]:", check_err)
+
                     sender_name = (
                         contacts[0].get("profile", {}).get("name", "Cliente WhatsApp")
                         if contacts
