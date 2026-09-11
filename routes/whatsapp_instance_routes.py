@@ -11,6 +11,7 @@ from flask import Blueprint, flash, jsonify, redirect, request, url_for
 from database import db
 from routes.helpers import current_user, login_required
 from services.evolution_service import (
+    check_evolution_health,
     create_or_get_instance,
     get_evolution_config,
     get_instance_connection,
@@ -168,6 +169,21 @@ def save_evolution_settings():
         flash("Erro ao salvar configurações da Evolution API.", "error")
 
     return redirect(url_for("connections.connections_hub"))
+
+
+@whatsapp_instance_bp.route("/api/whatsapp/evolution/test", methods=["POST"])
+@login_required
+def test_evolution_connection():
+    """Testa a conectividade da Evolution API em tempo real."""
+    me = current_user()
+    if not me or (me.get("role") not in ["admin", "support"] and me.get("username") not in ["jam", "fauzer"]):
+        return jsonify({"success": False, "error": "Acesso não autorizado"}), 403
+
+    data = request.get_json(silent=True) or {}
+    url = data.get("api_url")
+    key = data.get("api_key")
+    res = check_evolution_health(custom_url=url, custom_key=key)
+    return jsonify(res)
 
 
 @whatsapp_instance_bp.route("/api/whatsapp/admin/line/qrcode/<int:line_id>", methods=["GET"])

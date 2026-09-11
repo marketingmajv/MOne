@@ -71,6 +71,56 @@ def save_evolution_config(api_url: str, api_key: str) -> bool:
         return False
 
 
+def check_evolution_health(custom_url: Optional[str] = None, custom_key: Optional[str] = None) -> Dict[str, Any]:
+    """Testa a conectividade com a Evolution API configurada ou com credenciais de teste."""
+    cfg = get_evolution_config()
+    api_url = (custom_url or cfg.get("api_url") or "").strip().rstrip("/")
+    api_key = (custom_key or cfg.get("api_key") or "").strip()
+
+    if not api_url:
+        return {"success": False, "error": "URL da Evolution API não informada."}
+    if not api_key:
+        return {"success": False, "error": "Chave Global da API não informada."}
+
+    full_url = f"{api_url}/instance/fetchInstances"
+    headers = {
+        "apikey": api_key,
+        "User-Agent": "M-One-Diagnostic/1.0",
+        "Accept": "application/json",
+    }
+
+    try:
+        req = urllib.request.Request(full_url, headers=headers, method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            content = resp.read().decode("utf-8")
+            data = json.loads(content) if content else []
+            count = len(data) if isinstance(data, list) else 0
+            return {
+                "success": True,
+                "message": f"Conexão bem-sucedida! Engine online ({count} instâncias ativas).",
+                "instances_count": count,
+            }
+    except urllib.error.HTTPError as he:
+        if he.code in (401, 403):
+            return {"success": False, "error": f"Erro de autenticação HTTP {he.code}: API Key inválida ou não autorizada."}
+        return {"success": False, "error": f"Servidor respondeu com status HTTP {he.code}."}
+    except urllib.error.URLError as ue:
+        reason = str(ue.reason)
+        if "nodename nor servname provided" in reason or "NXDOMAIN" in reason or "not known" in reason:
+            return {
+                "success": False,
+                "error": f"Domínio não encontrado no DNS ({api_url}). O apontamento tipo A ou CNAME ainda não foi criado ou não propagou.",
+            }
+        if "Connection refused" in reason:
+            return {
+                "success": False,
+                "error": f"Conexão recusada em {api_url}. Verifique se o container da Evolution está rodando e com a porta liberada.",
+            }
+        return {"success": False, "error": f"Falha de rede ao conectar: {reason}"}
+    except Exception as e:
+        return {"success": False, "error": f"Erro inesperado: {str(e)}"}
+
+
 def _api_request(endpoint: str, method: str = "GET", payload: Optional[dict] = None) -> Optional[dict]:
     """Executa requisição HTTP autenticada para a Evolution API."""
     cfg = get_evolution_config()
