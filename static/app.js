@@ -1,6 +1,8 @@
 function openModal(id) {
   const el = document.getElementById(id);
   if (el) {
+    el.style.removeProperty('display');
+    el.style.display = 'grid';
     el.classList.add('show');
     const dInput = el.querySelector('input[type="date"]');
     if (dInput && !dInput.value) {

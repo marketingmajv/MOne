@@ -94,7 +94,7 @@ def _api_request(endpoint: str, method: str = "GET", payload: Optional[dict] = N
 
     try:
         req = urllib.request.Request(full_url, data=data_bytes, headers=headers, method=method)
-        with urllib.request.urlopen(req, timeout=12) as resp:
+        with urllib.request.urlopen(req, timeout=4) as resp:
             content = resp.read().decode("utf-8")
             return json.loads(content) if content else {}
     except urllib.error.HTTPError as he:

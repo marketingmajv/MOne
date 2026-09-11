@@ -1,6 +1,6 @@
 <!-- MODAL UNIFICADO: MEU PERFIL & CONEXÃO WHATSAPP -->
-<div id="profileModal" class="modal" onclick="if(event.target === this) closeProfileModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-  <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);">
+<div id="profileModal" class="modal" onclick="if(event.target === this) closeProfileModal()" style="z-index:9999;">
+  <div class="modal-card" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);">
     
     <!-- Cabeçalho do Perfil -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:14px;">
@@ -83,12 +83,21 @@
 let profileWppPoll = null;
 
 function openProfileModal() {
-  openModal('profileModal');
+  const m = document.getElementById('profileModal');
+  if (m) {
+    m.style.removeProperty('display');
+    m.style.display = 'grid';
+    m.classList.add('show');
+  }
   loadProfileWhatsAppConnection();
 }
 
 function closeProfileModal() {
-  closeModal('profileModal');
+  const m = document.getElementById('profileModal');
+  if (m) {
+    m.classList.remove('show');
+    m.style.display = 'none';
+  }
   if (profileWppPoll) {
     clearInterval(profileWppPoll);
     profileWppPoll = null;
@@ -104,8 +113,8 @@ function loadProfileWhatsAppConnection() {
   const connBtn = document.getElementById('profileWppConnectBtn');
 
   qrBox.style.display = 'flex';
-  qrBox.innerHTML = '<span style="color:#64748b;font-size:0.85rem;">Gerando QR Code...</span>';
-  msg.innerHTML = '🔄 Conectando à engine de WhatsApp...';
+  qrBox.innerHTML = '<span style="color:#64748b;font-size:0.85rem;">🔄 Conectando à engine...</span>';
+  msg.innerHTML = '🔄 Solicitando QR Code...';
   badge.innerHTML = '🟡 Conectando';
   badge.style.background = 'rgba(234, 179, 8, 0.15)';
   badge.style.color = '#facc15';
@@ -122,8 +131,11 @@ function loadProfileWhatsAppConnection() {
         renderProfileQr(res.qrcode);
         startProfilePoll();
       } else {
-        qrBox.innerHTML = '<div style="color:#dc2626;padding:15px;font-size:0.85rem;">Instância criada. Aguardando sinal...</div>';
-        startProfilePoll();
+        qrBox.innerHTML = '<div style="color:#f59e0b;padding:15px;font-size:0.85rem;">⚠️ Evolution API não respondeu com QR code.<br><small style="color:#94a3b8;">Verifique a URL e API Key do servidor em Conexões.</small></div>';
+        badge.innerHTML = '⚠️ Offline';
+        badge.style.background = 'rgba(239,68,68,0.15)';
+        badge.style.color = '#f87171';
+        msg.innerHTML = '⚠️ Engine de WhatsApp aguardando configuração.';
       }
     })
     .catch(err => {
