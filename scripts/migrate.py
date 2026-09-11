@@ -38,7 +38,12 @@ def run_migrations():
         conn.commit()
     print("  ✓ Colunas de atribuição em crm_leads validadas.")
 
-    print("📡 [3/3] Criando tabela de log de eventos de webhooks para o Centro de Conexões...")
+    with db() as conn:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_permissions JSONB DEFAULT '{}'::jsonb;")
+            conn.commit()
+        except Exception as e:
+            pass
     with db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS webhook_event_logs (
@@ -61,7 +66,7 @@ def run_migrations():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS whatsapp_monitored_lines (
                 id SERIAL PRIMARY KEY,
-                waba_id TEXT NOT NULL,
+                waba_id TEXT DEFAULT 'evolution',
                 account_name TEXT NOT NULL,
                 phone_number_id TEXT,
                 display_phone_number TEXT,
@@ -74,7 +79,43 @@ def run_migrations():
             CREATE UNIQUE INDEX IF NOT EXISTS idx_monitored_lines_waba_phone ON whatsapp_monitored_lines(waba_id, COALESCE(phone_number_id, ''));
         """)
         conn.commit()
-    print("  ✓ Tabela whatsapp_monitored_lines pronta.")
+
+        # Colunas adicionais para suporte a instâncias autônomas (Evolution API / QR Code)
+        evolution_line_cols = [
+            ("instance_name", "TEXT"),
+            ("instance_type", "TEXT DEFAULT 'evolution'"),
+            ("connection_status", "TEXT DEFAULT 'disconnected'"),
+            ("battery_level", "INTEGER"),
+            ("assigned_user_id", "INTEGER"),
+            ("profile_pic_url", "TEXT"),
+            ("qrcode_base64", "TEXT"),
+        ]
+        for col, col_def in evolution_line_cols:
+            try:
+                conn.execute(f"ALTER TABLE whatsapp_monitored_lines ADD COLUMN IF NOT EXISTS {col} {col_def};")
+            except Exception as e:
+                print(f"  ⚠️ Coluna {col} em whatsapp_monitored_lines: {e}")
+
+        # Tornar waba_id opcional se já existir a tabela
+        try:
+            conn.execute("ALTER TABLE whatsapp_monitored_lines ALTER COLUMN waba_id DROP NOT NULL;")
+        except Exception:
+            pass
+
+        # Colunas de vínculo em whatsapp_messages
+        msg_cols = [
+            ("seller_id", "INTEGER"),
+            ("seller_name", "TEXT"),
+            ("instance_name", "TEXT"),
+        ]
+        for col, col_def in msg_cols:
+            try:
+                conn.execute(f"ALTER TABLE whatsapp_messages ADD COLUMN IF NOT EXISTS {col} {col_def};")
+            except Exception as e:
+                print(f"  ⚠️ Coluna {col} em whatsapp_messages: {e}")
+
+        conn.commit()
+    print("  ✓ Tabela whatsapp_monitored_lines e whatsapp_messages atualizadas para Evolution API.")
 
     print("\n✅ MIGRAÇÃO CONCLUÍDA COM SUCESSO!")
 

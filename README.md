@@ -38,14 +38,14 @@
 
 Todos usam a senha temporária `MOne2026!` e devem alterá-la no primeiro uso operacional.
 
-- jean — Diretoria
+- jam — Diretoria
 - geysa — Diretoria
 - marisa — Financeiro
 - jhon — Estoque
 - luisa — Vendas
 - leo — Vendas
 - gabriel — Vendas
-- fauzer — Suporte Técnico
+- fauzer — Diretoria
 
 ## Rodar no computador
 

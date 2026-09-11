@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from database import db
 from routes.helpers import (
@@ -104,4 +105,28 @@ def delete_user(uid):
         flash("Usuário excluído com sucesso.", "success")
     except Exception as e:
         flash(f"Erro ao excluir usuário: {str(e)}", "danger")
+    return redirect(url_for("users"))
+
+
+@user_bp.route("/users/<int:uid>/permissions", methods=["POST"])
+@login_required
+@roles_required("admin")
+def update_user_permissions(uid):
+    perms = {
+        "crm": bool(request.form.get("perm_crm")),
+        "chat_analyzer": bool(request.form.get("perm_chat_analyzer")),
+        "copilot": bool(request.form.get("perm_copilot")),
+        "freight": bool(request.form.get("perm_freight")),
+        "stock": bool(request.form.get("perm_stock")),
+        "products": bool(request.form.get("perm_products")),
+        "all_sales": bool(request.form.get("perm_all_sales")),
+    }
+    with db() as conn:
+        conn.execute(
+            "UPDATE users SET custom_permissions = %s WHERE id = %s",
+            (json.dumps(perms), uid)
+        )
+        conn.commit()
+    audit("user.permissions_updated", f"user_id={uid}; perms={json.dumps(perms)}")
+    flash("Permissões do usuário atualizadas com sucesso.", "success")
     return redirect(url_for("users"))

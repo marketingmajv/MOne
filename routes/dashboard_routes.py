@@ -10,7 +10,7 @@ from datetime import date, timedelta
 from flask import Blueprint, jsonify, render_template, request, send_from_directory
 
 from database import db
-from routes.helpers import UPLOAD_DIR, login_required, roles_required
+from routes.helpers import UPLOAD_DIR, current_user, login_required, roles_required, user_has_permission
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -24,21 +24,37 @@ def dashboard():
     ago90 = (today - timedelta(days=90)).isoformat()
     ago30 = (today - timedelta(days=30)).isoformat()
 
+    me = current_user()
+    is_seller = bool(me and me.get("role") == "sales" and not user_has_permission(me, "all_sales", default_for_sales=False))
+
     with db() as conn:
-        st_row = conn.execute(
-            "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s",
-            (today_iso,)
-        ).fetchone()
-        sales_today = st_row["v"]
-        sales_today_count = st_row["c"]
-        sales_month = conn.execute(
-            "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s",
-            (month_start,)
-        ).fetchone()["v"]
-        payments_month = conn.execute(
-            "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=%s",
-            (month_start,)
-        ).fetchone()["v"]
+        if is_seller:
+            st_row = conn.execute(
+                "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s AND created_by=%s",
+                (today_iso, me["id"])
+            ).fetchone()
+            sales_today = st_row["v"]
+            sales_today_count = st_row["c"]
+            sales_month = conn.execute(
+                "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s AND created_by=%s",
+                (month_start, me["id"])
+            ).fetchone()["v"]
+            payments_month = 0.0
+        else:
+            st_row = conn.execute(
+                "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s",
+                (today_iso,)
+            ).fetchone()
+            sales_today = st_row["v"]
+            sales_today_count = st_row["c"]
+            sales_month = conn.execute(
+                "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s",
+                (month_start,)
+            ).fetchone()["v"]
+            payments_month = conn.execute(
+                "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=%s",
+                (month_start,)
+            ).fetchone()["v"]
         stock_available = conn.execute(
             "SELECT COUNT(*) c FROM stock_units WHERE status='available'"
         ).fetchone()["c"]
@@ -159,35 +175,40 @@ def api_dashboard_chart_data():
         start_date = today - timedelta(days=29)
 
     start_iso = start_date.isoformat()
+    me = current_user()
+    is_seller = bool(me and me.get("role") == "sales" and not user_has_permission(me, "all_sales", default_for_sales=False))
+
+    seller_filter = "AND s.created_by = %s" if is_seller else ""
+    query_params = (start_iso, me["id"]) if is_seller else (start_iso,)
 
     with db() as conn:
         # Tendência diária de vendas
         daily_rows = conn.execute(
-            """
+            f"""
             SELECT s.sold_at::date AS dia, COALESCE(SUM(s.total_value), 0) AS total, COUNT(s.id) AS count
             FROM sales s
-            WHERE s.sold_at >= %s
+            WHERE s.sold_at >= %s {seller_filter}
             GROUP BY s.sold_at::date
             ORDER BY s.sold_at::date ASC
             """,
-            (start_iso,)
+            query_params
         ).fetchall()
 
         # Distribuição por categoria/produto
         cat_rows = conn.execute(
-            """
+            f"""
             SELECT COALESCE(NULLIF(TRIM(p.category), ''), 'Outros') AS cat,
                    COUNT(su.id) AS units,
                    COALESCE(SUM(su.unit_value), 0) AS revenue
             FROM sale_units su
             JOIN sales s ON s.id = su.sale_id
             JOIN products p ON p.id = su.product_id
-            WHERE s.sold_at >= %s
+            WHERE s.sold_at >= %s {seller_filter}
             GROUP BY COALESCE(NULLIF(TRIM(p.category), ''), 'Outros')
             ORDER BY revenue DESC
             LIMIT 5
             """,
-            (start_iso,)
+            query_params
         ).fetchall()
 
     # Mapear dias para garantir gráfico contínuo sem buracos

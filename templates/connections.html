@@ -14,6 +14,7 @@
   <button type="button" class="tab-btn active" id="tabBtn-overview" onclick="switchConnTab('overview')">🌐 Visão Geral</button>
   <button type="button" class="tab-btn" id="tabBtn-meta" onclick="switchConnTab('meta')">🎯 Meta Ads & Campanhas</button>
   <button type="button" class="tab-btn" id="tabBtn-whatsapp" onclick="switchConnTab('whatsapp')">💬 WhatsApp Cloud API</button>
+  <button type="button" class="tab-btn" id="tabBtn-evolution" onclick="switchConnTab('evolution')">⚡ WhatsApp Autônomo (QR)</button>
   <button type="button" class="tab-btn" id="tabBtn-bling" onclick="switchConnTab('bling')">📦 Bling ERP</button>
   <button type="button" class="tab-btn" id="tabBtn-logs" onclick="switchConnTab('logs')">📡 Monitor de Webhooks</button>
 </div>
@@ -57,6 +58,29 @@
       <div style="display:flex;gap:8px;">
         <button type="button" class="btn sm primary" onclick="switchConnTab('whatsapp')">Ver Parâmetros</button>
         <a href="{{ url_for('crm') }}" class="btn sm secondary">Abrir Chat</a>
+      </div>
+    </div>
+
+    <!-- Evolution API Card -->
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg, #8b5cf6, #6d28d9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">⚡</div>
+          <div>
+            <strong style="display:block;font-size:0.95rem;">WhatsApp Autônomo</strong>
+            <small style="color:var(--text-muted);">Evolution API (QR Code)</small>
+          </div>
+        </div>
+        {% if evolution_cfg.api_url %}
+        <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Configurado</span>
+        {% else %}
+        <span class="badge" style="background:rgba(234, 179, 8, 0.15);color:#facc15;">🟡 Não Configurado</span>
+        {% endif %}
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Instâncias dedicadas para vendedores escanearem via QR Code e espelharem conversas no CRM.</p>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn sm primary" onclick="switchConnTab('evolution')">Configurar Engine</button>
+        <a href="{{ url_for('chat_analyzer.chat_analyzer') }}" class="btn sm secondary">Ver Linhas</a>
       </div>
     </div>
 
@@ -282,6 +306,8 @@
   font-weight: 600;
 }
 </style>
+
+{% include 'connections_evolution_tab.html' %}
 
 <script>
 function switchConnTab(tabId) {

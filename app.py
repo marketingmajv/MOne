@@ -11,6 +11,7 @@ from database import init_db
 from routes import register_blueprints
 from routes.helpers import (
     current_user,
+    user_has_permission,
     ROLE_LABELS,
     money,
     money_usd,
@@ -36,6 +37,7 @@ def inject_globals():
         "me": u,
         "role_labels": ROLE_LABELS,
         "now": datetime.utcnow(),
+        "user_has_permission": user_has_permission,
     }
 
 

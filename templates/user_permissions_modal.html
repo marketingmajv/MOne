@@ -1,0 +1,105 @@
+<!-- MODAL: PERMISSÕES PERSONALIZADAS DO USUÁRIO -->
+{% for u in users %}
+{% set perms = u.custom_permissions or {} %}
+{% if perms is string %}
+  {# Se veio como string json do sqlite ou psycopg2 legado #}
+  {% set p_crm = 'crm": true' in perms or u.role in ['admin', 'support'] %}
+  {% set p_chat = 'chat_analyzer": true' in perms or u.role in ['admin', 'support'] %}
+  {% set p_copilot = 'copilot": false' not in perms %}
+  {% set p_freight = 'freight": false' not in perms %}
+  {% set p_stock = 'stock": false' not in perms %}
+  {% set p_products = 'products": true' in perms or u.role in ['admin', 'support', 'stock', 'finance'] %}
+  {% set p_all_sales = 'all_sales": true' in perms or u.role in ['admin', 'support', 'finance'] %}
+{% else %}
+  {% set p_crm = perms.get('crm') if perms.get('crm') is not none else (u.role in ['admin', 'support']) %}
+  {% set p_chat = perms.get('chat_analyzer') if perms.get('chat_analyzer') is not none else (u.role in ['admin', 'support']) %}
+  {% set p_copilot = perms.get('copilot') if perms.get('copilot') is not none else True %}
+  {% set p_freight = perms.get('freight') if perms.get('freight') is not none else True %}
+  {% set p_stock = perms.get('stock') if perms.get('stock') is not none else True %}
+  {% set p_products = perms.get('products') if perms.get('products') is not none else (u.role in ['admin', 'support', 'stock', 'finance']) %}
+  {% set p_all_sales = perms.get('all_sales') if perms.get('all_sales') is not none else (u.role in ['admin', 'support', 'finance']) %}
+{% endif %}
+
+<div class="modal" id="userPerms_{{ u.id }}" onclick="if(event.target === this) closeModal('userPerms_{{ u.id }}')">
+  <div class="modal-card" style="max-width: 520px; background: #0f172a; border: 1px solid var(--line); border-radius: 14px; padding: 24px;">
+    <div class="modal-head" style="margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">🔐 Permissões: {{ u.name }}</h3>
+        <small style="color: var(--text-muted);">Usuário: <code class="mono" style="color: #38bdf8;">{{ u.username }}</code> • Perfil: <strong>{{ role_labels.get(u.role, u.role) }}</strong></small>
+      </div>
+      <button type="button" class="btn sm secondary" onclick="closeModal('userPerms_{{ u.id }}')">✕</button>
+    </div>
+
+    <form method="post" action="{{ url_for('user.update_user_permissions', uid=u.id) }}">
+      <p style="font-size: 0.84rem; color: var(--text-muted); margin: 0 0 16px 0;">
+        Marque os módulos que este usuário poderá visualizar e operar no M-One:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+        
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>💬</span> <strong>CRM & WhatsApp</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Monitor ao vivo e leads)</small>
+          </span>
+          <input type="checkbox" name="perm_crm" value="1" {% if p_crm %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>🧠</span> <strong>Análise de Chats</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Auditoria IA das conversas)</small>
+          </span>
+          <input type="checkbox" name="perm_chat_analyzer" value="1" {% if p_chat %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>⭐</span> <strong>Copilot IA Assistente</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Assistente comercial e de produtos)</small>
+          </span>
+          <input type="checkbox" name="perm_copilot" value="1" {% if p_copilot %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>🚚</span> <strong>Cotador de Fretes</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Cotações de transportadoras)</small>
+          </span>
+          <input type="checkbox" name="perm_freight" value="1" {% if p_freight %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>📦</span> <strong>Estoque / Chassis</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Consulta de veículos disponíveis)</small>
+          </span>
+          <input type="checkbox" name="perm_stock" value="1" {% if p_stock %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>🏷️</span> <strong>Catálogo de Produtos</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Preços de venda e tabelas)</small>
+          </span>
+          <input type="checkbox" name="perm_products" value="1" {% if p_products %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05);">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span>📊</span> <strong>Ver Vendas de Toda a Equipe</strong>
+            <small style="color: var(--text-muted); font-size: 0.75rem;">(Se desmarcado, vê apenas as suas)</small>
+          </span>
+          <input type="checkbox" name="perm_all_sales" value="1" {% if p_all_sales %}checked{% endif %} style="width: 18px; height: 18px; cursor: pointer;">
+        </label>
+
+      </div>
+
+      <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn secondary" onclick="closeModal('userPerms_{{ u.id }}')">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Permissões</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}

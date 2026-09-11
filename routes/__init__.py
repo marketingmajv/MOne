@@ -19,6 +19,8 @@ from routes.user_routes import user_bp
 from routes.infra_routes import infra_bp
 from routes.connections_routes import connections_bp
 from routes.chat_analyzer_routes import chat_analyzer_bp
+from routes.evolution_webhook_routes import evolution_webhook_bp
+from routes.whatsapp_instance_routes import whatsapp_instance_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -37,6 +39,8 @@ ALL_BLUEPRINTS = [
     infra_bp,
     connections_bp,
     chat_analyzer_bp,
+    evolution_webhook_bp,
+    whatsapp_instance_bp,
 ]
 
 

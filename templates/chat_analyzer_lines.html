@@ -1,0 +1,147 @@
+<!-- SUB-TAB: GERENCIAMENTO DE LINHAS & CONTAS (RESTRITO: JAM E FAUZER) -->
+{% if can_manage_lines %}
+<div id="subtab-linhas" style="display:none;margin-bottom:24px;">
+  <!-- Header Info & Actions -->
+  <div class="panel" style="padding:16px 20px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h3 style="margin:0;font-size:1.05rem;color:#fff;">📱 Linhas de WhatsApp & Instâncias Autônomas</h3>
+      <small style="color:var(--text-muted);">Controle de ativação, monitoramento e pareamento via QR Code (Evolution API & Meta Cloud). Acesso exclusivo de Jam e Fauzer.</small>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button type="button" class="btn sm secondary" id="syncLinesBtn" onclick="syncLines()">🔄 Sincronizar da Meta</button>
+      <a href="{{ url_for('connections.connections_hub') }}" class="btn sm secondary">⚙️ Centro de Conexões</a>
+    </div>
+  </div>
+
+  <!-- Lines Table -->
+  <div class="panel" style="padding:0;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table" style="margin:0;width:100%;font-size:0.86rem;">
+        <thead>
+          <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid var(--line);color:var(--text-muted);">
+            <th style="padding:10px 14px;">Linha / Vendedor</th>
+            <th style="padding:10px 14px;">Telefone</th>
+            <th style="padding:10px 14px;">Tipo / Instância</th>
+            <th style="padding:10px 14px;">Status da Conexão</th>
+            <th style="padding:10px 14px;text-align:right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in monitored_lines %}
+          <tr id="line-row-{{ l.id }}" style="border-bottom:1px solid var(--line);">
+            <td style="padding:10px 14px;">
+              <strong style="color:#fff;">{{ l.account_name }}</strong>
+              <div style="font-size:0.75rem;color:#38bdf8;">{{ l.assigned_seller_name or 'Não atribuído' }}</div>
+            </td>
+            <td style="padding:10px 14px;">
+              <span style="font-family:monospace;color:#cbd5e1;">{{ l.display_phone_number or '—' }}</span>
+              {% if l.battery_level %}
+              <div style="font-size:0.75rem;color:#94a3b8;">🔋 {{ l.battery_level }}%</div>
+              {% endif %}
+            </td>
+            <td style="padding:10px 14px;">
+              {% if l.instance_type == 'evolution' %}
+                <span class="badge" style="background:rgba(168,85,247,0.15);color:#c084fc;font-weight:600;">⚡ Evolution QR</span>
+                <div style="font-size:0.72rem;color:var(--text-muted);font-family:monospace;">{{ l.instance_name or '—' }}</div>
+              {% else %}
+                <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;">☁️ Meta Cloud</span>
+                <div style="font-size:0.72rem;color:var(--text-muted);font-family:monospace;">{{ l.waba_id }}</div>
+              {% endif %}
+            </td>
+            <td id="line-status-{{ l.id }}" style="padding:10px 14px;">
+              {% if l.connection_status == 'open' or (l.is_monitored and l.instance_type != 'evolution') %}
+                <span class="badge" style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:700;">🟢 Conectado & Ativo</span>
+              {% elif l.connection_status == 'connecting' %}
+                <span class="badge" style="background:rgba(234,179,8,0.18);color:#facc15;font-weight:700;">🟡 Aguardando QR Code</span>
+              {% else %}
+                <span class="badge" style="background:rgba(148,163,184,0.12);color:#94a3b8;">⚪ Desplugado</span>
+              {% endif %}
+            </td>
+            <td id="line-action-{{ l.id }}" style="padding:10px 14px;text-align:right;">
+              <div style="display:inline-flex;gap:6px;">
+                {% if l.instance_type == 'evolution' %}
+                  <button type="button" class="btn sm" style="background:rgba(168,85,247,0.15);border:1px solid #a855f7;color:#d8b4fe;" onclick="showAdminLineQrCode({{ l.id }}, '{{ l.account_name|escape }}')">
+                    📱 QR Code
+                  </button>
+                {% endif %}
+
+                {% if l.is_monitored %}
+                  <button type="button" class="btn sm" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="toggleLine({{ l.id }}, false, this)">
+                    ⏸️ Desplugar
+                  </button>
+                {% else %}
+                  <button type="button" class="btn sm" style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;color:#86efac;" onclick="toggleLine({{ l.id }}, true, this)">
+                    ⚡ Plugar
+                  </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Nenhuma conta ou linha vinculada no momento.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: QR CODE ADMIN (JAM & FAUZER) -->
+<div id="adminQrModal" class="modal" onclick="if(event.target === this) closeModal('adminQrModal')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:440px;padding:24px;text-align:center;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 id="adminQrModalTitle" style="margin:0;font-size:1.1rem;color:#fff;">📱 Pareamento WhatsApp</h3>
+      <button type="button" class="btn sm secondary" onclick="closeModal('adminQrModal')">✕</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
+      Aponte o WhatsApp do celular (Aparelhos Conectados > Conectar um aparelho) para o código abaixo:
+    </p>
+    <div id="adminQrCodeContainer" style="background:#fff;padding:16px;border-radius:10px;display:inline-block;margin:0 auto 16px auto;min-width:220px;min-height:220px;display:flex;align-items:center;justify-content:center;">
+      <span style="color:#64748b;font-size:0.85rem;">Gerando QR Code...</span>
+    </div>
+    <div id="adminQrStatusText" style="font-size:0.85rem;color:#38bdf8;margin-bottom:16px;">
+      🔄 Aguardando leitura no celular...
+    </div>
+    <button type="button" class="btn sm secondary" onclick="closeModal('adminQrModal')">Fechar</button>
+  </div>
+</div>
+
+<script>
+let adminQrPollInterval = null;
+
+function showAdminLineQrCode(lineId, lineName) {
+  document.getElementById('adminQrModalTitle').textContent = `📱 Parear: ${lineName}`;
+  const container = document.getElementById('adminQrCodeContainer');
+  const statusText = document.getElementById('adminQrStatusText');
+  container.innerHTML = '<span style="color:#64748b;font-size:0.85rem;">Gerando QR Code...</span>';
+  statusText.innerHTML = '🔄 Conectando à Evolution API...';
+  openModal('adminQrModal');
+
+  fetch(`/api/whatsapp/admin/line/qrcode/${lineId}`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.state === 'open') {
+        container.innerHTML = '<div style="color:#16a34a;font-weight:700;padding:20px;">✅ WhatsApp Já Conectado!</div>';
+        statusText.innerHTML = '🟢 Sessão ativa e monitorando.';
+        return;
+      }
+      if (res.qrcode) {
+        renderQrImg(res.qrcode, container);
+        statusText.innerHTML = '📱 Aponte a câmera do WhatsApp para escanear.';
+      } else {
+        container.innerHTML = '<div style="color:#dc2626;padding:20px;">Não foi possível obter o QR Code da Evolution API. Verifique as configurações.</div>';
+        statusText.innerHTML = '⚠️ Erro ao gerar imagem.';
+      }
+    })
+    .catch(err => {
+      container.innerHTML = `<div style="color:#dc2626;padding:20px;">Erro: ${err.message}</div>`;
+      statusText.innerHTML = 'Falha na requisição.';
+    });
+}
+
+function renderQrImg(b64, container) {
+  const src = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+  container.innerHTML = `<img src="${src}" alt="QR Code WhatsApp" style="max-width:220px;max-height:220px;display:block;margin:0 auto;border-radius:6px;">`;
+}
+</script>
+{% endif %}

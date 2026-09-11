@@ -194,58 +194,7 @@
 </div>
 <!-- /subtab-auditoria -->
 
-{% if can_manage_lines %}
-<!-- SUB-TAB: GERENCIAMENTO DE LINHAS & CONTAS (RESTRITO: JAM E FAUZER) -->
-<div id="subtab-linhas" style="display:none;margin-bottom:24px;">
-  <!-- Header Info & Actions -->
-  <div class="panel" style="padding:16px 20px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-    <div>
-      <h3 style="margin:0;font-size:1.05rem;color:#fff;">📱 Linhas de WhatsApp e Contas do Gerenciador</h3>
-      <small style="color:var(--text-muted);">Controle de ativação de linhas para monitoramento no CRM. Acesso exclusivo de Jam e Fauzer.</small>
-    </div>
-    <div style="display:flex;gap:10px;">
-      <button type="button" class="btn sm secondary" id="syncLinesBtn" onclick="syncLines()">🔄 Sincronizar da Meta</button>
-      <a href="{{ url_for('connections.connections_hub') }}" class="btn sm secondary">⚙️ Centro de Conexões</a>
-    </div>
-  </div>
-
-  <!-- Lines Table -->
-  <div class="panel" style="padding:0;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;">
-    <div class="table-responsive">
-      <table class="table" style="margin:0;width:100%;font-size:0.86rem;">
-        <thead>
-          <tr style="background:rgba(255,255,255,0.02);border-bottom:1px solid var(--line);color:var(--text-muted);">
-            <th style="padding:10px 14px;">Conta no Gerenciador / Vendedor</th>
-            <th style="padding:10px 14px;">Telefone</th>
-            <th style="padding:10px 14px;">WABA ID</th>
-            <th style="padding:10px 14px;">Status</th>
-            <th style="padding:10px 14px;text-align:right;">Ação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for l in monitored_lines %}
-          <tr id="line-row-{{ l.id }}" style="border-bottom:1px solid var(--line);">
-            <td style="padding:10px 14px;"><strong style="color:#fff;">{{ l.account_name }}</strong><div style="font-size:0.75rem;color:#38bdf8;">{{ l.assigned_seller_name }}</div></td>
-            <td style="padding:10px 14px;"><span style="font-family:monospace;color:#cbd5e1;">{{ l.display_phone_number }}</span></td>
-            <td style="padding:10px 14px;"><code style="font-size:0.75rem;color:var(--text-muted);">{{ l.waba_id }}</code></td>
-            <td id="line-status-{{ l.id }}" style="padding:10px 14px;">{% if l.is_monitored %}<span class="badge" style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:700;">🟢 Monitorando</span>{% else %}<span class="badge" style="background:rgba(148,163,184,0.12);color:#94a3b8;">⚪ Desplugado</span>{% endif %}</td>
-            <td id="line-action-{{ l.id }}" style="padding:10px 14px;text-align:right;">
-              {% if l.is_monitored %}
-                <button type="button" class="btn sm" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="toggleLine({{ l.id }}, false, this)">⏸️ Desplugar</button>
-              {% else %}
-                <button type="button" class="btn sm" style="background:rgba(34,197,94,0.15);border:1px solid #22c55e;color:#86efac;" onclick="toggleLine({{ l.id }}, true, this)">⚡ Plugar Linha</button>
-              {% endif %}
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Nenhuma conta vinculada no momento.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-{% endif %}
+{% include 'chat_analyzer_lines.html' %}
 
 <!-- MODAL: DETALHES DO CHAT COMPLETO -->
 <div id="chatDetailModal" class="modal" onclick="if(event.target === this) closeModal('chatDetailModal')" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">

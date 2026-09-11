@@ -19,11 +19,13 @@ from routes.helpers import (
     ALLOWED_EXTENSIONS,
     UPLOAD_DIR,
     audit,
+    current_user,
     login_required,
     money,
     roles_required,
     save_base64_upload,
     save_upload,
+    user_has_permission,
 )
 
 sales_bp = Blueprint("sales", __name__)
@@ -277,17 +279,24 @@ def sales():
             flash("Venda registrada e chassis baixados sem duplicidade.", "success")
         return redirect(url_for("sales"))
 
+    me = current_user()
+    where_sql = ""
+    params = []
+    if me and me.get("role") == "sales" and not user_has_permission(me, "all_sales", default_for_sales=False):
+        where_sql = "WHERE s.created_by = %s"
+        params.append(me["id"])
+
     with db() as conn:
-        sales_rows = conn.execute(
-            """
+        query = f"""
             SELECT s.*, u.name created_by_name, COUNT(DISTINCT su.id) units, COALESCE(SUM(sr.amount),0) received
             FROM sales s 
             LEFT JOIN users u ON u.id=s.created_by
             LEFT JOIN sale_units su ON su.sale_id=s.id
             LEFT JOIN sale_receipts sr ON sr.sale_id=s.id
+            {where_sql}
             GROUP BY s.id, u.name ORDER BY s.sold_at DESC, s.id DESC LIMIT 200
-            """
-        ).fetchall()
+        """
+        sales_rows = conn.execute(query, tuple(params)).fetchall()
         sales_data = []
         if sales_rows:
             sale_ids = [s["id"] for s in sales_rows]

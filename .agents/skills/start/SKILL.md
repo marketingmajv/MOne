@@ -54,5 +54,5 @@ Apresentar ao usuário um relatório estruturado contendo:
    - 💻 **Ambiente Local**: `http://localhost:5001`
    - 🚀 **Produção Oficial**: `https://m-one.majmobilidade.com.br`
 5. **Credenciais Rápidas**:
-   - `fauzer` / `MOne2026!` (Suporte Técnico)
-   - `jean` / `MOne2026!` (Diretoria)
+   - `jam` / `MOne2026!` (Diretoria / Administrador)
+   - `fauzer` / `MOne2026!` (Diretoria / Administrador)

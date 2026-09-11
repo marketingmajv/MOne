@@ -8,7 +8,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from database import db
-from routes.helpers import current_user, login_required
+from routes.helpers import current_user, login_required, user_has_permission
 from services.chat_analyzer_service import (
     analyze_chats_with_gemini,
     get_chats_by_period,
@@ -30,8 +30,12 @@ def chat_analyzer():
     if not me:
         return redirect(url_for("login"))
 
+    if not user_has_permission(me, "chat_analyzer", default_for_sales=False):
+        flash("Acesso restrito aos Gestores e colaboradores autorizados.", "danger")
+        return redirect(url_for("dashboard"))
+
     username = (me.get("username") or "").strip().lower()
-    can_manage_lines = username in ["jam", "fauzer"]
+    can_manage_lines = me.get("role") == "admin" or username in ["jam", "fauzer"]
 
     period = request.args.get("period", "7d").lower()
     if period not in ["1d", "7d", "30d", "all"]:

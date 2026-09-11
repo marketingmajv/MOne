@@ -1,0 +1,76 @@
+<!-- TAB: EVOLUTION API (WHATSAPP AUTÔNOMO) -->
+<div id="connTab-evolution" class="conn-tab-pane" style="display:none;">
+  <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:20px;">
+    
+    <!-- Formulário de Configuração Evolution API -->
+    <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="margin:0;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+          <span>⚡</span> Evolution API (Container Autônomo)
+        </h3>
+        <span class="badge" style="background:rgba(168,85,247,0.15);color:#c084fc;">Self-Hosted / Open-Source</span>
+      </div>
+
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px 0;">
+        Configuração do container de WhatsApp próprio da MAJ para espelhamento passivo das conversas dos vendedores via QR Code sem intermediários.
+      </p>
+
+      <form method="post" action="{{ url_for('whatsapp_instance.save_evolution_settings') }}">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          
+          <div>
+            <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">
+              URL Base da Evolution API <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" name="evolution_api_url" value="{{ evolution_cfg.api_url }}" placeholder="ex: https://whatsapp-engine.majmobilidade.com.br ou http://localhost:8080" required style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+            <small style="color:var(--text-muted);font-size:0.75rem;">Endereço público do container Evolution API (sem barra no final).</small>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">
+              Chave Global da API (Global API Key) <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="password" name="evolution_api_key" value="{{ evolution_cfg.api_key }}" placeholder="Sua chave de autenticação global definida no docker-compose" required style="width:100%;font-family:monospace;font-size:0.85rem;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;">
+          </div>
+
+          <div style="margin-top:8px;display:flex;gap:10px;">
+            <button type="submit" class="btn primary">Salvar Parâmetros da Engine</button>
+            <a href="{{ url_for('chat_analyzer.chat_analyzer') }}" class="btn secondary">Gerenciar Linhas no CRM</a>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- Parâmetros de Webhook Espelho -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="panel" style="padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--card);">
+        <h4 style="margin:0 0 12px 0;font-size:0.95rem;color:#fff;display:flex;align-items:center;gap:6px;">
+          <span>📡</span> Webhook Espelho de Mensagens
+        </h4>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 12px 0;">
+          As instâncias criadas no M-One são configuradas automaticamente com este endpoint receptor:
+        </p>
+
+        <div style="background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:6px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <code style="color:#38bdf8;font-size:0.78rem;word-break:break-all;">{{ evolution_webhook_url }}</code>
+          <button type="button" class="btn sm secondary" onclick="navigator.clipboard.writeText('{{ evolution_webhook_url }}');alert('URL do webhook copiada!');" style="padding:2px 8px;font-size:0.75rem;">Copiar</button>
+        </div>
+
+        <div style="font-size:0.78rem;color:var(--text-muted);">
+          <strong>Eventos Espelhados:</strong><br>
+          • <code>MESSAGES_UPSERT</code> (mensagens enviadas e recebidas)<br>
+          • <code>CONNECTION_UPDATE</code> (status da linha e nível de bateria)
+        </div>
+      </div>
+
+      <div class="panel" style="padding:16px 20px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,0.02);">
+        <h4 style="margin:0 0 8px 0;font-size:0.9rem;color:#fff;">🎙️ Transcrição Groq Whisper</h4>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">
+          Áudios recebidos ou enviados nas instâncias são decodificados e transcritos instantaneamente pela Groq Whisper Cloud (PT-BR) para alimentar a IA do Analisador de Chats.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -10,6 +10,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 
 from database import db
 from routes.helpers import current_user, login_required
+from services.evolution_service import get_evolution_config
 from services.meta_service import fetch_meta_campaigns, get_meta_config, save_meta_config, test_meta_connection
 from services.whatsapp_service import get_whatsapp_config
 
@@ -26,6 +27,7 @@ def connections_hub():
 
     meta_cfg = get_meta_config()
     whatsapp_cfg = get_whatsapp_config()
+    evolution_cfg = get_evolution_config()
 
     # Informações do Bling
     bling_cfg = {}
@@ -48,17 +50,20 @@ def connections_hub():
     except Exception:
         webhook_logs = []
 
-    # URL oficial do webhook para exibição e cópia
+    # URLs oficiais de webhook para exibição e cópia
     base_url = os.environ.get("VERCEL_PROJECT_PRODUCTION_URL") or "m-one.majmobilidade.com.br"
     if not base_url.startswith("http"):
         base_url = f"https://{base_url}"
     webhook_url = f"{base_url}/webhook/whatsapp"
+    evolution_webhook_url = f"{base_url}/webhook/evolution"
 
     return render_template(
         "connections.html",
         me=me,
         meta_cfg=meta_cfg,
         whatsapp_cfg=whatsapp_cfg,
+        evolution_cfg=evolution_cfg,
+        evolution_webhook_url=evolution_webhook_url,
         bling_cfg=bling_cfg,
         webhook_logs=webhook_logs,
         webhook_url=webhook_url,

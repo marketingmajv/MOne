@@ -50,7 +50,7 @@ O sistema possui controle rigoroso de papéis (`roles`):
 
 | Perfil (`role`) | Descrição | Acessos e Responsabilidades | Usuários Exemplo |
 | :--- | :--- | :--- | :--- |
-| **Diretoria** (`admin`) | Gestão Executiva | **Acesso irrestrito**: Importações, custos sigilosos, liberação de lotes de chassis para venda, relatórios e gestão de usuários. | `jean`, `geysa` |
+| **Diretoria** (`admin`) | Gestão Executiva | **Acesso irrestrito**: Importações, custos sigilosos, liberação de lotes de chassis para venda, relatórios e gestão de usuários. | `jam`, `fauzer`, `geysa` |
 | **Suporte Técnico** (`support`) | Suporte & Diagnóstico | Acesso operacional completo, gestão de colaboradores, reset de senhas, auditoria e conferência de chassis. | `fauzer` |
 | **Financeiro** (`finance`) | Gestão Financeira | Acesso a vendas, registro de pagamentos realizados com comprovante, catálogo de produtos, preços e exportação de relatórios. | `marisa` |
 | **Estoque** (`stock`) | Controle Físico | Cadastro unitário de veículos, consulta e histórico de chassis, upload de planilhas de contêineres e produtos. | `jhon` |
@@ -182,6 +182,5 @@ Ao digitar `[deploy]` ou `deploy`:
 
 ## 7. Suporte e Contatos Internos
 
-- **Suporte Técnico**: Fauzer (`fauzer`)
-- **Diretoria**: Jean (`jean`) / Geysa (`geysa`)
+- **Diretoria**: Jam (`jam`) / Fauzer (`fauzer`) / Geysa (`geysa`)
 - **Administrador de Infraestrutura / Git**: `marketingmajv`

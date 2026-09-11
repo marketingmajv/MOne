@@ -1,0 +1,149 @@
+<!-- MODAL: CONECTAR MEU WHATSAPP (VENDEDOR / PÓS-VENDA) -->
+<div id="connectWhatsAppModal" class="modal" onclick="if(event.target === this) closeConnectWhatsAppModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:460px;padding:24px;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h3 style="margin:0;font-size:1.15rem;color:#fff;display:flex;align-items:center;gap:8px;">
+        📱 Conectar Meu WhatsApp
+      </h3>
+      <button type="button" class="btn sm secondary" onclick="closeConnectWhatsAppModal()">✕</button>
+    </div>
+
+    <p style="font-size:0.86rem;color:var(--text-muted);margin:0 0 16px 0;line-height:1.4;">
+      Conecte o WhatsApp do seu celular para espelhar suas conversas de atendimento no CRM e no Analisador de Vendas.
+    </p>
+
+    <!-- Container do QR Code ou Status Conectado -->
+    <div id="wppConnectContent" style="margin-bottom:16px;">
+      <div id="wppQrBox" style="background:#fff;padding:16px;border-radius:12px;display:inline-block;margin:0 auto 12px auto;min-width:220px;min-height:220px;display:flex;align-items:center;justify-content:center;">
+        <span style="color:#64748b;font-size:0.85rem;">Carregando sessão...</span>
+      </div>
+      <div id="wppStatusMsg" style="font-size:0.85rem;color:#38bdf8;font-weight:600;">
+        🔄 Verificando conexão...
+      </div>
+    </div>
+
+    <!-- Instruções rápidas -->
+    <div id="wppInstructions" style="text-align:left;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:16px;font-size:0.8rem;color:var(--text-muted);">
+      <div style="font-weight:600;color:#fff;margin-bottom:4px;">Como conectar:</div>
+      1. Abra o WhatsApp no seu smartphone.<br>
+      2. Toque em <strong>Aparelhos Conectados</strong> > <strong>Conectar um aparelho</strong>.<br>
+      3. Aponte a câmera para o QR Code acima.
+    </div>
+
+    <!-- Botões de Ação -->
+    <div style="display:flex;justify-content:space-between;gap:10px;">
+      <button type="button" id="wppDisconnectBtn" class="btn sm" style="display:none;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;" onclick="disconnectMyWhatsApp()">
+        Desconectar Linha
+      </button>
+      <button type="button" class="btn sm secondary" style="margin-left:auto;" onclick="closeConnectWhatsAppModal()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let wppPollTimer = null;
+
+function openConnectWhatsAppModal() {
+  openModal('connectWhatsAppModal');
+  loadMyWhatsAppConnection();
+}
+
+function closeConnectWhatsAppModal() {
+  closeModal('connectWhatsAppModal');
+  if (wppPollTimer) {
+    clearInterval(wppPollTimer);
+    wppPollTimer = null;
+  }
+}
+
+function loadMyWhatsAppConnection() {
+  const qrBox = document.getElementById('wppQrBox');
+  const statusMsg = document.getElementById('wppStatusMsg');
+  const instructions = document.getElementById('wppInstructions');
+  const discBtn = document.getElementById('wppDisconnectBtn');
+
+  qrBox.style.display = 'flex';
+  qrBox.innerHTML = '<span style="color:#64748b;font-size:0.85rem;">Gerando QR Code...</span>';
+  statusMsg.innerHTML = '🔄 Inicializando instância autônoma...';
+  discBtn.style.display = 'none';
+  instructions.style.display = 'block';
+
+  fetch('/api/whatsapp/my-line/connect', { method: 'POST' })
+    .then(r => r.json())
+    .then(res => {
+      if (res.state === 'open') {
+        renderConnectedState();
+      } else if (res.qrcode) {
+        renderQrCode(res.qrcode);
+        startPollingStatus();
+      } else {
+        qrBox.innerHTML = '<div style="color:#dc2626;padding:15px;font-size:0.85rem;">Instância criada. Aguardando QR Code...</div>';
+        startPollingStatus();
+      }
+    })
+    .catch(err => {
+      qrBox.innerHTML = `<div style="color:#dc2626;padding:15px;font-size:0.85rem;">Erro de conexão: ${err.message}</div>`;
+      statusMsg.innerHTML = '⚠️ Verifique as configurações da Evolution API.';
+    });
+}
+
+function renderQrCode(b64) {
+  const qrBox = document.getElementById('wppQrBox');
+  const statusMsg = document.getElementById('wppStatusMsg');
+  const src = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+  qrBox.innerHTML = `<img src="${src}" alt="QR Code WhatsApp" style="max-width:210px;max-height:210px;display:block;margin:0 auto;border-radius:6px;">`;
+  statusMsg.innerHTML = '📱 Aponte a câmera do WhatsApp para conectar.';
+}
+
+function renderConnectedState() {
+  const qrBox = document.getElementById('wppQrBox');
+  const statusMsg = document.getElementById('wppStatusMsg');
+  const instructions = document.getElementById('wppInstructions');
+  const discBtn = document.getElementById('wppDisconnectBtn');
+
+  if (wppPollTimer) {
+    clearInterval(wppPollTimer);
+    wppPollTimer = null;
+  }
+
+  qrBox.innerHTML = `
+    <div style="padding:20px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
+      <div style="color:#16a34a;font-weight:700;font-size:1.05rem;">WhatsApp Conectado!</div>
+      <div style="color:#64748b;font-size:0.8rem;margin-top:4px;">Sessão ativa e sincronizando conversas.</div>
+    </div>
+  `;
+  statusMsg.innerHTML = '🟢 Suas conversas estão sendo monitoradas no CRM.';
+  statusMsg.style.color = '#4ade80';
+  instructions.style.display = 'none';
+  discBtn.style.display = 'inline-block';
+}
+
+function startPollingStatus() {
+  if (wppPollTimer) clearInterval(wppPollTimer);
+  wppPollTimer = setInterval(() => {
+    fetch('/api/whatsapp/my-line/status')
+      .then(r => r.json())
+      .then(res => {
+        if (res.state === 'open') {
+          renderConnectedState();
+        } else if (res.qrcode) {
+          renderQrCode(res.qrcode);
+        }
+      })
+      .catch(() => {});
+  }, 3500);
+}
+
+function disconnectMyWhatsApp() {
+  if (!confirm('Deseja realmente desconectar o seu WhatsApp do M-One?')) return;
+  fetch('/api/whatsapp/my-line/disconnect', { method: 'POST' })
+    .then(r => r.json())
+    .then(res => {
+      alert('Sessão desconectada.');
+      loadMyWhatsAppConnection();
+    });
+}
+</script>
