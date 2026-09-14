@@ -1,40 +1,137 @@
 /* ==========================================================================
    M-One (MAJ Operating System) — Design System 2026
-   Palette: Enterprise SaaS Dark Obsidian Navy & Grafite
-   Colors: Action Blue (#0070F3), MAJ Green (#00E599), High Contrast Typography
+   Dual-Theme Architecture: Dark Obsidian Glass & Porcelain Alabaster
+   Typography: Plus Jakarta Sans with Tabular Numerals
    ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
+
 :root {
-  /* Design System Color Tokens */
-  --bg: #0B111E;                  /* Deep Obsidian Navy Canvas */
-  --side: #080E19;                /* Sidebar Deep Navy */
-  --panel: #111C31;               /* Card Surface */
-  --panel2: #16243F;              /* Sub-surface / Inner Card */
-  --panel-hover: #1B2C4E;         /* Interactive Hover State */
-  --text: #F8FAFC;                /* High Contrast Crisp Text */
-  --muted: #94A3B8;               /* Slate Secondary Text */
-  --muted-dark: #64748B;          /* Muted Gray Text */
-  --line: #1E2F52;                /* Hairline Border */
-  --line-light: #2A406C;          /* Active Border */
-  
-  /* Brand & Action Colors */
-  --primary: #0070F3;             /* Action Blue */
-  --primary-hover: #0060D0;
-  --accent: #00E599;              /* MAJ Success Green */
+  /* Common Brand Colors */
+  --accent: #00E599;              /* MAJ Electric Green */
   --accent-hover: #00C885;
+  --accent-cyan: #00F0FF;         /* Tech Cyan */
+  --primary: #00E599;             /* Primary Action */
+  --primary-hover: #00C885;
   --danger: #EF4444;              /* Error Red */
   --warning: #F59E0B;             /* Warning Amber */
   --info: #38BDF8;                /* Sky Blue */
 
   /* Geometry & Typography */
-  --radius: 12px;
+  --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-lg: 16px;
-  --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Semantic Surfaces & Dual-Theme Tokens */
+  --surface-card: #0F172A;
+  --surface-subtle: #162238;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-muted: #94A3B8;
+  --brand-blue: #38BDF8;
+  --brand-emerald: #00E599;
+
+  /* Default Dark Mode Theme (Obsidian & Carbon) */
+  --bg: #090D16;
+  --side: #070B13;
+  --panel: #0F172A;
+  --panel2: #162238;
+  --panel-hover: #1E2D4A;
+  --text: #F8FAFC;
+  --text-dim: #E2E8F0;
+  --muted: #94A3B8;
+  --muted-dark: #64748B;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-light: rgba(255, 255, 255, 0.15);
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
+  --topbar-bg: rgba(9, 13, 22, 0.85);
+}
+
+/* Light Mode Theme: Porcelain Alabaster & Emerald FinTech */
+[data-theme="light"] {
+  --surface-card: #FFFFFF;
+  --surface-subtle: #F8FAFC;
+  --border-subtle: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --brand-blue: #0284C7;
+  --brand-emerald: #059669;
+
+  --bg: #F4F6F8;                  /* Crisp Porcelain Alabaster Canvas */
+  --side: #0C1322;                /* Dark slim sidebar preserves brand contrast */
+  --panel: #FFFFFF;               /* Pure White Cards */
+  --panel2: #F8FAFC;              /* Soft Elevated Surface */
+  --panel-hover: #F1F5F9;         /* Clean Hover */
+  --text: #0F172A;                /* Deep Navy Slate Text */
+  --text-dim: #334155;
+  --muted: #64748B;               /* Crisp Secondary Text */
+  --muted-dark: #94A3B8;
+  --line: #E2E8F0;                /* Soft Hairline Border */
+  --line-light: #CBD5E1;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(226, 232, 240, 0.9);
+  --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --primary: #059669;
+  --primary-hover: #047857;
+  --accent: #10B981;
+  --accent-hover: #059669;
+  --accent-cyan: #0284C7;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 20px -2px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 16px 36px -4px rgba(15, 23, 42, 0.12);
+  --topbar-bg: rgba(244, 246, 248, 0.88);
+}
+
+/* Dark Mode Explicit Override */
+[data-theme="dark"] {
+  --surface-card: #0F172A;
+  --surface-subtle: #162238;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-muted: #94A3B8;
+  --brand-blue: #38BDF8;
+  --brand-emerald: #00E599;
+  --bg: #090D16;
+  --side: #070B13;
+  --panel: #0F172A;
+  --panel2: #162238;
+  --panel-hover: #1E2D4A;
+  --text: #F8FAFC;
+  --text-dim: #E2E8F0;
+  --muted: #94A3B8;
+  --muted-dark: #64748B;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-light: rgba(255, 255, 255, 0.15);
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-specular: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --primary: #00E599;
+  --primary-hover: #00C885;
+  --accent: #00E599;
+  --accent-hover: #00C885;
+  --accent-cyan: #00F0FF;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
+  --topbar-bg: rgba(9, 13, 22, 0.85);
+}
+
+/* Tabular Numerals globally for financial and chassis precision */
+.metric strong, .bento-hero strong, .bento-metric strong, .mono, .tabular-nums, .price-tag, .rank-row strong {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Reset & Global Standards */
@@ -66,25 +163,44 @@ button, input, select, textarea {
   font-size: inherit;
 }
 
-/* App Shell Grid */
+/* App Shell */
 .app-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 250px 1fr;
+  min-height: 100dvh;
+  display: flex;
   background-color: var(--bg);
+  position: relative;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation — High-Contrast Dark Slim Rail (Preserved in Both Themes, Always Touching Bottom) */
 .sidebar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  bottom: 0;
+  left: 0;
+  width: 250px;
   height: 100vh;
-  background: var(--side);
-  border-right: 1px solid var(--line);
+  height: 100dvh;
+  background: #080D1A;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
   padding: 20px 14px;
   display: flex;
   flex-direction: column;
   z-index: 40;
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+[data-theme="light"] .sidebar {
+  background: #0B111F;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .brand {
@@ -121,7 +237,7 @@ button, input, select, textarea {
 
 .brand small {
   display: block;
-  color: var(--muted);
+  color: #94A3B8;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -140,74 +256,123 @@ button, input, select, textarea {
   gap: 12px;
   align-items: center;
   padding: 10px 14px;
-  color: var(--muted);
-  font-weight: 600;
+  color: #94A3B8;
+  font-weight: 500;
   font-size: 13px;
   border-radius: 10px;
   border: 1px solid transparent;
   transition: all 0.15s ease;
 }
 
+.sidebar nav a svg {
+  color: #64748B;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
 .sidebar nav a:hover {
-  background: var(--panel2);
+  background: rgba(255, 255, 255, 0.06);
   color: #FFFFFF;
 }
 
-.sidebar nav a.active {
-  background: var(--panel2);
+.sidebar nav a:hover svg {
   color: #FFFFFF;
-  border-color: var(--line-light);
-  box-shadow: inset 3px 0 var(--primary);
+}
+
+/* Active Menu Item: Emerald Accent & Ultra-Crisp White Text */
+.sidebar nav a.active {
+  background: rgba(0, 229, 153, 0.12) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  border: 1px solid rgba(0, 229, 153, 0.28) !important;
+  box-shadow: inset 3px 0 0 #00E599, 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar nav a.active svg {
+  color: #00E599 !important;
+}
+
+.sidebar nav a.active span {
+  color: #FFFFFF !important;
 }
 
 .sidebar-foot {
   margin-top: auto;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 16px;
 }
 
 .user-chip {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+}
+
+.user-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
 }
 
 .user-chip b {
   display: block;
   font-size: 13px;
+  font-weight: 700;
   color: #FFFFFF;
+  letter-spacing: -0.01em;
 }
 
 .user-chip small {
   display: block;
-  color: var(--muted);
+  color: #94A3B8;
   font-size: 11px;
+  margin-top: 2px;
 }
 
 .user-actions-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 12px;
+  padding: 0 4px;
 }
 
-.logout {
+.sidebar .link-btn {
+  color: #38BDF8 !important;
   font-size: 12px;
   font-weight: 600;
-  color: var(--danger);
-  transition: color 0.15s ease;
 }
 
-.logout:hover {
+.sidebar .link-btn:hover {
+  color: #7DD3FC !important;
+  text-decoration: underline;
+}
+
+.sidebar .logout {
+  font-size: 12px;
+  font-weight: 700;
   color: #F87171;
+  transition: color 0.15s ease;
+  text-decoration: none;
+}
+
+.sidebar .logout:hover {
+  color: #EF4444;
+  text-decoration: underline;
 }
 
 /* Main Layout & Topbar */
 .main {
+  margin-left: 250px;
+  width: calc(100% - 250px);
   min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg);
 }
 
 .topbar {
@@ -222,7 +387,7 @@ button, input, select, textarea {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #FFFFFF;
+  color: var(--text);
 }
 
 .topbar p {
@@ -316,7 +481,8 @@ button, input, select, textarea {
 
 .metric:hover {
   border-color: var(--line-light);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .metric small {
@@ -332,16 +498,251 @@ button, input, select, textarea {
   display: block;
   font-size: 26px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--text);
   margin: 6px 0 4px;
   letter-spacing: -0.03em;
 }
 
 .metric span {
-  color: var(--muted-dark);
+  color: var(--muted);
   display: block;
   font-size: 12px;
   font-weight: 500;
+}
+
+/* ==========================================================================
+   Bento Grid & Cockpit Executivo (2026)
+   ========================================================================== */
+.bento-hero {
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* TEMA CLARO: Box Escuro Stealth sobre Canvas Porcelana */
+[data-theme="light"] .bento-hero {
+  background: linear-gradient(135deg, #10192C 0%, #080D1A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.15);
+  color: #FFFFFF;
+}
+
+[data-theme="light"] .bento-hero .bento-hero-title,
+[data-theme="light"] .bento-hero .bento-hero-kpi-val {
+  color: #FFFFFF;
+}
+
+[data-theme="light"] .bento-hero .bento-hero-desc,
+[data-theme="light"] .bento-hero .bento-hero-kpi-label,
+[data-theme="light"] .bento-hero .bento-hero-track-label {
+  color: #94A3B8;
+}
+
+[data-theme="light"] .bento-hero .badge {
+  background: rgba(0, 229, 153, 0.15);
+  color: #00E599;
+  border: 1px solid rgba(0, 229, 153, 0.3);
+}
+
+[data-theme="light"] .bento-hero .bento-hero-track-meta {
+  color: #00E599;
+}
+
+[data-theme="light"] .bento-hero .progress-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .bento-hero::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(0, 229, 153, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* TEMA ESCURO: Box Claro Porcelana/Branco sobre Canvas Obsidian (Inverted Contrast) */
+[data-theme="dark"] .bento-hero,
+:root:not([data-theme="light"]) .bento-hero {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 255, 255, 0.08);
+  color: #0F172A;
+}
+
+[data-theme="dark"] .bento-hero .bento-hero-title,
+[data-theme="dark"] .bento-hero .bento-hero-kpi-val,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-title,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-kpi-val {
+  color: #0F172A;
+}
+
+[data-theme="dark"] .bento-hero .bento-hero-desc,
+[data-theme="dark"] .bento-hero .bento-hero-kpi-label,
+[data-theme="dark"] .bento-hero .bento-hero-track-label,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-desc,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-kpi-label,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-track-label {
+  color: #64748B;
+}
+
+[data-theme="dark"] .bento-hero .badge,
+:root:not([data-theme="light"]) .bento-hero .badge {
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
+[data-theme="dark"] .bento-hero .bento-hero-track-meta,
+:root:not([data-theme="light"]) .bento-hero .bento-hero-track-meta {
+  color: #059669;
+}
+
+[data-theme="dark"] .bento-hero .progress-track,
+:root:not([data-theme="light"]) .bento-hero .progress-track {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .bento-hero::after,
+:root:not([data-theme="light"]) .bento-hero::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(5, 150, 105, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.bento-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.bento-metric {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.bento-metric:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--line-light);
+}
+
+.charge-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3.5px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
+  border-radius: 0 3px 0 0;
+  box-shadow: 0 0 10px rgba(0, 229, 153, 0.4);
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 10px;
+}
+
+[data-theme="dark"] .progress-track, :root:not([data-theme="light"]) .progress-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-cyan));
+  box-shadow: 0 0 12px rgba(0, 229, 153, 0.5);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Radar Ao Vivo ("Acontecendo Agora") */
+.radar-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.radar-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  margin-bottom: 8px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.radar-item:hover {
+  background: var(--panel-hover);
+  transform: translateX(2px);
+}
+
+.radar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 5px;
+  box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0;
 }
 
 /* Panels & Cards */
@@ -922,14 +1323,97 @@ tr:hover td {
 .modal-head button {
   border: 0;
   background: rgba(255, 255, 255, 0.08);
-  color: white;
+  color: var(--text);
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   display: grid;
   place-items: center;
+  transition: background 0.15s ease;
+}
+
+.modal-head button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Modern Form Ergonomics & Inputs (Spacious & Clean) */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.form-input, input[type="text"], input[type="password"], input[type="number"], select, textarea {
+  width: 100%;
+  height: 42px;
+  padding: 10px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.form-input:focus, input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 229, 153, 0.15);
+}
+
+/* Modern iOS-Style Toggle Switches */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--muted-dark);
+  transition: .25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
 }
 
 /* Modern Layout Utility Support (Tailwind Replacement Engine) */
@@ -1074,17 +1558,28 @@ tr:hover td {
   .quick-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .two-col {
-    grid-template-columns: 1fr;
+  .two-col, .cockpit-top-grid, .charts-ranking-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .bento-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
   }
   .app-shell {
-    grid-template-columns: 1fr;
+    display: block;
+  }
+  .main {
+    margin-left: 0;
+    width: 100%;
   }
   .sidebar {
     position: fixed;
+    top: 0;
+    bottom: 0;
     left: -270px;
     z-index: 90;
     width: 250px;
+    height: 100vh;
+    height: 100dvh;
     transition: left 0.25s ease;
   }
   .sidebar.open {
@@ -1120,60 +1615,70 @@ tr:hover td {
   }
 }
 
-/* Specific Freight & Form Overrides: Soft Navy/Grafite Palette (#101827) */
-#freightCalcForm input:not([readonly]):not([disabled]),
-#freightCalcForm select:not([readonly]):not([disabled]),
-.product-item-card input:not([readonly]):not([disabled]),
-.product-item-card select:not([readonly]):not([disabled]),
+/* ==========================================================================
+   Freight & Logistics Module (Dual-Theme SaaS Ergonomics)
+   ========================================================================== */
+#freightCalcForm input:not([type="submit"]):not([type="button"]),
+#freightCalcForm select,
+.product-item-card input,
+.product-item-card select,
 input.product-select, select.product-select,
 input.product-qty, input.product-weight, input.product-length, input.product-width, input.product-height,
-input#customer_name, input#cep_dest {
-  background-color: #101827 !important;
-  color: #CBD5E1 !important;
-  border: 1px solid #334155 !important;
+input#customer_name, input#cep_dest, input#company_name, input#cpf_cnpj, input#contact_phone, input#contact_person, input#full_address {
+  height: 42px;
+  background-color: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
-}
-
-#freightCalcForm input::placeholder,
-.product-item-card input::placeholder {
-  color: #64748B !important;
-  font-weight: 400 !important;
+  padding: 8px 14px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.15s ease !important;
 }
 
 #freightCalcForm input:focus,
 #freightCalcForm select:focus,
 .product-item-card input:focus,
 .product-item-card select:focus {
-  border-color: #0070F3 !important;
-  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2) !important;
+  border-color: var(--brand-emerald) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
   outline: none !important;
 }
 
-/* Preservação de Estado Readonly e Disabled */
-input[readonly], input[disabled], select[disabled], input#cep_orig {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-  color: #64748B !important;
-  border-color: #1E293B !important;
-  cursor: not-allowed !important;
-  opacity: 0.75 !important;
+#freightCalcForm input::placeholder,
+.product-item-card input::placeholder {
+  color: var(--text-muted) !important;
+  font-weight: 400 !important;
+  opacity: 0.8 !important;
 }
 
-/* Botões Secundários em Fundo Grafite (#1E293B) e Texto Cinza-Azulado */
+/* Preservação de Estado Readonly e Disabled (CEP Origem) */
+input[readonly], input[disabled], select[disabled], input#cep_orig {
+  background-color: var(--surface-subtle) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border-subtle) !important;
+  cursor: not-allowed !important;
+  opacity: 0.85 !important;
+}
+
+/* Botões Secundários Adaptativos em Ambos os Temas */
 .btn.secondary, button.secondary, .btn-secondary,
 button[onclick="copyWhatsAppMessage()"],
 button[onclick="exportFreightPDF()"],
 button[onclick="resetFreightForm()"] {
-  background-color: #1E293B !important;
-  color: #CBD5E1 !important;
-  border: 1px solid #334155 !important;
-  box-shadow: none !important;
+  background-color: var(--surface-subtle) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease !important;
 }
 
 .btn.secondary:hover, button.secondary:hover, .btn-secondary:hover,
 button[onclick="copyWhatsAppMessage()"]:hover,
 button[onclick="exportFreightPDF()"]:hover,
 button[onclick="resetFreightForm()"]:hover {
-  background-color: #334155 !important;
-  color: #FFFFFF !important;
-  border-color: #475569 !important;
+  background-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--brand-blue) !important;
 }

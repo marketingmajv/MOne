@@ -113,6 +113,22 @@ def dashboard():
             d["days_in_stock"] = 0
         opp.append(d)
 
+    recent_activities = []
+    try:
+        with db() as conn:
+            acts = conn.execute(
+                """
+                SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') user_name
+                FROM audit_log a
+                LEFT JOIN users u ON u.id = a.user_id
+                ORDER BY a.id DESC
+                LIMIT 6
+                """
+            ).fetchall()
+            recent_activities = [dict(a) for a in acts]
+    except Exception:
+        recent_activities = []
+
     return render_template(
         "dashboard.html",
         sales_today=sales_today,
@@ -123,6 +139,7 @@ def dashboard():
         top_products=top_products,
         opportunities=opp,
         chassis_alerts=chassis_alerts,
+        recent_activities=recent_activities,
     )
 
 

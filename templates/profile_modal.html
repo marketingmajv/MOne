@@ -1,40 +1,56 @@
 <!-- MODAL UNIFICADO: MEU PERFIL & SEGURANÇA -->
 <div id="profileModal" class="modal" onclick="if(event.target === this) closeProfileModal()" style="z-index:9999;">
-  <div class="modal-card" style="background:#0f172a;border:1px solid var(--line);border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8);">
+  <div class="modal-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 18px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
     
-    <!-- Cabeçalho do Perfil -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg, #0284c7, #38bdf8);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:#fff;">
+    <!-- Cabeçalho do Perfil com Avatar Elegante -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 18px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, var(--brand-emerald), #10B981); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; color: #052e16; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25);">
           {{ me.name[:1]|upper if me and me.name else 'U' }}
         </div>
         <div>
-          <h3 style="margin:0;font-size:1.15rem;color:#fff;">{{ me.name }}</h3>
-          <small style="color:var(--text-muted);">@{{ me.username }} • <span style="color:#38bdf8;">{{ role_labels.get(me.role, me.role) }}</span></small>
+          <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em;">{{ me.name }}</h3>
+          <p style="margin: 2px 0 0 0; font-size: 0.82rem; color: var(--text-muted);">
+            @{{ me.username }} • <span style="color: var(--brand-emerald); font-weight: 600;">{{ role_labels.get(me.role, me.role) }}</span>
+          </p>
         </div>
       </div>
-      <button type="button" class="btn sm secondary" onclick="closeProfileModal()">✕</button>
+      <button type="button" onclick="closeProfileModal()" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
     </div>
 
     <!-- SEÇÃO: SEGURANÇA & ALTERAÇÃO DE SENHA -->
-    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:10px;padding:18px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:1.2rem;">🔒</span>
-        <strong style="font-size:0.95rem;color:#fff;">Segurança & Acesso</strong>
-      </div>
-      <form method="post" action="{{ url_for('change_password') }}">
-        <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Nova Senha (mínimo 8 caracteres):</label>
-          <input type="password" name="new_password" required minlength="8" placeholder="Digite sua nova senha" style="width:100%;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--line);border-radius:6px;color:#fff;font-size:0.88rem;">
+    <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 22px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 229, 153, 0.12); color: var(--brand-emerald); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+          🔒
         </div>
-        <div style="display:flex;justify-content:flex-end;">
-          <button type="submit" class="btn sm secondary">Atualizar Senha</button>
+        <div>
+          <strong style="font-size: 0.95rem; color: var(--text-primary); display: block;">Segurança & Senha de Acesso</strong>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Atualize sua credencial de acesso ao painel M-One</span>
+        </div>
+      </div>
+
+      <form method="post" action="{{ url_for('change_password') }}" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">
+            Nova Senha
+          </label>
+          <input type="password" name="new_password" required minlength="8" placeholder="Digite uma senha forte (mínimo 8 dígitos)" class="form-input" style="width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 0.9rem;">
+          <span style="display: block; font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
+            Recomendamos combinar letras maiúsculas, minúsculas, números e caracteres especiais.
+          </span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px;">
+          <button type="submit" style="background: var(--brand-emerald); color: #052e16; font-weight: 700; font-size: 0.85rem; padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25); transition: all 0.2s;">
+            Atualizar Senha
+          </button>
         </div>
       </form>
     </div>
 
-    <div style="margin-top:20px;text-align:right;">
-      <button type="button" class="btn sm secondary" onclick="closeProfileModal()">Fechar</button>
+    <div style="margin-top: 22px; display: flex; justify-content: flex-end;">
+      <button type="button" class="btn sm secondary" onclick="closeProfileModal()" style="padding: 9px 18px; font-size: 0.85rem; border-radius: 10px;">Fechar</button>
     </div>
 
   </div>

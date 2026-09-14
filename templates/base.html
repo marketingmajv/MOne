@@ -8,7 +8,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260905_saas') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('mone_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
   <!-- Modern Frontend Stack: HTMX + Alpine.js + Chart.js -->
   <script src="https://unpkg.com/htmx.org@2.0.2"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
@@ -99,12 +105,12 @@
         <div class="user-chip" onclick="openProfileModal()" style="cursor:pointer;" title="Clique para abrir seu perfil e alterar senha">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <b>{{ me.name }}</b>
-            <span style="font-size:0.7rem;background:rgba(56,189,248,0.2);color:#38bdf8;padding:1px 5px;border-radius:4px;">📱 Perfil</span>
+            <span style="font-size:0.7rem;background:rgba(0,229,153,0.18);color:#00E599;border:1px solid rgba(0,229,153,0.3);padding:1px 6px;border-radius:6px;font-weight:700;">🟢 Online</span>
           </div>
-          <small>{{ role_labels.get(me.role, me.role) }} • Meu WhatsApp</small>
+          <small>{{ role_labels.get(me.role, me.role) }} • Segurança</small>
         </div>
         <div class="user-actions-row">
-          <button type="button" class="link-btn" onclick="openProfileModal()">📱 Meu WhatsApp</button>
+          <button type="button" class="link-btn" onclick="openProfileModal()">🔒 Alterar Senha</button>
           <a class="logout" href="{{ url_for('logout') }}">Sair</a>
         </div>
       </div>
@@ -114,7 +120,13 @@
       <header class="topbar">
         <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
         <div><h1>{% block page_title %}M-One{% endblock %}</h1><p>{% block page_subtitle %}{% endblock %}</p></div>
-        <div class="top-actions">{% block top_actions %}{% endblock %}</div>
+        <div class="top-actions">
+          <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleMOneTheme()" title="Alternar entre Tema Claro e Tema Escuro">
+            <span id="themeToggleIcon">☀️</span>
+            <span id="themeToggleText">Tema</span>
+          </button>
+          {% block top_actions %}{% endblock %}
+        </div>
       </header>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -129,6 +141,32 @@
     </main>
   </div>
   <script src="{{ url_for('static', filename='app.js', v='20260911_02') }}"></script>
+  <script>
+    function updateThemeUi(theme) {
+      const icon = document.getElementById('themeToggleIcon');
+      const text = document.getElementById('themeToggleText');
+      if (icon && text) {
+        if (theme === 'dark') {
+          icon.textContent = '🌙';
+          text.textContent = 'Escuro';
+        } else {
+          icon.textContent = '☀️';
+          text.textContent = 'Claro';
+        }
+      }
+    }
+    function toggleMOneTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('mone_theme', next);
+      updateThemeUi(next);
+      window.dispatchEvent(new CustomEvent('mone-theme-changed', { detail: { theme: next } }));
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      updateThemeUi(document.documentElement.getAttribute('data-theme') || 'light');
+    });
+  </script>
   {% block scripts %}{% endblock %}
   
   {% include 'profile_modal.html' %}

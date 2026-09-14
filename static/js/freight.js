@@ -55,47 +55,47 @@ function addProductRow() {
   const rowId = `productRow_${itemRowCounter}`;
   const card = document.createElement("div");
   card.id = rowId;
-  card.className = "bg-[#080E19] border border-[#1E2F52] rounded-lg p-3 space-y-2.5 transition-all product-item-card";
+  card.className = "bg-[var(--surface-subtle)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-3 product-item-card shadow-xs transition-all";
 
   card.innerHTML = `
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-end justify-between gap-3">
       <div class="flex-1 min-w-0">
-        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Modelo do Veículo / Produto</label>
-        <select class="product-select w-full bg-[#0D1628] border border-[#1E2F52] rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#0070F3] transition-all min-w-0" onchange="onProductSelectChange('${rowId}')">
+        <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Modelo do Veículo / Produto</label>
+        <select class="product-select form-input w-full px-3 py-2 text-xs text-[var(--text-primary)] min-w-0 font-medium rounded-xl" onchange="onProductSelectChange('${rowId}')">
           ${optionsHtml}
         </select>
       </div>
-      <div class="pt-4 flex-shrink-0">
-        <button type="button" class="w-7 h-7 rounded-md bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-800/30 flex items-center justify-center transition-all icon-svg" onclick="removeProductRow('${rowId}')" title="Remover item">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      <div class="flex-shrink-0">
+        <button type="button" class="h-10 w-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 flex items-center justify-center transition-all icon-svg cursor-pointer shadow-xs" onclick="removeProductRow('${rowId}')" title="Remover item">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end text-xs">
+    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2.5 items-end text-xs">
       <div class="min-w-0">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Qtd</label>
-        <input type="number" min="1" value="1" class="product-qty w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Qtd</label>
+        <input type="number" min="1" value="1" class="product-qty form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
       </div>
       <div class="min-w-0">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Peso (kg)</label>
-        <input type="number" step="0.1" value="" placeholder="kg" class="product-weight w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Peso (kg)</label>
+        <input type="number" step="0.1" value="" placeholder="kg" class="product-weight form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()" onkeyup="updateTotalsSummary()">
       </div>
       <div class="min-w-0">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Compr. (cm)</label>
-        <input type="number" value="" placeholder="C" class="product-length w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Compr. (cm)</label>
+        <input type="number" value="" placeholder="C" class="product-length form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()">
       </div>
       <div class="min-w-0">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Largura (cm)</label>
-        <input type="number" value="" placeholder="L" class="product-width w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Largura (cm)</label>
+        <input type="number" value="" placeholder="L" class="product-width form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()">
       </div>
       <div class="min-w-0">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">Altura (cm)</label>
-        <input type="number" value="" placeholder="A" class="product-height w-full bg-[#0D1628] border border-[#1E2F52] text-slate-200 rounded-md text-center text-xs py-1.5 focus:outline-none focus:border-[#0070F3] min-w-0" onchange="updateTotalsSummary()">
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Altura (cm)</label>
+        <input type="number" value="" placeholder="A" class="product-height form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()">
       </div>
       <div class="min-w-0 col-span-2 sm:col-span-1 text-right">
-        <label class="block text-[10px] font-semibold text-slate-400 mb-1">1/3 Atacado</label>
-        <span class="product-onethird-display text-xs font-bold text-[#38BDF8] block py-1">R$ 0,00</span>
+        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">1/3 Atacado</label>
+        <span class="product-onethird-display text-xs font-bold text-[var(--brand-blue)] block py-1">R$ 0,00</span>
       </div>
     </div>
   `;
@@ -281,10 +281,10 @@ async function runFreightCalculation() {
   if (optionsList) {
     optionsList.classList.remove("hidden");
     optionsList.innerHTML = `
-      <div class="p-6 text-center text-slate-400 bg-[#111111] rounded-xl border border-[#222222]">
-        <div class="inline-block animate-spin text-2xl mb-2 text-[#0070F3]">⚡</div>
-        <p class="text-xs font-semibold text-white">Calculando e arquivando cotação com seguro de 1/3 do atacado...</p>
-        <small class="text-[10px] text-slate-500 block mt-0.5">Comparando regras entre todas as transportadoras ativas</small>
+      <div class="p-6 text-center text-[var(--text-muted)] bg-[var(--surface-subtle)] rounded-xl border border-[var(--border-subtle)] shadow-xs">
+        <div class="inline-block animate-spin text-2xl mb-2 text-[var(--brand-blue)]">⚡</div>
+        <p class="text-xs font-semibold text-[var(--text-primary)]">Calculando e comparando melhores opções de frete...</p>
+        <small class="text-[10px] text-[var(--text-muted)] block mt-1 font-medium">Aplicando regras de seguro de 1/3 do atacado e cubagem</small>
       </div>
     `;
   }
@@ -314,11 +314,11 @@ async function runFreightCalculation() {
     }
 
     let html = `
-      <div class="bg-[#111111] p-3.5 rounded-xl border border-[#222222] text-xs space-y-1.5 mb-4 shadow-md">
-        <div class="flex justify-between text-slate-400"><span>Carga:</span> <strong class="text-white font-semibold">${data.product_name}</strong></div>
-        <div class="flex justify-between text-slate-400"><span>Total de Volumes:</span> <strong class="text-[#38BDF8] font-semibold">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} vol(s)</strong></div>
-        <div class="flex justify-between text-slate-400"><span>Peso Total Físico:</span> <strong class="text-white font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
-        <div class="flex justify-between text-slate-400"><span>Base Seguro (1/3 Atacado):</span> <strong class="text-[#00E599] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
+      <div class="bg-[var(--surface-subtle)] p-3.5 rounded-xl border border-[var(--border-subtle)] text-xs space-y-1.5 mb-4 shadow-xs">
+        <div class="flex justify-between text-[var(--text-muted)]"><span>Carga:</span> <strong class="text-[var(--text-primary)] font-semibold">${data.product_name}</strong></div>
+        <div class="flex justify-between text-[var(--text-muted)]"><span>Total de Volumes:</span> <strong class="text-[var(--brand-blue)] font-semibold">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} vol(s)</strong></div>
+        <div class="flex justify-between text-[var(--text-muted)]"><span>Peso Total Físico:</span> <strong class="text-[var(--text-primary)] font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
+        <div class="flex justify-between text-[var(--text-muted)]"><span>Base Seguro (1/3 Atacado):</span> <strong class="text-[var(--brand-emerald)] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
       </div>
     `;
 
@@ -329,38 +329,38 @@ async function runFreightCalculation() {
       let isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
       let isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
 
-      let cardBorderClass = "border-[#222222] bg-[#111111] hover:border-slate-700";
+      let cardBorderClass = "border-[var(--border-subtle)] bg-[var(--surface-card)] hover:border-[var(--brand-blue)]";
       let badgeHtml = "";
 
       if (isCheapest) {
-        cardBorderClass = "border-2 border-[#00E599] bg-[#00E599]/5 shadow-md shadow-emerald-500/10";
-        badgeHtml += `<span class="bg-[#00E599] text-[#000000] text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">🏆 MAIS ECONÔMICA</span>`;
+        cardBorderClass = "border-2 border-[var(--brand-emerald)] bg-emerald-500/5 shadow-md shadow-emerald-500/10";
+        badgeHtml += `<span class="bg-[var(--brand-emerald)] text-[#052e16] text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">🏆 MAIS ECONÔMICA</span>`;
       } else if (isFastest) {
-        cardBorderClass = "border-2 border-[#0070F3] bg-[#0070F3]/5 shadow-md shadow-blue-500/10";
-        badgeHtml += `<span class="bg-[#0070F3] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">⚡ MAIS RÁPIDA</span>`;
+        cardBorderClass = "border-2 border-[var(--brand-blue)] bg-blue-500/5 shadow-md shadow-blue-500/10";
+        badgeHtml += `<span class="bg-[var(--brand-blue)] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">⚡ MAIS RÁPIDA</span>`;
       }
 
       html += `
         <div class="border ${cardBorderClass} transition-all p-4 rounded-xl flex flex-wrap justify-between items-center gap-3">
           <div class="flex items-start gap-3">
-            <span class="bg-[#1E293B] text-[#38BDF8] border border-[#334155] text-xs font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">${idx + 1}º</span>
+            <span class="bg-[var(--surface-subtle)] text-[var(--brand-blue)] border border-[var(--border-subtle)] text-xs font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">${idx + 1}º</span>
             <div>
               <div class="flex items-center flex-wrap gap-2">
-                <strong class="text-sm font-extrabold text-white">${opt.carrier_name}</strong>
+                <strong class="text-sm font-extrabold text-[var(--text-primary)]">${opt.carrier_name}</strong>
                 ${badgeHtml}
               </div>
-              <p class="text-[11px] text-slate-400 mt-1">
-                Tabela: <span class="text-slate-300 font-medium">${opt.table_name}</span> | Prazo de Entrega: <strong class="text-white font-bold">${opt.delivery_days} dia(s) útil(eis)</strong>
+              <p class="text-[11px] text-[var(--text-muted)] mt-1">
+                Tabela: <span class="text-[var(--text-secondary)] font-medium">${opt.table_name}</span> | Prazo: <strong class="text-[var(--text-primary)] font-bold">${opt.delivery_days} dia(s) útil(eis)</strong>
               </p>
-              ${opt.insurance_cost > 0 ? `<small class="text-[10px] text-slate-500 block mt-0.5">Seguro incluso (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
+              ${opt.insurance_cost > 0 ? `<small class="text-[10px] text-[var(--text-muted)] block mt-0.5">Seguro incluso (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
             </div>
           </div>
           <div class="flex items-center gap-3.5">
             <div class="text-right">
-              <span class="text-xl font-black ${isCheapest ? 'text-[#00E599]' : 'text-[#0070F3]'} block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
-              <small class="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">VALOR TOTAL DE FRETE</small>
+              <span class="text-xl font-black ${isCheapest ? 'text-[var(--brand-emerald)]' : 'text-[var(--brand-blue)]'} block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
+              <small class="text-[10px] text-[var(--text-muted)] block uppercase font-bold tracking-wider">VALOR TOTAL DE FRETE</small>
             </div>
-            <button type="button" onclick="exportFreightPDF(${idx})" class="bg-[#0070F3] hover:bg-[#0068D6] text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105" title="Exportar PDF desta cotação com a transportadora ${opt.carrier_name}">
+            <button type="button" onclick="exportFreightPDF(${idx})" class="bg-[var(--brand-blue)] hover:opacity-90 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 cursor-pointer" title="Exportar PDF desta cotação com a transportadora ${opt.carrier_name}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               <span>PDF</span>
             </button>
