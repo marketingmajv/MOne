@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
-from routes.helpers import audit, crm_pilot_required, login_required, roles_required
+from routes.helpers import audit, login_required, roles_required
 from services.vercel_service import (
     calculate_performance_report,
     check_and_trigger_alerts_if_needed,
@@ -23,7 +23,6 @@ infra_bp = Blueprint("infra", __name__)
 @infra_bp.route("/infra/performance", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
-@crm_pilot_required
 def infra_performance():
     """Painel principal de monitoramento de desempenho e limites da Vercel."""
     # Avalia se há necessidade de disparar alerta silencioso em segundo plano
@@ -39,7 +38,6 @@ def infra_performance():
 @infra_bp.route("/infra/config", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
-@crm_pilot_required
 def infra_config_save():
     """Atualiza as configurações de monitoramento e números de alerta de Jam e Fauzer."""
     try:
@@ -54,7 +52,6 @@ def infra_config_save():
 @infra_bp.route("/infra/test-alert", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
-@crm_pilot_required
 def infra_test_alert():
     """Dispara um teste imediato de alerta de infraestrutura via WhatsApp."""
     target = request.form.get("target", "both").strip().lower()
@@ -90,7 +87,6 @@ def infra_test_alert():
 @infra_bp.route("/api/infra/metrics", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
-@crm_pilot_required
 def api_infra_metrics():
     """Retorna dados de telemetria em tempo real para atualização assíncrona (HTMX/Alpine)."""
     report = calculate_performance_report()

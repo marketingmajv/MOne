@@ -46,18 +46,6 @@ def whatsapp_webhook():
 
                     metadata = value.get("metadata", {})
                     recipient_phone_id = metadata.get("phone_number_id")
-                    if recipient_phone_id:
-                        try:
-                            with db() as conn:
-                                line_check = conn.execute(
-                                    "SELECT is_monitored FROM whatsapp_monitored_lines WHERE phone_number_id = %s",
-                                    (recipient_phone_id,),
-                                ).fetchone()
-                                if line_check and not line_check["is_monitored"]:
-                                    print(f"[WhatsApp Webhook]: Linha {recipient_phone_id} desplugada. Ignorando mensagem.")
-                                    continue
-                        except Exception as check_err:
-                            print("[Monitored Line Check Warning]:", check_err)
 
                     sender_name = (
                         contacts[0].get("profile", {}).get("name", "Cliente WhatsApp")
@@ -100,36 +88,7 @@ def whatsapp_webhook():
 
                         if from_phone:
                             with db() as conn:
-                                conn.execute(
-                                    "INSERT INTO whatsapp_messages(wam_id, phone, direction, message_type, body, status) VALUES(%s,%s,%s,%s,%s,%s)",
-                                    (wam_id, from_phone, "inbound", msg_type, body, "received"),
-                                )
-
-                                lead = conn.execute("SELECT id FROM crm_leads WHERE phone=%s", (from_phone,)).fetchone()
-                                if not lead:
-                                    conn.execute(
-                                        """
-                                        INSERT INTO crm_leads(name, phone, channel, status, ad_id, ad_headline, ctwa_clid, traffic_source) 
-                                        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-                                        """,
-                                        (sender_name, from_phone, "WhatsApp", "novo", ad_id, ad_headline, ctwa_clid, traffic_source),
-                                    )
-                                else:
-                                    if ad_id:
-                                        conn.execute(
-                                            """
-                                            UPDATE crm_leads 
-                                            SET ad_id = COALESCE(%s, ad_id), 
-                                                ad_headline = COALESCE(%s, ad_headline), 
-                                                ctwa_clid = COALESCE(%s, ctwa_clid), 
-                                                traffic_source = %s,
-                                                updated_at = CURRENT_TIMESTAMP
-                                            WHERE phone = %s
-                                            """,
-                                            (ad_id, ad_headline, ctwa_clid, traffic_source, from_phone),
-                                        )
-
-                                # Registrar no log de eventos do Centro de Conexões
+                                # Registrar no monitor de telemetria de webhooks
                                 summary = f"Mensagem de {sender_name} ({from_phone}): {body[:40]}"
                                 if ad_id:
                                     summary += f" [Origem: Meta Ad #{ad_id}]"
@@ -142,10 +101,9 @@ def whatsapp_webhook():
                                         """,
                                         ("meta_whatsapp", msg_type, from_phone, summary, json.dumps(data)),
                                     )
+                                    conn.commit()
                                 except Exception as log_err:
                                     print("[Webhook Log Insert Warning]:", log_err)
-
-                                conn.commit()
         except Exception as e:
             print("[WhatsApp Webhook POST Error]:", e)
 

@@ -9,7 +9,6 @@ from routes.sales_routes import sales_bp
 from routes.stock_routes import stock_bp
 from routes.freight_routes import freight_bp
 from routes.finance_routes import finance_bp
-from routes.crm_routes import crm_bp
 from routes.webhook_routes import webhook_bp
 from routes.product_routes import product_bp
 from routes.import_routes import import_bp
@@ -18,9 +17,6 @@ from routes.copilot_routes import copilot_bp
 from routes.user_routes import user_bp
 from routes.infra_routes import infra_bp
 from routes.connections_routes import connections_bp
-from routes.chat_analyzer_routes import chat_analyzer_bp
-from routes.evolution_webhook_routes import evolution_webhook_bp
-from routes.whatsapp_instance_routes import whatsapp_instance_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -29,7 +25,6 @@ ALL_BLUEPRINTS = [
     stock_bp,
     freight_bp,
     finance_bp,
-    crm_bp,
     webhook_bp,
     product_bp,
     import_bp,
@@ -38,9 +33,6 @@ ALL_BLUEPRINTS = [
     user_bp,
     infra_bp,
     connections_bp,
-    chat_analyzer_bp,
-    evolution_webhook_bp,
-    whatsapp_instance_bp,
 ]
 
 

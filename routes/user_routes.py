@@ -113,8 +113,6 @@ def delete_user(uid):
 @roles_required("admin")
 def update_user_permissions(uid):
     perms = {
-        "crm": bool(request.form.get("perm_crm")),
-        "chat_analyzer": bool(request.form.get("perm_chat_analyzer")),
         "copilot": bool(request.form.get("perm_copilot")),
         "freight": bool(request.form.get("perm_freight")),
         "stock": bool(request.form.get("perm_stock")),

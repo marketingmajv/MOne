@@ -133,18 +133,6 @@ def user_has_permission(u: dict | None, permission_key: str, default_for_sales: 
     return default_for_sales
 
 
-def crm_pilot_required(fn):
-    @wraps(fn)
-    def inner(*args, **kwargs):
-        u = current_user()
-        if not u:
-            return redirect(url_for("login"))
-        if user_has_permission(u, "crm", default_for_sales=False):
-            return fn(*args, **kwargs)
-        flash("Acesso ao CRM & WhatsApp restrito aos Gestores e colaboradores autorizados.", "danger")
-        return redirect(url_for("dashboard"))
-    return inner
-
 
 def ensure_audit_log_table(conn):
     try:
