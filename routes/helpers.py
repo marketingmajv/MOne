@@ -13,7 +13,8 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
-from flask import flash, redirect, session, url_for
+from flask import flash, g, redirect, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 from database import db
@@ -37,8 +38,30 @@ ROLE_LABELS = {
 
 
 def hash_password(password: str) -> str:
+    """Gera hash criptográfico seguro PBKDF2:SHA256 com salt aleatório por usuário."""
+    return generate_password_hash(password, method="pbkdf2:sha256")
+
+
+def verify_password(stored_hash: str | None, password: str) -> tuple[bool, bool]:
+    """
+    Valida a senha contra o hash armazenado.
+    Retorna (is_valid, needs_rehash).
+    Suporta hashes modernos (pbkdf2/scrypt) e legado (SHA-256 com salt fixo), permitindo auto-upgrade transparente.
+    """
+    if not stored_hash or not password:
+        return False, False
+
+    # 1. Hash moderno Werkzeug
+    if stored_hash.startswith(("pbkdf2:", "scrypt:")):
+        return check_password_hash(stored_hash, password), False
+
+    # 2. Hash legado SHA-256 (compatibilidade com contas antigas)
     salt = "m-one-v1"
-    return hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    legacy = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    if legacy == stored_hash:
+        return True, True  # Válido, mas sinaliza necessidade de upgrade transparente
+
+    return False, False
 
 
 def allowed_file(filename: str) -> bool:
@@ -73,12 +96,28 @@ def save_upload(file_storage, prefix="file") -> str | None:
 
 
 def current_user() -> dict | None:
+    try:
+        if hasattr(g, "_current_user"):
+            return g._current_user
+    except RuntimeError:
+        pass
+
     uid = session.get("user_id")
     if not uid:
+        try:
+            g._current_user = None
+        except (RuntimeError, AttributeError):
+            pass
         return None
+
     with db() as conn:
         u = conn.execute("SELECT * FROM users WHERE id=%s AND active=TRUE", (uid,)).fetchone()
-        return dict(u) if u else None
+        user_dict = dict(u) if u else None
+        try:
+            g._current_user = user_dict
+        except (RuntimeError, AttributeError):
+            pass
+        return user_dict
 
 
 def login_required(fn):
@@ -135,27 +174,13 @@ def user_has_permission(u: dict | None, permission_key: str, default_for_sales: 
 
 
 def ensure_audit_log_table(conn):
-    try:
-        sql = """
-            CREATE TABLE IF NOT EXISTS audit_log (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER,
-                action TEXT NOT NULL,
-                detail TEXT,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            );
-        """
-        conn.execute(sql)
-        if hasattr(conn, "commit"):
-            conn.commit()
-    except Exception as e:
-        print("[Audit Log Table Init Error]:", e)
+    """Garantido centralizadamente em database.ensure_runtime_schema."""
+    pass
 
 
 def audit(action, detail=""):
     try:
         with db() as conn:
-            ensure_audit_log_table(conn)
             conn.execute("INSERT INTO audit_log(user_id,action,detail) VALUES(%s,%s,%s)", (session.get("user_id"), action, detail))
             conn.commit()
     except Exception as e:

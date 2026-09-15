@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 load_dotenv()
 load_dotenv(".env.local")
@@ -19,14 +19,34 @@ from routes.helpers import (
 )
 
 app = Flask(__name__)
-app.secret_key = (
-    os.environ.get("FLASK_SECRET_KEY")
-    or os.environ.get("SECRET_KEY")
-    or "maj-m-one-production-fixed-secret-key-2026-v1"
-)
+_raw_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("SECRET_KEY")
+if not _raw_secret:
+    if os.environ.get("VERCEL") or os.environ.get("FLASK_ENV") == "production":
+        raise RuntimeError("Segurança crítica: FLASK_SECRET_KEY ou SECRET_KEY deve estar definida no ambiente de produção.")
+    _raw_secret = secrets.token_hex(32)
+app.secret_key = _raw_secret
+
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=60)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+if os.environ.get("VERCEL") or os.environ.get("FLASK_ENV") == "production":
+    app.config["SESSION_COOKIE_SECURE"] = True
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
+
+
+@app.after_request
+def apply_security_and_cache_headers(response):
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    # Cabeçalhos defensivos de segurança OWASP
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if os.environ.get("VERCEL") or request.is_secure:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.context_processor
@@ -63,8 +83,16 @@ def request_entity_too_large(error):
 
 @app.errorhandler(500)
 def handle_500(e):
-    import traceback
-    return f"<h3>Erro Interno</h3><pre>{traceback.format_exc()}</pre>", 500
+    import logging
+    logging.getLogger(__name__).error("Erro Interno 500: %s", e, exc_info=True)
+    return (
+        """<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><title>Erro Interno • M-One</title>
+        <style>body{background:#070b12;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+        .card{background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.1);padding:40px;border-radius:18px;max-width:480px;text-align:center;}
+        h2{color:#38bdf8;margin-top:0;}p{color:#94a3b8;line-height:1.5;}a{color:#00e599;text-decoration:none;font-weight:600;display:inline-block;margin-top:16px;}</style></head>
+        <body><div class='card'><h2>Erro Interno no Servidor</h2><p>Ocorreu uma falha temporária ao processar sua requisição. O evento foi registrado de forma segura para análise técnica.</p><a href='/'>← Voltar para o Sistema</a></div></body></html>""",
+        500,
+    )
 
 
 # Registra todos os Blueprints modulares com aliases de endpoint para compatibilidade total

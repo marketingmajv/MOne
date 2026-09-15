@@ -32,30 +32,14 @@ finance_bp = Blueprint("finance", __name__)
 
 
 def ensure_payments_columns():
-    try:
-        with db() as conn:
-            for col, col_type in [
-                ("payment_method", "TEXT"),
-                ("card_last4", "TEXT"),
-                ("supplier", "TEXT"),
-                ("document_no", "TEXT"),
-                ("ai_verified", "INTEGER DEFAULT 0")
-            ]:
-                try:
-                    conn.execute(f"ALTER TABLE payments ADD COLUMN {col} {col_type}")
-                except Exception:
-                    pass
-            conn.commit()
-    except Exception:
-        pass
+    """Garantido centralizadamente em database.ensure_runtime_schema."""
+    pass
 
 
 @finance_bp.route("/payments", methods=["GET", "POST"])
 @login_required
 @roles_required("admin", "finance", "support")
 def payments():
-    ensure_payments_columns()
-
     if request.method == "POST":
         paid_at = request.form.get("paid_at") or date.today().isoformat()
         description = request.form.get("description", "").strip()

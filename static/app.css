@@ -2053,3 +2053,218 @@ button[onclick="resetFreightForm()"]:hover {
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   M-One MAJ OS Creative Glassmorphism Preloader
+   ========================================================================== */
+.mone-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s ease;
+}
+
+.mone-preloader.active {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.mone-preloader-backdrop {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background-color 0.2s ease;
+}
+
+:root[data-theme="light"] .mone-preloader-backdrop,
+html:not([data-theme="dark"]) .mone-preloader-backdrop {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+:root[data-theme="dark"] .mone-preloader-backdrop {
+  background: rgba(11, 15, 25, 0.86);
+}
+
+.mone-preloader-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 42px;
+  border-radius: 26px;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  animation: moneCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] .mone-preloader-card,
+html:not([data-theme="dark"]) .mone-preloader-card {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 102, 255, 0.12);
+  box-shadow: 0 24px 48px -12px rgba(0, 50, 150, 0.15), 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="dark"] .mone-preloader-card {
+  background: rgba(17, 24, 39, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 102, 255, 0.25);
+}
+
+.mone-preloader-orb {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+:root[data-theme="light"] .mone-preloader-orb,
+html:not([data-theme="dark"]) .mone-preloader-orb {
+  background: linear-gradient(135deg, #ffffff, #eff6ff);
+  box-shadow: 0 12px 28px rgba(0, 102, 255, 0.18);
+}
+
+:root[data-theme="dark"] .mone-preloader-orb {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  box-shadow: 0 0 35px rgba(0, 102, 255, 0.45), inset 0 0 15px rgba(0, 229, 153, 0.15);
+}
+
+.mone-preloader-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 0deg, transparent 0deg, #0066ff 160deg, #00e599 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: moneSpinRing 1.6s linear infinite;
+}
+
+.mone-preloader-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  animation: monePulseLogo 2.2s ease-in-out infinite;
+  user-select: none;
+}
+
+.mone-preloader-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+}
+
+:root[data-theme="light"] .mone-preloader-badge,
+html:not([data-theme="dark"]) .mone-preloader-badge {
+  background: rgba(0, 102, 255, 0.1);
+  color: #0052cc;
+  border: 1px solid rgba(0, 102, 255, 0.2);
+}
+
+:root[data-theme="dark"] .mone-preloader-badge {
+  background: rgba(0, 102, 255, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.mone-preloader-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 24px;
+  transition: opacity 0.18s ease;
+  line-height: 1.4;
+}
+
+:root[data-theme="light"] .mone-preloader-text,
+html:not([data-theme="dark"]) .mone-preloader-text {
+  color: #0f172a;
+}
+
+:root[data-theme="dark"] .mone-preloader-text {
+  color: #f1f5f9;
+}
+
+.mone-preloader-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  margin-top: 22px;
+  overflow: hidden;
+  position: relative;
+}
+
+:root[data-theme="light"] .mone-preloader-track,
+html:not([data-theme="dark"]) .mone-preloader-track {
+  background: rgba(0, 102, 255, 0.1);
+}
+
+:root[data-theme="dark"] .mone-preloader-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mone-preloader-bar {
+  position: absolute;
+  height: 100%;
+  width: 45%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #0066ff, #00e599, #38bdf8);
+  animation: moneProgressBar 1.4s ease-in-out infinite;
+}
+
+@keyframes moneSpinRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes monePulseLogo {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 12px rgba(0, 102, 255, 0.65));
+  }
+}
+
+@keyframes moneProgressBar {
+  0% {
+    left: -45%;
+  }
+  50% {
+    left: 35%;
+    width: 65%;
+  }
+  100% {
+    left: 100%;
+    width: 45%;
+  }
+}
+
+@keyframes moneCardPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

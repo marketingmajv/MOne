@@ -21,11 +21,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     psycopg2 = None
 
-DEFAULT_DB_URL = (
-    os.environ.get("DATABASE_URL")
-    or os.environ.get("SUPABASE_DB_URL")
-    or "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
-)
+DEFAULT_DB_URL = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "m_one.db"
 pg_pool = None
@@ -116,6 +112,11 @@ class PGConnWrapper:
             except Exception:
                 pass
         if self.pool:
+            try:
+                if not getattr(self.conn, "closed", False):
+                    self.conn.rollback()
+            except Exception:
+                pass
             self.pool.putconn(self.conn)
         else:
             self.conn.close()
@@ -170,12 +171,18 @@ def db():
     if db_url and psycopg2:
         try:
             pool = get_pg_pool()
+            wrapper = None
             if pool:
                 conn = pool.getconn()
-                return PGConnWrapper(conn, pool=pool)
-            conn = connect_pg(db_url)
-            if conn:
-                return PGConnWrapper(conn)
+                wrapper = PGConnWrapper(conn, pool=pool)
+            else:
+                conn = connect_pg(db_url)
+                if conn:
+                    wrapper = PGConnWrapper(conn)
+            if wrapper:
+                if not _schema_ensured:
+                    ensure_runtime_schema(wrapper)
+                return wrapper
         except Exception as e:
             logger.warning("Falha ao obter conexão PostgreSQL via pool/direto: %s", e)
             if os.environ.get("VERCEL"):
@@ -190,8 +197,13 @@ def db():
         conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
+    if not _schema_ensured:
+        ensure_runtime_schema(conn)
     return conn
 
+
+
+_schema_ensured = False
 
 
 def ensure_indexes(conn):
@@ -202,7 +214,14 @@ def ensure_indexes(conn):
         "CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_phone_sent ON whatsapp_messages(phone, sent_at);",
         "CREATE INDEX IF NOT EXISTS idx_crm_leads_phone ON crm_leads(phone);",
         "CREATE INDEX IF NOT EXISTS idx_freight_rates_table_uf ON freight_rates(table_id, uf);",
-        "CREATE INDEX IF NOT EXISTS idx_sales_created ON sales(created_at);"
+        "CREATE INDEX IF NOT EXISTS idx_sales_created ON sales(created_at);",
+        "CREATE INDEX IF NOT EXISTS idx_sales_sold_at ON sales(sold_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_sales_seller ON sales(created_by, sold_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_payments_paid_at ON payments(paid_at DESC);",
+        "CREATE INDEX IF NOT EXISTS idx_sale_units_sale_id ON sale_units(sale_id);",
+        "CREATE INDEX IF NOT EXISTS idx_sale_units_product_id ON sale_units(product_id);",
+        "CREATE INDEX IF NOT EXISTS idx_sale_receipts_sale_id ON sale_receipts(sale_id);",
+        "CREATE INDEX IF NOT EXISTS idx_audit_log_id ON audit_log(id DESC);"
     ]
     for q in index_queries:
         try:
@@ -211,13 +230,92 @@ def ensure_indexes(conn):
             logger.debug("Erro ao criar índice %s: %s", q, ex)
 
 
+def ensure_runtime_schema(conn):
+    """Garante todas as colunas dinâmicas e índices apenas uma vez no ciclo de vida do processo."""
+    global _schema_ensured
+    if _schema_ensured:
+        return
+
+    is_pg = isinstance(conn, PGConnWrapper) or hasattr(conn, "conn")
+    if_not_exists = "IF NOT EXISTS " if is_pg else ""
+
+    # 1. Colunas adicionais de produtos
+    for col, col_type in [
+        ("fob_price_usd", "REAL DEFAULT 0"),
+        ("aliquota_rate", "REAL DEFAULT 0"),
+        ("installment_12x", "REAL DEFAULT 0"),
+        ("installment_18x", "REAL DEFAULT 0"),
+        ("bling_id", "TEXT"),
+        ("bling_stock", "INTEGER DEFAULT 0"),
+        ("bling_updated_at", "TIMESTAMP"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE products ADD COLUMN {if_not_exists}{col} {col_type}")
+        except Exception:
+            if is_pg:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+    # 2. Colunas adicionais de vendas
+    for col in [
+        "danfe_file", "delivery_term_files", "ai_chassis_verified",
+        "ai_extracted_chassis", "vehicle_model", "chassis_photo_file",
+        "warranty_term_file", "signed_stub_file"
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE sales ADD COLUMN {if_not_exists}{col} TEXT")
+        except Exception:
+            if is_pg:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+    # 3. Colunas adicionais de pagamentos
+    for col, col_type in [
+        ("payment_method", "TEXT"),
+        ("card_last4", "TEXT"),
+        ("supplier", "TEXT"),
+        ("document_no", "TEXT"),
+        ("ai_verified", "INTEGER DEFAULT 0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE payments ADD COLUMN {if_not_exists}{col} {col_type}")
+        except Exception:
+            if is_pg:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+    # 4. Tabela de auditoria
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                action TEXT NOT NULL,
+                detail TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+    except Exception:
+        pass
+
+    # 5. Criação de índices estratégicos
+    ensure_indexes(conn)
+    _schema_ensured = True
+
+
 def init_db():
     """Inicializa índices de alta performance e schema fallback se necessário."""
     try:
         with db() as conn:
-            ensure_indexes(conn)
+            ensure_runtime_schema(conn)
     except Exception as e:
-        logger.warning("[Init DB Indexes Warning]: %s", e)
+        logger.warning("[Init DB Warning]: %s", e)
 
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2 and os.environ.get("USE_LOCAL_DB") != "1":

@@ -30,34 +30,44 @@ def dashboard():
     with db() as conn:
         if is_seller:
             st_row = conn.execute(
-                "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s AND created_by=%s",
-                (today_iso, me["id"])
+                """
+                SELECT 
+                    COALESCE(SUM(CASE WHEN sold_at = %s THEN total_value ELSE 0 END), 0) AS sales_today,
+                    COALESCE(SUM(CASE WHEN sold_at = %s THEN 1 ELSE 0 END), 0) AS sales_today_count,
+                    COALESCE(SUM(CASE WHEN sold_at >= %s THEN total_value ELSE 0 END), 0) AS sales_month
+                FROM sales
+                WHERE sold_at >= %s AND created_by = %s
+                """,
+                (today_iso, today_iso, month_start, month_start, me["id"])
             ).fetchone()
-            sales_today = st_row["v"]
-            sales_today_count = st_row["c"]
-            sales_month = conn.execute(
-                "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s AND created_by=%s",
-                (month_start, me["id"])
-            ).fetchone()["v"]
+            sales_today = st_row["sales_today"]
+            sales_today_count = st_row["sales_today_count"]
+            sales_month = st_row["sales_month"]
             payments_month = 0.0
         else:
             st_row = conn.execute(
-                "SELECT COALESCE(SUM(total_value),0) v, COUNT(*) c FROM sales WHERE sold_at=%s",
-                (today_iso,)
+                """
+                SELECT 
+                    COALESCE(SUM(CASE WHEN sold_at = %s THEN total_value ELSE 0 END), 0) AS sales_today,
+                    COALESCE(SUM(CASE WHEN sold_at = %s THEN 1 ELSE 0 END), 0) AS sales_today_count,
+                    COALESCE(SUM(CASE WHEN sold_at >= %s THEN total_value ELSE 0 END), 0) AS sales_month
+                FROM sales
+                WHERE sold_at >= %s
+                """,
+                (today_iso, today_iso, month_start, month_start)
             ).fetchone()
-            sales_today = st_row["v"]
-            sales_today_count = st_row["c"]
-            sales_month = conn.execute(
-                "SELECT COALESCE(SUM(total_value),0) v FROM sales WHERE sold_at>=%s",
-                (month_start,)
-            ).fetchone()["v"]
+            sales_today = st_row["sales_today"]
+            sales_today_count = st_row["sales_today_count"]
+            sales_month = st_row["sales_month"]
             payments_month = conn.execute(
-                "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at>=%s",
+                "SELECT COALESCE(SUM(amount),0) v FROM payments WHERE paid_at >= %s",
                 (month_start,)
             ).fetchone()["v"]
+
         stock_available = conn.execute(
-            "SELECT COUNT(*) c FROM stock_units WHERE status='available'"
+            "SELECT COUNT(*) c FROM stock_units WHERE status = 'available'"
         ).fetchone()["c"]
+
         top_products = conn.execute(
             """
             SELECT p.id, p.name, COUNT(su.id) units, COALESCE(SUM(su.unit_value),0) revenue
@@ -71,23 +81,32 @@ def dashboard():
             """,
             (month_start,)
         ).fetchall()
+
         opportunities = conn.execute(
             """
+            WITH recent_sales AS (
+                SELECT su2.product_id, COUNT(*) AS sold_30
+                FROM sale_units su2
+                JOIN sales s2 ON s2.id = su2.sale_id
+                WHERE s2.sold_at >= %s
+                GROUP BY su2.product_id
+            )
             SELECT p.id, p.name, p.unit_cost, p.wholesale_price, p.retail_price,
                    COUNT(st.id) AS available,
                    MIN(COALESCE(st.received_at::date, st.created_at::date)) AS oldest_date,
-                   COALESCE((SELECT COUNT(*) FROM sale_units su2 JOIN sales s2 ON s2.id = su2.sale_id
-                             WHERE su2.product_id = p.id AND s2.sold_at >= %s), 0) AS sold_30
+                   COALESCE(rs.sold_30, 0) AS sold_30
             FROM products p
             JOIN stock_units st ON st.product_id = p.id AND st.status = 'available'
+            LEFT JOIN recent_sales rs ON rs.product_id = p.id
             WHERE p.promo_eligible = TRUE
-            GROUP BY p.id, p.name, p.unit_cost, p.wholesale_price, p.retail_price
+            GROUP BY p.id, p.name, p.unit_cost, p.wholesale_price, p.retail_price, rs.sold_30
             HAVING COUNT(st.id) > 0 AND MIN(COALESCE(st.received_at::date, st.created_at::date)) <= %s::date
             ORDER BY sold_30 ASC, oldest_date ASC, available DESC
             LIMIT 6
             """,
             (ago30, ago90)
         ).fetchall()
+
         chassis_alerts = conn.execute(
             """
             SELECT COUNT(*) c FROM stock_units st
@@ -95,6 +114,21 @@ def dashboard():
             WHERE st.status = 'available' AND (i.id IS NULL OR i.status != 'released')
             """
         ).fetchone()["c"]
+
+        recent_activities = []
+        try:
+            acts = conn.execute(
+                """
+                SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') user_name
+                FROM audit_log a
+                LEFT JOIN users u ON u.id = a.user_id
+                ORDER BY a.id DESC
+                LIMIT 6
+                """
+            ).fetchall()
+            recent_activities = [dict(a) for a in acts]
+        except Exception:
+            recent_activities = []
 
     opp = []
     for r in opportunities:
@@ -112,22 +146,6 @@ def dashboard():
         except Exception:
             d["days_in_stock"] = 0
         opp.append(d)
-
-    recent_activities = []
-    try:
-        with db() as conn:
-            acts = conn.execute(
-                """
-                SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') user_name
-                FROM audit_log a
-                LEFT JOIN users u ON u.id = a.user_id
-                ORDER BY a.id DESC
-                LIMIT 6
-                """
-            ).fetchall()
-            recent_activities = [dict(a) for a in acts]
-    except Exception:
-        recent_activities = []
 
     return render_template(
         "dashboard.html",

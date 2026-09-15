@@ -92,11 +92,15 @@ def get_uf_from_cep(cep_raw: str) -> str:
         if 90000 <= prefix <= 99999: return "RS"
     except Exception:
         pass
-    return ""
+_freight_tables_ensured = False
 
 
 def ensure_freight_tables(conn):
-    """Inicializa as tabelas do banco de dados para o módulo de fretes de forma nativa no PostgreSQL."""
+    """Inicializa as tabelas do banco de dados para o módulo de fretes apenas uma vez no processo."""
+    global _freight_tables_ensured
+    if _freight_tables_ensured:
+        return
+
     carrier_sql = """
         CREATE TABLE IF NOT EXISTS carriers (
             id SERIAL PRIMARY KEY,
@@ -194,6 +198,7 @@ def ensure_freight_tables(conn):
                 seed_generoso_rate_table(conn)
     except Exception as e:
         print("[Freight Auto-Seed Check Error]:", e)
+    _freight_tables_ensured = True
 
 
 GENEROSO_DATA = [

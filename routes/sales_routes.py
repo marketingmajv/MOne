@@ -32,28 +32,14 @@ sales_bp = Blueprint("sales", __name__)
 
 
 def ensure_sales_columns():
-    try:
-        with db() as conn:
-            for col in [
-                "danfe_file", "delivery_term_files", "ai_chassis_verified",
-                "ai_extracted_chassis", "vehicle_model", "chassis_photo_file",
-                "warranty_term_file", "signed_stub_file"
-            ]:
-                try:
-                    conn.execute(f"ALTER TABLE sales ADD COLUMN {col} TEXT")
-                except Exception:
-                    pass
-            conn.commit()
-    except Exception:
-        pass
+    """Garantido centralizadamente em database.ensure_runtime_schema."""
+    pass
 
 
 @sales_bp.route("/sales", methods=["GET", "POST"])
 @login_required
 @roles_required("admin", "finance", "sales", "support")
 def sales():
-    ensure_sales_columns()
-
     if request.method == "POST":
         order_number = request.form.get("order_number", "").strip()
         invoice_number = request.form.get("invoice_number", "").strip()
@@ -70,7 +56,7 @@ def sales():
 
         if not chassis_list and notes:
             with db() as conn:
-                db_chassis = [r["chassis"].upper() for r in conn.execute("SELECT chassis FROM stock_units").fetchall() if r["chassis"]]
+                db_chassis = [r["chassis"].upper() for r in conn.execute("SELECT chassis FROM stock_units WHERE status='available' AND chassis IS NOT NULL").fetchall() if r["chassis"]]
             found = [c for c in db_chassis if c in notes.upper()]
             if found:
                 chassis_list = list(set(found))
@@ -288,11 +274,10 @@ def sales():
 
     with db() as conn:
         query = f"""
-            SELECT s.*, u.name created_by_name, COUNT(DISTINCT su.id) units, COALESCE(SUM(sr.amount),0) received
+            SELECT s.*, u.name created_by_name, COUNT(DISTINCT su.id) units
             FROM sales s 
             LEFT JOIN users u ON u.id=s.created_by
             LEFT JOIN sale_units su ON su.sale_id=s.id
-            LEFT JOIN sale_receipts sr ON sr.sale_id=s.id
             {where_sql}
             GROUP BY s.id, u.name ORDER BY s.sold_at DESC, s.id DESC LIMIT 200
         """
@@ -326,6 +311,7 @@ def sales():
                 sd["chassis_details"] = c_list
                 sd["chassis_str"] = ", ".join(c["chassis"] for c in c_list)
                 sd["receipts"] = r_list
+                sd["received"] = sum(float(r.get("amount") or 0) for r in r_list)
                 t_files = []
                 if sd.get("delivery_term_files"):
                     try:

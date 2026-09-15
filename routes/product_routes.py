@@ -31,17 +31,8 @@ product_bp = Blueprint("products", __name__)
 
 
 def ensure_product_columns():
-    try:
-        with db() as conn:
-            cols = [("fob_price_usd", "REAL DEFAULT 0"), ("aliquota_rate", "REAL DEFAULT 0"), ("installment_12x", "REAL DEFAULT 0"), ("installment_18x", "REAL DEFAULT 0"), ("bling_id", "TEXT"), ("bling_stock", "INTEGER DEFAULT 0"), ("bling_updated_at", "TIMESTAMP")]
-            for col, col_type in cols:
-                try:
-                    conn.execute(f"ALTER TABLE products ADD COLUMN {col} {col_type}")
-                except Exception:
-                    pass
-            conn.commit()
-    except Exception:
-        pass
+    """Garantido centralizadamente em database.ensure_runtime_schema."""
+    pass
 
 
 def clean_product_name(raw_name: str) -> str:
@@ -173,8 +164,6 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
 @login_required
 @roles_required("admin", "finance", "stock", "support")
 def products():
-    ensure_product_columns()
-
     if request.method == "POST":
         name = request.form["name"].strip()
         sku = request.form.get("sku", "").strip() or None
