@@ -31,7 +31,7 @@
             <small style="color:var(--text-muted);">Campanhas & Conversões</small>
           </div>
         </div>
-        <span class="badge" id="metaBadgeOverview" style="background:rgba(234, 179, 8, 0.15);color:#facc15;">🟡 Diagnóstico</span>
+        <span class="badge warning" id="metaBadgeOverview">🟡 Diagnóstico</span>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Conexão direta com a Meta Marketing API para rastrear qual anúncio gerou cada lead no WhatsApp.</p>
       <div style="display:flex;gap:8px;">
@@ -50,7 +50,7 @@
             <small style="color:var(--text-muted);">Meta Cloud API</small>
           </div>
         </div>
-        <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Webhook Ativo</span>
+        <span class="badge available">🟢 Webhook Ativo</span>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Número: <strong>{{ whatsapp_cfg.phone_number or '+55 27 99867-6366' }}</strong><br>WABA ID: <code class="mono" style="font-size:0.75rem;">{{ whatsapp_cfg.waba_id or '638446228813266' }}</code></p>
       <div style="display:flex;gap:8px;">
@@ -68,7 +68,7 @@
             <small style="color:var(--text-muted);">Faturamento & Pedidos</small>
           </div>
         </div>
-        <span class="badge" style="background:rgba(34, 197, 94, 0.15);color:#4ade80;">🟢 Conectado</span>
+        <span class="badge available">🟢 Conectado</span>
       </div>
       <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">Sincronização bidirecional de notas fiscais, pedidos e dados de clientes para faturamento de chassis.</p>
       <div style="display:flex;gap:8px;">
@@ -260,24 +260,47 @@
 
 <style>
 .tab-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  background: var(--surface-subtle, #1E293B) !important;
+  border: 1px solid var(--border-subtle, #334155) !important;
+  color: var(--text-muted, #94A3B8) !important;
+  padding: 8px 16px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  min-height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
 }
 .tab-btn:hover {
-  background: rgba(255,255,255,0.05);
-  color: #fff;
+  background: var(--panel-hover, #334155) !important;
+  color: var(--text-primary, #fff) !important;
 }
 .tab-btn.active {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  font-weight: 600;
+  background: var(--brand-blue, #0070F3) !important;
+  color: #FFFFFF !important;
+  border-color: var(--brand-blue, #0070F3) !important;
+  box-shadow: 0 2px 8px rgba(0, 112, 243, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #FFFFFF !important;
+  color: #475569 !important;
+  border: 1px solid #CBD5E1 !important;
+}
+[data-theme="light"] .tab-btn:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #94A3B8 !important;
+}
+[data-theme="light"] .tab-btn.active {
+  background: #0070F3 !important;
+  color: #FFFFFF !important;
+  border-color: #0070F3 !important;
 }
 </style>
 

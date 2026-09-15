@@ -93,13 +93,13 @@
   border-radius: 16px;
   font-size: 13.5px;
   line-height: 1.55;
-  color: #f0f4f9;
+  color: var(--text-primary, #f0f4f9);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .copilot-msg.user .copilot-bubble {
-  background: #193826;
-  border-color: #2e6241;
-  color: #f7fff9;
+  background: #059669;
+  border-color: #047857;
+  color: #FFFFFF;
   border-top-right-radius: 4px;
 }
 .copilot-msg.bot .copilot-bubble {
@@ -166,10 +166,10 @@
 }
 .copilot-textarea {
   flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--surface-card, var(--bg));
+  border: 1px solid var(--border-subtle, var(--line));
   border-radius: 12px;
-  color: #fff;
+  color: var(--text-primary, #fff);
   padding: 12px 14px;
   font-size: 13.5px;
   resize: none;
@@ -213,26 +213,30 @@
 .suggestion-pill {
   width: 100%;
   text-align: left;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  color: #d1dce7;
-  padding: 11px 13px;
+  background: var(--surface-card, var(--panel));
+  border: 1px solid var(--border-subtle, var(--line));
+  color: var(--text-primary, #d1dce7);
+  padding: 12px 14px;
   border-radius: 12px;
   font-size: 12.5px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
+  white-space: normal !important;
+  line-height: 1.35;
 }
 .suggestion-pill:hover {
   border-color: var(--accent);
-  background: #142219;
-  color: #fff;
+  background: var(--panel-hover, #142219);
+  color: var(--text-primary, #fff);
 }
 .suggestion-pill span {
   color: var(--accent);
   font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 .key-alert-card {
   background: #2b2314;

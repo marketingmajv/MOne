@@ -38,7 +38,7 @@
         <th>Vendido</th>
         <th>Promo</th>
         {% if me.role in ['admin', 'finance', 'support'] %}
-          <th>Ações</th>
+          <th style="padding-right: 28px; text-align: right;">Ações</th>
         {% endif %}
       </tr>
     </thead>
@@ -83,7 +83,7 @@
           {% endif %}
         </td>
         {% if me.role in ['admin', 'finance', 'support'] %}
-          <td>
+          <td style="padding-right: 28px; text-align: right;">
             <button class="btn small" onclick="openModal('editProduct{{ p.id }}')">Editar</button>
           </td>
         {% endif %}

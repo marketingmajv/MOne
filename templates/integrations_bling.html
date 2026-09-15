@@ -27,25 +27,67 @@
   background: linear-gradient(135deg, #133321, #0e1e16);
   border: 1px solid #2d6b47;
 }
+.status-hero.connected h2 {
+  color: #f7fff9;
+}
+.status-hero.connected p {
+  color: #a7f3d0;
+}
 .status-hero.pending {
   background: linear-gradient(135deg, #382c16, #21190c);
   border: 1px solid #755928;
+}
+.status-hero.pending h2 {
+  color: #fffbeb;
+}
+.status-hero.pending p {
+  color: #fde68a;
 }
 .status-hero.disconnected {
   background: var(--panel);
   border: 1px solid var(--line);
 }
+.status-hero.disconnected h2 {
+  color: var(--text-primary);
+}
+.status-hero.disconnected p {
+  color: var(--text-muted);
+}
 .status-hero h2 {
   margin: 0 0 6px 0;
   font-size: 20px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
+/* Light Mode Overrides for Status Hero */
+[data-theme="light"] .status-hero.connected {
+  background: #ECFDF5 !important;
+  border: 1px solid #A7F3D0 !important;
+}
+[data-theme="light"] .status-hero.connected h2 {
+  color: #065F46 !important;
+}
+[data-theme="light"] .status-hero.connected p {
+  color: #047857 !important;
+}
+[data-theme="light"] .status-hero.pending {
+  background: #FEF3C7 !important;
+  border: 1px solid #FDE68A !important;
+}
+[data-theme="light"] .status-hero.pending h2 {
+  color: #92400E !important;
+}
+[data-theme="light"] .status-hero.pending p {
+  color: #78350F !important;
+}
+
 .copy-badge {
-  background: #0d141c;
-  border: 1px solid var(--line);
-  padding: 8px 12px;
+  background: var(--surface-subtle, #0d141c);
+  border: 1px solid var(--border-subtle, var(--line));
+  padding: 10px 14px;
   border-radius: 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
@@ -53,8 +95,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 6px 0 12px;
+  margin: 8px 0 12px;
   word-break: break-all;
+  color: var(--text-primary, #fff);
+}
+.copy-badge span {
+  color: var(--brand-blue, #38bdf8);
+  font-weight: 600;
+}
+.copy-badge .link-btn {
+  color: var(--brand-emerald, #00e599) !important;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+}
+[data-theme="light"] .copy-badge {
+  background: #F8FAFC !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0F172A !important;
+}
+[data-theme="light"] .copy-badge span {
+  color: #0284C7 !important;
+}
+[data-theme="light"] .copy-badge .link-btn {
+  color: #059669 !important;
 }
 </style>
 
@@ -127,9 +194,9 @@
     {% endif %}
   </div>
 
-  <div class="panel" style="background:#0e141c;">
-    <h3 style="font-size:15px;margin:0 0 12px 0;">Como criar o App no Bling:</h3>
-    <ol style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#c7d4e2;">
+  <div class="panel">
+    <h3 style="font-size:15px;margin:0 0 12px 0;color:var(--text-primary);">Como criar o App no Bling:</h3>
+    <ol style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:var(--text-secondary);">
       <li>No Bling, clique na engrenagem: <strong>Preferências > Sistema > Desenvolvedor > Aplicativos</strong>.</li>
       <li>Clique em <strong>Novo Aplicativo</strong>.</li>
       <li>Defina o Nome como: <code>M-One</code>.</li>
@@ -141,13 +208,13 @@
       <button type="button" class="link-btn" onclick="navigator.clipboard.writeText('{{ callback_url }}'); alert('Copiado!');">Copiar</button>
     </div>
 
-    <small style="color:var(--muted);display:block;margin-bottom:12px;">Para o ambiente online oficial da Vercel, use:</small>
+    <small style="color:var(--text-muted);display:block;margin-bottom:12px;">Para o ambiente online oficial da Vercel, use:</small>
     <div class="copy-badge">
       <span>https://m-one.majmobilidade.com.br/bling/callback</span>
       <button type="button" class="link-btn" onclick="navigator.clipboard.writeText('https://m-one.majmobilidade.com.br/bling/callback'); alert('Copiado!');">Copiar</button>
     </div>
 
-    <ol start="5" style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#c7d4e2;">
+    <ol start="5" style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:var(--text-secondary);">
       <li>Em <strong>Permissões/Escopos</strong>, marque:
         <ul>
           <li>Vendas</li>

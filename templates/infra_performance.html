@@ -11,8 +11,8 @@
       <span class="badge" style="background: {% if report.is_critical %}#ef4444{% else %}#22c55e{% endif %}; color: #fff; font-weight: 800; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;">
         {{ report.status_zone }}
       </span>
-      <h2 style="margin: 10px 0 4px 0; font-size: 1.6rem; font-weight: 800; color: #fff;">
-        Pico Atual: <span style="color: {% if report.is_critical %}#ef4444{% else %}#4ade80{% endif %};">{{ report.max_pct }}%</span> da cota máxima
+      <h2 style="margin: 10px 0 4px 0; font-size: 1.6rem; font-weight: 800; color: var(--text-primary);">
+        Pico Atual: <span style="color: {% if report.is_critical %}#ef4444{% else %}#10b981{% endif %};">{{ report.max_pct }}%</span> da cota máxima
       </h2>
       <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
         {% if report.is_critical %}
@@ -23,13 +23,13 @@
       </p>
     </div>
 
-    <div style="text-align: right; background: rgba(0,0,0,0.3); padding: 12px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+    <div style="text-align: right; background: var(--surface-subtle); padding: 12px 18px; border-radius: 8px; border: 1px solid var(--border-subtle);">
       <small style="color: var(--text-muted); display: block; font-size: 0.78rem;">Origem dos Dados</small>
-      <strong style="color: #38bdf8; font-size: 0.95rem;">
+      <strong style="color: var(--brand-blue); font-size: 0.95rem;">
         {% if report.raw.source == 'vercel_api' %}🟢 Conectado à API Vercel{% else %}⚙️ Telemetria M-One{% endif %}
       </strong>
       {% if report.last_alert_sent_at %}
-        <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: #facc15;">Último alerta: {{ report.last_alert_sent_at }}</small>
+        <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: #f59e0b;">Último alerta: {{ report.last_alert_sent_at }}</small>
       {% endif %}
     </div>
   </div>
@@ -38,21 +38,21 @@
 <!-- 4 Quota Performance Progress Bars -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px;">
   {% for m in report.metrics %}
-  <div class="panel" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 18px;">
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 18px;">
     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-      <strong style="font-size: 0.92rem; color: #fff;">{{ m.name }}</strong>
-      <span style="font-size: 1.15rem; font-weight: 800; color: {% if m.pct >= report.threshold %}#ef4444{% elif m.pct >= 50 %}#facc15{% else %}#4ade80{% endif %};">
+      <strong style="font-size: 0.92rem; color: var(--text-primary);">{{ m.name }}</strong>
+      <span style="font-size: 1.15rem; font-weight: 800; color: {% if m.pct >= report.threshold %}#ef4444{% elif m.pct >= 50 %}#f59e0b{% else %}#10b981{% endif %};">
         {{ m.pct }}%
       </span>
     </div>
 
     <!-- Progress Bar -->
-    <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
-      <div style="width: {{ m.pct }}%; height: 100%; background: {% if m.pct >= report.threshold %}linear-gradient(90deg, #f97316, #ef4444){% elif m.pct >= 50 %}linear-gradient(90deg, #eab308, #facc15){% else %}linear-gradient(90deg, #10b981, #22c55e){% endif %}; transition: width 0.5s ease-in-out;"></div>
+    <div style="width: 100%; height: 8px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+      <div style="width: {{ m.pct }}%; height: 100%; background: {% if m.pct >= report.threshold %}linear-gradient(90deg, #f97316, #ef4444){% elif m.pct >= 50 %}linear-gradient(90deg, #eab308, #f59e0b){% else %}linear-gradient(90deg, #10b981, #059669){% endif %}; transition: width 0.5s ease-in-out;"></div>
     </div>
 
     <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
-      <span>Atual: <b style="color: #fff;">{{ m.current }}</b> {{ m.unit }}</span>
+      <span>Atual: <b style="color: var(--text-primary);">{{ m.current }}</b> {{ m.unit }}</span>
       <span>Teto: {{ m.limit }} {{ m.unit }}</span>
     </div>
   </div>
@@ -63,9 +63,9 @@
 <div class="two-col" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start;">
   
   <!-- Config Form Card -->
-  <div class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
-    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 1.05rem;">⚙️ Configuração de Alertas & Vercel API</h3>
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px;">
+    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary);">⚙️ Configuração de Alertas & Vercel API</h3>
       <small style="color: var(--text-muted);">Gerenciamento dos destinatários Jam e Fauzer</small>
     </div>
 
@@ -108,9 +108,9 @@
   </div>
 
   <!-- Test & Verification Actions Card -->
-  <div class="panel" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px;">
-    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 1.05rem;">🧪 Validação Imediata de Alerta</h3>
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px;">
+    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary);">🧪 Validação Imediata de Alerta</h3>
       <small style="color: var(--text-muted);">Teste do canal de envio via Meta WhatsApp</small>
     </div>
 
@@ -120,7 +120,7 @@
 
     <form method="post" action="{{ url_for('infra.infra_test_alert') }}" style="display: flex; flex-direction: column; gap: 12px;">
       <label style="font-size: 0.82rem; color: var(--text-muted);">Destinatário do Teste:</label>
-      <select name="target" style="padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px;">
+      <select name="target" style="padding: 10px; background: var(--surface-card); border: 1px solid var(--border-subtle); color: var(--text-primary); border-radius: 6px;">
         <option value="both">📲 Ambos (Jam Penitenti e Fauzer)</option>
         <option value="jam">📲 Apenas Jam Penitenti</option>
         <option value="fauzer">📲 Apenas Fauzer</option>
@@ -131,8 +131,8 @@
       </button>
     </form>
 
-    <div style="margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem; color: var(--text-muted);">
-      <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">Política de Cooldown:</strong>
+    <div style="margin-top: 20px; padding: 12px; background: var(--surface-subtle); border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 0.78rem; color: var(--text-secondary);">
+      <strong style="color: var(--brand-blue); display: block; margin-bottom: 4px;">Política de Cooldown:</strong>
       Os alertas automáticos possuem intervalo mínimo de 24 horas por marco (75%, 85%, 95%) para evitar envios repetitivos.
     </div>
   </div>

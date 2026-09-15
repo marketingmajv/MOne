@@ -4,28 +4,28 @@
 {% block page_subtitle %}Histórico completo e tagueamento de todas as ações realizadas no sistema.{% endblock %}
 
 {% block content %}
-<div class="space-y-5 text-slate-200">
+<div class="space-y-5">
   
-  <div class="bg-[#091120] border border-[#1B2A4A] rounded-xl p-4.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-lg">
+  <div class="panel flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style="padding: 16px 20px; margin-bottom: 20px;">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-lg bg-[#0070F3]/15 text-[#0070F3] border border-[#0070F3]/30 flex items-center justify-center icon-svg">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 112, 243, 0.12); color: var(--brand-blue, #0070F3); border: 1px solid rgba(0, 112, 243, 0.25); display: flex; align-items: center; justify-content: center;" class="icon-svg">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
       <div>
-        <h1 class="text-base font-bold text-white tracking-tight">Registro Oficial de Rastreabilidade</h1>
-        <p class="text-xs text-slate-400">Emissões, consultas, compras, pagamentos e alterações tagueadas por usuário.</p>
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Registro Oficial de Rastreabilidade</h3>
+        <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted);">Emissões, consultas, compras, pagamentos e alterações tagueadas por usuário.</p>
       </div>
     </div>
 
-    <form method="get" class="flex items-center gap-2 w-full md:w-auto">
-      <div class="relative w-full md:w-80">
-        <span class="absolute left-3 top-2.5 text-slate-500 icon-svg">
+    <form method="get" style="display: flex; align-items: center; gap: 8px; width: 100%; max-width: 420px;">
+      <div style="position: relative; flex: 1;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none;" class="icon-svg">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </span>
-        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por usuário, ação ou detalhe..." class="w-full bg-[#070D18] border border-[#1B2A47] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#0070F3]">
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por usuário, ação ou detalhe..." style="width: 100%; height: 38px; padding-left: 36px; padding-right: 12px; border-radius: 8px; font-size: 13px;">
       </div>
-      <button type="submit" class="bg-[#0070F3] hover:bg-[#0068D6] text-white px-3.5 py-2 rounded-lg text-xs font-bold transition-all">Buscar</button>
-      {% if q %}<a href="{{ url_for('audit_logs') }}" class="bg-[#111C30] hover:bg-[#182642] text-slate-300 px-3 py-2 rounded-lg text-xs font-semibold border border-[#23355A]">Limpar</a>{% endif %}
+      <button type="submit" class="btn primary" style="height: 38px; padding: 0 16px; font-weight: 600; white-space: nowrap;">Buscar</button>
+      {% if q %}<a href="{{ url_for('audit_logs') }}" class="btn" style="height: 38px; padding: 0 12px; display: inline-flex; align-items: center;">Limpar</a>{% endif %}
     </form>
   </div>
 
@@ -52,17 +52,17 @@
         <tbody>
           {% for log in logs %}
           <tr>
-            <td style="font-size:0.75rem; color:#94A3B8; font-family:monospace;">{{ log.created_at }}</td>
+            <td style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">{{ log.created_at }}</td>
             <td>
-              <b style="color:#FFF;">{{ log.user_name or 'Sistema / Anônimo' }}</b>
-              {% if log.user_role %}<small style="display:block; font-size:0.7rem; color:#64748B;">{{ role_labels.get(log.user_role, log.user_role) }}</small>{% endif %}
+              <b style="color:var(--text-primary);">{{ log.user_name or 'Sistema / Anônimo' }}</b>
+              {% if log.user_role %}<small style="display:block; font-size:0.7rem; color:var(--text-muted);">{{ role_labels.get(log.user_role, log.user_role) }}</small>{% endif %}
             </td>
             <td>
-              <span class="badge" style="background:#1E293B; color:#38BDF8; border:1px solid #334155; font-family:monospace; font-size:0.7rem;">
+              <span class="badge" style="background:rgba(56, 189, 248, 0.12); color:var(--brand-blue); border:1px solid rgba(56, 189, 248, 0.3); font-family:monospace; font-size:0.7rem;">
                 {{ log.action }}
               </span>
             </td>
-            <td style="font-size:0.8rem; color:#CBD5E1; font-family:monospace; word-break:break-all;">
+            <td style="font-size:0.8rem; color:var(--text-secondary); font-family:monospace; word-break:break-all;">
               {{ log.detail or '—' }}
             </td>
           </tr>

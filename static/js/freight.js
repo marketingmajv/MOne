@@ -276,15 +276,40 @@ async function runFreightCalculation() {
 
   const emptyState = document.getElementById("freightEmptyState");
   const optionsList = document.getElementById("freightOptionsList");
+  const submitBtn = document.querySelector("#freightCalcForm button[type='submit']");
+  const origBtnHtml = submitBtn ? submitBtn.innerHTML : "";
   
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add("opacity-80", "cursor-wait");
+    submitBtn.innerHTML = `
+      <svg class="icon-svg animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+      <span>Consultando Transportadoras...</span>
+    `;
+  }
+
   if (emptyState) emptyState.classList.add("hidden");
   if (optionsList) {
     optionsList.classList.remove("hidden");
     optionsList.innerHTML = `
-      <div class="p-6 text-center text-[var(--text-muted)] bg-[var(--surface-subtle)] rounded-xl border border-[var(--border-subtle)] shadow-xs">
-        <div class="inline-block animate-spin text-2xl mb-2 text-[var(--brand-blue)]">⚡</div>
-        <p class="text-xs font-semibold text-[var(--text-primary)]">Calculando e comparando melhores opções de frete...</p>
-        <small class="text-[10px] text-[var(--text-muted)] block mt-1 font-medium">Aplicando regras de seguro de 1/3 do atacado e cubagem</small>
+      <div class="freight-loading-card p-8 text-center rounded-2xl flex flex-col items-center justify-center min-h-[380px] shadow-sm">
+        <div class="relative mb-4">
+          <div class="w-16 h-16 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--brand-emerald)] flex items-center justify-center shadow-md icon-svg">
+            <svg class="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <span class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[var(--brand-emerald)] border-2 border-[var(--surface-card)] animate-pulse shadow-xs"></span>
+        </div>
+        <h3 class="text-sm font-extrabold text-[var(--text-primary)] tracking-tight">Simulando Melhores Rotas de Frete</h3>
+        <p class="text-xs text-[var(--text-secondary)] mt-1.5 max-w-[300px]">
+          Consultando tabelas ativas, peso cúbico e regra obrigatória de seguro de 1/3 do atacado...
+        </p>
+        <div class="w-48 progress-track mt-5">
+          <div class="progress-fill progress-indeterminate" style="width: 100%;"></div>
+        </div>
+        <div class="mt-4 flex items-center gap-2 text-[11px] text-[var(--text-muted)] bg-[var(--surface-card)] px-3 py-1.5 rounded-full border border-[var(--border-subtle)] shadow-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Origem Vitória/ES • Cotação Dinâmica</span>
+        </div>
       </div>
     `;
   }
@@ -314,12 +339,21 @@ async function runFreightCalculation() {
     }
 
     let html = `
-      <div class="bg-[var(--surface-subtle)] p-3.5 rounded-xl border border-[var(--border-subtle)] text-xs space-y-1.5 mb-4 shadow-xs">
-        <div class="flex justify-between text-[var(--text-muted)]"><span>Carga:</span> <strong class="text-[var(--text-primary)] font-semibold">${data.product_name}</strong></div>
-        <div class="flex justify-between text-[var(--text-muted)]"><span>Total de Volumes:</span> <strong class="text-[var(--brand-blue)] font-semibold">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} vol(s)</strong></div>
-        <div class="flex justify-between text-[var(--text-muted)]"><span>Peso Total Físico:</span> <strong class="text-[var(--text-primary)] font-semibold">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></div>
-        <div class="flex justify-between text-[var(--text-muted)]"><span>Base Seguro (1/3 Atacado):</span> <strong class="text-[var(--brand-emerald)] font-bold">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></div>
-      </div>
+      <div class="animate-fade-in space-y-3">
+        <div class="radar-item" style="padding: 12px 14px; margin-bottom: 8px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: var(--text); font-size: 0.84rem;">${data.product_name}</strong>
+              <span class="badge" style="font-size: 0.7rem; font-weight: 700;">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} volume(s)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--muted); margin-top: 4px;">
+              <span>Peso Físico: <strong style="color: var(--text);">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></span>
+              <span>Base Seguro (1/3): <strong style="color: var(--accent);">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rank-list">
     `;
 
     // Ordenação por menor preço
@@ -329,50 +363,62 @@ async function runFreightCalculation() {
       let isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
       let isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
 
-      let cardBorderClass = "border-[var(--border-subtle)] bg-[var(--surface-card)] hover:border-[var(--brand-blue)]";
+      let rankBg = "var(--primary)";
+      let rankColor = "#042211";
+      let rowBorder = "1px solid var(--line)";
       let badgeHtml = "";
 
       if (isCheapest) {
-        cardBorderClass = "border-2 border-[var(--brand-emerald)] bg-emerald-500/5 shadow-md shadow-emerald-500/10";
-        badgeHtml += `<span class="bg-[var(--brand-emerald)] text-[#052e16] text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">🏆 MAIS ECONÔMICA</span>`;
+        rankBg = "var(--brand-emerald)";
+        rankColor = "#042211";
+        rowBorder = "1px solid rgba(0, 229, 153, 0.35)";
+        badgeHtml = `<span class="badge" style="background: rgba(0,229,153,0.12); color: var(--accent); border-color: rgba(0,229,153,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS ECONÔMICA</span>`;
       } else if (isFastest) {
-        cardBorderClass = "border-2 border-[var(--brand-blue)] bg-blue-500/5 shadow-md shadow-blue-500/10";
-        badgeHtml += `<span class="bg-[var(--brand-blue)] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">⚡ MAIS RÁPIDA</span>`;
+        rankBg = "var(--brand-blue)";
+        rankColor = "#FFFFFF";
+        rowBorder = "1px solid rgba(56, 189, 248, 0.35)";
+        badgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.12); color: var(--brand-blue); border-color: rgba(56,189,248,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS RÁPIDA</span>`;
       }
 
       html += `
-        <div class="border ${cardBorderClass} transition-all p-4 rounded-xl flex flex-wrap justify-between items-center gap-3">
-          <div class="flex items-start gap-3">
-            <span class="bg-[var(--surface-subtle)] text-[var(--brand-blue)] border border-[var(--border-subtle)] text-xs font-mono font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">${idx + 1}º</span>
-            <div>
-              <div class="flex items-center flex-wrap gap-2">
-                <strong class="text-sm font-extrabold text-[var(--text-primary)]">${opt.carrier_name}</strong>
-                ${badgeHtml}
-              </div>
-              <p class="text-[11px] text-[var(--text-muted)] mt-1">
-                Tabela: <span class="text-[var(--text-secondary)] font-medium">${opt.table_name}</span> | Prazo: <strong class="text-[var(--text-primary)] font-bold">${opt.delivery_days} dia(s) útil(eis)</strong>
-              </p>
-              ${opt.insurance_cost > 0 ? `<small class="text-[10px] text-[var(--text-muted)] block mt-0.5">Seguro incluso (1/3 Atacado): R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
+        <div class="rank-row" style="border: ${rowBorder}; padding: 12px 14px; gap: 12px;">
+          <span class="rank" style="background: ${rankBg}; color: ${rankColor}; flex-shrink: 0;">${idx + 1}</span>
+          <div class="grow" style="min-width: 0;">
+            <div style="display: flex; align-items: center; flex-wrap: wrap;">
+              <b style="font-size: 0.88rem; color: var(--text);">${opt.carrier_name}</b>
+              ${badgeHtml}
             </div>
+            <small style="color: var(--muted); font-size: 0.74rem; display: block; margin-top: 2px;">
+              Tabela: ${opt.table_name} • Prazo: <strong style="color: var(--text);">${opt.delivery_days} dia(s) útil(eis)</strong>
+            </small>
+            ${opt.insurance_cost > 0 ? `<small style="color: var(--muted); font-size: 0.7rem; display: block;">Seguro incluso: R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
           </div>
-          <div class="flex items-center gap-3.5">
-            <div class="text-right">
-              <span class="text-xl font-black ${isCheapest ? 'text-[var(--brand-emerald)]' : 'text-[var(--brand-blue)]'} block">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</span>
-              <small class="text-[10px] text-[var(--text-muted)] block uppercase font-bold tracking-wider">VALOR TOTAL DE FRETE</small>
-            </div>
-            <button type="button" onclick="exportFreightPDF(${idx})" class="bg-[var(--brand-blue)] hover:opacity-90 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 cursor-pointer" title="Exportar PDF desta cotação com a transportadora ${opt.carrier_name}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              <span>PDF</span>
+          <div style="text-align: right; flex-shrink: 0;">
+            <strong class="tabular-nums" style="display: block; font-size: 1.15rem; font-weight: 800; color: ${isCheapest ? 'var(--accent)' : 'var(--brand-blue)'};">
+              R$ ${opt.total_price.toFixed(2).replace('.', ',')}
+            </strong>
+            <button type="button" onclick="exportFreightPDF(${idx})" class="link-btn" style="font-size: 0.72rem; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Exportar PDF desta transportadora">
+              <span>Exportar PDF ↗</span>
             </button>
           </div>
         </div>
       `;
     });
 
+    html += `
+        </div>
+      </div>
+    `;
     optionsList.innerHTML = html;
   } catch (err) {
     if (optionsList) {
       optionsList.innerHTML = `<div class="bg-red-950/60 border border-red-800/60 text-red-300 p-4 rounded-xl text-xs">Erro ao realizar cálculo: ${err.message}</div>`;
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-80", "cursor-wait");
+      submitBtn.innerHTML = origBtnHtml;
     }
   }
 }
