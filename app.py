@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, flash, jsonify, redirect, request, session, url_for
 
 load_dotenv()
 load_dotenv(".env.local")
@@ -35,6 +35,47 @@ app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
 
 
+def generate_csrf_token() -> str:
+    """Gera ou recupera o token CSRF único da sessão do usuário."""
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_hex(32)
+    return session["_csrf_token"]
+
+
+@app.before_request
+def validate_csrf():
+    """Valida tokens CSRF em todas as requisições de alteração de estado (POST/PUT/DELETE/PATCH)."""
+    if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+        # 1. Exceção: Webhooks externos de terceiros (ex: WhatsApp/Z-API) que não usam sessão
+        if request.path.startswith("/webhook/"):
+            return
+
+        # 2. Exceção de testes automatizados unitários
+        if app.config.get("TESTING") and "_csrf_token" not in session:
+            return
+
+        expected_token = session.get("_csrf_token")
+        sent_token = (
+            request.form.get("csrf_token")
+            or request.headers.get("X-CSRF-Token")
+            or request.headers.get("X-CSRFToken")
+        )
+        if not sent_token and request.is_json:
+            try:
+                sent_token = (request.get_json(silent=True) or {}).get("csrf_token")
+            except Exception:
+                sent_token = None
+
+        # Validação segura em tempo constante (evita timing attacks)
+        if not expected_token or not sent_token or not secrets.compare_digest(str(expected_token), str(sent_token)):
+            import logging
+            logging.getLogger(__name__).warning("Bloqueio CSRF ativado: rota=%s ip=%s", request.path, request.remote_addr)
+            if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"success": False, "error": "Token de segurança CSRF inválido ou expirado."}), 403
+            flash("Sua sessão de segurança expirou. Por favor, tente novamente.", "danger")
+            return redirect(request.referrer or url_for("dashboard")), 403
+
+
 @app.after_request
 def apply_security_and_cache_headers(response):
     if request.path.startswith("/static/"):
@@ -58,6 +99,7 @@ def inject_globals():
         "role_labels": ROLE_LABELS,
         "now": datetime.utcnow(),
         "user_has_permission": user_has_permission,
+        "csrf_token": generate_csrf_token,
     }
 
 

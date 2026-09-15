@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from flask import Blueprint, jsonify, render_template, request, send_from_directory
+from pathlib import Path
+from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
 
 from database import db
 from routes.helpers import UPLOAD_DIR, current_user, login_required, roles_required, user_has_permission
@@ -189,7 +190,51 @@ def audit_logs():
 @dashboard_bp.route("/uploads/<path:filename>")
 @login_required
 def uploads(filename: str):
-    return send_from_directory(UPLOAD_DIR, filename, as_attachment=False)
+    # 1. Defesa contra Path Traversal: utiliza estritamente o basename do arquivo
+    safe_name = Path(filename).name
+    target_path = UPLOAD_DIR / safe_name
+    if not target_path.exists() or not target_path.is_file():
+        abort(404)
+
+    me = current_user()
+    if not me:
+        abort(401)
+
+    role = me.get("role")
+    # Diretoria, Suporte e Financeiro têm acesso irrestrito
+    if role in ["admin", "support", "finance"] or user_has_permission(me, "all_sales", default_for_sales=False):
+        return send_from_directory(UPLOAD_DIR, safe_name, as_attachment=False)
+
+    # Bloqueio de sigilo: Vendedores não podem acessar documentos de custos/importações (AGENTS.md)
+    confidential_prefixes = ("bl_", "di_", "ci_", "packing_list_", "container_", "fornecedor_")
+    if safe_name.lower().startswith(confidential_prefixes):
+        abort(403)
+
+    # Para vendedor sem all_sales: valida se o documento pertence a uma venda dele
+    if role == "sales":
+        with db() as conn:
+            owns_sale = conn.execute(
+                """SELECT 1 FROM sales 
+                   WHERE created_by = %s AND (
+                       danfe_file = %s OR 
+                       chassis_photo_file = %s OR 
+                       warranty_term_file = %s OR 
+                       signed_stub_file = %s OR 
+                       delivery_term_files LIKE %s
+                   )""",
+                (me["id"], safe_name, safe_name, safe_name, safe_name, f"%{safe_name}%")
+            ).fetchone()
+            if not owns_sale:
+                owns_receipt = conn.execute(
+                    """SELECT 1 FROM sale_receipts sr 
+                       JOIN sales s ON s.id = sr.sale_id 
+                       WHERE s.created_by = %s AND sr.receipt_file = %s""",
+                    (me["id"], safe_name)
+                ).fetchone()
+                if not owns_receipt:
+                    abort(403)
+
+    return send_from_directory(UPLOAD_DIR, safe_name, as_attachment=False)
 
 
 @dashboard_bp.route("/api/dashboard/chart-data")

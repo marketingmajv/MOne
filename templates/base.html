@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <script>
     (function() {
       const savedTheme = localStorage.getItem('mone_theme') || 'light';
@@ -182,6 +183,47 @@
     document.addEventListener('DOMContentLoaded', () => {
       updateThemeUi(document.documentElement.getAttribute('data-theme') || 'light');
     });
+
+    // Injeção Automática de Proteção CSRF (Formulários, HTMX e Fetch)
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (form && form.method && form.method.toUpperCase() === 'POST' && !form.querySelector('input[name="csrf_token"]')) {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (token) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'csrf_token';
+          input.value = token;
+          form.appendChild(input);
+        }
+      }
+    }, true);
+
+    document.addEventListener('htmx:configRequest', (evt) => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (token) {
+        evt.detail.headers['X-CSRF-Token'] = token;
+      }
+    });
+
+    const _origFetch = window.fetch;
+    window.fetch = function(url, opts = {}) {
+      const m = (opts.method || 'GET').toUpperCase();
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(m)) {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (token) {
+          opts.headers = opts.headers || {};
+          if (opts.headers instanceof Headers) {
+            if (!opts.headers.has('X-CSRF-Token')) opts.headers.set('X-CSRF-Token', token);
+          } else if (Array.isArray(opts.headers)) {
+            opts.headers.push(['X-CSRF-Token', token]);
+          } else {
+            if (!opts.headers['X-CSRF-Token']) opts.headers['X-CSRF-Token'] = token;
+          }
+        }
+      }
+      return _origFetch(url, opts);
+    };
   </script>
   {% block scripts %}{% endblock %}
   
