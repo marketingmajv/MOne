@@ -17,6 +17,7 @@ from routes.copilot_routes import copilot_bp
 from routes.user_routes import user_bp
 from routes.infra_routes import infra_bp
 from routes.connections_routes import connections_bp
+from routes.backup_routes import backup_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -33,6 +34,7 @@ ALL_BLUEPRINTS = [
     user_bp,
     infra_bp,
     connections_bp,
+    backup_bp,
 ]
 
 

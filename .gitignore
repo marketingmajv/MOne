@@ -8,4 +8,7 @@ __pycache__/
 m_one.db
 *.bak
 uploads/
+backups/
+*.zip
 .DS_Store
+

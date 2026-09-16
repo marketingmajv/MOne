@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Segurança & Backups Físicos{% endblock %}
+{% block page_title %}Segurança & Backups Físicos{% endblock %}
+{% block page_subtitle %}Controle de contingência redundante, sincronização com Google Drive e Disaster Recovery.{% endblock %}
+
+{% block top_actions %}
+  <button type="button" onclick="openCloudAdviceModal()" class="btn secondary sm" style="font-size: 0.76rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+    <span>💡</span>
+    <span>Dica de Segurança em Nuvem</span>
+  </button>
+
+  <button type="button" id="btnManualBackup" onclick="triggerManualBackup()" class="btn primary sm" style="font-size: 0.78rem; font-weight: 700;">
+    <span id="btnBackupIcon">⚡</span>
+    <span id="btnBackupText">Realizar Backup Agora</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="w-full space-y-6 text-[var(--text-primary)] font-sans">
+
+  <!-- BANNER EXECUTIVO DE COBERTURA & CONTINGÊNCIA -->
+  <div class="panel" style="margin-bottom: 22px; padding: 22px; border-radius: var(--radius); background: linear-gradient(135deg, rgba(16, 25, 44, 0.95) 0%, rgba(8, 13, 26, 0.98) 100%); border: 1px solid rgba(255, 255, 255, 0.12); color: #fff;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span style="font-size: 1.4rem;">🛡️</span>
+          <h2 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: #fff;">
+            Controle Físico & Proteção Anti-Falha (Disaster Recovery)
+          </h2>
+          <span class="badge" style="background: rgba(0, 229, 153, 0.18); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.3); font-weight: 700;">
+            100% Redundante
+          </span>
+        </div>
+        <p style="margin: 0; font-size: 0.88rem; color: #CBD5E1; max-width: 780px;">
+          Cada pacote de backup contém o <b>Dump PostgreSQL do Supabase (.sql)</b>, a <b>cópia SQLite offline (m_one.db)</b> para execução local sem internet e <b>planilhas CSV auditáveis</b>. Retenção histórica automática dos últimos 30 dias.
+        </p>
+      </div>
+
+      <div style="text-align: right;">
+        <small style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; color: #94A3B8;">Gatilho Automático</small>
+        <div style="font-size: 1.1rem; font-weight: 800; color: #00E599; margin-top: 2px;">
+          No Login de Administradores
+        </div>
+        <small style="color: #64748B; font-size: 0.72rem;">Intervalo de segurança: máx 1 cópia / 30 min</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENTO GRID: 4 MÉTRICAS DE SEGURANÇA -->
+  <div class="bento-grid-4">
+    <div class="bento-metric">
+      <div>
+        <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Último Backup Gerado</small>
+        <strong style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">
+          {{ summary.last_backup.created_at if summary.last_backup else 'Nenhum ainda' }}
+        </strong>
+        <span style="font-size: 0.78rem; color: var(--accent); font-weight: 600;">
+          {% if summary.last_backup %}🟢 Cópia íntegra verificada{% else %}Aguardando primeira execução{% endif %}
+        </span>
+      </div>
+      <div class="charge-line" style="width: 100%;"></div>
+    </div>
+
+    <div class="bento-metric">
+      <div>
+        <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Espelho de Nuvem</small>
+        <strong style="font-size: 1.15rem; font-weight: 800; color: var(--brand-blue); margin: 6px 0 2px; display: block;">
+          {% if summary.gdrive_connected %}Google Drive Ativo{% else %}Recomendado{% endif %}
+        </strong>
+        <span style="font-size: 0.76rem; color: var(--muted);">
+          {% if summary.gdrive_connected %}
+          Sincronizado na pasta do Mac
+          {% else %}
+          Copie o .zip para sua nuvem
+          {% endif %}
+        </span>
+      </div>
+      <div class="charge-line" style="width: 100%;"></div>
+    </div>
+
+    <div class="bento-metric">
+      <div>
+        <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Execução Offline</small>
+        <strong style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">
+          Pronto (m_one.db)
+        </strong>
+        <span style="font-size: 0.78rem; color: var(--muted);">Opera 100% sem internet se Supabase cair</span>
+      </div>
+      <div class="charge-line" style="width: 100%;"></div>
+    </div>
+
+    <div class="bento-metric">
+      <div>
+        <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Armazenamento Físico</small>
+        <strong style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">
+          {{ summary.total_backups }} pacotes ({{ summary.total_size_mb }} MB)
+        </strong>
+        <span style="font-size: 0.78rem; color: var(--muted);">Retenção automática de 30 dias</span>
+      </div>
+      <div class="charge-line" style="width: 100%;"></div>
+    </div>
+  </div>
+
+  <!-- TABELA HISTÓRICA DE BACKUPS DISPONÍVEIS -->
+  <div class="panel" style="margin-bottom: 22px;">
+    <div class="panel-head" style="margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; color: var(--text);">
+          <span class="radar-dot"></span>
+          <span>Pacotes de Contingência Armazenados</span>
+        </h3>
+        <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.78rem;">Cópias físicas compactadas (.zip) disponíveis para download imediato ou auditoria</p>
+      </div>
+      <button type="button" onclick="location.reload()" class="btn sm secondary" style="font-size: 0.74rem;">
+        <span>↻ Atualizar Lista</span>
+      </button>
+    </div>
+
+    {% if summary.backups %}
+    <div class="table-wrap" style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Arquivo do Pacote</th>
+            <th>Data e Hora</th>
+            <th>Tamanho</th>
+            <th>Destinos de Armazenamento</th>
+            <th style="text-align: right; min-width: 160px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in summary.backups %}
+          <tr>
+            <td>
+              <strong style="color: var(--text); font-family: monospace; font-size: 0.82rem;">{{ b.filename }}</strong>
+            </td>
+            <td style="color: var(--muted); font-size: 0.82rem;">{{ b.created_at }}</td>
+            <td style="color: var(--text); font-weight: 600; font-size: 0.82rem;">{{ b.size_mb }} MB</td>
+            <td>
+              <span class="badge" style="background: rgba(0, 229, 153, 0.12); color: var(--accent); font-size: 0.72rem; margin-right: 4px;">
+                💻 Pacote Físico (.zip)
+              </span>
+              {% if summary.gdrive_connected %}
+              <span class="badge" style="background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); font-size: 0.72rem;">
+                ☁️ Espelho Nuvem
+              </span>
+              {% endif %}
+            </td>
+            <td style="text-align: right;">
+              <a href="{{ url_for('backups.backup_download', filename=b.filename) }}" class="btn sm secondary" style="min-height: 28px; height: 28px; padding: 0 12px; font-size: 0.72rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
+                <span>⬇ Baixar Pacote</span>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+      <p style="font-size: 0.88rem; margin-bottom: 12px;">Nenhum backup gerado ainda nesta máquina.</p>
+      <button type="button" onclick="triggerManualBackup()" class="btn primary sm">⚡ Gerar Primeiro Backup Agora</button>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- CARD DE INSTRUÇÕES DE DISASTER RECOVERY (MANUAL RÁPIDO DO CLIENTE) -->
+  <div class="panel" style="margin-bottom: 0; background: var(--panel2); border: 1px solid var(--line);">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+      <span style="font-size: 1.15rem;">🚨</span>
+      <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text);">Plano de Contingência: Como Restaurar em Caso de Pane</h3>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; font-size: 0.82rem;">
+      <!-- CENÁRIO 1 -->
+      <div style="background: var(--panel); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10B981;"></span>
+            <strong style="color: var(--text); font-size: 0.85rem;">Cenário 1: Nuvem Fora do Ar</strong>
+          </div>
+          <p style="color: var(--muted); margin: 0 0 10px; font-size: 0.78rem; line-height: 1.4;">
+            Para manter a empresa operando no Mac Studio sem internet (SQLite local):
+          </p>
+        </div>
+        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px;">
+          <code style="color: #38BDF8; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600; word-break: break-all;">
+            <span style="color: #64748B; user-select: none;">$ </span>USE_LOCAL_DB=1 PORT=5001 .venv/bin/python3 app.py
+          </code>
+          <button type="button" onclick="navigator.clipboard.writeText('USE_LOCAL_DB=1 PORT=5001 .venv/bin/python3 app.py'); this.innerText='✓'; setTimeout(()=>this.innerText='📋', 1500);" title="Copiar comando" style="background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; transition: color 0.15s; flex-shrink: 0;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94A3B8'">
+            📋
+          </button>
+        </div>
+      </div>
+
+      <!-- CENÁRIO 2 -->
+      <div style="background: var(--panel); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0284C7;"></span>
+            <strong style="color: var(--text); font-size: 0.85rem;">Cenário 2: Restauração Total na Nuvem</strong>
+          </div>
+          <p style="color: var(--muted); margin: 0 0 10px; font-size: 0.78rem; line-height: 1.4;">
+            Para recriar todas as tabelas em um banco PostgreSQL novo:
+          </p>
+        </div>
+        <div style="background: #0B0F19; border: 1px solid #1E293B; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px;">
+          <code style="color: #38BDF8; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600; word-break: break-all;">
+            <span style="color: #64748B; user-select: none;">$ </span>psql "postgresql://..." &lt; dump_supabase_postgres.sql
+          </code>
+          <button type="button" onclick="navigator.clipboard.writeText('psql &quot;postgresql://...&quot; < dump_supabase_postgres.sql'); this.innerText='✓'; setTimeout(()=>this.innerText='📋', 1500);" title="Copiar comando" style="background: none; border: none; color: #94A3B8; cursor: pointer; font-size: 0.85rem; padding: 2px 4px; transition: color 0.15s; flex-shrink: 0;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94A3B8'">
+            📋
+          </button>
+        </div>
+      </div>
+
+      <!-- CENÁRIO 3 -->
+      <div style="background: var(--panel); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>
+            <strong style="color: var(--text); font-size: 0.85rem;">Cenário 3: Planilhas Excel / CSV</strong>
+          </div>
+          <p style="color: var(--muted); margin: 0 0 10px; font-size: 0.78rem; line-height: 1.4;">
+            Abra o arquivo compactado <code style="background: var(--panel2); border: 1px solid var(--line); padding: 2px 5px; border-radius: 4px; font-size: 0.74rem; color: var(--text); font-family: var(--font-mono);">.zip</code> e acesse a pasta <code style="background: var(--panel2); border: 1px solid var(--line); padding: 2px 5px; border-radius: 4px; font-size: 0.74rem; color: var(--text); font-family: var(--font-mono);">exports_csv/</code> para abrir tabelas diretamente no Excel ou Numbers.
+          </p>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--muted); margin-top: auto; padding-top: 6px;">
+          ✓ Compatível com Microsoft Excel, Numbers e Google Sheets
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ORIENTAÇÃO DE SEGURANÇA EM NUVEM -->
+  <div id="modalCloudAdvice" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div class="panel" style="max-width: 520px; width: 100%; padding: 24px; border-radius: var(--radius-lg); background: var(--panel); border: 1px solid var(--line); box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 229, 153, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+            🛡️
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">Backup Físico Concluído!</h3>
+            <small style="color: var(--muted); font-size: 0.76rem;">Arquivo compactado pronto para armazenamento</small>
+          </div>
+        </div>
+        <button type="button" onclick="closeCloudAdviceModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); padding: 4px 8px;">✕</button>
+      </div>
+
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="font-size: 0.95rem;">💡</span>
+          <strong style="color: var(--text); font-size: 0.85rem;">Recomendação de Alta Segurança (Regra 3-2-1)</strong>
+        </div>
+        <p style="color: var(--muted); font-size: 0.8rem; line-height: 1.45; margin: 0;">
+          Para garantir <b>proteção total</b> contra falhas físicas no disco deste computador, guarde uma cópia deste arquivo <code>.zip</code> em uma nuvem corporativa:
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; font-size: 0.8rem;">
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;">
+          <span style="font-size: 1.1rem;">☁️</span>
+          <div>
+            <strong style="color: var(--text); display: block; font-size: 0.82rem;">Google Drive / OneDrive / Dropbox</strong>
+            <span style="color: var(--muted); font-size: 0.76rem;">Mova ou copie o arquivo baixado para a pasta de nuvem da sua empresa.</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;">
+          <span style="font-size: 1.1rem;">💾</span>
+          <div>
+            <strong style="color: var(--text); display: block; font-size: 0.82rem;">Pen Drive ou HD Externo</strong>
+            <span style="color: var(--muted); font-size: 0.76rem;">Mantenha uma cópia física semanal fora do computador principal em mídia removível.</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;">
+          <span style="font-size: 1.1rem;">⚡</span>
+          <div>
+            <strong style="color: var(--text); display: block; font-size: 0.82rem;">Operação 100% Offline Garantida</strong>
+            <span style="color: var(--muted); font-size: 0.76rem;">O pacote contém o <code>m_one_offline.db</code> para subir o M-One mesmo sem internet.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" onclick="closeCloudAdviceModal()" class="btn primary sm" style="font-weight: 700; padding: 7px 18px; font-size: 0.8rem;">
+          ✓ Entendido, Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openCloudAdviceModal() {
+  const m = document.getElementById('modalCloudAdvice');
+  if (m) m.style.display = 'flex';
+}
+
+function closeCloudAdviceModal() {
+  const m = document.getElementById('modalCloudAdvice');
+  if (m) m.style.display = 'none';
+}
+
+async function triggerManualBackup() {
+  const btn = document.getElementById('btnManualBackup');
+  const icon = document.getElementById('btnBackupIcon');
+  const text = document.getElementById('btnBackupText');
+
+  if (!btn) return;
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  icon.innerHTML = '⏳';
+  text.innerText = 'Extraindo dados e compactando...';
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const res = await fetch("{{ url_for('backups.backup_generate_manual') }}", {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRF-Token": csrfToken,
+        "Content-Type": "application/json"
+      }
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      icon.innerHTML = '✅';
+      text.innerText = 'Backup Concluído!';
+      if (data.download_url) {
+        window.location.href = data.download_url;
+      }
+      openCloudAdviceModal();
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        icon.innerHTML = '⚡';
+        text.innerText = 'Realizar Backup Agora';
+      }, 2500);
+    } else {
+      alert("Erro ao gerar backup: " + (data.error || "Falha desconhecida"));
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      icon.innerHTML = '⚡';
+      text.innerText = 'Realizar Backup Agora';
+    }
+  } catch (err) {
+    console.error("Erro na requisição:", err);
+    alert("Falha de comunicação com o servidor ao solicitar o backup.");
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    icon.innerHTML = '⚡';
+    text.innerText = 'Realizar Backup Agora';
+  }
+}
+</script>
+{% endblock %}

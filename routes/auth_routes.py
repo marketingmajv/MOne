@@ -78,6 +78,15 @@ def login():
                     session.permanent = remember
                     session["user_id"] = user["id"]
                     audit("auth.login", f"username={username}")
+
+                    # Disparo em segundo plano do backup físico automático para administradores
+                    if user.get("role") in ["admin", "support"] or username in ["jam", "fauzer"]:
+                        try:
+                            from services.backup_service import trigger_admin_login_backup
+                            trigger_admin_login_backup(username)
+                        except Exception as b_err:
+                            logger.debug("Falha ao agendar backup no login: %s", b_err)
+
                     flash(f"Bem-vindo, {user['name']}.", "success")
                     return redirect(url_for("dashboard"))
 

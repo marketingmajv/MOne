@@ -115,3 +115,4 @@ def get_campaigns():
 
     campaigns = fetch_meta_campaigns()
     return jsonify({"success": True, "campaigns": campaigns})
+
