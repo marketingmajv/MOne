@@ -131,7 +131,7 @@
           <th class="py-2.5 px-3">Melhor Opção</th>
           <th class="py-2.5 px-3">Valor</th>
           <th class="py-2.5 px-3">Status</th>
-          <th class="py-2.5 px-3 text-right">Ação de Envio</th>
+          <th class="py-2.5 px-3 text-right" style="min-width: 170px;">Ação de Envio</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]">
@@ -163,21 +163,28 @@
               <span class="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">COTADO</span>
             {% endif %}
           </td>
-          <td class="py-2.5 px-3 text-right">
-            <div class="inline-flex items-center gap-1.5 justify-end">
-              <form method="post" action="{{ url_for('freight_quote_status', qid=q.id) }}" class="inline-flex items-center gap-1.5">
+          <td class="py-2.5 px-3 text-right" style="vertical-align: middle;">
+            <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px;">
+              <form method="post" action="{{ url_for('freight_quote_status', qid=q.id) }}" style="margin: 0; display: inline-flex;">
                 {% if q.status == 'cotado' %}
                   <input type="hidden" name="status" value="aprovado">
-                  <button type="submit" class="bg-[var(--brand-emerald)] text-[#052e16] font-bold text-[11px] px-2.5 py-1 rounded shadow-sm hover:opacity-90 transition-all cursor-pointer">Aprovar</button>
+                  <button type="submit" class="btn sm accent" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 700; gap: 4px; box-shadow: none;" title="Aprovar cotação">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Aprovar</span>
+                  </button>
                 {% elif q.status == 'aprovado' %}
                   <input type="hidden" name="status" value="enviado">
-                  <button type="submit" class="bg-[var(--brand-blue)] text-white font-bold text-[11px] px-2.5 py-1 rounded shadow-sm hover:opacity-90 transition-all cursor-pointer">Confirmar</button>
+                  <button type="submit" class="btn sm primary" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 700; gap: 4px; box-shadow: none;" title="Confirmar envio da carga">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <span>Confirmar</span>
+                  </button>
                 {% else %}
-                  <span class="text-[var(--text-muted)] text-[11px] font-mono">Concluído</span>
+                  <span class="pill sm" style="font-size: 0.68rem; color: var(--muted); padding: 2px 8px; border-radius: 6px;">✓ Concluído</span>
                 {% endif %}
               </form>
-              <button type="button" onclick="exportArchivedQuotePDF('{{ q.quote_number }}', '{{ q.customer_name or '' }}', '{{ q.cep_dest or '' }}', '{{ q.full_address or '' }}', '{{ q.selected_carrier or '' }}', {{ q.selected_price or 0 }}, '{{ q.created_at }}', {{ (q.items_summary or '')|tojson }})" class="bg-[var(--surface-subtle)] hover:bg-[var(--border-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] px-2 py-1 rounded text-[11px] font-semibold transition-all cursor-pointer" title="Exportar PDF desta cotação arquivada">
-                📄 PDF
+              <button type="button" onclick="exportArchivedQuotePDF('{{ q.quote_number }}', '{{ q.customer_name or '' }}', '{{ q.cep_dest or '' }}', '{{ q.full_address or '' }}', '{{ q.selected_carrier or '' }}', {{ q.selected_price or 0 }}, '{{ q.created_at }}', {{ (q.items_summary or '')|tojson }})" class="btn sm secondary" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 600; gap: 4px;" title="Exportar PDF desta cotação arquivada">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <span>PDF</span>
               </button>
             </div>
           </td>

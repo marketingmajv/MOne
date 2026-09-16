@@ -1776,7 +1776,7 @@ tr:hover td {
   .quick-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .two-col, .cockpit-top-grid, .charts-ranking-grid {
+  .two-col, .cockpit-top-grid, .charts-ranking-grid, .freight-main-grid {
     grid-template-columns: 1fr !important;
   }
   .bento-grid-4 {
