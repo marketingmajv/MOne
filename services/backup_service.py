@@ -29,8 +29,16 @@ import database
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-LOCAL_BACKUP_DIR = BASE_DIR / "backups"
-LOCAL_BACKUP_DIR.mkdir(exist_ok=True)
+if os.environ.get("VERCEL"):
+    LOCAL_BACKUP_DIR = Path("/tmp/backups")
+else:
+    LOCAL_BACKUP_DIR = BASE_DIR / "backups"
+
+try:
+    LOCAL_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    LOCAL_BACKUP_DIR = Path("/tmp/backups")
+    LOCAL_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 LAST_LOGIN_BACKUP_FILE = LOCAL_BACKUP_DIR / ".last_admin_backup_timestamp"
 COOLDOWN_MINUTES = 30
