@@ -196,9 +196,9 @@ def money(v):
 
 def money_usd(v):
     try:
-        return f"$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"US$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except Exception:
-        return "$ 0,00"
+        return "US$ 0,00"
 
 
 def aliquota(v):

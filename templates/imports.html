@@ -1,465 +1,183 @@
 {% extends 'base.html' %}
-{% block title %}M-One • Importações{% endblock %}
-{% block page_title %}Importações e Contêineres{% endblock %}
-{% block page_subtitle %}Controle de lotes, Invoice, BL, fornecedores, comprovantes de pagamentos e custos.{% endblock %}
+{% block title %}M-One • Importações e Compras da China{% endblock %}
+
+{% block page_title %}
+<div style="display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+  <span>Importações & Compras da China</span>
+  <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 99px; padding: 2px 10px; letter-spacing: 0.03em;">
+    Módulo Comex
+  </span>
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduaneiro e apuração do Fator de Custo real.
+{% endblock %}
+
 {% block top_actions %}
   {% if me.role in ['admin', 'support'] %}
-    <button class="btn primary" onclick="openModal('newImport')">+ Nova importação</button>
+    <button type="button" class="btn secondary" onclick="openModal('docRulesModal')" title="Configurar regras e obrigatoriedades documentais" style="height: 38px; padding: 0 14px; font-size: 12.5px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Regras de Documentos</span>
+    </button>
+    <button type="button" class="btn primary" onclick="openModal('newImport')" style="height: 38px; padding: 0 16px; font-size: 13px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Nova Importação</span>
+    </button>
   {% endif %}
 {% endblock %}
+
 {% block content %}
-<div class="cards-stack">
-{% for i in imports %}
-<section class="panel import-card">
-  <div class="panel-head">
-    <div>
-      <h3>{{ i.reference }}</h3>
-      <p style="margin-top: 4px;">
-        Invoice: <strong>{{ i.invoice_no or '—' }}</strong> • BL: <strong>{{ i.bl_no or '—' }}</strong> • NF Entrada: <strong>{{ i.nf_entry or '—' }}</strong>
-      </p>
-      {% if i.supplier_name or i.seller_name %}
-        <p style="margin-top: 2px; color: #00cc88; font-size: 0.88rem;">
-          🏭 Fornecedor: <strong>{{ i.supplier_name or '—' }}</strong>
-          {% if i.seller_name %}
-            • 👤 Vendedor/Contato: <strong>{{ i.seller_name }}</strong>
-          {% endif %}
+<div class="space-y-6">
+
+  <!-- Gaveta de Demonstração e Testes (Recolhível) -->
+  {% if me.role in ['admin', 'support'] %}
+  <details class="comex-card" style="margin-bottom: 24px; border: 1px dashed var(--line); padding: 0; overflow: hidden; border-radius: 12px;">
+    <summary style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; background: var(--panel2); list-style: none;">
+      <span style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 15px;">🧪</span>
+        <span style="color: var(--text);">Ambiente de Demonstração e Testes (Gaveta)</span>
+        <span class="badge" style="font-size: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309;">Opcional</span>
+      </span>
+      <span style="font-size: 11px; color: var(--muted);">Clique para abrir / fechar ▾</span>
+    </summary>
+    <div style="padding: 16px 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div style="max-width: 620px;">
+        <strong style="font-size: 13px; color: var(--text); display: block;">Lote Demonstrativo para Exploração (7 Abas)</strong>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted); line-height: 1.5;">
+          Gere um lote completo simulado (IMP-2026-DEMO) com produtos, pagamentos no exterior, despesas nacionais e numerário para explorar as 7 abas sem misturar com sua operação real.
         </p>
-      {% endif %}
-    </div>
-    <div style="display: flex; gap: 8px; align-items: center;">
-      {% if me.role == 'admin' %}
-        <button class="btn sm" onclick="openModal('editImport{{ i.id }}')">✏️ Editar Dados</button>
-      {% endif %}
-      <span class="status {{ i.status }}">{{ 'Liberada para venda' if i.status=='released' else 'Em conferência (Bloqueado)' }}</span>
-    </div>
-  </div>
-  
-  <div class="import-stats">
-    <span><small>Chassis do lote</small><b>{{ i.chassis_count or 0 }}</b></span>
-    {% if me.role in ['admin', 'support'] %}
-      <span><small>Valor Invoice (USD)</small><b>{{ i.invoice_amount_usd|money_usd if i.invoice_amount_usd else '—' }}</b></span>
-      <span><small>Total Pago Fornecedor</small><b>{{ i.supplier_brl|money }}</b></span>
-      <span>
-        <small>Dólar Médio (Chineses)</small>
-        <b class="text-accent" style="font-size: 1.1rem;" title="Câmbio Médio = Total Pago em R$ ao Fornecedor / Total Pago em USD">
-          {{ 'R$ %.4f'|format(i.avg_usd_rate) if i.avg_usd_rate else '—' }}
-        </b>
-      </span>
-      <span><small>Custos Landed (Total R$)</small><b>{{ i.costs_brl|money }}</b></span>
-      <span>
-        <small>Alíquota Real (R$/USD)</small>
-        <b class="badge warning" style="font-size: 1.05rem; font-weight: 700; padding: 4px 8px;" title="Alíquota = (Pagamentos China R$ + Fretes + Impostos + Aduana + Extras R$) / Total USD Invoice">
-          {{ 'R$ %.4f / $'|format(i.landed_aliquota) if i.landed_aliquota else '—' }}
-        </b>
-      </span>
-    {% endif %}
-    <span><small>Data chegada</small><b>{{ i.arrival_date or '—' }}</b></span>
-  </div>
-
-  {% if i.invoice_file or i.bl_file or i.nf_entry_file or i.chassis_file %}
-  <div class="document-links" style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
-    {% if i.invoice_file %}
-      <a href="{{ url_for('uploads', filename=i.invoice_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Documento Invoice</a>
-    {% endif %}
-    {% if i.bl_file %}
-      <a href="{{ url_for('uploads', filename=i.bl_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 Bill of Lading (BL)</a>
-    {% endif %}
-    {% if i.nf_entry_file %}
-      <a href="{{ url_for('uploads', filename=i.nf_entry_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📄 NF Entrada</a>
-    {% endif %}
-    {% if i.chassis_file %}
-      <a href="{{ url_for('uploads', filename=i.chassis_file) }}" target="_blank" class="badge" style="background: rgba(255,255,255,0.08); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">📊 Planilha Chassis</a>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  {% if i.notes %}
-    <p style="margin-top: 10px; font-size: 0.88rem; color: var(--text-muted);"><strong>Obs:</strong> {{ i.notes }}</p>
-  {% endif %}
-
-  <!-- Tabela de Comprovantes e Pagamentos da Importação -->
-  {% if me.role == 'admin' %}
-  <div class="costs-section" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-      <h4 style="margin: 0; font-size: 0.98rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-        💳 Comprovantes & Pagamentos Registrados
-      </h4>
-      <button class="btn sm primary" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
-    </div>
-    
-    {% if i.costs_list %}
-    <div class="table-responsive" style="overflow-x: auto;">
-      <table class="data-table" style="width: 100%; font-size: 0.88rem; border-collapse: collapse;">
-        <thead>
-          <tr style="text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <th style="padding: 8px;">Data</th>
-            <th style="padding: 8px;">Categoria / Pagamento</th>
-            <th style="padding: 8px;">Descrição / Obs</th>
-            <th style="padding: 8px;">Moeda / Original</th>
-            <th style="padding: 8px;">Valor em R$</th>
-            <th style="padding: 8px;">Comprovante Anexo</th>
-            <th style="padding: 8px; text-align: center;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in i.costs_list %}
-          <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <td style="padding: 8px;">{{ c.paid_at or '—' }}</td>
-            <td style="padding: 8px;">
-              <span class="badge" style="background: {% if 'Fornecedor' in c.cost_type %}rgba(34, 197, 94, 0.15); color: #4ade80{% else %}rgba(255,255,255,0.08){% endif %}; font-weight: 600; padding: 4px 8px; border-radius: 4px;">
-                {{ c.cost_type }}
-              </span>
-            </td>
-            <td style="padding: 8px;">{{ c.description or '—' }}</td>
-            <td style="padding: 8px;">
-              {% if c.currency == 'USD' %}
-                $ {{ "%.2f"|format(c.amount) }} <small class="text-muted">(USD @ {{ "%.4f"|format(c.usd_rate or i.usd_rate) }})</small>
-              {% else %}
-                R$ {{ "%.2f"|format(c.amount) }}
-              {% endif %}
-            </td>
-            <td style="padding: 8px;"><strong>{{ c.amount_brl|money }}</strong></td>
-            <td style="padding: 8px;">
-              {% if c.receipt_file %}
-                <a href="{{ url_for('uploads', filename=c.receipt_file) }}" target="_blank" class="btn sm outline" style="padding: 2px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
-                  📄 Abrir Comprovante
-                </a>
-              {% else %}
-                <span class="text-muted" style="font-size: 0.8rem;">Sem anexo</span>
-              {% endif %}
-            </td>
-            <td style="padding: 8px; text-align: center;">
-              <form method="post" action="{{ url_for('delete_import_cost', cid=c.id) }}" onsubmit="return confirm('Remover este comprovante/pagamento?');" style="display:inline;">
-                <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger, #ef4444); font-size: 1rem;" title="Excluir comprovante">🗑️</button>
-              </form>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-      <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 6px; text-align: center;">
-        <p class="text-muted" style="font-size: 0.85rem; margin: 0;">Nenhum comprovante de pagamento cadastrado ainda nesta importação.</p>
       </div>
-    {% endif %}
-  </div>
-  {% endif %}
-
-  <div class="action-row" style="margin-top: 16px;">
-    {% if me.role in ['admin', 'stock', 'support'] %}
-      <button class="btn" onclick="openModal('chassis{{ i.id }}')">Importar planilha de chassis</button>
-    {% endif %}
-    
-    {% if me.role in ['admin', 'support'] %}
-      <button class="btn" onclick="openModal('cost{{ i.id }}')">+ Registrar Comprovante / Pagamento</button>
-      {% if i.status != 'released' %}
-        {% if i.chassis_count > 0 %}
-          <form method="post" action="{{ url_for('release_import', iid=i.id) }}" style="display:inline;">
-            <button class="btn primary">Liberar estoque para venda</button>
-          </form>
-        {% else %}
-          <button class="btn" disabled title="Carregue a planilha de chassis antes de liberar para venda" style="opacity:0.55;cursor:not-allowed;">🔒 0 Chassis (Não liberável)</button>
-        {% endif %}
-      {% endif %}
-    {% endif %}
-  </div>
-</section>
-
-<!-- Modal Editar Importação (Admin Only) -->
-{% if me.role == 'admin' %}
-<div class="modal" id="editImport{{ i.id }}">
-  <div class="modal-card large">
-    <div class="modal-head">
-      <h3>Editar Importação • {{ i.reference }}</h3>
-      <button onclick="closeModal('editImport{{ i.id }}')">×</button>
-    </div>
-    <form method="post" action="{{ url_for('edit_import', iid=i.id) }}" enctype="multipart/form-data" class="form-grid" id="editImportForm{{ i.id }}">
-      <div class="span-2" style="background:rgba(157, 78, 255, 0.08);border:1px solid rgba(157, 78, 255, 0.25);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <span style="font-size:13px;color:var(--text);">Anexe os arquivos (Invoice, BL, NF Entrada ou Chassis) e clique no botão para a IA ler e preencher os dados:</span>
-        <button type="button" class="btn" onclick="analyzeImportDocs('editImportForm{{ i.id }}')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
-          ⚡ Preencher com IA (Gemini)
+      <form method="post" action="{{ url_for('imports.create_demo') }}">
+        <button type="submit" class="btn sm outline" style="color: #B45309; border-color: rgba(245, 158, 11, 0.4); font-weight: 700;">
+          ⚡ Gerar Lote Demo de Exemplo
         </button>
-      </div>
-
-      <label>Identificador / Ref. Contêiner <input name="reference" value="{{ i.reference }}" required></label>
-      <label>Número Invoice <input name="invoice_no" value="{{ i.invoice_no or '' }}"></label>
-      <label>Nome do Fornecedor / Fabricante <input name="supplier_name" value="{{ i.supplier_name or '' }}" placeholder="Ex.: Zhejiang Leike, Ouxi..."></label>
-      <label>Nome do Vendedor / Contato Comercial <input name="seller_name" value="{{ i.seller_name or '' }}" placeholder="Ex.: Chen, Linda, Jack..."></label>
-      <label>Valor Total Invoice (USD) <input type="number" step="0.01" name="invoice_amount_usd" value="{{ i.invoice_amount_usd or 0 }}" placeholder="50000.00"></label>
-      <label>Número BL (Bill of Lading) <input name="bl_no" value="{{ i.bl_no or '' }}"></label>
-      <label>NF Entrada <input name="nf_entry" value="{{ i.nf_entry or '' }}"></label>
-      <label>Câmbio estimado (USD/BRL) <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate or 5.65 }}"></label>
-      <label>Data prevista de chegada <input type="date" name="arrival_date" value="{{ i.arrival_date or '' }}"></label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir Invoice (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="invoice_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
-      </label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir BL (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="bl_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
-      </label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir NF Entrada (PDF/XML) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml" onchange="syncClearBtn(this)">
-      </label>
-      <label class="span-2">
-        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir / Carregar Planilha de Chassis (.csv, .xlsx) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" onchange="syncClearBtn(this)">
-        <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
-      </label>
-      <label class="span-2">Observações da importação
-        <textarea name="notes">{{ i.notes or '' }}</textarea>
-      </label>
-      <div class="form-actions span-2">
-        <button type="button" class="btn" onclick="closeModal('editImport{{ i.id }}')">Cancelar</button>
-        <button class="btn primary">Salvar Alterações</button>
-      </div>
-    </form>
-  </div>
-</div>
-{% endif %}
-
-<!-- Modal Importar Chassis -->
-<div class="modal" id="chassis{{ i.id }}">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h3>Planilha de Chassis • {{ i.reference }}</h3>
-      <button onclick="closeModal('chassis{{ i.id }}')">×</button>
+      </form>
     </div>
-    <form method="post" action="{{ url_for('import_chassis', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
-      <label class="span-2">Arquivo CSV ou XLSX
-        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" required>
-        <small>Formato: colunas MODELO e CHASSI obrigatórias. MOTOR e COR são opcionais.</small>
-      </label>
-      <div class="form-actions span-2">
-        <button type="button" class="btn" onclick="closeModal('chassis{{ i.id }}')">Cancelar</button>
-        <button class="btn primary">Processar e Carregar Chassis</button>
-      </div>
-    </form>
-  </div>
-</div>
+  </details>
+  {% endif %}
 
-<!-- Modal Registrar Pagamento / Custo (Admin e Suporte) -->
-{% if me.role in ['admin', 'support'] %}
-<div class="modal" id="cost{{ i.id }}">
-  <div class="modal-card">
-    <div class="modal-head">
-      <h3>Registrar Pagamento / Comprovante • {{ i.reference }}</h3>
-      <button onclick="closeModal('cost{{ i.id }}')">×</button>
-    </div>
-    <form method="post" action="{{ url_for('add_import_cost', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
-      <label class="span-2">Categoria / Tipo de Pagamento
-        <select name="cost_type" required>
-          <option value="Pagamento Inicial (Sinal Fornecedor)">Pagamento Inicial (Sinal Fornecedor)</option>
-          <option value="Pagamento Intermediário (Fornecedor)">Pagamento Intermediário (Fornecedor)</option>
-          <option value="Pagamento Final (Fornecedor)">Pagamento Final (Fornecedor)</option>
-          <option value="Frete Marítimo Internacional">Frete Marítimo Internacional</option>
-          <option value="Frete Marítimo Equipe Brasil">Frete Marítimo Equipe Brasil</option>
-          <option value="Frete Terrestre (até o Galpão)">Frete Terrestre (até o Galpão)</option>
-          <option value="Numerário (Impostos & Aduana)">Numerário (Impostos & Aduana)</option>
-          <option value="Ajudantes / Descarga">Ajudantes / Descarga</option>
-          <option value="Despesas Extras / Armazenagem">Despesas Extras / Armazenagem</option>
-          <option value="Pagamento Extra / Outros">Pagamento Extra / Outros</option>
-        </select>
-      </label>
-      <label>Moeda
-        <select name="currency">
-          <option value="BRL">BRL (R$)</option>
-          <option value="USD">USD ($)</option>
-        </select>
-      </label>
-      <label>Valor do Pagamento
-        <input type="number" step="0.01" name="amount" required placeholder="0,00">
-      </label>
-      <label>Taxa de câmbio usada (se USD)
-        <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate }}">
-      </label>
-      <label>Data do pagamento
-        <input type="date" name="paid_at">
-      </label>
-      <label class="span-2">Descrição / Detalhes
-        <input name="description" placeholder="Ex.: Transferência sinal invoice INV-9988 via banco X">
-      </label>
-      <label class="span-2">Comprovante de Pagamento (Anexo PDF/Imagem)
-        <input type="file" name="receipt_file" accept="image/*,.pdf">
-        <small>Anexe o arquivo do comprovante bancário ou recibo.</small>
-      </label>
-      <div class="form-actions span-2">
-        <button type="button" class="btn" onclick="closeModal('cost{{ i.id }}')">Cancelar</button>
-        <button class="btn primary">Salvar Comprovante</button>
-      </div>
-    </form>
-  </div>
-</div>
-{% endif %}
+  <!-- Listagem de Importações -->
+  {% if imports and imports|length > 0 %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for i in imports %}
+      <div class="comex-card" style="padding: 20px; border-radius: 14px;">
+        <!-- Cabeçalho do Card -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <a href="{{ url_for('imports.import_detail', iid=i.id) }}" style="font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.02em;">
+                {{ i.reference }}
+              </a>
+              <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25);">
+                Etapa: {{ (i.step or 'compra')|capitalize }}
+              </span>
+              {% if i.status == 'released' %}
+                <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(4, 120, 87, 0.12); color: #047857; border: 1px solid rgba(4, 120, 87, 0.25);">
+                  ✓ Estoque Liberado
+                </span>
+              {% elif i.status == 'closed' %}
+                <span class="badge" style="font-size: 11px; font-weight: 700; background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">
+                  🔒 Fechado
+                </span>
+              {% endif %}
+            </div>
 
-{% else %}
-  <div class="panel empty">Nenhuma importação cadastrada.</div>
-{% endfor %}
-</div>
+            <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span>Fornecedor: <strong style="color: var(--text);">{{ i.supplier_name or '—' }}</strong></span>
+              <span>•</span>
+              <span>Incoterm: <strong style="color: var(--text);">{{ i.incoterm or 'FOB' }}</strong></span>
+              <span>•</span>
+              <span>Invoice: <strong style="color: var(--text);">{{ i.invoice_no or '—' }}</strong></span>
+              <span>•</span>
+              <span>BL: <strong style="color: var(--text);">{{ i.bl_no or '—' }}</strong></span>
+            </p>
+          </div>
 
-<!-- Modal Nova Importação (Admin Only) -->
-{% if me.role in ['admin', 'support'] %}
-<div class="modal" id="newImport">
-  <div class="modal-card large">
-    <div class="modal-head">
-      <h3>Nova Importação / Contêiner</h3>
-      <button onclick="closeModal('newImport')">×</button>
-    </div>
-    <form method="post" enctype="multipart/form-data" class="form-grid" id="newImportForm">
-      <div class="span-2" style="background:rgba(157, 78, 255, 0.08);border:1px solid rgba(157, 78, 255, 0.25);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <span style="font-size:13px;color:var(--text);">Selecione os arquivos abaixo (Invoice, BL, NF Entrada ou Chassis) e clique no botão ao lado para a IA ler e preencher tudo:</span>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button type="button" class="btn" onclick="clearImportFiles('newImportForm')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-size:12px;cursor:pointer;" title="Limpar todos os arquivos anexados">
-            🗑️ Limpar Arquivos
-          </button>
-          <button type="button" class="btn" onclick="analyzeImportDocs('newImportForm')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
-            ⚡ Preencher com IA (Gemini)
-          </button>
+          <div>
+            <a href="{{ url_for('imports.import_detail', iid=i.id) }}" class="btn primary sm" style="font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>Visualizar</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Indicadores Financeiros do Lote -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px;">
+          <!-- Fator de Custo -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Fator de Custo</span>
+            <div class="comex-value-amber" style="font-size: 20px; font-weight: 800;">
+              {% if i.financials and i.financials.cost_factor %}
+                R$ {{ "%.4f"|format(i.financials.cost_factor) }}
+              {% elif i.cost_factor %}
+                R$ {{ "%.4f"|format(i.cost_factor) }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">R$ / US$</small>
+          </div>
+
+          <!-- Base Mercadoria -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Base Mercadoria</span>
+            <div class="comex-value-emerald" style="font-size: 20px; font-weight: 800;">
+              US$ {{ "%.2f"|format((i.financials.goods_base_usd if i.financials else (i.pi_amount_usd or i.ci_amount_usd or 0)) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">FOB negociado</small>
+          </div>
+
+          <!-- Total Desembolsado -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Total Desembolsado</span>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text);">
+              R$ {{ "%.2f"|format((i.financials.total_disbursed_brl if i.financials else 0) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Líquido Brasil + China</small>
+          </div>
+
+          <!-- Chassis Vinculados -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Chassis Vinculados</span>
+            <div class="comex-value-blue" style="font-size: 20px; font-weight: 800;">
+              {{ i.chassis_count or 0 }} <span style="font-size: 12px; font-weight: normal; color: var(--muted);">unidades</span>
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Estoque físico</small>
+          </div>
+
+          <!-- Previsão Chegada -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Previsão Chegada</span>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text); padding-top: 3px;">
+              {{ i.arrival_date_estimated or i.arrival_date or '—' }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Porto de destino</small>
+          </div>
         </div>
       </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State Minimalista e Limpo -->
+    <div class="comex-card" style="padding: 48px 24px; text-align: center; border-radius: 16px;">
+      <div style="font-size: 40px; margin-bottom: 12px;">🚢</div>
+      <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: var(--text);">
+        Nenhuma importação cadastrada até o momento
+      </h3>
+      <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--muted); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+        Clique abaixo para cadastrar seu primeiro lote com preenchimento guiado por IA ou abra a gaveta acima para testar um lote demo.
+      </p>
+      <button class="btn primary" onclick="openModal('newImport')" style="font-weight: 700; padding: 12px 24px;">
+        + Cadastrar Nova Importação
+      </button>
+    </div>
+  {% endif %}
 
-      <label>Identificador / Ref. Contêiner <input name="reference" required placeholder="Ex.: CONT-2026-01"></label>
-      <label>Número Invoice <input name="invoice_no" placeholder="Ex.: INV-9988"></label>
-      <label>Nome do Fornecedor / Fabricante <input name="supplier_name" placeholder="Ex.: Zhejiang Leike, Ouxi..."></label>
-      <label>Nome do Vendedor / Contato Comercial <input name="seller_name" placeholder="Ex.: Chen, Linda, Jack..."></label>
-      <label>Valor Total Invoice (USD) <input type="number" step="0.01" name="invoice_amount_usd" placeholder="Ex.: 50000.00"></label>
-      <label>Número BL (Bill of Lading) <input name="bl_no" placeholder="Ex.: BL-COSCO-123"></label>
-      <label>NF Entrada <input name="nf_entry" placeholder="Ex.: NF-0045"></label>
-      <label>Câmbio estimado (USD/BRL) <input type="number" step="0.0001" name="usd_rate" value="5.65"></label>
-      <label>Data prevista de chegada <input type="date" name="arrival_date"></label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo Invoice (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="invoice_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
-      </label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo BL (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="bl_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
-      </label>
-      <label>
-        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo NF Entrada (PDF/XML) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml" onchange="syncClearBtn(this)">
-      </label>
-      <label class="span-2">
-        <span style="display:flex;justify-content:space-between;align-items:center;">Planilha de Chassis da Importação (.csv, .xlsx) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
-        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" onchange="syncClearBtn(this)">
-        <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
-      </label>
-      <label class="span-2">Observações da importação
-        <textarea name="notes" placeholder="Detalhes do fornecedor, navio, porto de desembarque..."></textarea>
-      </label>
-      <div class="form-actions span-2">
-        <button type="button" class="btn" onclick="closeModal('newImport')">Cancelar</button>
-        <button class="btn primary">Criar Importação</button>
-      </div>
-    </form>
-  </div>
 </div>
-{% endif %}
 
-<script>
-function syncClearBtn(inp) {
-  const lbl = inp.closest('label');
-  const btn = lbl ? lbl.querySelector('.btn-clear-file') : null;
-  if (btn) btn.style.display = (inp.files && inp.files.length) ? 'inline' : 'none';
-}
+<!-- Modais do Módulo Comex -->
+{% include 'imports/modal_new_import.html' %}
+{% include 'imports/modal_doc_rules.html' %}
 
-function clearFileInput(btn) {
-  const lbl = btn.closest('label');
-  const inp = lbl ? lbl.querySelector('input[type="file"]') : null;
-  if (inp) {
-    inp.value = '';
-    btn.style.display = 'none';
-  }
-}
-
-function clearImportFiles(formId) {
-  const form = document.getElementById(formId);
-  if (!form) return;
-  form.querySelectorAll('input[type="file"]').forEach(inp => {
-    inp.value = '';
-    syncClearBtn(inp);
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('input[type="file"]').forEach(syncClearBtn);
-});
-
-async function analyzeImportDocs(formId) {
-  const form = document.getElementById(formId);
-  if (!form) return;
-
-  const fileKeys = ['invoice_file', 'bl_file', 'nf_entry_file', 'chassis_file'];
-  const fileInputs = fileKeys.map(k => form.querySelector(`input[name="${k}"]`)).filter(Boolean);
-  const hasFiles = fileInputs.some(inp => inp.files && inp.files.length);
-
-  if (!hasFiles) {
-    alert('Por favor, selecione pelo menos um arquivo (Invoice, BL, NF Entrada ou Planilha de Chassis) no formulário antes de acionar a análise de IA.');
-    return;
-  }
-
-  const btn = form.querySelector('button[onclick*="analyzeImportDocs"]');
-  const originalText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Gemini Analisando Documentos...';
-  }
-
-  const fd = new FormData();
-  fileInputs.forEach(inp => {
-    if (inp.files && inp.files[0]) fd.append(inp.name, inp.files[0]);
-  });
-
-  try {
-    const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
-    const result = await res.json();
-
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-
-    if (!result.success) {
-      alert('Aviso da IA: ' + (result.message || 'Não foi possível extrair os campos automaticamente.'));
-      return;
-    }
-
-    const data = result.data || {};
-    const fieldMap = {
-      reference: data.reference || data.bl_no || '',
-      invoice_no: data.invoice_no,
-      supplier_name: data.supplier_name,
-      seller_name: data.seller_name,
-      invoice_amount_usd: data.invoice_amount_usd,
-      bl_no: data.bl_no,
-      nf_entry: data.nf_entry,
-      arrival_date: data.arrival_date
-    };
-
-    Object.entries(fieldMap).forEach(([k, val]) => {
-      if (val !== undefined && val !== null && val !== '') {
-        const inputEl = form.querySelector(`input[name="${k}"]`);
-        if (inputEl) inputEl.value = val;
-      }
-    });
-
-    let chassisMsg = '';
-    if (data.extracted_chassis && data.extracted_chassis.length) {
-      chassisMsg = `\n• ${data.extracted_chassis.length} chassis identificados: ${data.extracted_chassis.slice(0, 5).join(', ')}${data.extracted_chassis.length > 5 ? '...' : ''}`;
-    }
-
-    alert(`✓ Documentos analisados com sucesso pelo Gemini!\n\n${data.summary || 'Campos preenchidos automaticamente.'}${chassisMsg}`);
-
-  } catch (err) {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-    alert('Erro ao comunicar com a API da IA: ' + err.message);
-  }
-}
-</script>
 {% endblock %}
-

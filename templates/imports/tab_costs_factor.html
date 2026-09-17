@@ -1,0 +1,169 @@
+<!-- Tab 7: Custos & Fator de Custo (R$/US$) -->
+<div class="space-y-6">
+  <!-- Header & Status do Fator -->
+  <div class="comex-card" style="border-left: 4px solid #B45309; padding: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: var(--text);">Fator de Custo Gerencial (R$ / US$)</h3>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--muted);">Metodologia oficial M-One: Apuração por desembolso líquido real sobre base FOB de mercadoria</p>
+        </div>
+
+        <div style="text-align: right;">
+          <div class="comex-label">Fator Apurado</div>
+          <div class="comex-value comex-value-amber" style="font-size: 32px;">
+            R$ {{ "%.4f"|format(financials.cost_factor or 0) }}
+            <span style="font-size: 14px; font-weight: 500; color: var(--muted);">/ US$</span>
+          </div>
+          <div style="margin-top: 4px;">
+            <span class="badge" style="font-size: 11px; font-weight: 700; background: {{ 'rgba(5,150,105,0.15)' if financials.cost_factor_status == 'final' else 'rgba(245,158,11,0.15)' }}; color: {{ '#047857' if financials.cost_factor_status == 'final' else '#B45309' }};">
+              {{ 'Fator Final (Consolidado)' if financials.cost_factor_status == 'final' else 'Fator Preliminar (Em Andamento)' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fórmula Matemática Visual -->
+  <div class="comex-card">
+    <div class="comex-label" style="margin-bottom: 16px;">Decomposição da Fórmula de Custo Real</div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: center;">
+      <!-- Numerador -->
+      <div class="comex-card-subtle" style="text-align: center;">
+        <div class="comex-label" style="margin-bottom: 4px;">Numerador: Total Saídas Líquidas</div>
+        <div class="comex-value comex-value-blue" style="font-size: 22px;">
+          R$ {{ "%.2f"|format(financials.total_disbursed_brl or 0) }}
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">Câmbio China + Despesas Brasil + Líquido Despachante</p>
+      </div>
+
+      <!-- Operador -->
+      <div style="text-align: center;">
+        <div class="comex-label" style="margin-bottom: 4px;">DIVIDIDO POR (÷)</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--muted);">÷</div>
+      </div>
+
+      <!-- Denominador -->
+      <div class="comex-card-subtle" style="text-align: center;">
+        <div class="comex-label" style="margin-bottom: 4px;">Denominador: Base Mercadoria FOB</div>
+        <div class="comex-value comex-value-emerald" style="font-size: 22px;">
+          US$ {{ "%.2f"|format(financials.goods_base_usd or 0) }}
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">Valor dos produtos sem frete ou acréscimos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalhamento das Parcelas do Custo -->
+  <div class="comex-card">
+    <h4 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 700; color: var(--text);">Composição dos Desembolsos em Reais (R$)</h4>
+    <div class="table-container" style="overflow-x: auto; width: 100%;">
+      <table class="data-table" style="width: 100%; min-width: 680px; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>Grupo de Desembolso</th>
+            <th>Origem / Documentos</th>
+            <th style="text-align: right;">Valor em R$</th>
+            <th style="text-align: right;">% do Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 700; color: var(--text);">Pagamentos no Exterior (China)</td>
+            <td style="color: var(--muted);">Contratos de câmbio liquidados com IOF e tarifas bancárias</td>
+            <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: #0369A1;">
+              R$ {{ "%.2f"|format(financials.total_supplier_paid_brl or 0) }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">
+              {% if (financials.total_disbursed_brl or 0) > 0 %}
+                {{ "%.1f"|format((financials.total_supplier_paid_brl / financials.total_disbursed_brl) * 100) }}%
+              {% else %}0%{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700; color: var(--text);">Despesas Diretas no Brasil</td>
+            <td style="color: var(--muted);">Tributos pagos diretamente, armazenagem, fretes e honorários</td>
+            <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: #B45309;">
+              R$ {{ "%.2f"|format(financials.total_direct_expenses_brl or 0) }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">
+              {% if (financials.total_disbursed_brl or 0) > 0 %}
+                {{ "%.1f"|format((financials.total_direct_expenses_brl / financials.total_disbursed_brl) * 100) }}%
+              {% else %}0%{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700; color: var(--text);">Saldo Líquido do Despachante (Numerário)</td>
+            <td style="color: var(--muted);">Total adiantado deduzido de eventuais devoluções recebidas</td>
+            <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: #7C3AED;">
+              R$ {{ "%.2f"|format(financials.net_broker_disbursement or 0) }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">
+              {% if (financials.total_disbursed_brl or 0) > 0 %}
+                {{ "%.1f"|format((financials.net_broker_disbursement / financials.total_disbursed_brl) * 100) }}%
+              {% else %}0%{% endif %}
+            </td>
+          </tr>
+          <tr style="background: var(--panel2); font-weight: 800; border-top: 2px solid var(--line);">
+            <td style="color: var(--text);" colspan="2">TOTAL DESEMBOLSADO EM REAIS (LÍQUIDO)</td>
+            <td style="text-align: right; font-family: var(--font-mono); color: #047857; font-size: 15px;">
+              R$ {{ "%.2f"|format(financials.total_disbursed_brl or 0) }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--text);">100.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Custo Gerencial por Produto Aplicando o Fator -->
+  <div class="comex-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text);">Custo Gerencial Unitário e Total por Item</h4>
+      <span class="comex-label">Custo Unitário R$ = Preço US$ × Fator R$/US$</span>
+    </div>
+
+    <div class="table-container" style="overflow-x: auto; width: 100%;">
+      <table class="data-table" style="width: 100%; min-width: 720px; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>Item / Produto</th>
+            <th style="text-align: right;">Qtd</th>
+            <th style="text-align: right;">Preço Unit. (US$)</th>
+            <th style="text-align: right;">Total (US$)</th>
+            <th style="text-align: center;">Fator</th>
+            <th style="text-align: right;">Custo Unit. (R$)</th>
+            <th style="text-align: right;">Custo Total (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items or [] %}
+          <tr>
+            <td style="font-weight: 700; color: var(--text);">
+              {{ item.product_name_catalog or item.product_name_custom or item.item_code or 'Item #' ~ loop.index }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 600;">{{ item.quantity or 0 }}</td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">US$ {{ "%.2f"|format(item.unit_price_usd or 0) }}</td>
+            <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">US$ {{ "%.2f"|format(item.total_price_usd or (item.quantity * item.unit_price_usd)) }}</td>
+            <td style="text-align: center; font-family: var(--font-mono); color: #B45309; font-weight: 700;">{{ "%.4f"|format(financials.cost_factor or 0) }}</td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 800; color: #047857; font-size: 14px;">
+              R$ {{ "%.2f"|format(item.unit_cost_brl or ((item.unit_price_usd or 0) * (financials.cost_factor or 0))) }}
+            </td>
+            <td style="text-align: right; font-family: var(--font-mono); font-weight: 800; color: #047857; font-size: 14px;">
+              R$ {{ "%.2f"|format((item.unit_cost_brl or ((item.unit_price_usd or 0) * (financials.cost_factor or 0))) * (item.quantity or 0)) }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 24px; color: var(--muted);">
+              Nenhum item cadastrado para rateio do fator de custo.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

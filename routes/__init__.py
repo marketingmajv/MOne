@@ -12,6 +12,8 @@ from routes.finance_routes import finance_bp
 from routes.webhook_routes import webhook_bp
 from routes.product_routes import product_bp
 from routes.import_routes import import_bp
+from routes.import_financial_routes import import_financial_bp
+from routes.import_document_routes import import_document_bp
 from routes.bling_routes import bling_bp
 from routes.copilot_routes import copilot_bp
 from routes.user_routes import user_bp
@@ -29,6 +31,8 @@ ALL_BLUEPRINTS = [
     webhook_bp,
     product_bp,
     import_bp,
+    import_financial_bp,
+    import_document_bp,
     bling_bp,
     copilot_bp,
     user_bp,

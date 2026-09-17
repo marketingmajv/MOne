@@ -1,0 +1,145 @@
+<!-- Tab 3: Pagamentos no Exterior / China (templates/imports/tab_payments_china.html) -->
+<div class="tab-pane" id="tab-payments">
+  <!-- Card Explicativo e Regras de Conferência -->
+  <div class="comex-card" style="margin-bottom: 24px; border-left: 4px solid var(--primary);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; color: var(--text);">🌏 Controle da Compra e Pagamentos na China</h4>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
+          A <strong>Proforma Invoice (PI)</strong> representa o teto total da compra. A <strong>Commercial Invoice (CI)</strong> representa a parcela oficial declarada.
+          Os pagamentos adicionais completam a compra sem duplicar despesas.
+        </p>
+      </div>
+      <button class="btn sm primary" onclick="document.getElementById('addChinaPaymentModal').style.display='flex'">
+        + Registrar Pagamento na China
+      </button>
+    </div>
+
+    <!-- Indicadores da Compra -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px;">
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Total da Compra (PI)</span>
+        <div class="comex-value-blue" style="font-size: 18px; font-weight: 800;">{{ financials.pi_amount_usd|money_usd }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Parcela Declarada (CI)</span>
+        <div style="font-size: 18px; font-weight: 800; color: var(--text);">{{ financials.ci_amount_usd|money_usd }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Pagamentos da CI Quitados</span>
+        <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">{{ financials.ci_paid_usd|money_usd }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Pagamentos Adicionais</span>
+        <div class="comex-value-amber" style="font-size: 18px; font-weight: 800;">{{ financials.additional_paid_usd|money_usd }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Saldo a Pagar Fornecedor</span>
+        <div style="font-size: 18px; font-weight: 800; color: {{ 'var(--accent)' if financials.purchase_balance_usd == 0 else '#EF4444' }};">
+          {{ financials.purchase_balance_usd|money_usd }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Pagamentos Registrados -->
+  <div class="comex-card">
+    <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text);">Histórico de Remessas e Liquidações ao Exportador</h4>
+    {% if china_payments %}
+      <div class="table-container" style="overflow-x: auto; width: 100%; max-width: 100%;">
+        <table class="table" style="width: 100%; min-width: 820px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="width: 95px;">Data</th>
+              <th style="width: 150px;">Finalidade / Categoria</th>
+              <th style="min-width: 160px;">Descrição</th>
+              <th style="text-align: right; width: 110px;">Valor (USD)</th>
+              <th style="text-align: right; width: 100px;">Câmbio (R$)</th>
+              <th style="text-align: right; width: 120px; color: var(--text);">Valor Débito (R$)</th>
+              <th style="text-align: right; width: 105px;">Tarifas/IOF (R$)</th>
+              <th style="text-align: center; width: 80px;">Comprovante</th>
+              <th style="text-align: center; width: 50px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in china_payments %}
+              <tr>
+                <td style="color: var(--text); font-size: 12.5px;">{{ p.paid_at.strftime('%d/%m/%Y') if p.paid_at else '—' }}</td>
+                <td>
+                  <span class="badge" style="font-size: 11px; font-weight: 600; background: {{ 'rgba(3, 105, 161, 0.12)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.12)' }}; color: {{ '#0369A1' if p.payment_category == 'ci_payment' else '#B45309' }}; border: 1px solid {{ 'rgba(3, 105, 161, 0.25)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.25)' }};">
+                    {{ 'Parcela da CI' if p.payment_category == 'ci_payment' else 'Pagamento Adicional' }}
+                  </span>
+                </td>
+                <td style="white-space: normal; min-width: 160px; max-width: 260px; line-height: 1.35;">
+                  <strong style="color: var(--text); font-size: 12.5px;">{{ p.description or 'Pagamento ao fornecedor' }}</strong>
+                </td>
+                <td style="text-align: right; font-weight: 700; color: var(--text); font-family: var(--font-mono);">{{ p.amount_usd|money_usd }}</td>
+                <td style="text-align: right; color: var(--muted); font-family: var(--font-mono); font-size: 12px;">{{ ('R$ %.4f'|format(p.exchange_rate)) if p.exchange_rate else '—' }}</td>
+                <td style="text-align: right; font-weight: 800; font-family: var(--font-mono);" class="comex-value-emerald">{{ p.amount_brl|money }}</td>
+                <td style="text-align: right; color: var(--muted); font-family: var(--font-mono); font-size: 12px;">{{ p.bank_fees_brl|money }}</td>
+                <td style="text-align: center;">
+                  {% if p.doc_url %}
+                    <a href="{{ url_for('uploads', filename=p.doc_url) }}" target="_blank" class="badge" style="text-decoration: none;">📄 Ver</a>
+                  {% else %}
+                    <span style="color: var(--muted);">—</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: center;">
+                  <form method="post" action="{{ url_for('import_financial.delete_payment_china', iid=i.id, pid=p.id) }}" onsubmit="return confirm('Remover este registro de pagamento?')">
+                    <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px; color: var(--muted);">
+        Nenhum pagamento ao fornecedor registrado até o momento.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: Registrar Pagamento na China -->
+<div class="modal" id="addChinaPaymentModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Registrar Pagamento na China</h3>
+      <button type="button" onclick="document.getElementById('addChinaPaymentModal').style.display='none'">×</button>
+    </div>
+    <form method="post" action="{{ url_for('import_financial.add_payment_china', iid=i.id) }}" class="form-grid">
+      <label>Finalidade / Categoria
+        <select name="payment_category" required>
+          <option value="ci_payment">Parcela da Commercial Invoice (CI)</option>
+          <option value="additional_payment">Pagamento Adicional / Fora da CI</option>
+        </select>
+      </label>
+      <label>Data da Liquidação / Remessa
+        <input type="date" name="paid_at" required>
+      </label>
+      <div class="span-2">
+        <label>Descrição
+          <input name="description" placeholder="Ex: Entrada 30% sinal de produção, Quitação 70% embarque..." required>
+        </label>
+      </div>
+      <label>Valor em Dólar (USD)
+        <input type="number" step="0.01" name="amount_usd" placeholder="0.00" required>
+      </label>
+      <label>Taxa de Câmbio Efetiva (R$)
+        <input type="number" step="0.0001" name="exchange_rate" placeholder="Ex: 5.6550">
+      </label>
+      <label>Valor Total Debitado (R$)
+        <input type="number" step="0.01" name="amount_brl" placeholder="0.00" required>
+      </label>
+      <label>Tarifas Bancárias / IOF (R$)
+        <input type="number" step="0.01" name="bank_fees_brl" value="0.00">
+      </label>
+      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="document.getElementById('addChinaPaymentModal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Pagamento</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,151 @@
+<!-- Tab 4: Despesas e Tributos no Brasil (templates/imports/tab_expenses_brazil.html) -->
+<div class="tab-pane" id="tab-expenses">
+  <div class="comex-card" style="margin-bottom: 24px; border-left: 4px solid #B45309;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; color: var(--text);">🇧🇷 Despesas, Honorários e Tributos Nacionais</h4>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted);">
+          Total Direto: <strong style="color: var(--text);">{{ financials.total_direct_expenses_brl|money }}</strong> •
+          Total via Numerário: <strong style="color: var(--text);">{{ financials.total_broker_expenses_brl|money }}</strong> •
+          Pendentes: <strong style="color: var(--text);">{{ financials.pending_expenses_brl|money }}</strong>
+        </p>
+      </div>
+      <button class="btn sm primary" onclick="document.getElementById('addExpenseModal').style.display='flex'">
+        + Adicionar Despesa Brasil
+      </button>
+    </div>
+
+    {% if brazil_expenses %}
+      <div class="table-container" style="overflow-x: auto; width: 100%;">
+        <table class="table" style="width: 100%; min-width: 860px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="width: 140px;">Categoria</th>
+              <th style="width: 150px;">Prestador / Favorecido</th>
+              <th style="min-width: 140px;">Descrição</th>
+              <th style="text-align: right; width: 100px;">Previsto</th>
+              <th style="text-align: right; width: 120px; color: var(--text);">Efetivo Pago</th>
+              <th style="width: 160px;">Forma de Pagamento</th>
+              <th style="width: 100px;">Data / Venc.</th>
+              <th style="text-align: center; width: 60px;">Doc</th>
+              <th style="text-align: center; width: 50px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in brazil_expenses %}
+              <tr>
+                <td>
+                  <span class="badge" style="font-size: 11px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
+                    {{ e.category|replace('_', ' ')|capitalize }}
+                  </span>
+                  {% if e.icms_in_numerario %}
+                    <span class="badge" style="font-size: 9px; font-weight: 700; background: rgba(4, 120, 87, 0.12); color: #047857; border: 1px solid rgba(4, 120, 87, 0.25);">ICMS no Numerário</span>
+                  {% endif %}
+                </td>
+                <td style="color: var(--text); font-size: 12.5px;"><strong>{{ e.provider or '—' }}</strong></td>
+                <td style="white-space: normal; min-width: 140px; max-width: 240px; line-height: 1.35; color: var(--text); font-size: 12.5px;">{{ e.description or '—' }}</td>
+                <td style="text-align: right; color: var(--muted);">{{ e.predicted_amount|money }}</td>
+                <td style="text-align: right; font-weight: 800;" class="{{ 'comex-value-emerald' if e.actual_amount > 0 else '' }}">
+                  <span style="{{ 'color: var(--muted); font-weight: normal;' if not e.actual_amount or e.actual_amount == 0 else '' }}">
+                    {{ (e.actual_amount|money) if e.actual_amount > 0 else 'Pendente' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" style="font-size: 11px; font-weight: 600; 
+                    background: {{ 'rgba(3, 105, 161, 0.12)' if e.payment_mode == 'direct' else 'rgba(180, 83, 9, 0.12)' }}; 
+                    color: {{ '#0369A1' if e.payment_mode == 'direct' else '#B45309' }}; 
+                    border: 1px solid {{ 'rgba(3, 105, 161, 0.25)' if e.payment_mode == 'direct' else 'rgba(180, 83, 9, 0.25)' }};">
+                    {{ 'Direto pela Empresa' if e.payment_mode == 'direct' else 'Via Numerário Despachante' }}
+                  </span>
+                </td>
+                <td style="color: var(--muted); font-size: 12px;">
+                  {% if e.paid_at %}
+                    <span style="color: var(--text);">Pago em {{ e.paid_at.strftime('%d/%m/%Y') }}</span>
+                  {% elif e.due_date %}
+                    Venc.: {{ e.due_date.strftime('%d/%m/%Y') }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td style="text-align: center;">
+                  {% if e.doc_url %}
+                    <a href="{{ url_for('uploads', filename=e.doc_url) }}" target="_blank" class="badge" style="text-decoration: none;">📄 Ver</a>
+                  {% else %}
+                    <span style="color: var(--muted);">—</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: center;">
+                  <form method="post" action="{{ url_for('import_financial.delete_expense_brazil', iid=i.id, eid=e.id) }}" onsubmit="return confirm('Remover esta despesa?')">
+                    <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px; color: var(--muted);">
+        Nenhuma despesa nacional cadastrada ainda.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: Adicionar Despesa Brasil -->
+<div class="modal" id="addExpenseModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Adicionar Despesa / Tributo no Brasil</h3>
+      <button type="button" onclick="document.getElementById('addExpenseModal').style.display='none'">×</button>
+    </div>
+    <form method="post" action="{{ url_for('import_financial.add_expense_brazil', iid=i.id) }}" class="form-grid">
+      <label>Categoria da Despesa
+        <select name="category" required>
+          <option value="impostos">Impostos de Importação (II, IPI, PIS, COFINS, ICMS)</option>
+          <option value="taxa_maritima">Taxa Marítima / Armador / Frete Internacional</option>
+          <option value="demurrage">Demurrage / Detenção de Contêiner</option>
+          <option value="armazenagem">Armazenagem e Porto Seco / Retroportuária</option>
+          <option value="transporte_rodoviario">Transporte Rodoviário / Remoção DTA</option>
+          <option value="despachante_sda">Honorários Despachante / SDA / Certificados</option>
+          <option value="seguro">Seguro de Transporte Internacional</option>
+          <option value="outras">Outras Despesas e Tarifas Aduaneiras</option>
+        </select>
+      </label>
+      <label>Forma de Pagamento
+        <select name="payment_mode" required>
+          <option value="direct">Direto pela Empresa</option>
+          <option value="numerario">Via Numerário do Despachante</option>
+        </select>
+      </label>
+      <label>Prestador / Credor
+        <input name="provider" placeholder="Ex: Armador, Receita Federal, Terminal..." required>
+      </label>
+      <label>Descrição
+        <input name="description" placeholder="Ex: Armazenagem 1º período, Taxa BL..." required>
+      </label>
+      <label>Valor Previsto (R$)
+        <input type="number" step="0.01" name="predicted_amount" placeholder="0.00">
+      </label>
+      <label>Valor Efetivo Pago (R$)
+        <input type="number" step="0.01" name="actual_amount" placeholder="0.00">
+      </label>
+      <label>Data de Vencimento
+        <input type="date" name="due_date">
+      </label>
+      <label>Data Efetiva de Pagamento
+        <input type="date" name="paid_at">
+      </label>
+      <div class="span-2" style="display: flex; align-items: center; gap: 8px; padding: 6px 0;">
+        <input type="checkbox" name="icms_in_numerario" id="icms_in_num" value="true">
+        <label for="icms_in_num" style="margin: 0; font-weight: normal; cursor: pointer; color: var(--text);">
+          ICMS Pago via Conta Corrente do Despachante Aduaneiro (Gare/Guia)
+        </label>
+      </div>
+      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="document.getElementById('addExpenseModal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Despesa</button>
+      </div>
+    </form>
+  </div>
+</div>

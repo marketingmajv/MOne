@@ -1,0 +1,109 @@
+<!-- Tab 2: Produtos e Chassis da Importação (templates/imports/tab_products.html) -->
+<div class="tab-pane" id="tab-products">
+  <!-- Tabela de Produtos Cadastrados -->
+  <div class="comex-card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">📦 Produtos e Custo Gerencial Apurado</h4>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+          Custo unitário em R$ = Preço Unitário US$ × Fator de Custo ({{ 'R$ %.4f'|format(financials.cost_factor) if financials.cost_factor else 'Indisponível' }}).
+        </p>
+      </div>
+      <button class="btn sm primary" onclick="document.getElementById('addItemModal').style.display='flex'">+ Adicionar Produto</button>
+    </div>
+
+    {% if items %}
+      <div class="table-container" style="overflow-x: auto; width: 100%;">
+        <table class="data-table" style="width: 100%; min-width: 760px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th style="text-align: center; width: 70px;">Qtd</th>
+              <th style="text-align: right; width: 110px;">Preço Unit. (US$)</th>
+              <th style="text-align: right; width: 110px;">Total (US$)</th>
+              <th style="text-align: right; width: 140px; color: #047857;">Custo Unit. Gerencial (R$)</th>
+              <th style="text-align: right; width: 130px; color: #047857;">Custo Total (R$)</th>
+              <th style="text-align: center; width: 50px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in items %}
+              <tr>
+                <td>
+                  <strong style="color: var(--text);">{{ it.product_name_catalog or it.product_name_custom or 'Produto sem nome' }}</strong>
+                  {% if it.sku %}<small style="color: var(--muted); display: block;">SKU: {{ it.sku }}</small>{% endif %}
+                </td>
+                <td style="text-align: center; font-family: var(--font-mono); font-weight: 600;">{{ it.quantity }} un</td>
+                <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">{{ it.unit_price_usd|money_usd }}</td>
+                <td style="text-align: right; font-family: var(--font-mono); color: var(--muted);">{{ it.total_price_usd|money_usd }}</td>
+                <td style="text-align: right; font-family: var(--font-mono); font-weight: 800; color: #047857; font-size: 14px;">
+                  {{ it.unit_cost_brl|money if it.unit_cost_brl else '—' }}
+                </td>
+                <td style="text-align: right; font-family: var(--font-mono); font-weight: 800; color: #047857; font-size: 14px;">
+                  {{ (it.unit_cost_brl * it.quantity)|money if it.unit_cost_brl else '—' }}
+                </td>
+                <td style="text-align: center;">
+                  <form method="post" action="{{ url_for('import_financial.delete_import_item', iid=i.id, item_id=it.id) }}" onsubmit="return confirm('Remover item da importação?')">
+                    <button type="submit" class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px; color: var(--muted);">
+        Nenhum produto cadastrado nesta importação ainda. Clique acima para adicionar.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Chassis Vinculados -->
+  <div class="comex-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">🔢 Relação de Chassis Vinculados ({{ chassis_units|length }} unidades)</h4>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Chassis rastreados fisicamente no estoque vinculados a este lote.</p>
+      </div>
+      <button class="btn sm outline" onclick="document.getElementById('uploadChassisModal').style.display='flex'" style="color: #0369A1; border-color: #0284C7; font-weight: 700;">
+        📄 Importar Planilha de Chassis
+      </button>
+    </div>
+
+    {% if chassis_units %}
+      <div class="table-container" style="max-height: 400px; overflow-y: auto; overflow-x: auto; width: 100%;">
+        <table class="data-table" style="width: 100%; min-width: 650px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Chassi / VIN</th>
+              <th>Modelo</th>
+              <th>Nº Motor</th>
+              <th>Cor</th>
+              <th>Status Estoque</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in chassis_units %}
+              <tr>
+                <td><code style="background: var(--panel2); padding: 2px 6px; border-radius: 4px; color: var(--text); border: 1px solid var(--line);">{{ u.chassis }}</code></td>
+                <td style="color: var(--text); font-weight: 600;">{{ u.product_name or '—' }}</td>
+                <td style="color: var(--muted);">{{ u.motor_number or '—' }}</td>
+                <td style="color: var(--muted);">{{ u.color or '—' }}</td>
+                <td>
+                  <span class="badge {{ u.status }}">
+                    {{ 'Liberado p/ Venda' if u.status == 'available' else ('Vendido' if u.status == 'sold' else 'Aguardando Liberação') }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px; color: var(--muted);">
+        Nenhum chassi importado para este lote. Clique no botão acima para carregar a planilha CSV ou XLSX.
+      </div>
+    {% endif %}
+  </div>
+</div>

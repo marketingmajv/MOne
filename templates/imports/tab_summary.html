@@ -1,0 +1,151 @@
+<!-- Tab 1: Resumo da Importação (templates/imports/tab_summary.html) -->
+<div class="tab-pane active" id="tab-summary">
+  <!-- Barra de Etapas do Processo -->
+  <div class="comex-card" style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <span class="comex-label">Etapa Atual do Processo:</span>
+      <form method="post" action="{{ url_for('imports.update_step', iid=i.id) }}" style="display: flex; gap: 8px; align-items: center;">
+        <select name="step" onchange="this.form.submit()" style="padding: 6px 12px; border-radius: 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-size: 13px; font-weight: 700; cursor: pointer;">
+          {% for code, label in steps_order %}
+            <option value="{{ code }}" {% if i.step == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+      {% for code, label in steps_order %}
+        {% set is_current = (i.step == code) %}
+        <div style="padding: 10px 12px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: 700;
+                    background: {{ 'rgba(2, 132, 199, 0.12)' if is_current else 'var(--panel2)' }};
+                    border: 1px solid {{ '#0284C7' if is_current else 'var(--line)' }};
+                    color: {{ '#0284C7' if is_current else 'var(--muted)' }};">
+          {{ label }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Cards de Indicadores Principais -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Fator de Custo -->
+    <div class="comex-card" style="border-left: 4px solid #B45309;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span class="comex-label">Fator de Custo (R$/US$)</span>
+        <span class="badge" style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: {{ 'rgba(5,150,105,0.15)' if financials.cost_factor_status == 'final' else 'rgba(245,158,11,0.15)' }}; color: {{ '#047857' if financials.cost_factor_status == 'final' else '#B45309' }};">
+          {{ 'FINAL' if financials.cost_factor_status == 'final' else 'PROVISÓRIO' }}
+        </span>
+      </div>
+      <div class="comex-value comex-value-amber" style="font-size: 26px;">
+        {% if financials.cost_factor %}
+          R$ {{ '%.4f'|format(financials.cost_factor) }} <span style="font-size: 13px; font-weight: 500; color: var(--muted);">/ US$ 1.00</span>
+        {% else %}
+          <span style="font-size: 16px; color: var(--muted);">Fator indisponível</span>
+        {% endif %}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Líquido {{ financials.total_disbursed_brl|money }} ÷ FOB {{ financials.goods_base_usd|money_usd }}
+      </p>
+    </div>
+
+    <!-- Compra na China -->
+    <div class="comex-card" style="border-left: 4px solid #0284C7;">
+      <div class="comex-label" style="margin-bottom: 6px;">Total Compra na China (PI)</div>
+      <div class="comex-value comex-value-blue" style="font-size: 22px;">
+        {{ financials.pi_amount_usd|money_usd }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        CI: <strong style="color: var(--text);">{{ financials.ci_amount_usd|money_usd }}</strong> • Saldo: <strong style="color: var(--text);">{{ financials.purchase_balance_usd|money_usd }}</strong>
+      </p>
+    </div>
+
+    <!-- Desembolso Líquido em Reais -->
+    <div class="comex-card" style="border-left: 4px solid #047857;">
+      <div class="comex-label" style="margin-bottom: 6px;">Desembolso Líquido Total</div>
+      <div class="comex-value comex-value-emerald" style="font-size: 22px;">
+        {{ financials.total_disbursed_brl|money }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Fornecedor: <strong style="color: var(--text);">{{ financials.total_supplier_paid_brl|money }}</strong> • Brasil: <strong style="color: var(--text);">{{ (financials.total_direct_expenses_brl + financials.net_broker_disbursement)|money }}</strong>
+      </p>
+    </div>
+
+    <!-- Numerário Aduaneiro -->
+    <div class="comex-card" style="border-left: 4px solid #7C3AED;">
+      <div class="comex-label" style="margin-bottom: 6px;">Saldo Numerário (Despachante)</div>
+      <div class="comex-value comex-value-purple" style="font-size: 22px;">
+        {{ financials.numerario_balance_brl|money }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Adiantado: {{ financials.advances_brl|money }} • Comprovado: {{ financials.proven_num_expenses_brl|money }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Auditoria e Checagens da IA -->
+  <div class="comex-card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">🤖 Auditoria e Checagens de Consistência (IA Gemini)</h4>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">Conferência automática de valores, duplicidades e cruzamento documental.</p>
+      </div>
+      <span class="badge" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 12px; font-weight: 700;">{{ checks|length }} checagens ativas</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% for c in checks %}
+        <div style="padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+                    background: {{ 'rgba(5, 150, 105, 0.08)' if c.status == 'ok' else ('rgba(239, 68, 68, 0.08)' if c.status == 'divergent' else 'rgba(245, 158, 11, 0.08)') }};
+                    border: 1px solid {{ 'rgba(5, 150, 105, 0.3)' if c.status == 'ok' else ('rgba(239, 68, 68, 0.3)' if c.status == 'divergent' else 'rgba(245, 158, 11, 0.3)') }};">
+          <div style="flex: 1; min-width: 260px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 14px;">{{ '✅' if c.status == 'ok' else ('⚠️' if c.status == 'divergent' else 'ℹ️') }}</span>
+              <strong style="color: var(--text); font-size: 13px; font-weight: 700;">{{ c.title }}</strong>
+            </div>
+            <p style="margin: 4px 0 0 24px; font-size: 12px; color: var(--muted);">{{ c.description }}</p>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge" style="background: {{ 'rgba(5,150,105,0.18)' if c.status == 'ok' else ('rgba(239,68,68,0.18)' if c.status == 'divergent' else 'rgba(245,158,11,0.18)') }};
+                                      color: {{ '#047857' if c.status == 'ok' else ('#B91C1C' if c.status == 'divergent' else '#B45309') }}; font-weight: 700; font-size: 11px;">
+              {{ 'CONFERIDO' if c.status == 'ok' else ('DIVERGENTE' if c.status == 'divergent' else 'PENDENTE DE DADOS') }}
+            </span>
+            {% if c.diff_value is not none and c.diff_value != 0 %}
+              <div style="font-size: 11px; color: #B91C1C; font-weight: 700; margin-top: 4px;">Diferença: {{ '%.2f'|format(c.diff_value) }}</div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Ações Finais: Fechamento, Reabertura e Liberação de Estoque -->
+  <div class="comex-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h5 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text);">Controle de Fechamento e Estoque</h5>
+      <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+        Status: <strong style="color: {{ '#047857' if i.status == 'released' else ('#B45309' if i.status == 'closed' else '#0284C7') }};">{{ i.status|upper }}</strong>
+        {% if i.closed_at %} • Fechado em: {{ i.closed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+      {% if i.status != 'released' %}
+        <form method="post" action="{{ url_for('imports.release_import_stock', iid=i.id) }}" onsubmit="return confirm('Confirmar a liberação de venda de todos os chassis desta importação?')">
+          <button class="btn" style="background: rgba(5, 150, 105, 0.15); border: 1px solid rgba(5, 150, 105, 0.4); color: #047857; font-weight: 700;">
+            🚀 Liberar Estoque para Venda
+          </button>
+        </form>
+      {% endif %}
+
+      {% if i.status != 'closed' %}
+        <form method="post" action="{{ url_for('imports.close_import', iid=i.id) }}" onsubmit="return confirm('Deseja consolidar o fechamento formal desta importação? O Fator de Custo será fixado como FINAL.')">
+          <button class="btn primary" style="font-weight: 700;">🔒 Fechar Importação</button>
+        </form>
+      {% else %}
+        <button class="btn" onclick="document.getElementById('reopenModal').style.display='flex'" style="background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #B45309; font-weight: 700;">
+          🔓 Reabrir Importação
+        </button>
+      {% endif %}
+    </div>
+  </div>
+</div>

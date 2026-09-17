@@ -1,454 +1,444 @@
-import csv
-import io
-import unicodedata
+"""
+M-One Imports Hub Blueprint (routes/import_routes.py)
+Gerenciamento de compras da China, lotes, contêineres, painel de 7 abas,
+liberação de chassis e controle de etapas do processo.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
 from datetime import date
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from decimal import Decimal
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
-try:
-    from openpyxl import load_workbook
-except Exception:
-    load_workbook = None
-
 from database import db
-from gemini_service import analyze_import_documents
-from routes.helpers import (
-    login_required,
-    roles_required,
-    save_upload,
-    audit,
-    UPLOAD_DIR
-)
+from routes.helpers import audit, current_user, login_required, roles_required, save_upload
+from services.chassis_service import parse_chassis_file
+from services.import_ai_service import DOC_TYPES_MAP
+from services.import_audit_service import run_import_audit_checks
+from services.import_calculator import calculate_import_financials, to_dec
 
-import_bp = Blueprint("import", __name__)
+logger = logging.getLogger(__name__)
 
+import_bp = Blueprint("imports", __name__)
 
-def normalize_headers(headers):
-    out = []
-    for h in headers:
-        s = str(h or "").strip().lower()
-        s = s.replace("ç", "c").replace("ã", "a").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
-        out.append(s)
-    return out
-
-
-def parse_chassis_file(file_storage):
-    ext = file_storage.filename.rsplit(".", 1)[1].lower()
-    data = file_storage.read()
-    rows = []
-    if ext == "csv":
-        text = data.decode("utf-8-sig", errors="replace")
-        sample = text[:2048]
-        try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
-        except Exception:
-            dialect = csv.excel
-            dialect.delimiter = ";"
-        reader = csv.reader(io.StringIO(text), dialect)
-        all_rows = list(reader)
-    elif ext == "xlsx":
-        if load_workbook is None:
-            raise ValueError("Suporte a XLSX indisponível. Instale openpyxl.")
-        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-        ws = wb.active
-        all_rows = [[cell for cell in row] for row in ws.iter_rows(values_only=True)]
-    else:
-        raise ValueError("Use CSV ou XLSX para a planilha de chassis.")
-    if not all_rows:
-        return []
-    headers = normalize_headers(all_rows[0])
-    def idx(candidates):
-        for c in candidates:
-            if c in headers:
-                return headers.index(c)
-        return None
-    i_model = idx(["modelo", "model", "produto", "product"])
-    i_chassis = idx(["chassi", "chassis", "quadro", "frame", "frame no", "frame number", "vin"])
-    i_motor = idx(["motor", "motor no", "motor number", "numero do motor", "n motor"])
-    i_color = idx(["cor", "color", "colour"])
-    if i_model is None or i_chassis is None:
-        raise ValueError("A planilha precisa ter pelo menos as colunas MODELO e CHASSI.")
-    for raw in all_rows[1:]:
-        model = str(raw[i_model] or "").strip() if i_model < len(raw) else ""
-        chassis = str(raw[i_chassis] or "").strip() if i_chassis < len(raw) else ""
-        motor = str(raw[i_motor] or "").strip() if i_motor is not None and i_motor < len(raw) else ""
-        color = str(raw[i_color] or "").strip() if i_color is not None and i_color < len(raw) else ""
-        if model and chassis:
-            rows.append({"model": model, "chassis": chassis, "motor": motor, "color": color})
-    return rows
+STEPS_ORDER = [
+    ("compra", "1. Compra"),
+    ("pagamentos_producao", "2. Pagamentos e Produção"),
+    ("embarque", "3. Embarque"),
+    ("desembaraco", "4. Desembaraço"),
+    ("entrega", "5. Entrega"),
+    ("prestacao_contas", "6. Prestação de Contas"),
+    ("fechado", "7. Fechamento"),
+]
 
 
-@import_bp.route("/imports", methods=["GET", "POST"])
+@import_bp.route("/imports", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
 def imports():
-    if request.method == "POST":
-        reference = request.form["reference"].strip()
-        invoice_no = request.form.get("invoice_no", "").strip()
-        bl_no = request.form.get("bl_no", "").strip()
-        supplier_name = request.form.get("supplier_name", "").strip()
-        seller_name = request.form.get("seller_name", "").strip()
-        arrival_date = request.form.get("arrival_date") or None
-        usd_rate = float(request.form.get("usd_rate") or 0)
-        invoice_amount_usd = float(request.form.get("invoice_amount_usd") or 0)
-        nf_entry = request.form.get("nf_entry", "").strip()
-        notes = request.form.get("notes", "").strip()
-        try:
-            invoice_file = save_upload(request.files.get("invoice_file"), "invoice")
-            bl_file = save_upload(request.files.get("bl_file"), "bl")
-            nf_entry_file = save_upload(request.files.get("nf_entry_file"), "nfentrada")
-            chassis_file_obj = request.files.get("chassis_file")
-            chassis_file_name = save_upload(chassis_file_obj, "chassis") if chassis_file_obj and chassis_file_obj.filename else None
-        except ValueError as e:
-            flash(str(e), "danger")
-            return redirect(url_for("imports"))
-
-        with db() as conn:
-            cur = conn.execute(
-                """INSERT INTO imports(reference,invoice_no,bl_no,supplier_name,seller_name,arrival_date,usd_rate,invoice_amount_usd,nf_entry,invoice_file,bl_file,nf_entry_file,chassis_file,notes,created_by)
-                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-                (reference, invoice_no, bl_no, supplier_name, seller_name, arrival_date, usd_rate, invoice_amount_usd, nf_entry, invoice_file, bl_file, nf_entry_file, chassis_file_name, notes, session["user_id"]),
-            )
-            ret = cur.fetchone() if cur else None
-            iid = ret["id"] if ret else cur.lastrowid
-
-            if chassis_file_name:
-                try:
-                    class FS:
-                        pass
-                    obj = FS()
-                    obj.filename = chassis_file_name
-                    obj.read = lambda: (UPLOAD_DIR / chassis_file_name).read_bytes()
-                    rows = parse_chassis_file(obj)
-                    inserted = 0
-                    for row in rows:
-                        existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
-                        if not existing:
-                            prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
-                            if not prod:
-                                sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
-                                sku = sku_base
-                                n = 1
-                                while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
-                                    n += 1
-                                    sku = f"{sku_base}-{n}"
-                                cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
-                                p_ret = cur_p.fetchone() if cur_p else None
-                                product_id = p_ret["id"] if p_ret else cur_p.lastrowid
-                            else:
-                                product_id = prod["id"]
-                            conn.execute(
-                                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                                (row["chassis"], row["motor"], product_id, row["color"], iid, "unreleased", arrival_date),
-                            )
-                            inserted += 1
-                    flash(f"Importação criada com {inserted} chassis cadastrados.", "success")
-                except Exception as ex:
-                    flash(f"Importação criada, porém erro ao processar planilha de chassis: {ex}", "warning")
-            else:
-                flash("Importação criada com sucesso. Carregue a planilha de chassis para liberar o estoque.", "success")
-            conn.commit()
-
-        audit("import.created", reference)
-        return redirect(url_for("imports"))
-
+    """Listagem geral de importações com cartões estatísticos e status das etapas."""
+    me = current_user() or {}
     with db() as conn:
-        import_rows = conn.execute(
+        rows = conn.execute(
             """
-            SELECT i.*, COUNT(DISTINCT st.id) AS chassis_count
+            SELECT i.*,
+                   COUNT(DISTINCT su.id) as chassis_count,
+                   COUNT(DISTINCT idoc.id) as documents_count,
+                   COUNT(DISTINCT itm.id) as items_count
             FROM imports i
-            LEFT JOIN stock_units st ON st.import_id=i.id
-            GROUP BY i.id ORDER BY i.created_at DESC
+            LEFT JOIN stock_units su ON su.import_id = i.id
+            LEFT JOIN import_documents idoc ON idoc.import_id = i.id
+            LEFT JOIN import_items itm ON itm.import_id = i.id
+            GROUP BY i.id
+            ORDER BY i.id DESC
             """
         ).fetchall()
 
-        result_imports = []
-        for row in import_rows:
-            imp_dict = dict(row)
-            costs = conn.execute(
-                "SELECT * FROM import_costs WHERE import_id=%s ORDER BY paid_at ASC, id ASC",
-                (imp_dict["id"],)
-            ).fetchall()
+        import_list = []
+        tot_usd = Decimal("0.00")
+        tot_chassis = 0
 
-            costs_list = [dict(c) for c in costs]
-            supplier_brl = 0.0
-            supplier_usd = 0.0
-            total_costs_brl = 0.0
+        for r in rows:
+            item = dict(r)
+            # Calcular indicadores financeiros rápidos
+            fin = calculate_import_financials(item["id"], conn)
+            item["financials"] = fin
+            tot_usd += to_dec(item.get("pi_amount_usd") or item.get("ci_amount_usd"))
+            tot_chassis += int(item.get("chassis_count") or 0)
+            import_list.append(item)
 
-            for c in costs_list:
-                c_rate = float(c.get("usd_rate") or imp_dict.get("usd_rate") or 1.0)
-                amount = float(c.get("amount") or 0.0)
-                c_currency = (c.get("currency") or "BRL").upper()
+        products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
 
-                if c_currency == "USD":
-                    amount_usd = amount
-                    amount_brl = amount * (c_rate if c_rate > 0 else 1.0)
-                else:
-                    amount_brl = amount
-                    amount_usd = amount / c_rate if c_rate > 0 else 0.0
+    return render_template(
+        "imports.html",
+        me=me,
+        imports=import_list,
+        products=products,
+        steps_order=STEPS_ORDER,
+        total_usd=float(tot_usd),
+        total_chassis=tot_chassis,
+    )
 
-                c["amount_brl"] = amount_brl
-                c["amount_usd"] = amount_usd
-                total_costs_brl += amount_brl
 
-                c_type = (c.get("cost_type") or "").strip().lower()
-                c_desc = (c.get("description") or "").strip().lower()
-                is_supplier_payment = any(kw in c_type or kw in c_desc for kw in ["fornecedor", "sinal", "inicial", "intermedi", "final", "invoice", "china", "chines", "fabricante"])
+@import_bp.route("/imports/create", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def create_import():
+    """Cria novo lote/processo de importação."""
+    ref = request.form.get("reference", "").strip() or f"IMP-{date.today().year}-{date.today().strftime('%m%d')}"
+    importer = request.form.get("importer_company", "MAJ Mobilidade").strip()
+    supplier = request.form.get("supplier_name", "").strip()
+    contact = request.form.get("supplier_contact", "").strip()
+    currency = request.form.get("currency", "USD").strip()
+    incoterm = request.form.get("incoterm", "FOB").strip()
+    forwarder = request.form.get("freight_forwarder", "").strip()
+    broker = request.form.get("customs_broker", "").strip()
+    pi_usd = request.form.get("pi_amount_usd", "0")
+    ci_usd = request.form.get("ci_amount_usd", "0")
+    bl_no = request.form.get("bl_no", "").strip()
+    invoice_no = request.form.get("invoice_no", "").strip()
+    freight_ci = bool(request.form.get("freight_included_in_ci"))
+    freight_pi = bool(request.form.get("freight_included_in_pi"))
+    insurance_inc = bool(request.form.get("insurance_included"))
+    arr_est = request.form.get("arrival_date_estimated") or None
+    dep_est = request.form.get("departure_date_estimated") or None
+    notes = request.form.get("notes", "").strip()
+    me = current_user() or {}
 
-                if is_supplier_payment or c_currency == "USD":
-                    supplier_brl += amount_brl
-                    if c_currency == "USD":
-                        supplier_usd += amount
-                    elif c_rate > 0:
-                        supplier_usd += (amount / c_rate)
+    with db() as conn:
+        new_row = conn.execute(
+            """
+            INSERT INTO imports (
+                reference, importer_company, supplier_name, supplier_contact, currency, incoterm,
+                freight_forwarder, customs_broker, pi_amount_usd, ci_amount_usd, bl_no, invoice_no,
+                freight_included_in_ci, freight_included_in_pi, insurance_included,
+                arrival_date_estimated, departure_date_estimated, notes, step, status, created_by
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'compra', 'draft', %s
+            ) RETURNING id
+            """,
+            (
+                ref,
+                importer,
+                supplier,
+                contact,
+                currency,
+                incoterm,
+                forwarder,
+                broker,
+                pi_usd,
+                ci_usd,
+                bl_no,
+                invoice_no,
+                freight_ci,
+                freight_pi,
+                insurance_inc,
+                arr_est,
+                dep_est,
+                notes,
+                me.get("id"),
+            ),
+        ).fetchone()
+        new_id = new_row["id"]
 
-            imp_dict["costs_list"] = costs_list
-            imp_dict["costs_brl"] = total_costs_brl
-            imp_dict["supplier_brl"] = supplier_brl
-            imp_dict["supplier_usd"] = supplier_usd
+        # Salva documentos anexados durante a criação e vincula chassis
+        from services.import_ai_service import persist_creation_documents
+        persist_creation_documents(new_id, request, conn, me.get("id"))
 
-            # Cálculo do Câmbio Médio (Dólar Médio dos pagamentos chineses)
-            if supplier_usd > 0 and supplier_brl > 0:
-                imp_dict["avg_usd_rate"] = round(supplier_brl / supplier_usd, 4)
-            elif float(imp_dict.get("invoice_amount_usd") or 0) > 0 and supplier_brl > 0:
-                imp_dict["avg_usd_rate"] = round(supplier_brl / float(imp_dict.get("invoice_amount_usd")), 4)
-            else:
-                imp_dict["avg_usd_rate"] = float(imp_dict.get("usd_rate") or 0.0)
+        calculate_import_financials(new_id, conn)
+        run_import_audit_checks(new_id, conn)
+        audit("import.created", f"import_id={new_id}, ref={ref}")
 
-            # Cálculo da Alíquota Real do Dólar da Importação (R$ Total de Despesas / US$ Invoice)
-            inv_usd = float(imp_dict.get("invoice_amount_usd") or 0.0)
-            if inv_usd > 0 and total_costs_brl > 0:
-                imp_dict["landed_aliquota"] = round(total_costs_brl / inv_usd, 4)
-            elif supplier_usd > 0 and total_costs_brl > 0:
-                imp_dict["landed_aliquota"] = round(total_costs_brl / supplier_usd, 4)
-            else:
-                imp_dict["landed_aliquota"] = 0.0
+    flash(f"Importação {ref} cadastrada com sucesso!", "success")
+    return redirect(url_for("imports.import_detail", iid=new_id))
 
-            result_imports.append(imp_dict)
 
-    return render_template("imports.html", imports=result_imports)
+@import_bp.route("/imports/create-demo", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def create_demo():
+    """Cria um processo de importação completo com dados de exemplo para navegação rápida."""
+    from services.demo_import import create_demo_import_data
+    me = current_user() or {}
+    new_id = create_demo_import_data(me)
+    flash("Importação de demonstração criada com sucesso! Todas as 7 abas foram configuradas.", "success")
+    return redirect(url_for("imports.import_detail", iid=new_id))
+
+
+
+@import_bp.route("/imports/<int:iid>", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def import_detail(iid: int):
+    """Painel completo da importação dividido em abas."""
+    me = current_user() or {}
+    active_tab = request.args.get("tab", "summary")
+
+    with db() as conn:
+        imp = conn.execute("SELECT * FROM imports WHERE id = %s", (iid,)).fetchone()
+        if not imp:
+            flash("Importação não encontrada.", "error")
+            return redirect(url_for("imports.imports"))
+
+        financials = calculate_import_financials(iid, conn)
+        checks = run_import_audit_checks(iid, conn)
+
+        # Buscar dados de todas as abas
+        items = conn.execute(
+            """
+            SELECT itm.*, p.name as product_name_catalog, p.sku
+            FROM import_items itm
+            LEFT JOIN products p ON p.id = itm.product_id
+            WHERE itm.import_id = %s
+            ORDER BY itm.id ASC
+            """,
+            (iid,),
+        ).fetchall()
+
+        chassis_units = conn.execute(
+            """
+            SELECT su.*, p.name as product_name
+            FROM stock_units su
+            LEFT JOIN products p ON p.id = su.product_id
+            WHERE su.import_id = %s
+            ORDER BY su.id ASC
+            """,
+            (iid,),
+        ).fetchall()
+
+        china_payments = conn.execute(
+            """
+            SELECT p.*, d.title as doc_title, d.file_url as doc_url
+            FROM import_payments_china p
+            LEFT JOIN import_documents d ON d.id = p.document_id
+            WHERE p.import_id = %s
+            ORDER BY p.paid_at ASC, p.id ASC
+            """,
+            (iid,),
+        ).fetchall()
+
+        brazil_expenses = conn.execute(
+            """
+            SELECT e.*, d.title as doc_title, d.file_url as doc_url
+            FROM import_brazil_expenses e
+            LEFT JOIN import_documents d ON d.id = e.document_id
+            WHERE e.import_id = %s
+            ORDER BY e.category ASC, e.due_date ASC
+            """,
+            (iid,),
+        ).fetchall()
+
+        numerario_entries = conn.execute(
+            """
+            SELECT n.*, d.title as doc_title, d.file_url as doc_url
+            FROM import_numerario n
+            LEFT JOIN import_documents d ON d.id = n.document_id
+            WHERE n.import_id = %s
+            ORDER BY n.entry_date ASC, n.id ASC
+            """,
+            (iid,),
+        ).fetchall()
+
+        documents = conn.execute(
+            """
+            SELECT d.*, u.name as uploader_name
+            FROM import_documents d
+            LEFT JOIN users u ON u.id = d.uploaded_by
+            WHERE d.import_id = %s
+            ORDER BY d.doc_type ASC, d.id DESC
+            """,
+            (iid,),
+        ).fetchall()
+
+        products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
+
+    return render_template(
+        "import_detail.html",
+        me=me,
+        i=dict(imp),
+        financials=financials,
+        checks=checks,
+        items=items,
+        chassis_units=chassis_units,
+        china_payments=china_payments,
+        brazil_expenses=brazil_expenses,
+        numerario_entries=numerario_entries,
+        documents=documents,
+        products=products,
+        doc_types=DOC_TYPES_MAP,
+        steps_order=STEPS_ORDER,
+        active_tab=active_tab,
+    )
 
 
 @import_bp.route("/imports/<int:iid>/edit", methods=["POST"])
 @login_required
-@roles_required("admin")
-def edit_import(iid):
-    reference = request.form.get("reference", "").strip()
-    invoice_no = request.form.get("invoice_no", "").strip()
+@roles_required("admin", "support")
+def edit_import(iid: int):
+    """Atualiza dados cadastrais da importação."""
+    ref = request.form.get("reference", "").strip()
+    importer = request.form.get("importer_company", "").strip()
+    supplier = request.form.get("supplier_name", "").strip()
+    currency = request.form.get("currency", "USD").strip()
+    incoterm = request.form.get("incoterm", "FOB").strip()
+    forwarder = request.form.get("freight_forwarder", "").strip()
+    broker = request.form.get("customs_broker", "").strip()
+    pi_usd = request.form.get("pi_amount_usd", "0")
+    ci_usd = request.form.get("ci_amount_usd", "0")
     bl_no = request.form.get("bl_no", "").strip()
-    supplier_name = request.form.get("supplier_name", "").strip()
-    seller_name = request.form.get("seller_name", "").strip()
-    nf_entry = request.form.get("nf_entry", "").strip()
-    arrival_date = request.form.get("arrival_date") or None
-    usd_rate = float(request.form.get("usd_rate") or 0)
-    invoice_amount_usd = float(request.form.get("invoice_amount_usd") or 0)
+    invoice_no = request.form.get("invoice_no", "").strip()
     notes = request.form.get("notes", "").strip()
 
     with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
-        if not imp:
-            flash("Importação não encontrada.", "danger")
-            return redirect(url_for("imports"))
-
-        try:
-            invoice_file = save_upload(request.files.get("invoice_file"), "invoice") or imp["invoice_file"]
-            bl_file = save_upload(request.files.get("bl_file"), "bl") or imp["bl_file"]
-            nf_entry_file = save_upload(request.files.get("nf_entry_file"), "nfentrada") or imp["nf_entry_file"]
-        except ValueError as e:
-            flash(str(e), "danger")
-            return redirect(url_for("imports"))
-
-        chassis_file = imp["chassis_file"]
-        chassis_file_obj = request.files.get("chassis_file")
-        if chassis_file_obj and chassis_file_obj.filename:
-            try:
-                chassis_file = save_upload(chassis_file_obj, "chassis")
-                class FS:
-                    pass
-                obj = FS()
-                obj.filename = chassis_file
-                obj.read = lambda: (UPLOAD_DIR / chassis_file).read_bytes()
-                rows = parse_chassis_file(obj)
-                inserted = 0
-                for row in rows:
-                    existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
-                    if not existing:
-                        prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
-                        if not prod:
-                            sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
-                            sku = sku_base
-                            n = 1
-                            while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
-                                n += 1
-                                sku = f"{sku_base}-{n}"
-                            cur_p = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
-                            p_ret = cur_p.fetchone() if cur_p else None
-                            product_id = p_ret["id"] if p_ret else cur_p.lastrowid
-                        else:
-                            product_id = prod["id"]
-                        conn.execute(
-                            "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                            (row["chassis"], row["motor"], product_id, row["color"], iid, "available" if imp["status"] == "released" else "unreleased", arrival_date),
-                        )
-                        inserted += 1
-                flash(f"Planilha de chassis atualizada ({inserted} novos chassis).", "info")
-            except Exception as ex:
-                flash(f"Erro ao ler planilha de chassis: {ex}", "warning")
-
         conn.execute(
-            """UPDATE imports SET reference=%s, invoice_no=%s, bl_no=%s, supplier_name=%s, seller_name=%s, nf_entry=%s, arrival_date=%s, usd_rate=%s, invoice_amount_usd=%s, invoice_file=%s, bl_file=%s, nf_entry_file=%s, chassis_file=%s, notes=%s
-               WHERE id=%s""",
-            (reference or imp["reference"], invoice_no, bl_no, supplier_name, seller_name, nf_entry, arrival_date, usd_rate, invoice_amount_usd, invoice_file, bl_file, nf_entry_file, chassis_file, notes, iid)
+            """
+            UPDATE imports
+            SET reference=%s, importer_company=%s, supplier_name=%s, currency=%s, incoterm=%s,
+                freight_forwarder=%s, customs_broker=%s, pi_amount_usd=%s, ci_amount_usd=%s,
+                bl_no=%s, invoice_no=%s, notes=%s
+            WHERE id=%s
+            """,
+            (ref, importer, supplier, currency, incoterm, forwarder, broker, pi_usd, ci_usd, bl_no, invoice_no, notes, iid),
         )
-        conn.commit()
-    audit("import.updated", f"import_id={iid}")
-    flash("Importação atualizada com sucesso.", "success")
-    return redirect(url_for("imports"))
+        calculate_import_financials(iid, conn)
+        run_import_audit_checks(iid, conn)
+        audit("import.updated", f"import_id={iid}")
+
+    flash("Dados da importação atualizados com sucesso!", "success")
+    return redirect(url_for("imports.import_detail", iid=iid))
 
 
-@import_bp.route("/imports/<int:iid>/chassis", methods=["POST"])
+@import_bp.route("/imports/<int:iid>/step", methods=["POST"])
 @login_required
-@roles_required("admin", "stock", "support")
-def import_chassis(iid):
+@roles_required("admin", "support")
+def update_step(iid: int):
+    """Avança ou altera a etapa do processo de importação."""
+    new_step = request.form.get("step")
+    valid_steps = [s[0] for s in STEPS_ORDER]
+    if new_step not in valid_steps:
+        flash("Etapa inválida.", "error")
+        return redirect(url_for("imports.import_detail", iid=iid))
+
+    with db() as conn:
+        conn.execute("UPDATE imports SET step=%s WHERE id=%s", (new_step, iid))
+        audit("import.step_changed", f"import_id={iid}, step={new_step}")
+
+    flash(f"Etapa atualizada para: {dict(STEPS_ORDER).get(new_step, new_step)}", "success")
+    return redirect(url_for("imports.import_detail", iid=iid))
+
+
+@import_bp.route("/imports/<int:iid>/close", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def close_import(iid: int):
+    """Realiza o fechamento formal e conciliação final do lote."""
+    me = current_user() or {}
+    with db() as conn:
+        calculate_import_financials(iid, conn)
+        conn.execute(
+            """
+            UPDATE imports 
+            SET status='closed', step='fechado', cost_factor_status='final', 
+                closed_at=CURRENT_TIMESTAMP, closed_by=%s
+            WHERE id=%s
+            """,
+            (me.get("id"), iid),
+        )
+        audit("import.closed", f"import_id={iid}, user={me.get('username')}")
+
+    flash("Importação fechada com sucesso! Fator de custo consolidado como FINAL.", "success")
+    return redirect(url_for("imports.import_detail", iid=iid))
+
+
+@import_bp.route("/imports/<int:iid>/reopen", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def reopen_import(iid: int):
+    """Reabre importação mediante justificativa obrigatória registrada em log."""
+    justification = (request.form.get("reopen_reason") or request.form.get("justification", "")).strip()
+    if not justification or len(justification) < 5:
+        flash("É obrigatório informar uma justificativa clara para reabrir a importação.", "error")
+        return redirect(url_for("imports.import_detail", iid=iid))
+
+    me = current_user() or {}
+    with db() as conn:
+        conn.execute(
+            """
+            UPDATE imports 
+            SET status='in_progress', step='prestacao_contas', cost_factor_status='provisional'
+            WHERE id=%s
+            """,
+            (iid,),
+        )
+        audit("import.reopened", f"import_id={iid}, user={me.get('username')}, just={justification}")
+
+    flash("Importação reaberta com sucesso. Registrado no log de auditoria.", "success")
+    return redirect(url_for("imports.import_detail", iid=iid))
+
+
+@import_bp.route("/imports/<int:iid>/release", methods=["POST"], endpoint="release_import")
+@import_bp.route("/imports/<int:iid>/release-stock", methods=["POST"], endpoint="release_import_stock")
+@login_required
+@roles_required("admin", "support")
+def release_import_stock(iid: int):
+    """Libera os chassis da importação para venda imediata no estoque."""
+    with db() as conn:
+        conn.execute("UPDATE imports SET status='released' WHERE id=%s", (iid,))
+        conn.execute("UPDATE stock_units SET status='available' WHERE import_id=%s AND status='unreleased'", (iid,))
+        audit("import.stock_released", f"import_id={iid}")
+
+    flash("Chassis liberados com sucesso para venda no estoque!", "success")
+    return redirect(url_for("imports.import_detail", iid=iid, tab="products"))
+
+
+@import_bp.route("/imports/<int:iid>/chassis", methods=["POST"], endpoint="upload_chassis")
+@import_bp.route("/imports/<int:iid>/chassis-upload", methods=["POST"], endpoint="upload_chassis_sheet")
+@login_required
+@roles_required("admin", "support")
+def upload_chassis_sheet(iid: int):
+
+    """Upload e vinculação de planilha de chassis (.csv, .xlsx)."""
     f = request.files.get("chassis_file")
     if not f or not f.filename:
-        flash("Selecione uma planilha CSV ou XLSX.", "danger")
-        return redirect(url_for("imports"))
+        flash("Nenhum arquivo de chassis selecionado.", "error")
+        return redirect(url_for("imports.import_detail", iid=iid, tab="products"))
+
     try:
-        filename = save_upload(f, "chassis")
-        class FS:
-            pass
-        obj = FS()
-        obj.filename = filename
-        obj.read = lambda: (UPLOAD_DIR / filename).read_bytes()
-        rows = parse_chassis_file(obj)
+        rows = parse_chassis_file(f)
     except Exception as e:
-        flash(f"Não foi possível importar a planilha: {e}", "danger")
-        return redirect(url_for("imports"))
-    inserted = 0
-    duplicates = []
+        flash(f"Erro na leitura da planilha: {str(e)}", "error")
+        return redirect(url_for("imports.import_detail", iid=iid, tab="products"))
+
     with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
-        if not imp:
-            flash("Importação não encontrada.", "danger")
-            return redirect(url_for("imports"))
-        for row in rows:
-            existing = conn.execute("SELECT id FROM stock_units WHERE chassis=%s", (row["chassis"],)).fetchone()
-            if existing:
-                duplicates.append(row["chassis"])
-                continue
-            prod = conn.execute("SELECT id FROM products WHERE LOWER(name)=LOWER(%s)", (row["model"],)).fetchone()
-            if not prod:
-                sku_base = "".join(ch for ch in row["model"].upper() if ch.isalnum())[:18] or "PROD"
-                sku = sku_base
-                n = 1
-                while conn.execute("SELECT 1 FROM products WHERE sku=%s", (sku,)).fetchone():
-                    n += 1
-                    sku = f"{sku_base}-{n}"
-                cur = conn.execute("INSERT INTO products(name,sku,category) VALUES(%s,%s,%s) RETURNING id", (row["model"], sku, "Importado"))
-                c_ret = cur.fetchone() if cur else None
-                product_id = c_ret["id"] if c_ret else cur.lastrowid
-            else:
-                product_id = prod["id"]
+        products_map = {p["name"].strip().lower(): p["id"] for p in conn.execute("SELECT id, name FROM products").fetchall()}
+        inserted = 0
+        for r in rows:
+            p_id = products_map.get(r["model"].strip().lower())
+            if not p_id:
+                # Criar produto no catálogo se não existir
+                res = conn.execute("INSERT INTO products (name, category) VALUES (%s, 'Motos Elétricas') RETURNING id", (r["model"].strip(),)).fetchone()
+                p_id = res["id"]
+                products_map[r["model"].strip().lower()] = p_id
+
+            # Inserir unidade no estoque vinculado à importação
             conn.execute(
-                "INSERT INTO stock_units(chassis,motor_no,product_id,color,import_id,status,received_at) VALUES(%s,%s,%s,%s,%s,%s,%s)",
-                (row["chassis"], row["motor"], product_id, row["color"], iid, "available" if imp["status"] == "released" else "unreleased", imp["arrival_date"]),
+                """
+                INSERT INTO stock_units (product_id, chassis, motor_number, color, import_id, status)
+                VALUES (%s, %s, %s, %s, %s, 'unreleased')
+                ON CONFLICT DO NOTHING
+                """,
+                (p_id, r["chassis"].strip(), r["motor"].strip(), r["color"].strip(), iid),
             )
             inserted += 1
-        conn.execute("UPDATE imports SET chassis_file=%s WHERE id=%s", (filename, iid))
-        conn.commit()
-    audit("import.chassis", f"import_id={iid}; inserted={inserted}; duplicates={len(duplicates)}")
-    msg = f"{inserted} chassis importados."
-    if duplicates:
-        msg += f" {len(duplicates)} duplicados foram bloqueados."
-    flash(msg, "success" if inserted else "warning")
-    return redirect(url_for("imports"))
 
+        calculate_import_financials(iid, conn)
+        run_import_audit_checks(iid, conn)
+        audit("import.chassis_imported", f"import_id={iid}, count={inserted}")
 
-@import_bp.route("/imports/<int:iid>/cost", methods=["POST"])
-@login_required
-@roles_required("admin", "support")
-def add_import_cost(iid):
-    try:
-        receipt = save_upload(request.files.get("receipt_file"), "importcost")
-    except ValueError as e:
-        flash(str(e), "danger")
-        return redirect(url_for("imports"))
-    with db() as conn:
-        conn.execute(
-            "INSERT INTO import_costs(import_id,cost_type,description,amount,currency,usd_rate,paid_at,receipt_file) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
-            (
-                iid,
-                request.form.get("cost_type", "Pagamento Extra / Outros"),
-                request.form.get("description", "").strip(),
-                float(request.form.get("amount") or 0),
-                request.form.get("currency", "BRL"),
-                float(request.form.get("usd_rate") or 0),
-                request.form.get("paid_at") or date.today().isoformat(),
-                receipt,
-            ),
-        )
-        conn.commit()
-    audit("import.cost", f"import_id={iid}")
-    flash("Comprovante/Custo adicionado à importação.", "success")
-    return redirect(url_for("imports"))
+    flash(f"{inserted} chassis processados e vinculados a esta importação!", "success")
+    return redirect(url_for("imports.import_detail", iid=iid, tab="products"))
 
-
-@import_bp.route("/imports/cost/<int:cid>/delete", methods=["POST"])
-@login_required
-@roles_required("admin")
-def delete_import_cost(cid):
-    with db() as conn:
-        cost = conn.execute("SELECT import_id FROM import_costs WHERE id=%s", (cid,)).fetchone()
-        if cost:
-            conn.execute("DELETE FROM import_costs WHERE id=%s", (cid,))
-            conn.commit()
-            audit("import.cost_deleted", f"cost_id={cid}")
-            flash("Comprovante/Custo removido com sucesso.", "success")
-    return redirect(url_for("imports"))
-
-
-@import_bp.route("/imports/<int:iid>/release", methods=["POST"])
-@login_required
-@roles_required("admin", "support")
-def release_import(iid):
-    with db() as conn:
-        imp = conn.execute("SELECT * FROM imports WHERE id=%s", (iid,)).fetchone()
-        count = conn.execute("SELECT COUNT(*) AS c FROM stock_units WHERE import_id=%s", (iid,)).fetchone()["c"]
-        if not imp:
-            flash("Importação não encontrada.", "danger")
-        elif count == 0:
-            flash("BLOQUEIO DE SEGURANÇA: Não é possível liberar a importação para venda sem cadastrar os chassis da remessa. Carregue a planilha de chassis primeiro.", "danger")
-        elif not imp["invoice_no"] or not imp["bl_no"]:
-            flash("Para liberar a importação, é necessário informar Invoice e BL.", "danger")
-        else:
-            conn.execute("UPDATE imports SET status='released' WHERE id=%s", (iid,))
-            conn.execute("UPDATE stock_units SET status='available' WHERE import_id=%s AND status='unreleased'", (iid,))
-            conn.commit()
-            audit("import.released", f"import_id={iid}")
-            flash("Estoque desta importação foi liberado com sucesso para venda.", "success")
-    return redirect(url_for("imports"))
-
-
-@import_bp.route("/api/imports/analyze-docs", methods=["POST"])
-@login_required
-@roles_required("admin", "support")
-def api_analyze_import_docs():
-    file_objs = []
-    for key in ["invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
-        f = request.files.get(key)
-        if f and f.filename:
-            content = f.read()
-            ext = f.filename.rsplit(".", 1)[-1].lower()
-            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
-            file_objs.append({
-                "bytes": content,
-                "mime_type": mime,
-                "filename": f.filename
-            })
-
-    if not file_objs:
-        return jsonify({"success": False, "message": "Nenhum arquivo enviado para análise da IA."})
-
-    res = analyze_import_documents(file_objs)
-    return jsonify(res)

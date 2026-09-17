@@ -1,0 +1,79 @@
+<!-- Tab 6: Documentos da Importação com IA (templates/imports/tab_documents.html) -->
+<div class="tab-pane" id="tab-documents">
+  <!-- Área de Envio Múltiplo -->
+  <div class="comex-card" style="margin-bottom: 24px; border: 2px dashed rgba(109, 40, 217, 0.35); background: rgba(109, 40, 217, 0.04);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; color: var(--text);">📑 Adicionar Documentos da Importação em Lote</h4>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--muted);">
+          Envie múltiplos PDFs, imagens ou planilhas de uma vez (PI, CI, BL, Câmbio, Comprovantes, Numerário, NF Entrada).
+          A <strong>IA Gemini</strong> classifica, extrai os campos e detecta duplicatas automaticamente.
+        </p>
+      </div>
+      <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id) }}" enctype="multipart/form-data" id="batchDocForm" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="batchFileInput" style="display: none;" onchange="this.form.submit()">
+        <button type="button" class="btn primary" onclick="document.getElementById('batchFileInput').click()" style="font-weight: 600; padding: 10px 18px;">
+          📂 Selecionar Documentos em Lote
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lista de Documentos Anexados -->
+  <div class="comex-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+      <h4 style="margin: 0; font-size: 16px; color: var(--text);">Documentos Classificados e Vinculados ({{ documents|length }})</h4>
+      <span class="badge" style="background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">Armazenamento Seguro</span>
+    </div>
+
+    {% if documents %}
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;">
+        {% for d in documents %}
+          <div style="padding: 16px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">
+                <span class="badge" style="font-size: 10px; font-weight: 700; background: rgba(3, 105, 161, 0.12); color: #0369A1; border: 1px solid rgba(3, 105, 161, 0.25);">
+                  {{ doc_types.get(d.doc_type, d.doc_type) }}
+                </span>
+                <span style="font-size: 11px; color: var(--muted);">{{ (d.file_size / 1024)|round(1) }} KB</span>
+              </div>
+              <h5 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: var(--text); word-break: break-all;">
+                {{ d.filename }}
+              </h5>
+              <p style="margin: 0 0 10px 0; font-size: 11px; color: var(--muted);">
+                Enviado em {{ d.created_at.strftime('%d/%m/%Y %H:%M') if d.created_at else '—' }}
+                {% if d.uploader_name %} por {{ d.uploader_name }}{% endif %}
+              </p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 10px;">
+              <a href="{{ url_for('uploads', filename=d.file_url) }}" target="_blank" class="btn sm" style="text-decoration: none; font-size: 11px;">
+                👁️ Visualizar
+              </a>
+              
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <!-- Reclassificar -->
+                <form method="post" action="{{ url_for('import_document.reclassify_document', iid=i.id, doc_id=d.id) }}" style="display: inline;">
+                  <select name="doc_type" onchange="this.form.submit()" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
+                    {% for code, label in doc_types.items() %}
+                      <option value="{{ code }}" {% if d.doc_type == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+
+                <!-- Excluir -->
+                <form method="post" action="{{ url_for('import_document.delete_document', iid=i.id, doc_id=d.id) }}" onsubmit="return confirm('Excluir este documento?')">
+                  <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">🗑️</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 40px; color: var(--muted);">
+        Nenhum documento anexado ainda. Clique no botão acima para adicionar arquivos em lote.
+      </div>
+    {% endif %}
+  </div>
+</div>

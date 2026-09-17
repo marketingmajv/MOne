@@ -1,0 +1,133 @@
+<!-- Tab 5: Numerário Aduaneiro e Prestação de Contas (templates/imports/tab_numerario.html) -->
+<div class="tab-pane" id="tab-numerario">
+  <!-- Card Explicativo e Conciliação -->
+  <div class="comex-card" style="margin-bottom: 24px; border-left: 4px solid #D97706;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h4 style="margin: 0; font-size: 16px; color: var(--text);">💼 Numerário Aduaneiro e Prestação de Contas do Despachante</h4>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
+          O numerário é um <strong>adiantamento</strong> de recursos para que o despachante quite tributos e tarifas locais.
+          <br>
+          <span style="color: #B45309; font-weight: 700;">⚖️ Regra Contábil de Rigor:</span> A transferência ao despachante entra no controle de desembolso financeiro; as despesas comprovadas entram na composição de custo. <em style="color: var(--text);">Nunca são somados ambos no mesmo total</em>.
+        </p>
+      </div>
+      <button class="btn sm primary" onclick="document.getElementById('addNumerarioModal').style.display='flex'">
+        + Lançar Movimentação de Numerário
+      </button>
+    </div>
+
+    <!-- Indicadores de Conciliação -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px;">
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Adiantamentos Transferidos</span>
+        <div class="comex-value-blue" style="font-size: 20px; font-weight: 800;">{{ financials.advances_brl|money }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Despesas Comprovadas</span>
+        <div class="comex-value-emerald" style="font-size: 20px; font-weight: 800;">{{ financials.proven_num_expenses_brl|money }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Devoluções Recebidas</span>
+        <div class="comex-value-purple" style="font-size: 20px; font-weight: 800;">{{ financials.refunds_brl|money }}</div>
+      </div>
+      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Saldo a Prestar Contas</span>
+        <div class="{{ 'comex-value-emerald' if financials.numerario_balance_brl == 0 else ('comex-value-amber' if financials.numerario_balance_brl > 0 else '') }}" style="font-size: 20px; font-weight: 800; color: {{ '#EF4444' if financials.numerario_balance_brl < 0 else '' }};">
+          {{ financials.numerario_balance_brl|money }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Movimentações -->
+  <div class="comex-card">
+    <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text);">Movimentações do Numerário Aduaneiro</h4>
+    {% if numerario_entries %}
+      <div class="table-container" style="overflow-x: auto; width: 100%;">
+        <table class="table" style="width: 100%; min-width: 680px; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="width: 95px;">Data</th>
+              <th style="width: 170px;">Tipo de Lançamento</th>
+              <th style="min-width: 160px;">Descrição</th>
+              <th style="text-align: right; width: 130px; color: var(--text);">Valor</th>
+              <th style="text-align: center; width: 80px;">Comprovante</th>
+              <th style="text-align: center; width: 50px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for n in numerario_entries %}
+              <tr>
+                <td style="color: var(--text);">{{ n.entry_date.strftime('%d/%m/%Y') if n.entry_date else '—' }}</td>
+                <td>
+                  <span class="badge" style="font-size: 11px; font-weight: 600;
+                    background: {{ 'rgba(3, 105, 161, 0.12)' if n.entry_type == 'advance' else ('rgba(4, 120, 87, 0.12)' if n.entry_type == 'actual_expense' else 'rgba(180, 83, 9, 0.12)') }};
+                    color: {{ '#0369A1' if n.entry_type == 'advance' else ('#047857' if n.entry_type == 'actual_expense' else '#B45309') }};
+                    border: 1px solid {{ 'rgba(3, 105, 161, 0.25)' if n.entry_type == 'advance' else ('rgba(4, 120, 87, 0.25)' if n.entry_type == 'actual_expense' else 'rgba(180, 83, 9, 0.25)') }};">
+                    {{ 'Adiantamento à Conta' if n.entry_type == 'advance' else ('Despesa Comprovada Despachante' if n.entry_type == 'actual_expense' else ('Devolução de Saldo Recebida' if n.entry_type == 'refund' else 'Outro')) }}
+                  </span>
+                </td>
+                <td><strong style="color: var(--text);">{{ n.description or '—' }}</strong></td>
+                <td style="text-align: right; font-weight: 800;" class="{{ 'comex-value-blue' if n.entry_type == 'advance' else ('comex-value-emerald' if n.entry_type == 'actual_expense' else 'comex-value-amber') }}">
+                  {{ n.amount|money }}
+                </td>
+                <td style="text-align: center;">
+                  {% if n.doc_url %}
+                    <a href="{{ url_for('uploads', filename=n.doc_url) }}" target="_blank" class="badge" style="text-decoration: none;">📄 Ver</a>
+                  {% else %}
+                    <span style="color: var(--muted);">—</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: center;">
+                  <form method="post" action="{{ url_for('import_financial.delete_numerario_entry', iid=i.id, nid=n.id) }}" onsubmit="return confirm('Remover este lançamento do numerário?')">
+                    <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 30px; color: var(--muted);">
+        Nenhum lançamento de numerário registrado para esta importação.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: Lançar Movimentação de Numerário -->
+<div class="modal" id="addNumerarioModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Lançar Movimentação de Numerário Aduaneiro</h3>
+      <button type="button" onclick="document.getElementById('addNumerarioModal').style.display='none'">×</button>
+    </div>
+    <form method="post" action="{{ url_for('import_financial.add_numerario_entry', iid=i.id) }}" class="form-grid">
+      <label>Tipo de Movimentação
+        <select name="entry_type" required>
+          <option value="advance">Adiantamento Transferido à Conta do Despachante</option>
+          <option value="actual_expense">Despesa Paga / Comprovada pelo Despachante</option>
+          <option value="refund">Devolução de Saldo Sobrante Recebida</option>
+        </select>
+      </label>
+      <label>Data da Operação
+        <input type="date" name="entry_date" required>
+      </label>
+      <div class="span-2">
+        <label>Descrição
+          <input name="description" placeholder="Ex: Adiantamento 1 para ICMS e Taxas, Devolução de saldo final..." required>
+        </label>
+      </div>
+      <div class="span-2">
+        <label>Valor (R$)
+          <input type="number" step="0.01" name="amount" placeholder="0.00" required>
+        </label>
+      </div>
+      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="document.getElementById('addNumerarioModal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>

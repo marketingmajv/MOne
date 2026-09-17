@@ -1,0 +1,662 @@
+<!-- Modal: Wizard de Nova Importação (3 Passos) (templates/imports/modal_new_import.html) -->
+{% if me.role in ['admin', 'support'] %}
+<div class="modal" id="newImport" style="display: none;" onclick="if(event.target===this)closeModal('newImport')">
+  <div class="modal-card large" style="max-width: 980px;">
+    
+    <!-- Cabeçalho & Stepper do Wizard -->
+    <div class="modal-head" style="margin-bottom: 12px; border-bottom: none; padding-bottom: 0;">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">Nova Importação / Compra da China</h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+          Processamento documental assistido por Inteligência Artificial com conferência em tempo real.
+        </p>
+      </div>
+      <button type="button" onclick="closeModal('newImport')">×</button>
+    </div>
+
+    <!-- Stepper Visual de 3 Passos -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+      <div id="step-tab-1" class="wizard-step active" style="padding: 10px; border-radius: 8px; background: rgba(3, 105, 161, 0.1); border: 1px solid #0284C7; display: flex; align-items: center; gap: 8px;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284C7; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800;">1</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: #0284C7;">Arquivos & Estágio</strong>
+          <small style="color: var(--muted); font-size: 10px;">Upload em lote</small>
+        </div>
+      </div>
+      <div id="step-tab-2" class="wizard-step" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">2</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: var(--muted);">Checklist da IA</strong>
+          <small style="color: var(--muted); font-size: 10px;">Trava e validação</small>
+        </div>
+      </div>
+      <div id="step-tab-3" class="wizard-step" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">3</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: var(--muted);">Revisão & Criar</strong>
+          <small style="color: var(--muted); font-size: 10px;">Dados e chassis</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário Global da Criação -->
+    <form method="post" action="{{ url_for('imports.create_import') }}" enctype="multipart/form-data" id="wizardImportForm">
+      <input type="hidden" name="documents_meta" id="hiddenDocsMeta" value="[]">
+
+      <!-- ===================================================================
+           PASSO 1: UPLOAD EM LOTE & ESTÁGIO
+           =================================================================== -->
+      <div id="wizard-pane-1" class="wizard-pane">
+        <!-- Seleção do Estágio Operacional -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">
+            Qual o estágio operacional atual desta importação?
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label id="lbl-stage-water" style="padding: 14px; border-radius: 10px; border: 2px solid #0284C7; background: rgba(2, 132, 199, 0.08); cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+              <input type="radio" name="import_stage" value="water" checked onchange="onStageChanged('water')" style="margin-top: 2px;">
+              <div>
+                <strong style="display: block; font-size: 13px; color: var(--text);">🚢 Embarcado / Em Trânsito Aduaneiro</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">
+                  Contêiner em trânsito marítimo ou no porto. Exige: PI, CI, BL, Packing List e Relação de Chassis.
+                </small>
+              </div>
+            </label>
+
+            <label id="lbl-stage-cleared" style="padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+              <input type="radio" name="import_stage" value="cleared" onchange="onStageChanged('cleared')" style="margin-top: 2px;">
+              <div>
+                <strong style="display: block; font-size: 13px; color: var(--text);">🏁 Desembaraçado / Concluído</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">
+                  Processo finalizado no Brasil. Exige também: DUIMP/DI, NF de Entrada e Guias/Numerário.
+                </small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Área de Drag & Drop (Dropzone) -->
+        <div id="dropzoneArea" 
+             style="border: 2px dashed rgba(109, 40, 217, 0.4); background: rgba(109, 40, 217, 0.03); border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 16px;"
+             onclick="document.getElementById('batchFilesInput').click()"
+             ondragover="event.preventDefault(); this.style.borderColor='#6D28D9'; this.style.background='rgba(109, 40, 217, 0.08)';"
+             ondragleave="this.style.borderColor='rgba(109, 40, 217, 0.4)'; this.style.background='rgba(109, 40, 217, 0.03)';"
+             ondrop="handleFileDrop(event)">
+          <input type="file" id="batchFilesInput" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" style="display: none;" onchange="handleFileSelect(this.files)">
+          <div style="font-size: 36px; margin-bottom: 8px;">📂</div>
+          <h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 700; color: var(--text);">
+            Arraste todos os documentos da importação aqui ou clique para selecionar
+          </h4>
+          <p style="margin: 0; font-size: 12px; color: var(--muted);">
+            Compatível com <strong>PDF, PNG, JPG e Planilhas Excel / CSV</strong> (Commercial Invoice, BL, Packing List, DI, NF Entrada, Chassis, etc.)
+          </p>
+        </div>
+
+        <!-- Lista de Arquivos Selecionados -->
+        <div id="selectedFilesBox" style="display: none; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text);" id="filesCountBadge">0 arquivos selecionados</span>
+            <button type="button" class="btn sm" onclick="clearSelectedFiles()" style="font-size: 11px; color: #EF4444; background: none; border: none; cursor: pointer;">
+              🗑️ Limpar Todos
+            </button>
+          </div>
+          <div id="filesListContainer" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; padding: 4px;">
+            <!-- Itens de arquivos -->
+          </div>
+        </div>
+
+        <!-- Rodapé do Passo 1 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px;">
+          <button type="button" class="btn outline" onclick="closeModal('newImport')">Cancelar</button>
+          <button type="button" class="btn primary" id="btnAnalyzeBatch" onclick="startAIAnalysis()" style="font-weight: 700; padding: 10px 20px;">
+            ⚡ Analisar Arquivos com IA
+          </button>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           PASSO 2: CHECKLIST DA IA & TRAVA DE VALIDAÇÃO
+           =================================================================== -->
+      <div id="wizard-pane-2" class="wizard-pane" style="display: none;">
+        <!-- Barra de Carregamento da IA -->
+        <div id="aiLoadingBox" style="display: none; padding: 24px; text-align: center;">
+          <div style="font-size: 32px; margin-bottom: 10px; animation: pulse 1.5s infinite;">🤖</div>
+          <h4 style="margin: 0; font-size: 16px; color: var(--text);" id="aiLoadingTitle">A IA Gemini está analisando seus documentos...</h4>
+          <p style="margin: 6px 0 16px 0; font-size: 12px; color: var(--muted);">Classificando tipos, extraindo valores em USD, BL e chassis...</p>
+          <div style="width: 100%; max-width: 400px; height: 8px; background: var(--line); border-radius: 4px; margin: 0 auto; overflow: hidden;">
+            <div style="width: 60%; height: 100%; background: linear-gradient(90deg, #0284C7, #7C3AED); border-radius: 4px; animation: shimmer 1.8s infinite;"></div>
+          </div>
+        </div>
+
+        <!-- Checklist de Conferência em Tempo Real -->
+        <div id="checklistContent" style="display: none;">
+          <!-- Status Geral da Trava -->
+          <div id="gateAlertBox" style="margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="gateIcon" style="font-size: 20px;">🔒</span>
+              <div>
+                <strong id="gateTitle" style="font-size: 13px; display: block;">Verificando documentos...</strong>
+                <small id="gateSubtitle" style="font-size: 11px; color: var(--muted);">O avanço depende dos documentos obrigatórios.</small>
+              </div>
+            </div>
+            <span id="gateBadge" class="badge" style="font-size: 11px; font-weight: 700;">—</span>
+          </div>
+
+          <!-- Grid: Checklist de Documentos Obrigatórios do Estágio -->
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text);">Checklist de Documentos Exigidos:</span>
+              <span style="font-size: 11px; color: var(--muted);" id="stageRulesLabel">Estágio: Embarcado</span>
+            </div>
+            <div id="rulesChecklistGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+              <!-- Cards de conferência gerados via JS -->
+            </div>
+          </div>
+
+          <!-- Relação de Arquivos Detectados com Possibilidade de Ajuste Manual -->
+          <div style="margin-bottom: 16px;">
+            <span style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">
+              Classificação dos Arquivos (Ajuste manual se a IA tiver dúvida):
+            </span>
+            <div id="detectedFilesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel2);">
+              <!-- Lista com selects manuais -->
+            </div>
+          </div>
+
+          <!-- Aviso de Pagamentos Anexáveis Posteriormente -->
+          <div style="padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); font-size: 12px; color: var(--text); margin-bottom: 16px;">
+            ℹ️ <strong>Comprovantes Financeiros:</strong> Comprovantes de câmbio e remessas bancárias ao fornecedor podem ser anexados a qualquer momento após a criação, sem travar esta etapa.
+          </div>
+
+          <!-- Rodapé do Passo 2 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px;">
+            <button type="button" class="btn outline" onclick="goToStep(1)">⬅️ Voltar aos Arquivos</button>
+            <button type="button" class="btn primary" id="btnGoToStep3" onclick="goToStep(3)" disabled style="font-weight: 700;">
+              Avançar para Revisão (Passo 3) ➡️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           PASSO 3: REVISÃO ESTRUTURADA DOS DADOS & CRIAÇÃO
+           =================================================================== -->
+      <div id="wizard-pane-3" class="wizard-pane" style="display: none;">
+        <!-- Banner de Sucesso da Validação -->
+        <div style="padding: 12px 16px; border-radius: 8px; background: rgba(4, 120, 87, 0.1); border: 1px solid rgba(4, 120, 87, 0.3); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">✅</span>
+            <div>
+              <strong style="color: #047857; font-size: 13px; display: block;">Documentos validados e aprovados!</strong>
+              <small style="color: var(--muted); font-size: 11px;">Confira e edite os dados extraídos antes de consolidar o lote.</small>
+            </div>
+          </div>
+          <span class="badge" style="background: rgba(4, 120, 87, 0.2); color: #047857; font-weight: 700; font-size: 11px;">100% CONFORME</span>
+        </div>
+
+        <!-- Box de Resumo dos Chassis Extraídos -->
+        <div id="chassisReviewBox" style="padding: 14px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🛵</span>
+              <div>
+                <strong style="font-size: 13px; color: var(--text);" id="chassisReviewTitle">0 Chassis Identificados</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block;" id="chassisReviewSubtitle">Serão vinculados ao estoque deste lote.</small>
+              </div>
+            </div>
+            <div id="chassisDuplicateAlert" style="display: none;">
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; font-weight: 700;">
+                ⚠️ Chassis duplicados detectados
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade de Campos Pré-Preenchidos -->
+        <div class="form-grid">
+          <label>Identificador / Ref. Lote
+            <input name="reference" id="inp_reference" required placeholder="Ex.: IMP-2026-001">
+          </label>
+          <label>Empresa Importadora
+            <input name="importer_company" id="inp_importer" value="MAJ Mobilidade" required>
+          </label>
+          <label>Fornecedor (China)
+            <input name="supplier_name" id="inp_supplier" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+          </label>
+          <label>Contato / Vendedor Comercial
+            <input name="supplier_contact" id="inp_contact" placeholder="Ex.: Chen, Jack, Linda...">
+          </label>
+
+          <label>Moeda da Compra
+            <select name="currency" id="inp_currency">
+              <option value="USD" selected>USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="CNY">CNY (¥)</option>
+            </select>
+          </label>
+          <label>Incoterm
+            <select name="incoterm" id="inp_incoterm">
+              <option value="FOB" selected>FOB (Free on Board)</option>
+              <option value="CIF">CIF (Cost, Insurance & Freight)</option>
+              <option value="CFR">CFR (Cost and Freight)</option>
+              <option value="EXW">EXW (Ex Works)</option>
+            </select>
+          </label>
+
+          <label>Agente de Cargas (Forwarder)
+            <input name="freight_forwarder" id="inp_forwarder" placeholder="Ex.: DSV, Kuehne+Nagel...">
+          </label>
+          <label>Despachante Aduaneiro
+            <input name="customs_broker" id="inp_broker" placeholder="Ex.: Despachante Santos/Itajaí...">
+          </label>
+
+          <label>Teto Proforma Invoice (PI) USD
+            <input type="number" step="0.01" name="pi_amount_usd" id="inp_pi_amount" placeholder="0.00">
+          </label>
+          <label>Commercial Invoice (CI) USD
+            <input type="number" step="0.01" name="ci_amount_usd" id="inp_ci_amount" placeholder="0.00">
+          </label>
+
+          <label>Número BL (Bill of Lading)
+            <input name="bl_no" id="inp_bl_no" placeholder="Ex.: COSU123456789">
+          </label>
+          <label>Número Commercial Invoice
+            <input name="invoice_no" id="inp_invoice_no" placeholder="Ex.: INV-2026-889">
+          </label>
+
+          <label>Previsão de Embarque
+            <input type="date" name="departure_date_estimated" id="inp_dep_date">
+          </label>
+          <label>Previsão de Chegada
+            <input type="date" name="arrival_date_estimated" id="inp_arr_date">
+          </label>
+
+          <div class="span-2" style="background: var(--panel2); border: 1px dashed var(--line); border-radius: 8px; padding: 12px; display: flex; gap: 16px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="freight_included_in_ci" id="inp_freight_ci" value="1">
+              <span>Frete internacional incluído na Commercial Invoice</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="freight_included_in_pi" id="inp_freight_pi" value="1">
+              <span>Frete incluído na Proforma (PI)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="insurance_included" id="inp_insurance" value="1">
+              <span>Seguro de carga incluído</span>
+            </label>
+          </div>
+
+          <label class="span-2">Observações Gerais
+            <textarea name="notes" id="inp_notes" placeholder="Detalhes adicionais, contêineres, orientações..." rows="2"></textarea>
+          </label>
+        </div>
+
+        <!-- Rodapé do Passo 3 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 20px;">
+          <button type="button" class="btn outline" onclick="goToStep(2)">⬅️ Voltar ao Checklist</button>
+          <button type="submit" class="btn primary" id="btnSubmitImport" style="font-weight: 700; padding: 12px 24px;">
+            🚀 Criar Importação & Abrir Painel
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+let selectedFilesList = [];
+let activeImportStage = 'water';
+let activeRules = [];
+let aiAnalysisResult = null;
+
+// Mapa oficial de tipos de documentos
+const DOC_OPTIONS = [
+  { code: 'PI', label: 'Proforma Invoice (PI)' },
+  { code: 'CI', label: 'Commercial Invoice (CI)' },
+  { code: 'BL', label: 'Bill of Lading (BL)' },
+  { code: 'PL', label: 'Packing List (PL)' },
+  { code: 'CHASSIS_LIST', label: 'Relação de Chassis' },
+  { code: 'DUIMP_DI', label: 'DUIMP / DI' },
+  { code: 'ENTRY_NF', label: 'Nota Fiscal de Entrada' },
+  { code: 'NUMERARIO_TAX', label: 'Guias / Numerário' },
+  { code: 'EXCHANGE_CONTRACT', label: 'Contrato de Câmbio' },
+  { code: 'SUPPLIER_PAYMENT', label: 'Comprovante Fornecedor' },
+  { code: 'FREIGHT_INVOICE', label: 'Fatura de Frete Internacional' },
+  { code: 'OTHER', label: 'Outro Documento' }
+];
+
+function onStageChanged(stage) {
+  activeImportStage = stage;
+  const lblWater = document.getElementById('lbl-stage-water');
+  const lblCleared = document.getElementById('lbl-stage-cleared');
+  if (stage === 'water') {
+    lblWater.style.borderColor = '#0284C7';
+    lblWater.style.background = 'rgba(2, 132, 199, 0.08)';
+    lblCleared.style.borderColor = 'var(--line)';
+    lblCleared.style.background = 'var(--panel2)';
+  } else {
+    lblCleared.style.borderColor = '#047857';
+    lblCleared.style.background = 'rgba(4, 120, 87, 0.08)';
+    lblWater.style.borderColor = 'var(--line)';
+    lblWater.style.background = 'var(--panel2)';
+  }
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  const dropzone = document.getElementById('dropzoneArea');
+  dropzone.style.borderColor = 'rgba(109, 40, 217, 0.4)';
+  dropzone.style.background = 'rgba(109, 40, 217, 0.03)';
+  if (e.dataTransfer && e.dataTransfer.files) {
+    handleFileSelect(e.dataTransfer.files);
+  }
+}
+
+function handleFileSelect(files) {
+  if (!files || !files.length) return;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (!selectedFilesList.some(existing => existing.name === f.name && existing.size === f.size)) {
+      selectedFilesList.push(f);
+    }
+  }
+  updateSelectedFilesUI();
+}
+
+function removeFile(index) {
+  selectedFilesList.splice(index, 1);
+  updateSelectedFilesUI();
+}
+
+function clearSelectedFiles() {
+  selectedFilesList = [];
+  updateSelectedFilesUI();
+}
+
+function updateSelectedFilesUI() {
+  const box = document.getElementById('selectedFilesBox');
+  const container = document.getElementById('filesListContainer');
+  const badge = document.getElementById('filesCountBadge');
+  const input = document.getElementById('batchFilesInput');
+
+  if (selectedFilesList.length === 0) {
+    box.style.display = 'none';
+    if (input) input.value = '';
+    return;
+  }
+
+  box.style.display = 'block';
+  badge.textContent = `${selectedFilesList.length} arquivo${selectedFilesList.length > 1 ? 's' : ''} selecionado${selectedFilesList.length > 1 ? 's' : ''}`;
+  container.innerHTML = '';
+
+  selectedFilesList.forEach((f, idx) => {
+    const sizeKb = (f.size / 1024).toFixed(0);
+    const item = document.createElement('div');
+    item.style.padding = '6px 10px';
+    item.style.borderRadius = '6px';
+    item.style.background = 'var(--panel)';
+    item.style.border = '1px solid var(--line)';
+    item.style.fontSize = '11px';
+    item.style.display = 'inline-flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.innerHTML = `
+      <span style="font-weight: 600; color: var(--text); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${f.name}</span>
+      <span style="color: var(--muted); font-size: 10px;">${sizeKb} KB</span>
+      <button type="button" onclick="removeFile(${idx})" style="border: none; background: none; color: #EF4444; cursor: pointer; font-size: 13px; padding: 0 2px;">✕</button>
+    `;
+    container.appendChild(item);
+  });
+
+  // Atualizar o FileList do input
+  try {
+    const dt = new DataTransfer();
+    selectedFilesList.forEach(f => dt.items.add(f));
+    input.files = dt.files;
+  } catch (e) {
+    // Fallback para navegadores legados
+  }
+}
+
+function goToStep(stepNum) {
+  [1, 2, 3].forEach(num => {
+    const pane = document.getElementById(`wizard-pane-${num}`);
+    const tab = document.getElementById(`step-tab-${num}`);
+    if (pane) pane.style.display = (num === stepNum) ? 'block' : 'none';
+    if (tab) {
+      if (num === stepNum) {
+        tab.style.background = 'rgba(3, 105, 161, 0.1)';
+        tab.style.borderColor = '#0284C7';
+        tab.querySelector('strong').style.color = '#0284C7';
+        tab.querySelector('span').style.background = '#0284C7';
+        tab.querySelector('span').style.color = '#fff';
+      } else if (num < stepNum) {
+        tab.style.background = 'rgba(4, 120, 87, 0.08)';
+        tab.style.borderColor = 'rgba(4, 120, 87, 0.3)';
+        tab.querySelector('strong').style.color = '#047857';
+        tab.querySelector('span').style.background = '#047857';
+        tab.querySelector('span').style.color = '#fff';
+        tab.querySelector('span').textContent = '✓';
+      } else {
+        tab.style.background = 'var(--panel2)';
+        tab.style.borderColor = 'var(--line)';
+        tab.querySelector('strong').style.color = 'var(--muted)';
+        tab.querySelector('span').style.background = 'var(--panel)';
+        tab.querySelector('span').style.color = 'var(--muted)';
+        tab.querySelector('span').textContent = num;
+      }
+    }
+  });
+}
+
+async function startAIAnalysis() {
+  if (selectedFilesList.length === 0) {
+    alert('Por favor, selecione ou arraste pelo menos um documento para iniciar a análise.');
+    return;
+  }
+
+  goToStep(2);
+  const loadingBox = document.getElementById('aiLoadingBox');
+  const checklistContent = document.getElementById('checklistContent');
+  loadingBox.style.display = 'block';
+  checklistContent.style.display = 'none';
+
+  const fd = new FormData();
+  selectedFilesList.forEach(f => fd.append('documents', f));
+
+  try {
+    const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
+    const result = await res.json();
+
+    loadingBox.style.display = 'none';
+    checklistContent.style.display = 'block';
+
+    if (!result.success) {
+      alert('Aviso da análise: ' + (result.message || 'Não foi possível analisar os documentos.'));
+      return;
+    }
+
+    aiAnalysisResult = result;
+    activeRules = result.rules || [];
+    renderStep2Checklist(result);
+    populateStep3Fields(result);
+
+  } catch (err) {
+    loadingBox.style.display = 'none';
+    checklistContent.style.display = 'block';
+    alert('Erro ao processar documentos com a IA: ' + err.message);
+  }
+}
+
+function renderStep2Checklist(result) {
+  const files = result.files || [];
+  const rules = activeRules;
+  const isClearedStage = (activeImportStage === 'cleared');
+  document.getElementById('stageRulesLabel').textContent = `Estágio: ${isClearedStage ? 'Desembaraçado / Concluído' : 'Embarcado / Em Trânsito'}`;
+
+  // 1. Renderizar lista de arquivos detectados com seletor manual
+  const filesList = document.getElementById('detectedFilesList');
+  filesList.innerHTML = '';
+  
+  files.forEach((f, idx) => {
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.style.padding = '8px 10px';
+    item.style.background = 'var(--panel)';
+    item.style.border = '1px solid var(--line)';
+    item.style.borderRadius = '6px';
+    item.style.fontSize = '12px';
+
+    let optionsHtml = DOC_OPTIONS.map(opt => 
+      `<option value="${opt.code}" ${opt.code === f.doc_type ? 'selected' : ''}>${opt.label}</option>`
+    ).join('');
+
+    item.innerHTML = `
+      <div style="flex: 1; min-width: 180px;">
+        <strong style="color: var(--text); display: block;">📄 ${f.filename}</strong>
+        <small style="color: var(--muted);">${f.summary || (f.total_amount ? ('Valor: ' + f.currency + ' ' + f.total_amount) : '')}</small>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 11px; color: var(--muted);">Classificar como:</span>
+        <select onchange="onManualDocTypeChange(${idx}, this.value)" style="padding: 4px 8px; border-radius: 6px; font-size: 11px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
+          ${optionsHtml}
+        </select>
+      </div>
+    `;
+    filesList.appendChild(item);
+  });
+
+  updateChecklistGate();
+}
+
+function onManualDocTypeChange(fileIdx, newType) {
+  if (aiAnalysisResult && aiAnalysisResult.files && aiAnalysisResult.files[fileIdx]) {
+    aiAnalysisResult.files[fileIdx].doc_type = newType;
+    updateChecklistGate();
+  }
+}
+
+function updateChecklistGate() {
+  if (!aiAnalysisResult) return;
+  const files = aiAnalysisResult.files || [];
+  const rules = activeRules;
+  const isClearedStage = (activeImportStage === 'cleared');
+
+  // Mapear tipos atualmente presentes
+  const presentDocTypes = new Set(files.map(f => f.doc_type));
+
+  const checklistGrid = document.getElementById('rulesChecklistGrid');
+  checklistGrid.innerHTML = '';
+
+  let missingRequiredCount = 0;
+
+  rules.forEach(rule => {
+    const isRequired = isClearedStage ? rule.required_cleared : rule.required_on_water;
+    const isPresent = presentDocTypes.has(rule.doc_type);
+
+    if (isRequired && !isPresent) {
+      missingRequiredCount++;
+    }
+
+    const card = document.createElement('div');
+    card.style.padding = '10px 12px';
+    card.style.borderRadius = '8px';
+    card.style.border = '1px solid ' + (isPresent ? 'rgba(4, 120, 87, 0.3)' : (isRequired ? 'rgba(239, 68, 68, 0.3)' : 'var(--line)'));
+    card.style.background = isPresent ? 'rgba(4, 120, 87, 0.06)' : (isRequired ? 'rgba(239, 68, 68, 0.05)' : 'var(--panel2)');
+    card.style.display = 'flex';
+    card.style.justifyContent = 'space-between';
+    card.style.alignItems = 'center';
+
+    card.innerHTML = `
+      <div>
+        <strong style="display: block; font-size: 12px; color: var(--text);">${rule.label}</strong>
+        <small style="font-size: 10px; color: var(--muted);">
+          ${isRequired ? '<span style="color: #EF4444; font-weight: 700;">Exigido neste estágio</span>' : (rule.allow_post_attach ? 'Anexável depois' : 'Opcional')}
+        </small>
+      </div>
+      <div>
+        ${isPresent ? '<span class="badge" style="background: rgba(4, 120, 87, 0.15); color: #047857; font-weight: 700; font-size: 10px;">✅ Detectado</span>' : 
+          (isRequired ? '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-weight: 700; font-size: 10px;">⚠️ Faltando</span>' : 
+           '<span class="badge" style="background: var(--panel); color: var(--muted); font-size: 10px;">—</span>')}
+      </div>
+    `;
+    checklistGrid.appendChild(card);
+  });
+
+  // Atualizar Banner e Botão de Avanço (Trava de Validação)
+  const gateAlertBox = document.getElementById('gateAlertBox');
+  const gateIcon = document.getElementById('gateIcon');
+  const gateTitle = document.getElementById('gateTitle');
+  const gateSubtitle = document.getElementById('gateSubtitle');
+  const gateBadge = document.getElementById('gateBadge');
+  const btnGoStep3 = document.getElementById('btnGoToStep3');
+
+  if (missingRequiredCount === 0) {
+    // Libera a trava
+    gateAlertBox.style.background = 'rgba(4, 120, 87, 0.1)';
+    gateAlertBox.style.border = '1px solid rgba(4, 120, 87, 0.3)';
+    gateIcon.textContent = '🔓';
+    gateTitle.textContent = 'Checklist Completo: Todos os documentos obrigatórios foram reconhecidos!';
+    gateTitle.style.color = '#047857';
+    gateSubtitle.textContent = 'Você pode avançar com segurança para a revisão final dos dados.';
+    gateBadge.textContent = 'TRAVA LIBERADA';
+    gateBadge.style.background = 'rgba(4, 120, 87, 0.2)';
+    gateBadge.style.color = '#047857';
+    btnGoStep3.disabled = false;
+  } else {
+    // Bloqueia a trava
+    gateAlertBox.style.background = 'rgba(239, 68, 68, 0.08)';
+    gateAlertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+    gateIcon.textContent = '🔒';
+    gateTitle.textContent = `Atenção: Constam ${missingRequiredCount} documento${missingRequiredCount > 1 ? 's' : ''} obrigatório${missingRequiredCount > 1 ? 's' : ''} pendente${missingRequiredCount > 1 ? 's' : ''}!`;
+    gateTitle.style.color = '#EF4444';
+    gateSubtitle.textContent = 'Anexe os arquivos faltantes ou reclassifique os existentes acima para liberar o avanço.';
+    gateBadge.textContent = 'BLOQUEADO';
+    gateBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+    gateBadge.style.color = '#EF4444';
+    btnGoStep3.disabled = true;
+  }
+
+  // Atualizar o JSON oculto de documentos para salvar junto ao formulário
+  document.getElementById('hiddenDocsMeta').value = JSON.stringify(files.map(f => ({ filename: f.filename, doc_type: f.doc_type })));
+}
+
+function populateStep3Fields(result) {
+  const data = result.extracted_data || {};
+  const chassis = result.chassis_info || {};
+
+  if (data.reference) document.getElementById('inp_reference').value = data.reference;
+  if (data.supplier_name) document.getElementById('inp_supplier').value = data.supplier_name;
+  if (data.supplier_contact) document.getElementById('inp_contact').value = data.supplier_contact;
+  if (data.currency) document.getElementById('inp_currency').value = data.currency;
+  if (data.incoterm) document.getElementById('inp_incoterm').value = data.incoterm;
+  if (data.pi_amount_usd) document.getElementById('inp_pi_amount').value = data.pi_amount_usd;
+  if (data.ci_amount_usd) document.getElementById('inp_ci_amount').value = data.ci_amount_usd;
+  if (data.bl_no) document.getElementById('inp_bl_no').value = data.bl_no;
+  if (data.invoice_no) document.getElementById('inp_invoice_no').value = data.invoice_no;
+  if (data.departure_date_estimated) document.getElementById('inp_dep_date').value = data.departure_date_estimated;
+  if (data.arrival_date_estimated) document.getElementById('inp_arr_date').value = data.arrival_date_estimated;
+  if (data.notes) document.getElementById('inp_notes').value = data.notes;
+
+  // Atualizar resumo de chassis
+  const count = chassis.total_count || 0;
+  const dupes = chassis.duplicates || [];
+  document.getElementById('chassisReviewTitle').textContent = `${count} Chassis Identificados`;
+  document.getElementById('chassisReviewSubtitle').textContent = count > 0 
+    ? `Prontos para inclusão imediata no estoque do lote (${chassis.unique_count} VINs únicos).` 
+    : 'Nenhum chassi encontrado na planilha/documentos.';
+
+  const dupeAlert = document.getElementById('chassisDuplicateAlert');
+  if (dupes.length > 0) {
+    dupeAlert.style.display = 'block';
+    dupeAlert.querySelector('span').textContent = `⚠️ ${dupes.length} chassi${dupes.length > 1 ? 's' : ''} já cadastrado${dupes.length > 1 ? 's' : ''} anteriormente!`;
+  } else {
+    dupeAlert.style.display = 'none';
+  }
+}
+</script>
+{% endif %}

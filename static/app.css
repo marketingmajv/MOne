@@ -384,8 +384,15 @@ button, input, select, textarea {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 20px;
   padding: 24px 32px 16px;
+  flex-wrap: wrap;
+}
+
+.topbar-title-wrap {
+  flex: 1;
+  min-width: 280px;
 }
 
 .topbar h1 {
@@ -397,16 +404,32 @@ button, input, select, textarea {
 }
 
 .topbar p {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.4;
 }
 
 .top-actions {
   margin-left: auto;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line);
+  margin: 0 4px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.top-actions > .topbar-divider:first-child {
+  display: none;
 }
 
 .menu-btn {
@@ -738,21 +761,41 @@ button, input, select, textarea {
 .theme-toggle-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 99px;
+  padding: 8px 14px;
+  min-height: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
   background: var(--panel2);
   border: 1px solid var(--line);
   color: var(--text);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .theme-toggle-btn:hover {
   border-color: var(--accent);
+  background: var(--panel-hover);
+  color: var(--text);
   transform: translateY(-1px);
+}
+
+[data-theme="light"] .theme-toggle-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .theme-toggle-btn:hover {
+  background: #F1F5F9 !important;
+  border-color: #94A3B8 !important;
+  color: #0F172A !important;
 }
 
 /* Radar Ao Vivo ("Acontecendo Agora") */
@@ -874,7 +917,7 @@ button, input, select, textarea {
 
 .rank-row b {
   display: block;
-  color: #FFFFFF;
+  color: var(--text);
   font-size: 13px;
 }
 
@@ -902,7 +945,7 @@ button, input, select, textarea {
 
 .opportunity b {
   display: block;
-  color: #FFFFFF;
+  color: var(--text);
   font-size: 13.5px;
 }
 
@@ -982,7 +1025,7 @@ button, input, select, textarea {
   display: block;
   font-size: 14px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text);
 }
 
 .quick small {
@@ -1015,7 +1058,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
 }
 
 /* Action Buttons & Interactive Controls Standard */
-.btn, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button), input[type="submit"], input[type="button"] {
+.btn, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn), input[type="submit"], input[type="button"] {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -1035,7 +1078,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
   border: 1px solid #334155;
 }
 
-.btn:hover, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):hover, input[type="submit"]:hover, input[type="button"]:hover {
+.btn:hover, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn):hover, input[type="submit"]:hover, input[type="button"]:hover {
   background-color: #334155;
   color: #FFFFFF;
   border-color: #475569;
@@ -1440,7 +1483,7 @@ tr:hover td {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--text);
 }
 
 .modal-head button {
@@ -2268,3 +2311,192 @@ html:not([data-theme="dark"]) .mone-preloader-track {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ==========================================================================
+   M-One Comex & Importações — Dual-Theme High-Contrast Architecture
+   ========================================================================== */
+
+/* Fix: Sidebar 100% contínua que nunca deixa frestas brancas no rodapé */
+.app-shell::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 250px;
+  background: #080D1A;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 38;
+  pointer-events: none;
+}
+
+[data-theme="light"] .app-shell::before {
+  background: #0B111F;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 250px !important;
+  height: 100% !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  background: #080D1A !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  z-index: 40 !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="light"] .sidebar {
+  background: #0B111F !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Cards e Superfícies Comex com Alto Contraste */
+.comex-card {
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 14px;
+  padding: 18px;
+  color: var(--text) !important;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden; /* Evita que tabelas ou dados vazem para fora das bordas */
+}
+
+.comex-card:hover {
+  border-color: var(--line-light) !important;
+}
+
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+}
+
+.table-container::-webkit-scrollbar {
+  height: 6px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: var(--panel2);
+  border-radius: 99px;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--line-light);
+  border-radius: 99px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.comex-card-subtle {
+  background: var(--panel2) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--text) !important;
+}
+
+.comex-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--muted) !important;
+}
+
+.comex-value {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  font-family: var(--font-mono) !important;
+  color: var(--text) !important;
+  margin-top: 4px;
+}
+
+/* Cores de Alto Contraste adaptativas aos temas Claro e Escuro */
+.comex-value-amber {
+  color: #B45309 !important; /* Âmbar escuro legível em fundo branco */
+}
+[data-theme="dark"] .comex-value-amber {
+  color: #FBBF24 !important;
+}
+
+.comex-value-emerald {
+  color: #047857 !important; /* Esmeralda profundo de alto contraste */
+}
+[data-theme="dark"] .comex-value-emerald {
+  color: #34D399 !important;
+}
+
+.comex-value-blue {
+  color: #0369A1 !important; /* Azul cerúleo nítido */
+}
+[data-theme="dark"] .comex-value-blue {
+  color: #38BDF8 !important;
+}
+
+.comex-value-purple {
+  color: #6D28D9 !important;
+}
+[data-theme="dark"] .comex-value-purple {
+  color: #C084FC !important;
+}
+
+/* Barra de Abas Comex de Alto Contraste */
+.comex-tab-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--line);
+}
+
+.comex-tab-btn {
+  padding: 10px 16px;
+  border-radius: 10px 10px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted) !important;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.comex-tab-btn:hover {
+  color: var(--text) !important;
+  background: var(--panel-hover);
+}
+
+.comex-tab-btn.active {
+  color: #0369A1 !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  border-bottom: 2px solid #0284C7 !important;
+  font-weight: 800 !important;
+}
+[data-theme="dark"] .comex-tab-btn.active {
+  color: #38BDF8 !important;
+  border-bottom-color: #38BDF8 !important;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+

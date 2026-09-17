@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Importação {{ i.reference }}{% endblock %}
+
+{% block page_title %}
+<div style="display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+  <a href="{{ url_for('imports.imports') }}" class="btn secondary sm" style="height: 32px; padding: 0 10px; font-size: 12px; text-decoration: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px;" title="Voltar para a listagem principal de importações">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    <span>Voltar</span>
+  </a>
+  <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: var(--text);">{{ i.reference }}</span>
+  <span class="badge" style="font-size: 11px; font-weight: 700; text-transform: uppercase;
+    {% if i.step == 'fechado' %}background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);
+    {% elif i.step == 'entrega' %}background: rgba(139, 92, 246, 0.15); color: #7C3AED; border: 1px solid rgba(139, 92, 246, 0.3);
+    {% elif i.step == 'desembaraco' %}background: rgba(245, 158, 11, 0.15); color: #D97706; border: 1px solid rgba(245, 158, 11, 0.3);
+    {% elif i.step == 'embarque' %}background: rgba(14, 165, 233, 0.15); color: #0284C7; border: 1px solid rgba(14, 165, 233, 0.3);
+    {% else %}background: var(--panel2); color: var(--muted); border: 1px solid var(--line);{% endif %}">
+    Etapa: {{ i.step|capitalize }}
+  </span>
+  {% if i.status == 'released' %}
+    <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);">
+      🚀 Estoque Liberado
+    </span>
+  {% elif i.status == 'closed' %}
+    <span class="badge" style="font-size: 11px; font-weight: 700; background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">
+      🔒 Fechado
+    </span>
+  {% else %}
+    <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #D97706; border: 1px solid rgba(245, 158, 11, 0.3);">
+      ⏳ Em Andamento
+    </span>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incoterm: <strong>{{ i.incoterm or 'FOB' }}</strong> • Moeda: <strong>{{ i.currency or 'USD' }}</strong> • Importadora: <strong>{{ i.importer_company or 'MAJ' }}</strong>
+{% endblock %}
+
+{% block top_actions %}
+  <a href="{{ url_for('imports.imports') }}" class="btn secondary" style="height: 38px; padding: 0 14px; font-size: 12.5px; text-decoration: none;" title="Sair do painel e voltar para a lista de importações">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    <span>Voltar às Importações</span>
+  </a>
+
+  <button class="btn secondary" onclick="openModal('editImportModal')" style="height: 38px; padding: 0 14px; font-size: 12.5px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+    <span>Editar Dados</span>
+  </button>
+  
+  {% if i.status != 'released' and (i.chassis_count or 0) > 0 and me.role in ['admin', 'support'] %}
+    <form method="post" action="{{ url_for('imports.release_import', iid=i.id) }}" onsubmit="return confirm('Confirmar liberação do estoque para venda?');" style="display: inline; margin: 0;">
+      <button class="btn primary" style="height: 38px; padding: 0 14px; font-size: 12.5px; background-color: #059669 !important; border-color: #059669 !important;">
+        🚀 Liberar Estoque
+      </button>
+    </form>
+  {% endif %}
+
+  {% if i.status != 'closed' and me.role in ['admin', 'support'] %}
+    <form method="post" action="{{ url_for('imports.close_import', iid=i.id) }}" onsubmit="return confirm('Deseja realmente consolidar e fechar este processo de importação? O Fator de Custo se tornará final.');" style="display: inline; margin: 0;">
+      <button class="btn secondary" style="height: 38px; padding: 0 14px; font-size: 12.5px; color: #D97706; border-color: rgba(245, 158, 11, 0.4);">
+        🔒 Fechar Processo
+      </button>
+    </form>
+  {% elif i.status == 'closed' and me.role == 'admin' %}
+    <button class="btn secondary" onclick="openModal('reopenModal')" style="height: 38px; padding: 0 14px; font-size: 12.5px; color: #D97706; border-color: rgba(245, 158, 11, 0.4);">
+      🔓 Reabrir Processo
+    </button>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- KPI Top Metrics Bar (Alto Contraste Claro e Escuro) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+    <!-- Fator de Custo -->
+    <div class="comex-card">
+      <div class="comex-label">Fator de Custo</div>
+      <div class="comex-value comex-value-amber">
+        R$ {{ "%.4f"|format(financials.cost_factor or 0) }}
+        <span style="font-size: 11px; font-weight: 500; color: var(--muted);">/ US$</span>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        {{ 'Fator Final' if financials.cost_factor_status == 'final' else 'Fator Preliminar' }}
+      </div>
+    </div>
+
+    <!-- Total FOB Mercadoria -->
+    <div class="comex-card">
+      <div class="comex-label">Base Mercadoria</div>
+      <div class="comex-value comex-value-emerald">
+        US$ {{ "%.2f"|format(financials.goods_base_usd or 0) }}
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        PI: US$ {{ "%.2f"|format(financials.pi_amount_usd or 0) }}
+      </div>
+    </div>
+
+    <!-- Pago Fornecedor R$ -->
+    <div class="comex-card">
+      <div class="comex-label">Câmbio Liquidado</div>
+      <div class="comex-value comex-value-blue">
+        R$ {{ "%.2f"|format(financials.total_supplier_paid_brl or 0) }}
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        US$ {{ "%.2f"|format(financials.total_supplier_paid_usd or 0) }} pagos
+      </div>
+    </div>
+
+    <!-- Total Desembolsado R$ -->
+    <div class="comex-card">
+      <div class="comex-label">Total Desembolsado</div>
+      <div class="comex-value" style="color: var(--text);">
+        R$ {{ "%.2f"|format(financials.total_disbursed_brl or 0) }}
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        Líquido Brasil + Exterior
+      </div>
+    </div>
+
+    <!-- Saldo Numerário / Chassis -->
+    <div class="comex-card">
+      <div class="comex-label">Chassis / Despachante</div>
+      <div class="comex-value comex-value-purple">
+        {{ i.chassis_count or 0 }} un
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+        Num: R$ {{ "%.2f"|format(financials.numerario_balance_brl or 0) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegação de 7 Abas de Alto Contraste -->
+  <div class="comex-tab-nav">
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='summary') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'summary' else '' }}">
+      📊 1. Resumo & Status
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='products') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'products' else '' }}">
+      📦 2. Produtos & Chassis ({{ items|length }})
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='payments_china') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'payments_china' else '' }}">
+      🌏 3. Pagamentos Exterior ({{ china_payments|length }})
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='expenses_brazil') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'expenses_brazil' else '' }}">
+      🇧🇷 4. Despesas Brasil ({{ brazil_expenses|length }})
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='numerario') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'numerario' else '' }}">
+      ⚖️ 5. Numerário Despachante
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='documents') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'documents' else '' }}">
+      📑 6. Documentos & IA ({{ documents|length }})
+    </a>
+
+    <a href="{{ url_for('imports.import_detail', iid=i.id, tab='costs_factor') }}"
+       class="comex-tab-btn {{ 'active' if active_tab == 'costs_factor' else '' }}">
+      🧮 7. Custos & Fator Real
+    </a>
+  </div>
+
+
+  <!-- Conteúdo da Aba Selecionada -->
+  <div class="mt-4">
+    {% if active_tab == 'products' %}
+      {% include 'imports/tab_products.html' %}
+    {% elif active_tab == 'payments_china' %}
+      {% include 'imports/tab_payments_china.html' %}
+    {% elif active_tab == 'expenses_brazil' %}
+      {% include 'imports/tab_expenses_brazil.html' %}
+    {% elif active_tab == 'numerario' %}
+      {% include 'imports/tab_numerario.html' %}
+    {% elif active_tab == 'documents' %}
+      {% include 'imports/tab_documents.html' %}
+    {% elif active_tab == 'costs_factor' %}
+      {% include 'imports/tab_costs_factor.html' %}
+    {% else %}
+      {% include 'imports/tab_summary.html' %}
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal: Editar Dados Cadastrais -->
+<div class="modal" id="editImportModal">
+  <div class="modal-card large">
+    <div class="modal-head">
+      <h3>Editar Dados da Importação • {{ i.reference }}</h3>
+      <button onclick="closeModal('editImportModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('imports.edit_import', iid=i.id) }}" class="form-grid">
+      <label>Identificador / Ref. Lote
+        <input name="reference" value="{{ i.reference }}" required>
+      </label>
+      <label>Empresa Importadora
+        <input name="importer_company" value="{{ i.importer_company or 'MAJ Mobilidade' }}">
+      </label>
+      <label>Fornecedor (China)
+        <input name="supplier_name" value="{{ i.supplier_name or '' }}">
+      </label>
+      <label>Contato / Vendedor Fornecedor
+        <input name="supplier_contact" value="{{ i.supplier_contact or '' }}">
+      </label>
+      <label>Moeda
+        <select name="currency">
+          <option value="USD" {{ 'selected' if i.currency == 'USD' else '' }}>USD ($)</option>
+          <option value="EUR" {{ 'selected' if i.currency == 'EUR' else '' }}>EUR (€)</option>
+          <option value="CNY" {{ 'selected' if i.currency == 'CNY' else '' }}>CNY (¥)</option>
+        </select>
+      </label>
+      <label>Incoterm
+        <select name="incoterm">
+          <option value="FOB" {{ 'selected' if i.incoterm == 'FOB' else '' }}>FOB</option>
+          <option value="CIF" {{ 'selected' if i.incoterm == 'CIF' else '' }}>CIF</option>
+          <option value="CFR" {{ 'selected' if i.incoterm == 'CFR' else '' }}>CFR</option>
+          <option value="EXW" {{ 'selected' if i.incoterm == 'EXW' else '' }}>EXW</option>
+        </select>
+      </label>
+      <label>Agente de Cargas (Forwarder)
+        <input name="freight_forwarder" value="{{ i.freight_forwarder or '' }}">
+      </label>
+      <label>Despachante Aduaneiro
+        <input name="customs_broker" value="{{ i.customs_broker or '' }}">
+      </label>
+      <label>Teto Proforma (PI) USD
+        <input type="number" step="0.01" name="pi_amount_usd" value="{{ i.pi_amount_usd or 0 }}">
+      </label>
+      <label>Commercial Invoice (CI) USD
+        <input type="number" step="0.01" name="ci_amount_usd" value="{{ i.ci_amount_usd or 0 }}">
+      </label>
+      <label>Nº BL (Bill of Lading)
+        <input name="bl_no" value="{{ i.bl_no or '' }}">
+      </label>
+      <label>Nº Commercial Invoice
+        <input name="invoice_no" value="{{ i.invoice_no or '' }}">
+      </label>
+      <label>Data Prevista Embarque
+        <input type="date" name="departure_date_estimated" value="{{ i.departure_date_estimated or '' }}">
+      </label>
+      <label>Data Prevista Chegada
+        <input type="date" name="arrival_date_estimated" value="{{ i.arrival_date_estimated or '' }}">
+      </label>
+      <div class="span-2">
+        <label>Observações Gerais
+          <textarea name="notes" rows="2">{{ i.notes or '' }}</textarea>
+        </label>
+      </div>
+      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="closeModal('editImportModal')">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Reabertura de Importação Fechada -->
+<div class="modal" id="reopenModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Reabrir Processo de Importação</h3>
+      <button onclick="closeModal('reopenModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('imports.reopen_import', iid=i.id) }}" class="space-y-4">
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">
+        A reabertura tornará o processo novamente editável e o <strong>Fator de Custo</strong> passará a ser provisório até novo fechamento.
+      </p>
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px;">Motivo da Reabertura (Obrigatório para Auditoria):</label>
+        <textarea name="reopen_reason" rows="3" required style="width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 13px; color: var(--text); box-sizing: border-box;" placeholder="Ex.: Ajuste de NF complementar de armazenagem pós-fechamento..."></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="closeModal('reopenModal')">Cancelar</button>
+        <button type="submit" class="btn primary">Confirmar Reabertura</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Importar Planilha de Chassis -->
+<div class="modal" id="uploadChassisModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Importar Planilha de Chassis</h3>
+      <button onclick="closeModal('uploadChassisModal')">×</button>
+    </div>
+    <form method="post" action="{{ url_for('imports.upload_chassis', iid=i.id) }}" enctype="multipart/form-data" class="space-y-4">
+      <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">
+        Faça upload da planilha (Excel .xlsx, .xls ou .csv) contendo os números de chassi e modelos para vincular a este lote.
+      </p>
+      <div>
+        <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px;">Arquivo da Planilha:</label>
+        <input type="file" name="chassis_file" accept=".xlsx,.xls,.csv" required style="width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: 12px; color: var(--text); box-sizing: border-box;">
+      </div>
+      <div class="flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="closeModal('uploadChassisModal')">Cancelar</button>
+        <button type="submit" class="btn primary">Processar e Vincular Chassis</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

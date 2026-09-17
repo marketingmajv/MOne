@@ -1,0 +1,198 @@
+<!-- Modal: Configurações de Regras de Documentos (templates/imports/modal_doc_rules.html) -->
+{% if me.role in ['admin', 'support'] %}
+<div class="modal" id="docRulesModal" style="display: none;" onclick="if(event.target===this)closeModal('docRulesModal')">
+  <div class="modal-card large" style="max-width: 960px;">
+    <div class="modal-head">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">⚙️ Configurações de Regras Documentais (Comex)</h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+          Parametrize a obrigatoriedade dos documentos por estágio e a permissão de anexo posterior.
+        </p>
+      </div>
+      <button type="button" onclick="closeModal('docRulesModal')">×</button>
+    </div>
+
+    <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.2); font-size: 12px; color: var(--text); line-height: 1.5;">
+      💡 <strong>Como funciona a Trava Operacional:</strong> Quando o operador inicia o cadastro no Wizard, a IA valida os arquivos enviados contra estas regras. Se algum documento marcado como <em>Obrigatório</em> estiver ausente, o avanço para a criação do lote fica bloqueado até a anexação.
+    </div>
+
+    <form id="docRulesForm" onsubmit="saveDocumentRules(event)">
+      <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px;">
+        <table class="table" style="width: 100%; margin: 0; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--panel2);">
+              <th style="padding: 12px 14px; text-align: left; color: var(--text);">Documento</th>
+              <th style="padding: 12px 14px; text-align: left; color: var(--muted);">Identificador / Tipo</th>
+              <th style="padding: 12px 14px; text-align: center; color: #0369A1;">Exigência: Embarcado</th>
+              <th style="padding: 12px 14px; text-align: center; color: #047857;">Exigência: Desembaraçado</th>
+              <th style="padding: 12px 14px; text-align: center; color: #B45309;">Anexável Depois?</th>
+            </tr>
+          </thead>
+          <tbody id="docRulesTableBody">
+            <!-- Povoado dinamicamente via JavaScript -->
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">Carregando regras...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px;">
+        <button type="button" class="btn outline" onclick="resetDocumentRules()" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+          ↺ Restaurar Padrão Oficial
+        </button>
+
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" class="btn outline" onclick="closeModal('docRulesModal')">Cancelar</button>
+          <button type="submit" class="btn primary" id="btnSaveRules">
+            💾 Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let currentDocRules = [];
+
+async function loadDocumentRules() {
+  try {
+    const res = await fetch('/api/imports/document-rules');
+    const data = await res.json();
+    if (data.success && data.rules) {
+      currentDocRules = data.rules;
+      renderDocRulesTable(currentDocRules);
+    }
+  } catch (err) {
+    console.error('Erro ao carregar regras:', err);
+  }
+}
+
+function renderDocRulesTable(rules) {
+  const tbody = document.getElementById('docRulesTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  rules.forEach((r, idx) => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--line)';
+    tr.innerHTML = `
+      <td style="padding: 12px 14px; font-weight: 700; color: var(--text);">
+        ${r.label}
+        <input type="hidden" name="doc_type_${idx}" value="${r.doc_type}">
+        <input type="hidden" name="label_${idx}" value="${r.label}">
+        <input type="hidden" name="order_num_${idx}" value="${r.order_num || (idx + 1)}">
+      </td>
+      <td style="padding: 12px 14px; font-family: var(--font-mono); font-size: 11px; color: var(--muted);">
+        <code>${r.doc_type}</code>
+      </td>
+      <td style="padding: 12px 14px; text-align: center;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+          <input type="checkbox" id="req_water_${idx}" ${r.required_on_water ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+          <span style="font-size: 12px; font-weight: 600; color: ${r.required_on_water ? '#0369A1' : 'var(--muted)'};">
+            ${r.required_on_water ? 'Obrigatório' : 'Opcional'}
+          </span>
+        </label>
+      </td>
+      <td style="padding: 12px 14px; text-align: center;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+          <input type="checkbox" id="req_clear_${idx}" ${r.required_cleared ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+          <span style="font-size: 12px; font-weight: 600; color: ${r.required_cleared ? '#047857' : 'var(--muted)'};">
+            ${r.required_cleared ? 'Obrigatório' : 'Opcional'}
+          </span>
+        </label>
+      </td>
+      <td style="padding: 12px 14px; text-align: center;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+          <input type="checkbox" id="allow_post_${idx}" ${r.allow_post_attach ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+          <span style="font-size: 12px; font-weight: 600; color: ${r.allow_post_attach ? '#B45309' : 'var(--muted)'};">
+            ${r.allow_post_attach ? 'Permitido' : 'Não'}
+          </span>
+        </label>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // Reatividade dos rótulos ao clicar nos checkboxes
+    const chkWater = tr.querySelector(`#req_water_${idx}`);
+    chkWater.addEventListener('change', (e) => {
+      const sp = e.target.nextElementSibling;
+      sp.textContent = e.target.checked ? 'Obrigatório' : 'Opcional';
+      sp.style.color = e.target.checked ? '#0369A1' : 'var(--muted)';
+    });
+
+    const chkClear = tr.querySelector(`#req_clear_${idx}`);
+    chkClear.addEventListener('change', (e) => {
+      const sp = e.target.nextElementSibling;
+      sp.textContent = e.target.checked ? 'Obrigatório' : 'Opcional';
+      sp.style.color = e.target.checked ? '#047857' : 'var(--muted)';
+    });
+
+    const chkPost = tr.querySelector(`#allow_post_${idx}`);
+    chkPost.addEventListener('change', (e) => {
+      const sp = e.target.nextElementSibling;
+      sp.textContent = e.target.checked ? 'Permitido' : 'Não';
+      sp.style.color = e.target.checked ? '#B45309' : 'var(--muted)';
+    });
+  });
+}
+
+async function saveDocumentRules(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSaveRules');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+  const updatedRules = currentDocRules.map((r, idx) => {
+    return {
+      doc_type: r.doc_type,
+      label: r.label,
+      order_num: r.order_num || (idx + 1),
+      required_on_water: document.getElementById(`req_water_${idx}`).checked,
+      required_cleared: document.getElementById(`req_clear_${idx}`).checked,
+      allow_post_attach: document.getElementById(`allow_post_${idx}`).checked
+    };
+  });
+
+  try {
+    const res = await fetch('/api/imports/document-rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rules: updatedRules })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentDocRules = data.rules;
+      renderDocRulesTable(currentDocRules);
+      alert('✓ Regras documentais atualizadas com sucesso!');
+      closeModal('docRulesModal');
+    } else {
+      alert('Erro ao salvar: ' + (data.message || 'Falha na requisição.'));
+    }
+  } catch (err) {
+    alert('Erro ao salvar regras: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Alterações'; }
+  }
+}
+
+async function resetDocumentRules() {
+  if (!confirm('Deseja realmente restaurar as regras de documentos para o Padrão Oficial da MAJ?')) return;
+  try {
+    const res = await fetch('/api/imports/document-rules/reset', { method: 'POST' });
+    const data = await res.json();
+    if (data.success && data.rules) {
+      currentDocRules = data.rules;
+      renderDocRulesTable(currentDocRules);
+      alert('✓ Regras restauradas para o padrão oficial com sucesso!');
+    }
+  } catch (err) {
+    alert('Erro ao restaurar regras: ' + err.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadDocumentRules();
+});
+</script>
+{% endif %}
