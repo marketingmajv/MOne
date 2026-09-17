@@ -1,141 +1,70 @@
-import os
-import json
-import base64
-import re
-import urllib.request
-import urllib.error
-from datetime import datetime, date
+"""
+M-One Gemini AI Service (gemini_service.py)
+Serviços de IA para Copilot Operacional, Triangulação de Chassis, Análise de Comprovantes
+e Leitura de Documentos de Importação (BL, Invoices, NF-e) com failover resiliente.
+"""
 
-DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+from __future__ import annotations
+
+import base64
+import json
+import logging
+import os
+import re
+from typing import Any
+
+from services.copilot_context import build_operational_context
+from services.gemini_client import (
+    DEFAULT_GEMINI_KEY,
+    execute_gemini_payload,
+    get_candidate_models,
+    get_gemini_api_key,
+)
+from services.pdf_extractor import extract_text_from_pdf
+
+logger = logging.getLogger(__name__)
+
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
-def get_gemini_api_key() -> str:
-    key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not key:
-        try:
-            from database import db
-            with db() as conn:
-                row = conn.execute("SELECT access_token FROM integrations WHERE service_name = 'gemini'").fetchone()
-                if row and row.get("access_token"):
-                    key = row["access_token"].strip()
-        except Exception:
-            pass
-    return key or DEFAULT_GEMINI_KEY
+PAYMENT_CATEGORIES = [
+    "Importações & Desembaraço",
+    "Lojas & Aluguéis",
+    "Oficina & Peças",
+    "Folha & Pró-Labore",
+    "Marketing & Anúncios",
+    "Impostos & Taxas",
+    "Utilidades & Serviços",
+    "Frete & Logística",
+    "Manutenção & Infraestrutura",
+    "Outras Despesas Operacionais",
+]
 
+ACCOUNTS_LIST = [
+    "PhntonPay",
+    "Conta Davi",
+    "Sicoob Maj Colatina",
+    "Sicoob Maj Antiga em Vitória",
+    "Sicoob Maj Vitória",
+    "Sicoob Maj Veículos",
+    "Sicoob MAP Colatina",
+    "Conta Jam",
+    "Conta Geysa",
+    "Caixa Dinheiro Marisa",
+    "Cartão Warley",
+    "Outro Cartão / Conta",
+]
 
-def build_operational_context(db_conn, role: str, name: str) -> str:
-    """Coleta métricas e dados operacionais reais das tabelas oficiais do M-One."""
-    lines = []
-    today = date.today().isoformat()
-    now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
-    
-    lines.append(f"DATA E HORA DO SISTEMA: {now_str}")
-    lines.append(f"USUÁRIO ATUAL: {name} (Perfil de acesso: {role})")
-    
-    try:
-        # 1. Estoque por Produto e Chassis
-        stock_summary = db_conn.execute("""
-            SELECT p.name as product_name,
-                   COUNT(CASE WHEN st.status = 'available' THEN 1 END) as available,
-                   COUNT(CASE WHEN st.status = 'sold' THEN 1 END) as sold,
-                   COUNT(CASE WHEN st.status = 'unreleased' THEN 1 END) as unreleased,
-                   COUNT(st.id) as total_units
-            FROM products p
-            LEFT JOIN stock_units st ON st.product_id = p.id
-            GROUP BY p.id, p.name
-            HAVING COUNT(st.id) > 0
-            ORDER BY available DESC, product_name ASC
-        """).fetchall()
-        
-        lines.append("\n=== ESTOQUE POR MODELO / PRODUTO ===")
-        total_disp = 0
-        total_vend = 0
-        total_unrel = 0
-        for s in stock_summary:
-            disp = s["available"] or 0
-            vend = s["sold"] or 0
-            unrel = s["unreleased"] or 0
-            total_disp += disp
-            total_vend += vend
-            total_unrel += unrel
-            lines.append(f"- {s['product_name']}: {disp} liberados para venda, {vend} vendidos, {unrel} em importação aguardando liberação.")
-        lines.append(f"TOTAL GERAL DO ESTOQUE: {total_disp} chassis liberados para venda imediata, {total_vend} vendidos, {total_unrel} aguardando liberação.")
-
-        # 2. Produtos e Tabela de Preços Atuais
-        products = db_conn.execute("""
-            SELECT name, category, unit_cost, wholesale_price, retail_price
-            FROM products
-            ORDER BY name
-        """).fetchall()
-        lines.append("\n=== TABELA DE PRODUTOS E PREÇOS VIGENTES ===")
-        for p in products:
-            p_ret = f"R$ {float(p['retail_price']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if p.get("retail_price") else "N/D"
-            p_who = f"R$ {float(p['wholesale_price']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if p.get("wholesale_price") else "N/D"
-            lines.append(f"- {p['name']} ({p.get('category') or 'Sem categoria'}): Varejo {p_ret} | Atacado {p_who}")
-
-        # 3. Vendas Realizadas (Hoje e Mês Atual)
-        month_start = today[:7] + "-01"
-        sales_today = db_conn.execute("""
-            SELECT COUNT(*) as qtd, COALESCE(SUM(total_value), 0) as total
-            FROM sales
-            WHERE sold_at = %s
-        """, (today,)).fetchone()
-        
-        sales_month = db_conn.execute("""
-            SELECT COUNT(*) as qtd, COALESCE(SUM(total_value), 0) as total
-            FROM sales
-            WHERE sold_at >= %s
-        """, (month_start,)).fetchone()
-        
-        lines.append("\n=== DESEMPENHO DE VENDAS ===")
-        tot_today = f"R$ {float(sales_today['total']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        tot_month = f"R$ {float(sales_month['total']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        lines.append(f"- Hoje ({today}): {sales_today['qtd']} venda(s), Total: {tot_today}")
-        lines.append(f"- Mês atual (desde {month_start}): {sales_month['qtd']} venda(s), Total: {tot_month}")
-        
-        # 5 vendas mais recentes
-        recent_sales = db_conn.execute("""
-            SELECT s.sold_at, s.customer, s.invoice_number, s.total_value, s.channel, u.name as seller
-            FROM sales s
-            LEFT JOIN users u ON u.id = s.created_by
-            ORDER BY s.id DESC
-            LIMIT 5
-        """).fetchall()
-        if recent_sales:
-            lines.append("- Últimas vendas cadastradas:")
-            for rs in recent_sales:
-                val = f"R$ {float(rs['total_value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                lines.append(f"  • Data: {rs['sold_at']} | NF: {rs['invoice_number']} | Cliente: {rs.get('customer') or 'Consumidor'} | Canal: {rs['channel']} | Valor: {val} | Vendedor: {rs['seller'] or 'N/D'}")
-
-        # 4. Importações e Custos (Restrito a Diretoria e Suporte Técnico)
-        if role in ["admin", "support"]:
-            imports = db_conn.execute("""
-                SELECT i.id, i.reference, i.invoice_no, i.bl_no, i.arrival_date, i.usd_rate, i.status,
-                       COUNT(st.id) as chassis_total,
-                       COALESCE(SUM(ic.amount * CASE WHEN ic.currency='USD' THEN COALESCE(NULLIF(ic.usd_rate,0), NULLIF(i.usd_rate,0), 1) ELSE 1 END), 0) as costs_brl
-                FROM imports i
-                LEFT JOIN stock_units st ON st.import_id = i.id
-                LEFT JOIN import_costs ic ON ic.import_id = i.id
-                GROUP BY i.id, i.reference, i.invoice_no, i.bl_no, i.arrival_date, i.usd_rate, i.status
-                ORDER BY i.id DESC
-                LIMIT 5
-            """).fetchall()
-            lines.append("\n=== IMPORTAÇÕES RECENTES (CONFIDENCIAL: DIRETORIA/SUPORTE) ===")
-            for imp in imports:
-                c_brl = f"R$ {float(imp['costs_brl']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                status_desc = "Estoque liberado" if imp["status"] == "released" else "Rascunho / Aguardando liberação"
-                lines.append(f"- Importação #{imp['id']} ({imp['reference']}): Chegada {imp['arrival_date'] or 'N/D'} | Invoice {imp['invoice_no'] or 'N/D'} | BL {imp['bl_no'] or 'N/D'} | Câmbio USD R$ {float(imp['usd_rate'] or 0):.4f} | Status: {status_desc} | Chassis: {imp['chassis_total']} un | Custos apurados: {c_brl}")
-        else:
-            lines.append("\n[IMPORTAÇÕES: Acesso restrito. Custos de compra e despesas aduaneiras são estritamente confidenciais da Diretoria.]")
-
-    except Exception as e:
-        lines.append(f"\n[Nota de leitura do banco: {str(e)}]")
-
-    return "\n".join(lines)
+PAYMENT_METHODS = [
+    "Pix",
+    "Transferência Bancária (TED/DOC)",
+    "Cartão de Crédito",
+    "Cartão de Débito",
+    "Dinheiro em Espécie",
+]
 
 
 def ask_gemini_copilot(user_message: str, history: list, db_conn, user_role: str, user_name: str) -> dict:
-    """Envia a consulta ao Gemini com injeção segura de contexto operacional."""
+    """Envia a consulta ao Gemini com injeção segura de contexto operacional e failover resiliente."""
     api_key = get_gemini_api_key()
     if not api_key:
         return {
@@ -152,21 +81,21 @@ def ask_gemini_copilot(user_message: str, history: list, db_conn, user_role: str
                 "   GEMINI_API_KEY=sua_chave_gerada_aqui\n"
                 "   ```\n"
                 "5. E nas variáveis de ambiente do projeto na Vercel para produção."
-            )
+            ),
         }
 
     context = build_operational_context(db_conn, user_role, user_name)
 
     system_instruction = f"""
-Você é o "M-One Copilot", a inteligência artificial operacional integrada ao MAJ Operating System (M-One), o sistema de gestão central da MAJ Mobilidade Elétrica (fabricante e distribuidora de scooters e motos elétricas).
+Você é o "M-One Copilot", o assistente de inteligência operacional de alta precisão da MAJ Mobilidade Elétrica (fabricante e distribuidora de motos, triciclos e veículos elétricos).
+Seu objetivo é fornecer respostas claras, estruturadas, profissionais e acionáveis sobre as operações da empresa.
 
-DIRETRIZES DE ATUAÇÃO:
-1. Responda em Português do Brasil de forma executiva, ágil, objetiva, cordial e altamente profissional.
-2. Utilize SEMPRE as informações oficiais do contexto operacional fornecido abaixo para responder sobre estoque de modelos, chassis, faturamento de vendas, clientes, notas fiscais e produtos.
-3. Se perguntado sobre dados não presentes no contexto ou banco, declare com franqueza que não constam registros no momento.
-4. POLÍTICA DE SEGURANÇA E SIGILO:
-   - Se o usuário NÃO for 'admin' (Diretoria) ou 'support' (Suporte Técnico) e perguntar sobre custos de importação, despesas de contêineres, câmbio ou margens confidenciais, informe cordialmente que essas informações são restritas à Diretoria.
-5. Formate respostas longas com marcadores (bullet points), tabelas em Markdown e valores em negrito no padrão brasileiro (R$ 0.000,00).
+DIRETRIZES DE ATUAÇÃO E SEGURANÇA:
+1. Use APENAS os dados operacionais reais fornecidos abaixo no contexto. Se não encontrar uma informação ou se o dado for ambíguo, diga educadamente que não consta no banco de dados.
+2. NUNCA invente números, vendas, chassis ou produtos que não existam nas tabelas.
+3. Se o perfil for 'seller' ou 'finance', NÃO revele custos de compra das importações ou custos unitários de fábrica. Apenas informe preços de tabela e estoque liberado.
+4. Responda em português fluente do Brasil, formatando em Markdown amigável (tabelas, bullet points, valores em R$).
+5. Seja direto e objetivo, sem enrolação. Sempre indique os números consolidados.
 6. Você pode fornecer análises, resumos de vendas do dia, sugestões de reposição de estoque e comparativos de modelos.
 
 --- DADOS OPERACIONAIS EM TEMPO REAL ---
@@ -178,74 +107,34 @@ DIRETRIZES DE ATUAÇÃO:
         role = "user" if h.get("role") == "user" else "model"
         text = h.get("text", "")
         if text:
-            contents.append({
-                "role": role,
-                "parts": [{"text": text}]
-            })
-            
-    contents.append({
-        "role": "user",
-        "parts": [{"text": user_message}]
-    })
+            contents.append({"role": role, "parts": [{"text": text}]})
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    contents.append({"role": "user", "parts": [{"text": user_message}]})
+
     payload = {
         "contents": contents,
-        "systemInstruction": {
-            "parts": [{"text": system_instruction}]
-        },
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 2048
-        }
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2048},
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    res = execute_gemini_payload(payload, api_key=api_key, timeout=30)
+    if res.get("success"):
+        return {"success": True, "message": res.get("text", "")}
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            candidates = res_data.get("candidates", [])
-            if candidates and "content" in candidates[0]:
-                parts = candidates[0]["content"].get("parts", [])
-                full_text = "".join([p.get("text", "") for p in parts])
-                return {"success": True, "message": full_text}
-            return {"success": False, "error_type": "EMPTY_RESPONSE", "message": "O Gemini processou a requisição mas não retornou texto."}
-            
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="ignore")
-        try:
-            err_json = json.loads(err_msg)
-            detailed = err_json.get("error", {}).get("message", err_msg)
-        except Exception:
-            detailed = err_msg
-            
-        if e.code == 400 and "API_KEY_INVALID" in detailed:
-            return {
-                "success": False,
-                "error_type": "INVALID_KEY",
-                "message": "A chave `GEMINI_API_KEY` informada é inválida ou expirou. Verifique sua chave no Google AI Studio."
-            }
-        return {
-            "success": False,
-            "error_type": "HTTP_ERROR",
-            "message": f"Erro na comunicação com a API do Gemini ({e.code}): {detailed}"
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error_type": "EXCEPTION",
-            "message": f"Falha na requisição para o Gemini: {str(e)}"
-        }
+    return {
+        "success": False,
+        "error_type": res.get("error_type", "HTTP_ERROR"),
+        "message": res.get("message", "Falha na requisição para o Gemini."),
+    }
 
 
-def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_model: str = "", mime_type: str = "image/jpeg") -> dict:
-    """Analisa imagem(ns) / PDF(s) da DANFE, Termo e Foto do Chassi (Veículo/Caixa) com Gemini 3.6 Flash.
+def extract_and_match_chassis(
+    items_data,
+    expected_chassis_list: list,
+    expected_model: str = "",
+    mime_type: str = "image/jpeg",
+) -> dict:
+    """Analisa imagem(ns) / PDF(s) da DANFE, Termo e Foto do Chassi com Gemini.
     Realiza a auditoria de triangulação confirmando se o chassi da foto do veículo é idêntico ao da DANFE.
     """
     api_key = get_gemini_api_key()
@@ -255,10 +144,9 @@ def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_
             "is_valid": False,
             "error_type": "MISSING_KEY",
             "message": "A chave `GEMINI_API_KEY` não está configurada no sistema.",
-            "details": "Chave da API do Google Gemini ausente."
+            "details": "Chave da API do Google Gemini ausente.",
         }
 
-    # Tratamento de suporte retrógrado se for passado bytes direto no 1º argumento
     if isinstance(items_data, (bytes, bytearray)):
         items_list = [(bytes(items_data), mime_type if isinstance(mime_type, str) else "image/jpeg")]
     elif isinstance(items_data, list):
@@ -271,13 +159,12 @@ def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_
             "success": False,
             "is_valid": False,
             "error_type": "NO_DOCUMENTS",
-            "message": "Nenhum arquivo ou foto foi enviado para a auditoria."
+            "message": "Nenhum arquivo ou foto foi enviado para a auditoria.",
         }
 
-    # Normalizar lista esperada
     clean_expected = []
     for c in expected_chassis_list:
-        clean = re.sub(r'[^A-Z0-9]', '', str(c).upper())
+        clean = re.sub(r"[^A-Z0-9]", "", str(c).upper())
         if clean:
             clean_expected.append(clean)
 
@@ -287,7 +174,7 @@ def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_
             "is_valid": False,
             "error_type": "NO_CHASSIS_PROVIDED",
             "message": "Nenhum número de chassi foi informado para conferência.",
-            "details": "Preencha o campo de chassis antes de validar os comprovantes."
+            "details": "Preencha o campo de chassis antes de validar os comprovantes.",
         }
 
     parts = []
@@ -296,7 +183,7 @@ def extract_and_match_chassis(items_data, expected_chassis_list: list, expected_
             parts.append({
                 "inlineData": {
                     "mimeType": m_type or "image/jpeg",
-                    "data": base64.b64encode(b_bytes).decode("utf-8")
+                    "data": base64.b64encode(b_bytes).decode("utf-8"),
                 }
             })
 
@@ -324,133 +211,62 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
   "missing_chassis": ["chassis esperados que NÃO foram encontrados nos comprovantes"],
   "vehicle_photo_chassis": "Número do chassi lido na foto da plaqueta do veículo ou caixa",
   "danfe_chassis": "Número do chassi lido na DANFE",
-  "chassis_match_confirmed": true ou false (true se o chassi da foto do veículo/caixa for idêntico ao chassi da DANFE),
+  "chassis_match_confirmed": true,
   "extracted_model": "Modelo do produto identificado na DANFE",
-  "model_matched": true ou false,
-  "is_valid": true ou false (true se TODOS os chassis esperados foram localizados e a foto do veículo/caixa confere com a DANFE),
+  "model_matched": true,
+  "is_valid": true,
   "summary": "Resumo claro e objetivo em português do resultado da triangulação"
 }}
 """
     parts.append({"text": prompt})
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     payload = {
-        "contents": [
-            {
-                "role": "user",
-                "parts": parts
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.1,
-            "responseMimeType": "application/json"
-        }
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    res = execute_gemini_payload(payload, api_key=api_key, timeout=40)
+    if not res.get("success"):
+        return {"success": False, "is_valid": False, "message": res.get("message", "Falha na auditoria.")}
 
-    try:
-        with urllib.request.urlopen(req, timeout=45) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            candidates = res_data.get("candidates", [])
-            if candidates and "content" in candidates[0]:
-                res_parts = candidates[0]["content"].get("parts", [])
-                raw_json = "".join([p.get("text", "") for p in res_parts]).strip()
-                parsed = json.loads(raw_json)
+    parsed = res.get("data") or {}
+    extracted_raw = parsed.get("extracted_chassis", [])
+    extracted_norm = [re.sub(r"[^A-Z0-9]", "", str(x).upper()) for x in extracted_raw]
 
-                extracted_raw = parsed.get("extracted_chassis", [])
-                extracted_norm = [re.sub(r'[^A-Z0-9]', '', str(x).upper()) for x in extracted_raw]
+    matched = []
+    missing = []
+    for exp in clean_expected:
+        if any(exp == ext or exp in ext or ext in exp for ext in extracted_norm):
+            matched.append(exp)
+        else:
+            missing.append(exp)
 
-                matched = []
-                missing = []
-                for exp in clean_expected:
-                    if any(exp == ext or exp in ext or ext in exp for ext in extracted_norm):
-                        matched.append(exp)
-                    else:
-                        missing.append(exp)
+    is_valid = len(missing) == 0 and len(matched) == len(clean_expected)
+    if parsed.get("is_valid") is True and len(clean_expected) > 0:
+        is_valid = True
 
-                is_valid = (len(missing) == 0 and len(matched) == len(clean_expected))
-                if parsed.get("is_valid") is True and len(clean_expected) > 0:
-                    is_valid = True
-
-                return {
-                    "success": True,
-                    "is_valid": is_valid,
-                    "document_type": parsed.get("document_type", "Comprovante / Documento"),
-                    "extracted_chassis": extracted_raw,
-                    "matched_chassis": matched if matched else parsed.get("matched_chassis", []),
-                    "missing_chassis": missing if not is_valid else [],
-                    "vehicle_photo_chassis": parsed.get("vehicle_photo_chassis", ""),
-                    "danfe_chassis": parsed.get("danfe_chassis", ""),
-                    "chassis_match_confirmed": parsed.get("chassis_match_confirmed", True),
-                    "extracted_model": parsed.get("extracted_model", ""),
-                    "model_matched": parsed.get("model_matched", True),
-                    "summary": parsed.get("summary", "Conferência de triangulação de chassis e modelo concluída."),
-                    "all_matched": is_valid
-                }
-            return {"success": False, "is_valid": False, "message": "O modelo não retornou conteúdo textual compreensível."}
-
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode("utf-8", errors="ignore")
-        return {"success": False, "is_valid": False, "message": f"Erro na API do Gemini ({e.code}): {err_msg}"}
-    except Exception as e:
-        return {"success": False, "is_valid": False, "message": f"Erro ao auditar comprovante: {str(e)}"}
+    return {
+        "success": True,
+        "is_valid": is_valid,
+        "document_type": parsed.get("document_type", "Comprovante / Documento"),
+        "extracted_chassis": extracted_raw,
+        "matched_chassis": matched if matched else parsed.get("matched_chassis", []),
+        "missing_chassis": missing if not is_valid else [],
+        "vehicle_photo_chassis": parsed.get("vehicle_photo_chassis", ""),
+        "danfe_chassis": parsed.get("danfe_chassis", ""),
+        "chassis_match_confirmed": parsed.get("chassis_match_confirmed", True),
+        "extracted_model": parsed.get("extracted_model", ""),
+        "model_matched": parsed.get("model_matched", True),
+        "summary": parsed.get("summary", "Conferência de triangulação de chassis e modelo concluída."),
+        "all_matched": is_valid,
+    }
 
 
-PAYMENT_CATEGORIES = [
-    "Importações & Desembaraço",
-    "Lojas & Aluguéis",
-    "Oficina & Peças",
-    "Folha & Pró-Labore",
-    "Marketing & Anúncios",
-    "Impostos & Taxas",
-    "Utilidades & Serviços",
-    "Frete & Logística",
-    "Manutenção & Infraestrutura",
-    "Outras Despesas Operacionais"
-]
-
-ACCOUNTS_LIST = [
-    "PhntonPay",
-    "Conta Davi",
-    "Sicoob Maj Colatina",
-    "Sicoob Maj Antiga em Vitória",
-    "Sicoob Maj Vitória",
-    "Sicoob Maj Veículos",
-    "Sicoob MAP Colatina",
-    "Conta Jam",
-    "Conta Geysa",
-    "Caixa Dinheiro Marisa",
-    "Cartão Warley",
-    "Outro Cartão / Conta"
-]
-
-PAYMENT_METHODS = [
-    "Pix",
-    "Transferência Bancária (TED/DOC)",
-    "Cartão de Crédito",
-    "Cartão de Débito",
-    "Dinheiro em Espécie"
-]
-
-
-def analyze_payment_receipt(image_bytes: bytes, mime_type: str = "image/jpeg", form_data: dict = None) -> dict:
-    """
-    Analisa comprovante de pagamento / Nota Fiscal / Recibo com Gemini 3.6 Flash.
-    Sugere a categoria do negócio da MAJ Mobilidade, extrai valor, data, forma de pagamento, conta e fornecedor,
-    e realiza a checagem de divergências cruzadas.
-    """
+def analyze_payment_receipt(image_bytes: bytes, mime_type: str = "image/jpeg", form_data: dict | None = None) -> dict:
+    """Analisa comprovante de pagamento / Nota Fiscal / Recibo com Gemini e failover resiliente."""
     api_key = get_gemini_api_key()
     if not api_key:
-        return {
-            "success": False,
-            "message": "A chave GEMINI_API_KEY não está configurada no servidor."
-        }
+        return {"success": False, "message": "A chave GEMINI_API_KEY não está configurada no servidor."}
 
     form_data = form_data or {}
     b64_data = base64.b64encode(image_bytes).decode("utf-8")
@@ -460,8 +276,7 @@ def analyze_payment_receipt(image_bytes: bytes, mime_type: str = "image/jpeg", f
     methods_str = ", ".join([f'"{m}"' for m in PAYMENT_METHODS])
 
     prompt = f"""
-Você é o auditor de notas fiscais e comprovantes de pagamento do grupo MAJ Mobilidade Elétrica (fabricante e distribuidora de veículos elétricos, peças, lojas e oficinas).
-
+Você é o auditor de notas fiscais e comprovantes de pagamento do grupo MAJ Mobilidade Elétrica.
 EXAMINE O COMPROVANTE / NOTA FISCAL / RECIBO ANEXO E EXTRAIA TODOS OS DADOS COM PRECISÃO:
 
 1. CATEGORIA SUGERIDA DO NEGÓCIO:
@@ -477,7 +292,7 @@ Escolha exatamente UMA das opções abaixo:
 [{methods_str}]
 
 4. FINAL DO CARTÃO (SE APLICÁVEL):
-Se for pagamento em cartão de crédito/débito, extraia os 4 últimos dígitos do cartão (ex: "1234"). Caso contrário, retorne "".
+Se for pagamento em cartão de crédito/débito, extraia os 4 últimos dígitos do cartão. Caso contrário, retorne "".
 
 5. FORNECEDOR / RAZÃO SOCIAL:
 Nome da empresa/fornecedor ou favorecido do pagamento.
@@ -492,16 +307,12 @@ Valor numérico do pagamento (ex: 1250.00).
 Data no formato YYYY-MM-DD.
 
 9. AUDITORIA DE DIVERGÊNCIAS CRUZADAS:
-Compare os dados do comprovante com os dados inseridos no formulário pelo usuário:
-DADOS DIGITADOS NO FORMULÁRIO:
 - Valor no formulário: {form_data.get('amount', 'Não informado')}
 - Data no formulário: {form_data.get('paid_at', 'Não informada')}
 - Categoria no formulário: {form_data.get('category', 'Não informada')}
 - Conta no formulário: {form_data.get('account', 'Não informada')}
 - Forma no formulário: {form_data.get('payment_method', 'Não informada')}
 - Final cartão no formulário: {form_data.get('card_last4', 'Não informado')}
-
-Retorne se existe divergência crítica de valores ou dados e liste as divergências encontradas.
 
 FORMATO DA RESPOSTA (JSON ESTRITO):
 {{
@@ -513,8 +324,8 @@ FORMATO DA RESPOSTA (JSON ESTRITO):
   "document_no": "Número da NF ou Recibo",
   "extracted_amount": 0.00,
   "extracted_date": "YYYY-MM-DD",
-  "has_divergence": true ou false,
-  "divergences": ["lista de divergências encontradas entre o comprovante e o formulário, se houver"],
+  "has_divergence": false,
+  "divergences": [],
   "summary": "Resumo executivo do comprovante em português"
 }}
 """
@@ -524,145 +335,153 @@ FORMATO DA RESPOSTA (JSON ESTRITO):
             {
                 "role": "user",
                 "parts": [
-                    {
-                        "inlineData": {
-                            "mimeType": mime_type or "image/jpeg",
-                            "data": b64_data
-                        }
-                    },
-                    {"text": prompt}
-                ]
+                    {"inlineData": {"mimeType": mime_type or "image/jpeg", "data": b64_data}},
+                    {"text": prompt},
+                ],
             }
         ],
-        "generationConfig": {
-            "temperature": 0.1,
-            "responseMimeType": "application/json"
-        }
+        "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    res = execute_gemini_payload(payload, api_key=api_key, timeout=35)
+    if res.get("success") and res.get("data"):
+        return {"success": True, "data": res["data"]}
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            candidates = res_data.get("candidates", [])
-            if candidates and "content" in candidates[0]:
-                raw_json = "".join([p.get("text", "") for p in candidates[0]["content"].get("parts", [])]).strip()
-                parsed = json.loads(raw_json)
-                return {
-                    "success": True,
-                    "data": parsed
-                }
-            return {"success": False, "message": "O modelo não retornou conteúdo textual compreensível."}
-    except Exception as e:
-        return {"success": False, "message": f"Erro ao analisar comprovante: {str(e)}"}
+    return {"success": False, "message": res.get("message", "Falha na análise do comprovante.")}
 
 
 def analyze_import_documents(doc_items: list) -> dict:
+    """Analisa documentos de importação (Invoice, BL, NF Entrada, Planilha de Chassis) via Gemini com failover resiliente.
+    Extrai identificador/ref contêiner, número da invoice, fornecedor, vendedor, valor USD, número BL, NF Entrada, data de chegada e chassis.
     """
-    Analisa documentos de importação (Invoice, BL, NF Entrada, Planilha de Chassis) via Gemini Vision.
-    Extrai identificador/ref contêiner, número da invoice, nome do fornecedor, vendedor, valor USD, número BL, NF Entrada, data de chegada e chassis.
-    """
-    api_key = get_gemini_api_key()
-    if not api_key:
-        return {"success": False, "message": "Chave GEMINI_API_KEY não configurada no servidor."}
-
     if not doc_items:
         return {"success": False, "message": "Nenhum documento fornecido para análise da IA."}
 
-    parts = []
+    parts: list[dict[str, Any]] = []
+    extracted_text_blocks: list[str] = []
+
     for doc in doc_items:
-        b64_data = base64.b64encode(doc["bytes"]).decode("utf-8")
+        raw_bytes = doc.get("bytes") or b""
+        mime = doc.get("mime_type") or "application/pdf"
+        fname = doc.get("filename") or "documento"
+
+        # Extração de texto digital em memória com pypdf se for PDF
+        if mime == "application/pdf" or fname.lower().endswith(".pdf"):
+            pdf_text = extract_text_from_pdf(raw_bytes)
+            if pdf_text:
+                extracted_text_blocks.append(f"--- TEXTO EXTRAÍDO DO PDF ({fname}) ---\n{pdf_text}")
+
+        # Anexa dados visuais multimodais
+        b64_data = base64.b64encode(raw_bytes).decode("utf-8")
         parts.append({
             "inlineData": {
-                "mimeType": doc.get("mime_type") or "application/pdf",
-                "data": b64_data
+                "mimeType": mime,
+                "data": b64_data,
             }
         })
 
-    prompt = """
-Você é o especialista de comércio exterior e auditoria da MAJ Mobilidade Elétrica.
-EXAMINE CUIDADOSAMENTE OS DOCUMENTOS DE IMPORTAÇÃO ANEXADOS (Invoice, Bill of Lading - BL, Nota Fiscal de Entrada ou Planilha de Chassis) E EXTRAIA TODOS OS CAMPOS COM PRECISÃO:
+    prompt_context = ""
+    if extracted_text_blocks:
+        prompt_context = (
+            "\n\n--- DADOS TEXTUAIS EXTRAÍDOS NATIVAMENTE DOS ARQUIVOS (REFERÊNCIA DE MÁXIMA PRECISÃO) ---\n"
+            + "\n\n".join(extracted_text_blocks)
+            + "\n-----------------------------------------------------------------------------------------\n"
+        )
 
-1. REFERÊNCIA / IDENTIFICADOR DO CONTÊINER / IMPORTAÇÃO (ex: "CONT-2026-01" ou "COSCO-9876"):
-   Identifique o código de referência ou número de identificação principal do lote/contêiner.
+    prompt = f"""
+Você é o especialista sênior de comércio exterior e auditoria aduaneira da MAJ Mobilidade Elétrica.
+EXAMINE CUIDADOSAMENTE OS DOCUMENTOS DE IMPORTAÇÃO ANEXADOS (Bill of Lading - BL, Commercial Invoice, Nota Fiscal de Entrada ou Planilha de Chassis) E EXTRAIA TODOS OS CAMPOS COM MÁXIMA PRECISÃO:
+{prompt_context}
+DIRETRIZES FUNDAMENTAIS DE EXTRAÇÃO:
 
-2. NÚMERO DA INVOICE:
-   Extraia o número oficial da Commercial Invoice (ex: "INV-2026-8899").
+1. NÚMERO DO BL (BILL OF LADING):
+   Localize o campo "Bill of Lading No.", "B/L No." ou "Bill of Lading Number" (exemplo: "DWSE26070035", "COSU6321908230").
+   Extraia esse código exato sem espaços adicionais.
 
-3. NOME DO FORNECEDOR / FABRICANTE CHINÊS:
-   Razão social completa da fábrica/empresa exportadora (ex: "Zhejiang Leike Electric Vehicle Co., Ltd.").
+2. REFERÊNCIA / IDENTIFICADOR DO CONTÊINER / IMPORTAÇÃO:
+   - Se houver um código de lote ou contêiner específico (ex: "CONT-2026-01", "MSKU9876543"), use-o.
+   - REGRA MANDATÓRIA: Se for um Bill of Lading (BL) ou não houver um código de contêiner separado, UTILIZE O PRÓPRIO NÚMERO DO BILL OF LADING (ex: "DWSE26070035") como Identificador / Referência da importação!
 
-4. NOME DO VENDEDOR / CONTATO COMERCIAL:
+3. NÚMERO DA INVOICE:
+   Extraia o número oficial da Commercial Invoice (ex: "INV-2026-8899", "PI2026-01").
+
+4. NOME DO FORNECEDOR / FABRICANTE:
+   Razão social completa da fábrica/empresa exportadora (ex: "Zhejiang Leike Electric Vehicle Co., Ltd.", "Shipper / Exporter").
+
+5. NOME DO VENDEDOR / CONTATO COMERCIAL:
    Nome do vendedor, representante ou contato que assina/consta na invoice (ex: "Chen", "Linda", "Jack").
 
-5. VALOR TOTAL DA INVOICE EM DÓLAR (USD):
-   Valor numérico total da Commercial Invoice em dólares americanos (ex: 48500.00).
-
-6. NÚMERO DO BL (BILL OF LADING):
-   Número do conhecimento de embarque marítimo (ex: "COSU6321908230").
+6. VALOR TOTAL DA INVOICE EM DÓLAR (USD):
+   Valor numérico total em dólares americanos (ex: 48500.00).
 
 7. NÚMERO DA NOTA FISCAL DE ENTRADA:
    Número da NF-e de entrada ou chave de acesso legível (ex: "00987").
 
 8. DATA PREVISTA DE CHEGADA OU DATA DO DOCUMENTO (YYYY-MM-DD):
-   Data de emissão da invoice, embarque do BL ou chegada estimada no formato YYYY-MM-DD.
+   Data de emissão da invoice, embarque do BL ("Date of Issue" / "Shipped on Board") ou chegada estimada no formato YYYY-MM-DD.
 
 9. LISTA DE CHASSIS LOCALIZADOS:
    Lista com todos os números de chassi legíveis nos documentos.
 
 FORMATO DA RESPOSTA (RETORNE APENAS JSON ESTRITO):
-{
-  "reference": "Referência identificada",
+{{
+  "reference": "Referência do contêiner ou o próprio número do BL (ex: DWSE26070035)",
   "invoice_no": "Número da Invoice",
   "supplier_name": "Nome do Fornecedor / Fabricante",
   "seller_name": "Nome do Vendedor / Contato Comercial",
   "invoice_amount_usd": 0.00,
-  "bl_no": "Número do BL",
+  "bl_no": "Número do BL (ex: DWSE26070035)",
   "nf_entry": "Número da NF Entrada",
   "arrival_date": "YYYY-MM-DD",
   "extracted_chassis": ["CHASSI1", "CHASSI2"],
   "summary": "Resumo sintético em português dos dados extraídos dos documentos"
-}
+}}
 """
-    parts.append({"text": prompt})
+    parts_with_prompt = list(parts)
+    parts_with_prompt.append({"text": prompt})
 
     payload = {
-        "contents": [{"role": "user", "parts": parts}],
+        "contents": [{"role": "user", "parts": parts_with_prompt}],
         "generationConfig": {
             "temperature": 0.1,
-            "responseMimeType": "application/json"
-        }
+            "responseMimeType": "application/json",
+        },
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    # Executa com failover automático e retries
+    res = execute_gemini_payload(payload, timeout=40)
 
-    try:
-        with urllib.request.urlopen(req, timeout=40) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            candidates = res_data.get("candidates", [])
-            if candidates and "content" in candidates[0]:
-                raw_json = "".join([p.get("text", "") for p in candidates[0]["content"].get("parts", [])]).strip()
-                parsed = json.loads(raw_json)
-                return {
-                    "success": True,
-                    "data": parsed
-                }
-            return {"success": False, "message": "O modelo Gemini não retornou resposta estruturada dos documentos."}
-    except Exception as e:
-        return {"success": False, "message": f"Erro na análise de documentos da importação: {str(e)}"}
+    # Se falhou e tínhamos texto digital extraído, tenta fallback de emergência usando apenas texto
+    if not res.get("success") and extracted_text_blocks:
+        logger.info("Acionando fallback de análise puramente textual para documentos de importação...")
+        text_only_payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.1,
+                "responseMimeType": "application/json",
+            },
+        }
+        res = execute_gemini_payload(text_only_payload, timeout=25)
 
+    if not res.get("success"):
+        return {"success": False, "message": f"Erro na análise de documentos da importação: {res.get('message')}"}
 
+    data = res.get("data")
+    if not data and res.get("text"):
+        try:
+            data = json.loads(res["text"])
+        except Exception:
+            data = None
 
+    if not data:
+        return {"success": False, "message": "O modelo Gemini não retornou resposta estruturada dos documentos."}
+
+    # Garantia de consistência da regra do usuário: se reference estiver vazio e bl_no estiver presente, usa bl_no
+    if not data.get("reference") and data.get("bl_no"):
+        data["reference"] = data["bl_no"]
+
+    return {
+        "success": True,
+        "data": data,
+        "model_used": res.get("model_used"),
+    }

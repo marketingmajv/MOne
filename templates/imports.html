@@ -182,44 +182,30 @@
         </button>
       </div>
 
-      <label>Identificador / Ref. Contêiner
-        <input name="reference" value="{{ i.reference }}" required>
+      <label>Identificador / Ref. Contêiner <input name="reference" value="{{ i.reference }}" required></label>
+      <label>Número Invoice <input name="invoice_no" value="{{ i.invoice_no or '' }}"></label>
+      <label>Nome do Fornecedor / Fabricante <input name="supplier_name" value="{{ i.supplier_name or '' }}" placeholder="Ex.: Zhejiang Leike, Ouxi..."></label>
+      <label>Nome do Vendedor / Contato Comercial <input name="seller_name" value="{{ i.seller_name or '' }}" placeholder="Ex.: Chen, Linda, Jack..."></label>
+      <label>Valor Total Invoice (USD) <input type="number" step="0.01" name="invoice_amount_usd" value="{{ i.invoice_amount_usd or 0 }}" placeholder="50000.00"></label>
+      <label>Número BL (Bill of Lading) <input name="bl_no" value="{{ i.bl_no or '' }}"></label>
+      <label>NF Entrada <input name="nf_entry" value="{{ i.nf_entry or '' }}"></label>
+      <label>Câmbio estimado (USD/BRL) <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate or 5.65 }}"></label>
+      <label>Data prevista de chegada <input type="date" name="arrival_date" value="{{ i.arrival_date or '' }}"></label>
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir Invoice (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="invoice_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
       </label>
-      <label>Número Invoice
-        <input name="invoice_no" value="{{ i.invoice_no or '' }}">
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir BL (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="bl_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
       </label>
-      <label>Nome do Fornecedor / Fabricante
-        <input name="supplier_name" value="{{ i.supplier_name or '' }}" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir NF Entrada (PDF/XML) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml" onchange="syncClearBtn(this)">
       </label>
-      <label>Nome do Vendedor / Contato Comercial
-        <input name="seller_name" value="{{ i.seller_name or '' }}" placeholder="Ex.: Chen, Linda, Jack...">
-      </label>
-      <label>Valor Total Invoice (USD)
-        <input type="number" step="0.01" name="invoice_amount_usd" value="{{ i.invoice_amount_usd or 0 }}" placeholder="50000.00">
-      </label>
-      <label>Número BL (Bill of Lading)
-        <input name="bl_no" value="{{ i.bl_no or '' }}">
-      </label>
-      <label>NF Entrada
-        <input name="nf_entry" value="{{ i.nf_entry or '' }}">
-      </label>
-      <label>Câmbio estimado (USD/BRL)
-        <input type="number" step="0.0001" name="usd_rate" value="{{ i.usd_rate or 5.65 }}">
-      </label>
-      <label>Data prevista de chegada
-        <input type="date" name="arrival_date" value="{{ i.arrival_date or '' }}">
-      </label>
-      <label>Substituir Invoice (PDF/Imagem)
-        <input type="file" name="invoice_file" accept="image/*,.pdf">
-      </label>
-      <label>Substituir BL (PDF/Imagem)
-        <input type="file" name="bl_file" accept="image/*,.pdf">
-      </label>
-      <label>Substituir NF Entrada (PDF/XML)
-        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
-      </label>
-      <label class="span-2">Substituir / Carregar Planilha de Chassis da Importação (.csv, .xlsx)
-        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls">
+      <label class="span-2">
+        <span style="display:flex;justify-content:space-between;align-items:center;">Substituir / Carregar Planilha de Chassis (.csv, .xlsx) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" onchange="syncClearBtn(this)">
         <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
       </label>
       <label class="span-2">Observações da importação
@@ -323,50 +309,41 @@
     </div>
     <form method="post" enctype="multipart/form-data" class="form-grid" id="newImportForm">
       <div class="span-2" style="background:rgba(157, 78, 255, 0.08);border:1px solid rgba(157, 78, 255, 0.25);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <span style="font-size:13px;color:var(--text);">Selecione os arquivos abaixo (Invoice, BL, NF Entrada ou Chassis) e clique no botão ao lado para a IA ler e preencher tudo automaticamente:</span>
-        <button type="button" class="btn" onclick="analyzeImportDocs('newImportForm')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
-          ⚡ Preencher com IA (Gemini)
-        </button>
+        <span style="font-size:13px;color:var(--text);">Selecione os arquivos abaixo (Invoice, BL, NF Entrada ou Chassis) e clique no botão ao lado para a IA ler e preencher tudo:</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="btn" onclick="clearImportFiles('newImportForm')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);color:var(--text);font-size:12px;cursor:pointer;" title="Limpar todos os arquivos anexados">
+            🗑️ Limpar Arquivos
+          </button>
+          <button type="button" class="btn" onclick="analyzeImportDocs('newImportForm')" style="background:linear-gradient(135deg, rgba(78, 161, 255, 0.3), rgba(157, 78, 255, 0.3));border:1px solid rgba(157, 78, 255, 0.5);color:#fff;font-weight:600;">
+            ⚡ Preencher com IA (Gemini)
+          </button>
+        </div>
       </div>
 
-      <label>Identificador / Ref. Contêiner
-        <input name="reference" required placeholder="Ex.: CONT-2026-01">
+      <label>Identificador / Ref. Contêiner <input name="reference" required placeholder="Ex.: CONT-2026-01"></label>
+      <label>Número Invoice <input name="invoice_no" placeholder="Ex.: INV-9988"></label>
+      <label>Nome do Fornecedor / Fabricante <input name="supplier_name" placeholder="Ex.: Zhejiang Leike, Ouxi..."></label>
+      <label>Nome do Vendedor / Contato Comercial <input name="seller_name" placeholder="Ex.: Chen, Linda, Jack..."></label>
+      <label>Valor Total Invoice (USD) <input type="number" step="0.01" name="invoice_amount_usd" placeholder="Ex.: 50000.00"></label>
+      <label>Número BL (Bill of Lading) <input name="bl_no" placeholder="Ex.: BL-COSCO-123"></label>
+      <label>NF Entrada <input name="nf_entry" placeholder="Ex.: NF-0045"></label>
+      <label>Câmbio estimado (USD/BRL) <input type="number" step="0.0001" name="usd_rate" value="5.65"></label>
+      <label>Data prevista de chegada <input type="date" name="arrival_date"></label>
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo Invoice (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="invoice_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
       </label>
-      <label>Número Invoice
-        <input name="invoice_no" placeholder="Ex.: INV-9988">
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo BL (PDF/Imagem) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="bl_file" accept="image/*,.pdf" onchange="syncClearBtn(this)">
       </label>
-      <label>Nome do Fornecedor / Fabricante
-        <input name="supplier_name" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+      <label>
+        <span style="display:flex;justify-content:space-between;align-items:center;">Arquivo NF Entrada (PDF/XML) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml" onchange="syncClearBtn(this)">
       </label>
-      <label>Nome do Vendedor / Contato Comercial
-        <input name="seller_name" placeholder="Ex.: Chen, Linda, Jack...">
-      </label>
-      <label>Valor Total Invoice (USD)
-        <input type="number" step="0.01" name="invoice_amount_usd" placeholder="Ex.: 50000.00">
-      </label>
-      <label>Número BL (Bill of Lading)
-        <input name="bl_no" placeholder="Ex.: BL-COSCO-123">
-      </label>
-      <label>NF Entrada
-        <input name="nf_entry" placeholder="Ex.: NF-0045">
-      </label>
-      <label>Câmbio estimado (USD/BRL)
-        <input type="number" step="0.0001" name="usd_rate" value="5.65">
-      </label>
-      <label>Data prevista de chegada
-        <input type="date" name="arrival_date">
-      </label>
-      <label>Arquivo Invoice (PDF/Imagem)
-        <input type="file" name="invoice_file" accept="image/*,.pdf">
-      </label>
-      <label>Arquivo BL (PDF/Imagem)
-        <input type="file" name="bl_file" accept="image/*,.pdf">
-      </label>
-      <label>Arquivo NF Entrada (PDF/XML)
-        <input type="file" name="nf_entry_file" accept="image/*,.pdf,.xml">
-      </label>
-      <label class="span-2">Planilha de Chassis da Importação (.csv, .xlsx)
-        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls">
+      <label class="span-2">
+        <span style="display:flex;justify-content:space-between;align-items:center;">Planilha de Chassis da Importação (.csv, .xlsx) <button type="button" class="btn-clear-file" onclick="clearFileInput(this)" style="display:none;background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;font-weight:600;">✕ Limpar</button></span>
+        <input type="file" name="chassis_file" accept=".csv,.xlsx,.xls" onchange="syncClearBtn(this)">
         <small style="color:var(--muted);">Colunas obrigatórias: MODELO e CHASSI.</small>
       </label>
       <label class="span-2">Observações da importação
@@ -382,19 +359,41 @@
 {% endif %}
 
 <script>
+function syncClearBtn(inp) {
+  const lbl = inp.closest('label');
+  const btn = lbl ? lbl.querySelector('.btn-clear-file') : null;
+  if (btn) btn.style.display = (inp.files && inp.files.length) ? 'inline' : 'none';
+}
+
+function clearFileInput(btn) {
+  const lbl = btn.closest('label');
+  const inp = lbl ? lbl.querySelector('input[type="file"]') : null;
+  if (inp) {
+    inp.value = '';
+    btn.style.display = 'none';
+  }
+}
+
+function clearImportFiles(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  form.querySelectorAll('input[type="file"]').forEach(inp => {
+    inp.value = '';
+    syncClearBtn(inp);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[type="file"]').forEach(syncClearBtn);
+});
+
 async function analyzeImportDocs(formId) {
   const form = document.getElementById(formId);
   if (!form) return;
 
-  const invoiceInput = form.querySelector('input[name="invoice_file"]');
-  const blInput = form.querySelector('input[name="bl_file"]');
-  const nfInput = form.querySelector('input[name="nf_entry_file"]');
-  const chassisInput = form.querySelector('input[name="chassis_file"]');
-
-  const hasFiles = (invoiceInput && invoiceInput.files.length) ||
-                   (blInput && blInput.files.length) ||
-                   (nfInput && nfInput.files.length) ||
-                   (chassisInput && chassisInput.files.length);
+  const fileKeys = ['invoice_file', 'bl_file', 'nf_entry_file', 'chassis_file'];
+  const fileInputs = fileKeys.map(k => form.querySelector(`input[name="${k}"]`)).filter(Boolean);
+  const hasFiles = fileInputs.some(inp => inp.files && inp.files.length);
 
   if (!hasFiles) {
     alert('Por favor, selecione pelo menos um arquivo (Invoice, BL, NF Entrada ou Planilha de Chassis) no formulário antes de acionar a análise de IA.');
@@ -409,16 +408,12 @@ async function analyzeImportDocs(formId) {
   }
 
   const fd = new FormData();
-  if (invoiceInput && invoiceInput.files[0]) fd.append('invoice_file', invoiceInput.files[0]);
-  if (blInput && blInput.files[0]) fd.append('bl_file', blInput.files[0]);
-  if (nfInput && nfInput.files[0]) fd.append('nf_entry_file', nfInput.files[0]);
-  if (chassisInput && chassisInput.files[0]) fd.append('chassis_file', chassisInput.files[0]);
+  fileInputs.forEach(inp => {
+    if (inp.files && inp.files[0]) fd.append(inp.name, inp.files[0]);
+  });
 
   try {
-    const res = await fetch('/api/imports/analyze-docs', {
-      method: 'POST',
-      body: fd
-    });
+    const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
     const result = await res.json();
 
     if (btn) {
@@ -432,30 +427,23 @@ async function analyzeImportDocs(formId) {
     }
 
     const data = result.data || {};
-    if (data.reference && form.querySelector('input[name="reference"]')) {
-      form.querySelector('input[name="reference"]').value = data.reference;
-    }
-    if (data.invoice_no && form.querySelector('input[name="invoice_no"]')) {
-      form.querySelector('input[name="invoice_no"]').value = data.invoice_no;
-    }
-    if (data.supplier_name && form.querySelector('input[name="supplier_name"]')) {
-      form.querySelector('input[name="supplier_name"]').value = data.supplier_name;
-    }
-    if (data.seller_name && form.querySelector('input[name="seller_name"]')) {
-      form.querySelector('input[name="seller_name"]').value = data.seller_name;
-    }
-    if (data.invoice_amount_usd && form.querySelector('input[name="invoice_amount_usd"]')) {
-      form.querySelector('input[name="invoice_amount_usd"]').value = data.invoice_amount_usd;
-    }
-    if (data.bl_no && form.querySelector('input[name="bl_no"]')) {
-      form.querySelector('input[name="bl_no"]').value = data.bl_no;
-    }
-    if (data.nf_entry && form.querySelector('input[name="nf_entry"]')) {
-      form.querySelector('input[name="nf_entry"]').value = data.nf_entry;
-    }
-    if (data.arrival_date && form.querySelector('input[name="arrival_date"]')) {
-      form.querySelector('input[name="arrival_date"]').value = data.arrival_date;
-    }
+    const fieldMap = {
+      reference: data.reference || data.bl_no || '',
+      invoice_no: data.invoice_no,
+      supplier_name: data.supplier_name,
+      seller_name: data.seller_name,
+      invoice_amount_usd: data.invoice_amount_usd,
+      bl_no: data.bl_no,
+      nf_entry: data.nf_entry,
+      arrival_date: data.arrival_date
+    };
+
+    Object.entries(fieldMap).forEach(([k, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        const inputEl = form.querySelector(`input[name="${k}"]`);
+        if (inputEl) inputEl.value = val;
+      }
+    });
 
     let chassisMsg = '';
     if (data.extracted_chassis && data.extracted_chassis.length) {
@@ -474,3 +462,4 @@ async function analyzeImportDocs(formId) {
 }
 </script>
 {% endblock %}
+
