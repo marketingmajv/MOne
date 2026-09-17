@@ -58,7 +58,7 @@
               <div>
                 <strong style="display: block; font-size: 13px; color: var(--text);">🚢 Embarcado / Em Trânsito Aduaneiro</strong>
                 <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">
-                  Contêiner em trânsito marítimo ou no porto. Exige: PI, CI, BL, Packing List e Relação de Chassis.
+                  Contêiner em trânsito marítimo ou no porto. Exige: PI, CI, BL, Packing List e VIN CHASSI.
                 </small>
               </div>
             </label>
@@ -88,7 +88,7 @@
             Arraste todos os documentos da importação aqui ou clique para selecionar
           </h4>
           <p style="margin: 0; font-size: 12px; color: var(--muted);">
-            Compatível com <strong>PDF, PNG, JPG e Planilhas Excel / CSV</strong> (Commercial Invoice, BL, Packing List, DI, NF Entrada, Chassis, etc.)
+            Compatível com <strong>PDF, PNG, JPG e Planilhas Excel / CSV</strong> (Commercial Invoice, BL, Packing List, VIN CHASSI, DI, NF Entrada, etc.)
           </p>
         </div>
 
@@ -103,6 +103,14 @@
           <div id="filesListContainer" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; padding: 4px;">
             <!-- Itens de arquivos -->
           </div>
+        </div>
+
+        <!-- Campo: Considerações e Correções de Documentos antes da análise -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
+            📝 Considerações e Correções de Doc <span style="font-size: 11px; font-weight: normal; color: var(--muted);">(opcional — orientações prioritárias para a IA antes da análise)</span>
+          </label>
+          <textarea id="inputDocumentNotes" name="document_notes" rows="2" placeholder="Ex: O invoice veio em 2 páginas; o BL correto é o Master; atentar para comprovante de ICMS separado..." style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
         </div>
 
         <!-- Rodapé do Passo 1 -->
@@ -310,20 +318,21 @@ let activeImportStage = 'water';
 let activeRules = [];
 let aiAnalysisResult = null;
 
-// Mapa oficial de tipos de documentos
-const DOC_OPTIONS = [
+let DOC_OPTIONS = [
   { code: 'PI', label: 'Proforma Invoice (PI)' },
   { code: 'CI', label: 'Commercial Invoice (CI)' },
   { code: 'BL', label: 'Bill of Lading (BL)' },
   { code: 'PL', label: 'Packing List (PL)' },
-  { code: 'CHASSIS_LIST', label: 'Relação de Chassis' },
+  { code: 'CHASSIS_LIST', label: 'VIN CHASSI (Relação de Chassis)' },
   { code: 'DUIMP_DI', label: 'DUIMP / DI' },
   { code: 'ENTRY_NF', label: 'Nota Fiscal de Entrada' },
-  { code: 'NUMERARIO_TAX', label: 'Guias / Numerário' },
-  { code: 'EXCHANGE_CONTRACT', label: 'Contrato de Câmbio' },
-  { code: 'SUPPLIER_PAYMENT', label: 'Comprovante Fornecedor' },
-  { code: 'FREIGHT_INVOICE', label: 'Fatura de Frete Internacional' },
-  { code: 'OTHER', label: 'Outro Documento' }
+  { code: 'ICMS_GUIDE', label: 'Guias de ICMS / comprovante de icms' },
+  { code: 'NF_FRETE_CARRETA', label: 'Nota Fiscal FRETE, CARRETA' },
+  { code: 'AGENTE_CARGA_BR', label: 'AGENTE DE CARGA BRASIL' },
+  { code: 'FECHAMENTO_DESPACHANTE', label: 'Fechamento Despachante' },
+  { code: 'AJUDANTES_PAGTO', label: 'AJUDANTES (comprovante de pagamento)' },
+  { code: 'EXCHANGE_CONTRACT', label: 'Comprovantes de Câmbio' },
+  { code: 'SUPPLIER_PAYMENT', label: 'Comprovantes Fornecedor' }
 ];
 
 function onStageChanged(stage) {
@@ -464,6 +473,10 @@ async function startAIAnalysis() {
 
   const fd = new FormData();
   selectedFilesList.forEach(f => fd.append('documents', f));
+  const notes = (document.getElementById('inputDocumentNotes')?.value || '').trim();
+  if (notes) {
+    fd.append('document_notes', notes);
+  }
 
   try {
     const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
@@ -479,6 +492,16 @@ async function startAIAnalysis() {
 
     aiAnalysisResult = result;
     activeRules = result.rules || [];
+
+    // Mesclar dinamicamente categorias customizadas adicionadas pelo usuário
+    if (activeRules.length > 0) {
+      activeRules.forEach(r => {
+        if (!DOC_OPTIONS.some(opt => opt.code === r.doc_type)) {
+          DOC_OPTIONS.push({ code: r.doc_type, label: r.label });
+        }
+      });
+    }
+
     renderStep2Checklist(result);
     populateStep3Fields(result);
 

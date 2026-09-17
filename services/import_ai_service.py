@@ -18,20 +18,24 @@ from services.pdf_extractor import extract_text_from_pdf
 logger = logging.getLogger(__name__)
 
 DOC_TYPES_MAP = {
-    "PI": "Proforma Invoice",
-    "CI": "Commercial Invoice",
+    "PI": "Proforma Invoice (PI)",
+    "CI": "Commercial Invoice (CI)",
+    "BL": "Conhecimento de Embarque (Bill of Lading)",
+    "PL": "Packing List (Romaneio)",
+    "CHASSIS_LIST": "VIN CHASSI (Relação de Chassis)",
+    "DUIMP_DI": "DUIMP / Declaração de Importação (DI)",
+    "ENTRY_NF": "Nota Fiscal de Entrada",
+    "ICMS_GUIDE": "Guias de ICMS / Comprovante de ICMS",
+    "NF_FRETE_CARRETA": "Nota Fiscal FRETE, CARRETA",
+    "AGENTE_CARGA_BR": "AGENTE DE CARGA BRASIL",
+    "FECHAMENTO_DESPACHANTE": "Fechamento Despachante",
+    "AJUDANTES_PAGTO": "AJUDANTES (comprovante de pagamento)",
     "EXCHANGE_CONTRACT": "Contrato de Câmbio",
     "SUPPLIER_PAYMENT": "Comprovante de Pagamento ao Fornecedor",
     "FREIGHT_INVOICE": "Cobrança / Documento de Frete Internacional",
-    "BL": "Conhecimento de Embarque (Bill of Lading)",
-    "PL": "Packing List (Romaneio)",
-    "DUIMP_DI": "DUIMP / Declaração de Importação (DI)",
-    "CHASSIS_LIST": "Relação de Chassis",
-    "ENTRY_NF": "Nota Fiscal de Entrada",
     "NUMERARIO": "Solicitação / Comprovante de Numerário Aduaneiro",
-    "TAX_GUIDE": "Guia de Tributos / ICMS / DARF",
-    "BROKER_SETTLEMENT": "Prestação de Contas do Despachante",
-    "OTHER": "Outro Documento",
+    "BROKER_SETTLEMENT": "Fechamento Despachante",
+    "TAX_GUIDE": "Guias de ICMS / Comprovante de ICMS",
 }
 
 
@@ -45,6 +49,7 @@ def classify_and_extract_document(
     filename: str,
     mime_type: str = "application/pdf",
     import_context: dict[str, Any] | None = None,
+    user_notes: str | None = None,
 ) -> dict[str, Any]:
     """Analisa um arquivo enviado, classifica seu tipo oficial e extrai metadados estruturados."""
     import_context = import_context or {}
@@ -64,12 +69,20 @@ def classify_and_extract_document(
 
     types_list_str = "\n".join([f'- "{code}": {desc}' for code, desc in DOC_TYPES_MAP.items()])
 
+    user_notes_section = ""
+    if user_notes and user_notes.strip():
+        user_notes_section = f"""
+CONSIDERAÇÕES E ORIENTAÇÕES DO OPERADOR (IMPORTANTE - PRIORIDADE ALTA):
+"{user_notes.strip()}"
+(Leve em consideração estas orientações acima para corrigir divergências, vincular informações ou classificar este arquivo).
+"""
+
     prompt = f"""
 Você é o auditor aduaneiro e especialista em comércio exterior do M-One (MAJ Mobilidade Elétrica).
 Analise o arquivo anexado "{filename}".
 
 {text_snippet}
-
+{user_notes_section}
 CONTEXTO ATUAL DA IMPORTAÇÃO NO SISTEMA:
 - Referência: {import_context.get('reference', 'N/D')}
 - Fornecedor: {import_context.get('supplier_name', 'N/D')}
@@ -86,11 +99,14 @@ DIRETRIZES DE CLASSIFICAÇÃO:
 - "BL": Conhecimento de transporte marítimo ("Bill of Lading", "Sea Waybill", transportadora marítima como COSCO, Dawoo, etc.).
 - "PL": Packing List, lista de volumes, peso bruto, cubagem e caixas.
 - "DUIMP_DI": Extrato de Declaração de Importação emitida pela Receita Federal / Siscomex.
-- "CHASSIS_LIST": Lista de números de chassi e modelos de veículos/motos.
+- "CHASSIS_LIST": Documento de VIN CHASSI / Lista de números de chassi e modelos de veículos/motos (VIN).
 - "ENTRY_NF": DANFE de Nota Fiscal de Entrada emitida no Brasil.
+- "ICMS_GUIDE": Guia DAE/GNRE de ICMS Importação ou comprovante de pagamento de ICMS.
+- "NF_FRETE_CARRETA": CT-e ou Nota Fiscal de Frete de Carreta (transporte rodoviário porto até a sede).
+- "AGENTE_CARGA_BR": Cobrança, fatura ou taxas do agente de carga no Brasil (THC, demurrage, liberação de BL).
+- "FECHAMENTO_DESPACHANTE": Prestação de contas do despachante, conciliação de numerário e recibos aduaneiros finais.
+- "AJUDANTES_PAGTO": Comprovante de pagamento ou recibo de ajudantes para desova e descarregamento de contêiner.
 - "NUMERARIO": Solicitação de adiantamento de numerário emitida pelo despachante aduaneiro.
-- "TAX_GUIDE": Guia DAE de ICMS Importação ou DARF de impostos federais.
-- "BROKER_SETTLEMENT": Relatório final de prestação de contas com conciliação de numerário e recibos do despachante.
 
 TAREFA 2: EXTRAIA OS CAMPOS RELEVANTES:
 - `document_number`: Número do documento (ex: "DWSE26070035", "INV-2026-99", "PI-2026", número da DI, etc.).
@@ -177,7 +193,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (APENAS JSON ESTRITO):
     }
 
 
-def analyze_import_batch(file_items: list[dict[str, Any]]) -> dict[str, Any]:
+def analyze_import_batch(file_items: list[dict[str, Any]], user_notes: str | None = None) -> dict[str, Any]:
     """
     Analisa em lote os arquivos enviados no Wizard de Nova Importação.
     Classifica cada arquivo, extrai metadados cadastrais, lê planilhas de chassis
@@ -199,7 +215,7 @@ def analyze_import_batch(file_items: list[dict[str, Any]]) -> dict[str, Any]:
         "invoice_no": "",
         "arrival_date_estimated": "",
         "departure_date_estimated": "",
-        "notes": "",
+        "notes": user_notes.strip() if user_notes else "",
     }
     all_chassis_items: list[dict[str, str]] = []
 
@@ -207,10 +223,11 @@ def analyze_import_batch(file_items: list[dict[str, Any]]) -> dict[str, Any]:
         filename = item.get("filename", "")
         file_bytes = item.get("bytes", b"")
         mime_type = item.get("mime_type", "")
+        forced_doc_type = item.get("forced_doc_type")
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
         # 1. Tratar planilhas diretamente
-        if ext in ["xlsx", "xls", "csv"]:
+        if ext in ["xlsx", "xls", "csv"] and not forced_doc_type:
             class MemFile:
                 def __init__(self, fn: str, b: bytes):
                     self.filename = fn
@@ -224,8 +241,8 @@ def analyze_import_batch(file_items: list[dict[str, Any]]) -> dict[str, Any]:
                 detected_docs.append({
                     "filename": filename,
                     "doc_type": "CHASSIS_LIST",
-                    "doc_type_label": DOC_TYPES_MAP.get("CHASSIS_LIST", "Relação de Chassis"),
-                    "title": f"Planilha de Chassis ({filename})",
+                    "doc_type_label": DOC_TYPES_MAP.get("CHASSIS_LIST", "VIN CHASSI (Relação de Chassis)"),
+                    "title": f"Planilha de VIN CHASSI ({filename})",
                     "chassis_count": len(chassis_rows),
                     "summary": f"{len(chassis_rows)} chassis estruturados lidos na planilha.",
                 })
@@ -239,20 +256,25 @@ def analyze_import_batch(file_items: list[dict[str, Any]]) -> dict[str, Any]:
             filename=filename,
             mime_type=mime_type,
             import_context=extracted_fields,
+            user_notes=user_notes,
         )
         doc_data = res.get("data") or {}
-        doc_type = res.get("doc_type", "OTHER")
+        doc_type = forced_doc_type or res.get("doc_type", "OTHER")
 
-        # Unificar NUMERARIO e TAX_GUIDE no tipo de regra NUMERARIO_TAX se aplicável
+        # Normalizar tipos e legados
         normalized_doc_type = doc_type
-        if doc_type in ["NUMERARIO", "TAX_GUIDE"]:
-            normalized_doc_type = "NUMERARIO_TAX"
+        if doc_type in ["TAX_GUIDE", "ICMS_GUIDE"]:
+            normalized_doc_type = "ICMS_GUIDE"
+        elif doc_type in ["BROKER_SETTLEMENT", "FECHAMENTO_DESPACHANTE"]:
+            normalized_doc_type = "FECHAMENTO_DESPACHANTE"
+        elif doc_type == "NUMERARIO":
+            normalized_doc_type = "FECHAMENTO_DESPACHANTE"
 
         detected_docs.append({
             "filename": filename,
             "doc_type": normalized_doc_type,
             "original_doc_type": doc_type,
-            "doc_type_label": DOC_TYPES_MAP.get(doc_type, "Documento"),
+            "doc_type_label": DOC_TYPES_MAP.get(normalized_doc_type, DOC_TYPES_MAP.get(doc_type, "Documento")),
             "title": res.get("title", filename),
             "document_number": doc_data.get("document_number"),
             "total_amount": doc_data.get("total_amount"),
@@ -342,10 +364,12 @@ def persist_creation_documents(import_id: int, req, conn, user_id: int | None = 
     for f in req.files.getlist("documents"):
         if f and f.filename:
             files_to_save.append(f)
-    # Inputs clássicos/fallback
-    for k in ["invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
+    # Inputs clássicos/fallback e upload separado de fechamento
+    for k in ["fechamento_file", "fechamento_despachante", "invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
         f = req.files.get(k)
         if f and f.filename and not any(saved.filename == f.filename for saved in files_to_save):
+            if k in ["fechamento_file", "fechamento_despachante"] and f.filename not in meta_map:
+                meta_map[f.filename] = "FECHAMENTO_DESPACHANTE"
             files_to_save.append(f)
 
     saved_count = 0

@@ -50,7 +50,7 @@ DEFAULT_DOCUMENT_RULES = [
     },
     {
         "doc_type": "CHASSIS_LIST",
-        "label": "Relação de Chassis",
+        "label": "VIN CHASSI (Relação de Chassis)",
         "required_on_water": True,
         "required_cleared": True,
         "allow_post_attach": False,
@@ -73,12 +73,44 @@ DEFAULT_DOCUMENT_RULES = [
         "order_num": 7,
     },
     {
-        "doc_type": "NUMERARIO_TAX",
-        "label": "Guias / Numerário",
+        "doc_type": "ICMS_GUIDE",
+        "label": "Guias de ICMS / Comprovante de ICMS",
         "required_on_water": False,
         "required_cleared": True,
         "allow_post_attach": True,
         "order_num": 8,
+    },
+    {
+        "doc_type": "NF_FRETE_CARRETA",
+        "label": "Nota Fiscal FRETE, CARRETA",
+        "required_on_water": False,
+        "required_cleared": True,
+        "allow_post_attach": True,
+        "order_num": 9,
+    },
+    {
+        "doc_type": "AGENTE_CARGA_BR",
+        "label": "AGENTE DE CARGA BRASIL",
+        "required_on_water": False,
+        "required_cleared": True,
+        "allow_post_attach": True,
+        "order_num": 10,
+    },
+    {
+        "doc_type": "FECHAMENTO_DESPACHANTE",
+        "label": "Fechamento Despachante",
+        "required_on_water": False,
+        "required_cleared": True,
+        "allow_post_attach": True,
+        "order_num": 11,
+    },
+    {
+        "doc_type": "AJUDANTES_PAGTO",
+        "label": "AJUDANTES (comprovante de pagamento)",
+        "required_on_water": False,
+        "required_cleared": False,
+        "allow_post_attach": True,
+        "order_num": 12,
     },
     {
         "doc_type": "EXCHANGE_CONTRACT",
@@ -86,7 +118,7 @@ DEFAULT_DOCUMENT_RULES = [
         "required_on_water": False,
         "required_cleared": False,
         "allow_post_attach": True,
-        "order_num": 9,
+        "order_num": 13,
     },
     {
         "doc_type": "SUPPLIER_PAYMENT",
@@ -94,7 +126,7 @@ DEFAULT_DOCUMENT_RULES = [
         "required_on_water": False,
         "required_cleared": False,
         "allow_post_attach": True,
-        "order_num": 10,
+        "order_num": 14,
     },
 ]
 
@@ -233,3 +265,163 @@ def reset_document_rules_to_default(user_id: int | None = None) -> list[dict[str
     except Exception as e:
         logger.error("[reset_document_rules_to_default] Erro ao restaurar: %s", e)
         return list(DEFAULT_DOCUMENT_RULES)
+
+
+CORE_DOC_TYPES = {"PI", "CI", "BL", "PL", "CHASSIS_LIST"}
+
+
+def add_custom_document_rule(
+    doc_type: str,
+    label: str,
+    required_on_water: bool = False,
+    required_cleared: bool = False,
+    allow_post_attach: bool = True,
+    user_id: int | None = None,
+) -> tuple[bool, str]:
+    """Cadastra uma nova categoria de documento nas regras."""
+    init_document_rules_table()
+    doc_type = (doc_type or "").strip().upper().replace(" ", "_")
+    label = (label or "").strip()
+
+    if not doc_type or not label:
+        return False, "Código e nome do documento são obrigatórios."
+
+    try:
+        with db() as conn:
+            existing = conn.execute("SELECT doc_type FROM import_document_rules WHERE doc_type = %s", (doc_type,)).fetchone()
+            if existing:
+                return False, f"Já existe uma categoria cadastrada com o código '{doc_type}'."
+
+            max_order_row = conn.execute("SELECT COALESCE(MAX(order_num), 0) AS max_o FROM import_document_rules").fetchone()
+            next_order = (max_order_row["max_o"] if max_order_row else 0) + 1
+
+            conn.execute(
+                """
+                INSERT INTO import_document_rules 
+                (doc_type, label, required_on_water, required_cleared, allow_post_attach, order_num, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP);
+                """,
+                (doc_type, label, bool(required_on_water), bool(required_cleared), bool(allow_post_attach), next_order),
+            )
+            try:
+                from routes.helpers import audit
+                audit("import.rule_category_created", f"Categoria '{label}' ({doc_type}) criada por user_id={user_id}")
+            except Exception:
+                pass
+        return True, "Categoria adicionada com sucesso!"
+    except Exception as e:
+        logger.error("[add_custom_document_rule] Erro ao adicionar: %s", e)
+        return False, f"Erro interno ao salvar: {e}"
+
+
+def delete_document_rule(doc_type: str, user_id: int | None = None, is_admin_override: bool = False) -> tuple[bool, str]:
+    """Exclui uma categoria de documento. Documentos essenciais exigem autorização explícita de admin."""
+    doc_type = (doc_type or "").strip().upper()
+    if doc_type in CORE_DOC_TYPES and not is_admin_override:
+        return False, f"O documento essencial '{doc_type}' exige autorização com senha de administrador para exclusão."
+
+    try:
+        with db() as conn:
+            res = conn.execute("DELETE FROM import_document_rules WHERE doc_type = %s", (doc_type,))
+            if res.rowcount == 0:
+                return False, "Categoria não encontrada."
+            try:
+                from routes.helpers import audit
+                audit("import.rule_category_deleted", f"Categoria '{doc_type}' excluída por user_id={user_id} (override={is_admin_override})")
+            except Exception:
+                pass
+        return True, "Categoria removida com sucesso!"
+    except Exception as e:
+        logger.error("[delete_document_rule] Erro ao excluir: %s", e)
+        return False, f"Erro ao excluir categoria: {e}"
+
+
+def update_document_rule_details(
+    doc_type: str,
+    label: str,
+    required_on_water: bool,
+    required_cleared: bool,
+    allow_post_attach: bool,
+    user_id: int | None = None,
+) -> tuple[bool, str]:
+    """Atualiza o nome e flags de uma categoria existente."""
+    doc_type = (doc_type or "").strip().upper()
+    label = (label or "").strip()
+    if not doc_type or not label:
+        return False, "Código e nome do documento são obrigatórios."
+
+    try:
+        with db() as conn:
+            res = conn.execute(
+                """
+                UPDATE import_document_rules
+                SET label = %s, required_on_water = %s, required_cleared = %s, allow_post_attach = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE doc_type = %s;
+                """,
+                (label, bool(required_on_water), bool(required_cleared), bool(allow_post_attach), doc_type),
+            )
+            if res.rowcount == 0:
+                return False, "Categoria não encontrada para atualização."
+            try:
+                from routes.helpers import audit
+                audit("import.rule_category_updated", f"Categoria '{doc_type}' atualizada para '{label}' por user_id={user_id}")
+            except Exception:
+                pass
+        return True, "Categoria atualizada com sucesso!"
+    except Exception as e:
+        logger.error("[update_document_rule_details] Erro ao atualizar: %s", e)
+        return False, f"Erro ao atualizar categoria: {e}"
+
+
+def duplicate_document_rule(
+    source_doc_type: str,
+    new_doc_type: str,
+    new_label: str,
+    user_id: int | None = None,
+) -> tuple[bool, str]:
+    """Duplica uma categoria existente gerando uma nova regra parametrizada."""
+    source_doc_type = (source_doc_type or "").strip().upper()
+    new_doc_type = (new_doc_type or "").strip().upper().replace(" ", "_")
+    new_label = (new_label or "").strip()
+
+    if not new_doc_type or not new_label:
+        return False, "Código e nome da nova categoria são obrigatórios."
+
+    try:
+        with db() as conn:
+            source = conn.execute("SELECT * FROM import_document_rules WHERE doc_type = %s", (source_doc_type,)).fetchone()
+            if not source:
+                return False, "Documento de origem não encontrado."
+
+            existing = conn.execute("SELECT doc_type FROM import_document_rules WHERE doc_type = %s", (new_doc_type,)).fetchone()
+            if existing:
+                return False, f"Já existe uma categoria cadastrada com o código '{new_doc_type}'."
+
+            max_order_row = conn.execute("SELECT COALESCE(MAX(order_num), 0) AS max_o FROM import_document_rules").fetchone()
+            next_order = (max_order_row["max_o"] if max_order_row else 0) + 1
+
+            conn.execute(
+                """
+                INSERT INTO import_document_rules
+                (doc_type, label, required_on_water, required_cleared, allow_post_attach, order_num, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP);
+                """,
+                (
+                    new_doc_type,
+                    new_label,
+                    bool(source["required_on_water"]),
+                    bool(source["required_cleared"]),
+                    bool(source["allow_post_attach"]),
+                    next_order,
+                ),
+            )
+            try:
+                from routes.helpers import audit
+                audit("import.rule_category_duplicated", f"Categoria '{new_label}' ({new_doc_type}) duplicada a partir de '{source_doc_type}' por user_id={user_id}")
+            except Exception:
+                pass
+        return True, "Categoria duplicada com sucesso!"
+    except Exception as e:
+        logger.error("[duplicate_document_rule] Erro ao duplicar: %s", e)
+        return False, f"Erro ao duplicar categoria: {e}"
+

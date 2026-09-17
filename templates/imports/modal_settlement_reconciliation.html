@@ -1,0 +1,235 @@
+<!-- Modal: Fechamento de Importação, Prestação de Contas e Conciliação com IA -->
+<div class="modal" id="settlementReconciliationModal" style="display: none;" onclick="if(event.target===this)closeSettlementModal()">
+  <div class="modal-card large" style="max-width: 960px; width: min(960px, 95vw); margin: auto !important; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);">
+    
+    <!-- Topbar Header -->
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284C7; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          📑
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">
+              Fechamento & Prestação de Contas
+            </h3>
+            <span class="badge" style="font-size: 10.5px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-weight: 700;">
+              ✨ IA Gemini & Cruzamento
+            </span>
+          </div>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">
+            Conciliação final de pagamentos, comprovantes do despachante, ICMS, frete e câmbio.
+          </p>
+        </div>
+      </div>
+      <button type="button" onclick="closeSettlementModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px;">
+        &times;
+      </button>
+    </div>
+
+    <!-- Stepper Navigation -->
+    <div style="padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 8px; overflow-x: auto;">
+      <div id="settleTab1" class="settle-step-indicator active" style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="goToSettlementStep(1)">
+        <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: #0284C7; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">1</span>
+        <span style="font-size: 12.5px; font-weight: 700; color: var(--text);">1. Lote & Upload</span>
+      </div>
+      <div style="height: 1px; flex: 1; min-width: 20px; background: var(--line);"></div>
+      <div id="settleTab2" class="settle-step-indicator" style="display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: 0.5;" onclick="goToSettlementStep(2)">
+        <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: var(--line); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">2</span>
+        <span style="font-size: 12.5px; font-weight: 700; color: var(--muted);">2. Checklist de Pagamentos</span>
+      </div>
+      <div style="height: 1px; flex: 1; min-width: 20px; background: var(--line);"></div>
+      <div id="settleTab3" class="settle-step-indicator" style="display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: 0.5;" onclick="goToSettlementStep(3)">
+        <span class="step-num" style="width: 24px; height: 24px; border-radius: 50%; background: var(--line); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">3</span>
+        <span style="font-size: 12.5px; font-weight: 700; color: var(--muted);">3. Cruzamento & Fechamento</span>
+      </div>
+    </div>
+
+    <!-- Modal Body Scrollable -->
+    <div style="flex: 1; overflow-y: auto; padding: 24px; background: var(--panel);">
+      
+      <!-- PASSO 1: Seleção e Upload -->
+      <div id="settleStep1" style="display: block;">
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 6px;">
+            Selecione a Importação para o Fechamento *
+          </label>
+          <select id="settleImportSelect" onchange="onSettlementImportChange()" style="width: 100%; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 0 14px; font-size: 13.5px; font-weight: 600;">
+            <option value="">-- Carregando importações... --</option>
+          </select>
+        </div>
+
+        <!-- Banner de Panorama da Importação Selecionada -->
+        <div id="settleImportInfoBanner" style="display: none; padding: 14px 18px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span id="settleBannerRef" style="font-size: 15px; font-weight: 800; color: var(--text);">IMP-XXXX</span>
+              <span id="settleBannerSupplier" style="font-size: 12px; color: var(--muted); margin-left: 8px;">Fornecedor</span>
+            </div>
+            <div style="display: flex; gap: 12px; font-size: 12px; color: var(--muted);">
+              <span>FOB: <strong id="settleBannerFob" style="color: var(--text);">US$ 0,00</strong></span>
+              <span>•</span>
+              <span>Numerário Adiantado: <strong id="settleBannerNum" style="color: #0284C7;">R$ 0,00</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Área de Upload em Lote -->
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 6px;">
+            Anexar Comprovantes Finais (Arraste ou Selecione) *
+          </label>
+          <div id="settleDropzone" onclick="document.getElementById('settleFileInput').click()" style="border: 2px dashed var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; cursor: pointer; background: var(--panel2); transition: all 0.2s ease;">
+            <div style="font-size: 32px; margin-bottom: 8px;">📂</div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
+              Clique ou arraste todos os comprovantes aqui
+            </div>
+            <div style="font-size: 12px; color: var(--muted);">
+              Fechamento despachante, guias ICMS, comprovantes de câmbio, NF frete/carreta, taxas portuárias, etc. (PDF, Imagens)
+            </div>
+            <input type="file" id="settleFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv" style="display: none;" onchange="handleSettlementFiles(this.files)">
+          </div>
+          
+          <!-- Lista de Arquivos Selecionados -->
+          <div id="settleFilesContainer" style="margin-top: 12px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Arquivos prontos para leitura:</span>
+              <button type="button" onclick="clearSettlementFiles()" style="background: none; border: none; color: #DC2626; font-size: 11px; cursor: pointer; font-weight: 600;">Limpar todos</button>
+            </div>
+            <div id="settleFilesList" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto;"></div>
+          </div>
+        </div>
+
+        <!-- Campo de Considerações e Correções do Operador para a IA -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span>Considerações & Orientações para a IA (Opcional)</span>
+            <span style="font-size: 10px; color: #0284C7; font-weight: 700;">PRIORIDADE ALTA</span>
+          </label>
+          <textarea id="settleUserNotes" rows="2" placeholder="Ex: 'O comprovante de R$ 15.200 do despachante refere-se ao fechamento final. A guia de ICMS foi paga pela empresa diretamente. Frete carreta dividido em 2 notas...'" style="width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 10px 14px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+        </div>
+      </div>
+
+      <!-- PASSO 2: Checklist & Reconhecimento da IA -->
+      <div id="settleStep2" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text);">Comprovantes Analisados pela IA</h4>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">Verifique os tipos e valores identificados antes de cruzar com a importação.</p>
+          </div>
+          <span id="settleDocsCountBadge" class="badge" style="font-size: 11px; background: rgba(2, 132, 199, 0.12); color: #0284C7;">0 documentos</span>
+        </div>
+
+        <div id="settleDetectedDocsList" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Itens preenchidos via JS -->
+        </div>
+      </div>
+
+      <!-- PASSO 3: Cruzamento de Dados & Fechamento -->
+      <div id="settleStep3" style="display: none;">
+        <!-- KPI Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div style="padding: 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Adiantamento Despachante</span>
+            <div id="settleKpiAdv" style="font-size: 18px; font-weight: 800; color: #0284C7; margin-top: 4px;">R$ 0,00</div>
+          </div>
+          <div style="padding: 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Despesas Comprovadas</span>
+            <div id="settleKpiProven" style="font-size: 18px; font-weight: 800; color: #059669; margin-top: 4px;">R$ 0,00</div>
+          </div>
+          <div style="padding: 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Saldo de Numerário</span>
+            <div id="settleKpiBalance" style="font-size: 18px; font-weight: 800; color: #D97706; margin-top: 4px;">R$ 0,00</div>
+          </div>
+        </div>
+
+        <!-- Tabela de Cruzamento -->
+        <div style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel2); margin-bottom: 20px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); background: rgba(0,0,0,0.03);">
+                <th style="text-align: left; padding: 12px 16px; font-weight: 700; color: var(--muted); width: 35%;">Categoria de Pagamento</th>
+                <th style="text-align: right; padding: 12px 16px; font-weight: 700; color: var(--muted); width: 20%;">Previsto</th>
+                <th style="text-align: right; padding: 12px 16px; font-weight: 700; color: var(--muted); width: 20%;">Comprovado</th>
+                <th style="text-align: center; padding: 12px 16px; font-weight: 700; color: var(--muted); width: 25%;">Status & Cruzamento</th>
+              </tr>
+            </thead>
+            <tbody id="settleReconciliationTableBody">
+              <!-- Linhas geradas via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Checkbox de Conclusão / Fechamento do Lote -->
+        <div style="padding: 16px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: flex-start; gap: 12px;">
+          <input type="checkbox" id="settleCloseProcessCheckbox" style="margin-top: 3px; width: 18px; height: 18px; cursor: pointer;">
+          <div>
+            <label for="settleCloseProcessCheckbox" style="font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer;">
+              Marcar Importação como Fechada / Concluída 🔒
+            </label>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted); line-height: 1.4;">
+              Se marcado, a etapa da importação será alterada para <strong>Fechado</strong> e o status final do Fator de Custo será consolidado.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State Overlay -->
+      <div id="settleLoadingOverlay" style="display: none; text-align: center; padding: 40px 20px;">
+        <div style="display: inline-block; width: 44px; height: 44px; border: 3px solid rgba(2, 132, 199, 0.2); border-top-color: #0284C7; border-radius: 50%; animation: settleSpin 0.8s linear infinite;"></div>
+        <h4 id="settleLoadingTitle" style="margin: 16px 0 4px 0; font-size: 16px; font-weight: 800; color: var(--text);">Processando com IA...</h4>
+        <p id="settleLoadingMsg" style="margin: 0; font-size: 12.5px; color: var(--muted);">Lendo comprovantes, extraindo valores e cruzando dados com a importação.</p>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div style="padding: 16px 24px; border-top: 1px solid var(--line); background: var(--panel2); display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+      <button type="button" id="settleBtnBack" class="btn secondary" style="display: none;" onclick="onSettlementBack()">
+        ← Voltar
+      </button>
+      <div style="margin-left: auto; display: flex; gap: 10px;">
+        <button type="button" class="btn secondary" onclick="closeSettlementModal()">
+          Cancelar
+        </button>
+        <button type="button" id="settleBtnNext" class="btn primary" onclick="onSettlementNext()" style="font-weight: 700; padding: 0 20px;">
+          Analisar com IA & Cruzar Dados ➔
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+#settlementReconciliationModal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1050 !important;
+  background: rgba(0, 0, 0, 0.82) !important;
+  backdrop-filter: blur(8px) !important;
+  display: none;
+  place-items: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 20px !important;
+}
+#settlementReconciliationModal.show {
+  display: grid !important;
+}
+#settlementReconciliationModal .modal-card {
+  margin: auto !important;
+}
+@keyframes settleSpin {
+  to { transform: rotate(360deg); }
+}
+.settle-step-indicator.active {
+  opacity: 1 !important;
+}
+.settle-step-indicator.active .step-num {
+  background: #0284C7 !important;
+  color: #fff !important;
+}
+</style>
+
+<script src="{{ url_for('static', filename='js/import-settlement.js') }}"></script>

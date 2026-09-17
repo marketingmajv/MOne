@@ -1,0 +1,218 @@
+<!-- Modal: Repositório de Documentos de Importação (templates/imports/modal_doc_repository.html) -->
+<div class="modal" id="docRepositoryModal" style="display: none;" onclick="if(event.target===this)closeRepositoryModal()">
+  <div class="modal-card large" style="max-width: 1100px; width: min(1100px, 96vw); margin: auto !important; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);">
+    
+    <!-- Topbar Header -->
+    <div style="padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(37, 99, 235, 0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+          📁
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">
+              Repositório de Documentos
+            </h3>
+            <span class="badge" style="font-size: 11px; background: rgba(37, 99, 235, 0.12); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.25); font-weight: 700;">
+              Ciclo Comex Organizado
+            </span>
+          </div>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">
+            Navegue pelas pastas do processo, visualize prévias de arquivos e baixe o dossiê completo.
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {% if me.role in ['admin', 'support'] %}
+        <button type="button" id="repoBtnDownloadZip" class="btn primary sm" onclick="downloadRepositoryZip()" style="font-weight: 700; height: 36px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Baixar Dossiê ZIP</span>
+        </button>
+        {% endif %}
+        <button type="button" onclick="closeRepositoryModal()" style="background: none; border: none; font-size: 26px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px;">
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- Controls Bar: Seletor de Importação & Barra de Busca Instantânea -->
+    <div style="padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 260px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px;">
+          Lote de Importação
+        </label>
+        <select id="repoImportSelect" onchange="onRepositoryImportChange()" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 0 12px; font-size: 13px; font-weight: 600;">
+          <option value="">-- Selecione o lote --</option>
+        </select>
+      </div>
+
+      <div style="flex: 1.5; min-width: 280px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px;">
+          Busca Instantânea no Repositório
+        </label>
+        <div style="position: relative;">
+          <input type="text" id="repoSearchInput" oninput="onRepositorySearchInput(this.value)" placeholder="🔍 Buscar por nome, número, tipo (ex: CI, ICMS, 58400, Carreta)..." style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 0 12px 0 34px; font-size: 13px;">
+          <span style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted); pointer-events: none;">🔎</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Repository Stats Banner -->
+    <div id="repoStatsBanner" style="padding: 10px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 8px;">
+      <div>
+        Total no Dossiê: <strong id="repoTotalFilesCount" style="color: var(--text);">0 arquivos</strong>
+        <span style="margin: 0 6px;">•</span>
+        Tamanho Acumulado: <strong id="repoTotalSize" style="color: var(--text);">0 KB</strong>
+      </div>
+      <div id="repoFolderPills" style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <!-- Pills de pastas preenchidas via JS -->
+      </div>
+    </div>
+
+    <!-- Repository Body (Pastas em Acordeão) -->
+    <div id="repoBodyContent" style="flex: 1; overflow-y: auto; padding: 20px 24px; background: var(--panel); display: flex; flex-direction: column; gap: 14px;">
+      <!-- Preenchido dinamicamente pelo JS -->
+      <div style="text-align: center; padding: 40px; color: var(--muted);">
+        Selecione uma importação acima para carregar os documentos.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Submodal: Visualizador Integrado de Documentos com Metadados da IA -->
+<div class="modal" id="repoDocViewerModal" style="display: none; z-index: 1100;" onclick="if(event.target===this)closeDocumentViewer()">
+  <div class="modal-card" style="max-width: 1150px; width: min(1150px, 96vw); margin: auto !important; height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 25px 60px -10px rgba(0,0,0,0.5);">
+    
+    <!-- Viewer Header -->
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+        <span id="viewerDocIcon" style="font-size: 20px;">📄</span>
+        <div>
+          <h4 id="viewerDocTitle" style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px;">
+            Documento
+          </h4>
+          <span id="viewerDocBadge" class="badge" style="font-size: 10.5px; font-weight: 700;">Categoria</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a id="viewerDownloadBtn" href="#" download class="btn sm secondary" style="font-weight: 700; height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+          ⬇️ Baixar Original
+        </a>
+        <a id="viewerOpenTabBtn" href="#" target="_blank" class="btn sm secondary" style="font-weight: 700; height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+          ↗ Abrir em Nova Aba
+        </a>
+        <button type="button" onclick="closeDocumentViewer()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); padding: 4px; line-height: 1;">
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- Viewer Body: Split (Left: File Preview, Right: AI Metadata) -->
+    <div style="flex: 1; display: flex; overflow: hidden; background: #0F172A;">
+      <!-- Preview Container -->
+      <div style="flex: 1.6; height: 100%; border-right: 1px solid var(--line); position: relative; display: flex; align-items: center; justify-content: center; background: #090D16;">
+        <iframe id="viewerFrame" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+        <img id="viewerImage" src="" alt="Documento" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+        <div id="viewerUnsupportedMsg" style="display: none; text-align: center; color: #94A3B8; padding: 30px;">
+          <p style="font-size: 14px; margin-bottom: 12px;">Pré-visualização direta não suportada para este formato.</p>
+          <a id="viewerFallbackDownloadBtn" href="#" download class="btn primary">Baixar Arquivo</a>
+        </div>
+      </div>
+
+      <!-- AI Metadata Sidebar -->
+      <div style="flex: 1; min-width: 320px; max-width: 400px; height: 100%; overflow-y: auto; padding: 20px; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 16px;">✨</span>
+          <h5 style="margin: 0; font-size: 13px; font-weight: 800; color: var(--text); text-transform: uppercase; letter-spacing: 0.04em;">
+            Metadados Extraídos pela IA
+          </h5>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12.5px;">
+          <div style="padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="color: var(--muted); font-size: 11px; display: block;">VALOR TOTAL DETECTADO</span>
+            <strong id="metaDocAmount" style="font-size: 16px; color: #059669; font-weight: 800;">—</strong>
+          </div>
+
+          <div style="padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="color: var(--muted); font-size: 11px; display: block;">NÚMERO DO DOCUMENTO</span>
+            <strong id="metaDocNumber" style="font-size: 13.5px; color: var(--text); font-weight: 700;">—</strong>
+          </div>
+
+          <div style="padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="color: var(--muted); font-size: 11px; display: block;">DATA DE EMISSÃO / EMBARQUE</span>
+            <strong id="metaDocDate" style="font-size: 13px; color: var(--text);">—</strong>
+          </div>
+
+          <div style="padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line);">
+            <span style="color: var(--muted); font-size: 11px; display: block;">RESUMO DA ANÁLISE ADUANEIRA</span>
+            <p id="metaDocSummary" style="margin: 4px 0 0 0; color: var(--text); line-height: 1.4; font-size: 12px;">—</p>
+          </div>
+
+          <div style="padding: 10px 12px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); font-size: 11px; color: var(--muted);">
+            <div>Hash MD5: <span id="metaDocHash" style="font-family: monospace; color: var(--text);">—</span></div>
+            <div style="margin-top: 4px;">Enviado por: <span id="metaDocUploader" style="color: var(--text);">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+#docRepositoryModal,
+#repoDocViewerModal {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  display: none;
+  place-items: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 20px !important;
+}
+#docRepositoryModal.show,
+#repoDocViewerModal.show {
+  display: grid !important;
+}
+#docRepositoryModal .modal-card,
+#repoDocViewerModal .modal-card {
+  margin: auto !important;
+}
+.repo-folder-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.repo-folder-header {
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+.repo-folder-header:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+.repo-doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  background: var(--panel);
+}
+.repo-doc-row:hover {
+  background: var(--panel2);
+}
+</style>
+
+<script src="{{ url_for('static', filename='js/import-repository.js') }}"></script>

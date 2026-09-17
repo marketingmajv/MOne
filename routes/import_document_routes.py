@@ -11,7 +11,7 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, request, sen
 from werkzeug.utils import secure_filename
 
 from database import db
-from routes.helpers import audit, current_user, login_required, roles_required
+from routes.helpers import audit, current_user, login_required, roles_required, verify_password
 from services.import_ai_service import (
     DOC_TYPES_MAP,
     analyze_import_batch,
@@ -21,9 +21,14 @@ from services.import_ai_service import (
 from services.import_audit_service import run_import_audit_checks
 from services.import_calculator import calculate_import_financials
 from services.import_rules_service import (
+    CORE_DOC_TYPES,
+    add_custom_document_rule,
+    delete_document_rule,
+    duplicate_document_rule,
     get_document_rules,
     reset_document_rules_to_default,
     save_document_rules,
+    update_document_rule_details,
 )
 
 logger = logging.getLogger(__name__)
@@ -182,9 +187,9 @@ def delete_document(iid: int, doc_id: int):
 @login_required
 @roles_required("admin", "support")
 def get_rules():
-    """Retorna as regras ativas de validação documental."""
+    """Retorna as regras ativas de validação documental e os tipos essenciais."""
     rules = get_document_rules()
-    return jsonify({"success": True, "rules": rules})
+    return jsonify({"success": True, "rules": rules, "core_types": list(CORE_DOC_TYPES)})
 
 
 @import_document_bp.route("/api/imports/document-rules", methods=["POST"])
@@ -200,7 +205,7 @@ def update_rules():
     user = current_user() or {}
     ok = save_document_rules(rules, user_id=user.get("id"))
     if ok:
-        return jsonify({"success": True, "message": "Regras atualizadas com sucesso!", "rules": get_document_rules()})
+        return jsonify({"success": True, "message": "Regras atualizadas com sucesso!", "rules": get_document_rules(), "core_types": list(CORE_DOC_TYPES)})
     return jsonify({"success": False, "message": "Falha ao persistir regras no banco."}), 500
 
 
@@ -211,17 +216,167 @@ def reset_rules():
     """Restaura as regras para o padrão oficial."""
     user = current_user() or {}
     rules = reset_document_rules_to_default(user_id=user.get("id"))
-    return jsonify({"success": True, "message": "Regras restauradas para o padrão oficial!", "rules": rules})
+    return jsonify({"success": True, "message": "Regras restauradas para o padrão oficial!", "rules": rules, "core_types": list(CORE_DOC_TYPES)})
+
+
+@import_document_bp.route("/api/imports/document-rules/add-category", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def add_rule_category():
+    """Cadastra uma nova categoria customizada de documento."""
+    data = request.get_json() or {}
+    doc_type = data.get("doc_type", "").strip()
+    label = data.get("label", "").strip()
+    req_water = bool(data.get("required_on_water", False))
+    req_cleared = bool(data.get("required_cleared", False))
+    allow_post = bool(data.get("allow_post_attach", True))
+    user = current_user() or {}
+
+    ok, msg = add_custom_document_rule(
+        doc_type=doc_type,
+        label=label,
+        required_on_water=req_water,
+        required_cleared=req_cleared,
+        allow_post_attach=allow_post,
+        user_id=user.get("id"),
+    )
+    if ok:
+        return jsonify({"success": True, "message": msg, "rules": get_document_rules(), "core_types": list(CORE_DOC_TYPES)})
+    return jsonify({"success": False, "message": msg}), 400
+
+
+def _verify_admin_password(password: str) -> tuple[bool, str]:
+    """Valida a senha do administrador logado antes de operações sensíveis em documentos essenciais."""
+    user = current_user() or {}
+    if user.get("role") != "admin":
+        return False, "Operação restrita exclusivamente a administradores."
+    if not password:
+        return False, "Senha de administrador não informada."
+
+    with db() as conn:
+        u = conn.execute("SELECT password_hash FROM users WHERE id = %s", (user.get("id"),)).fetchone()
+        if not u or not u.get("password_hash"):
+            return False, "Usuário não encontrado ou senha não configurada."
+        is_valid, _ = verify_password(u["password_hash"], password)
+        if not is_valid:
+            return False, "Senha de administrador incorreta. Ação não autorizada."
+    return True, ""
+
+
+@import_document_bp.route("/api/imports/document-rules/delete-category", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def delete_rule_category():
+    """Exclui uma categoria. Se for documento essencial (core), exige senha do administrador."""
+    data = request.get_json() or {}
+    doc_type = data.get("doc_type", "").strip().upper()
+    admin_password = data.get("admin_password", "")
+    user = current_user() or {}
+
+    is_core = doc_type in CORE_DOC_TYPES
+    is_admin_override = False
+    if is_core:
+        authorized, reason = _verify_admin_password(admin_password)
+        if not authorized:
+            return jsonify({"success": False, "message": reason, "requires_password": True}), 403
+        is_admin_override = True
+
+    ok, msg = delete_document_rule(doc_type=doc_type, user_id=user.get("id"), is_admin_override=is_admin_override)
+    if ok:
+        return jsonify({"success": True, "message": msg, "rules": get_document_rules(), "core_types": list(CORE_DOC_TYPES)})
+    return jsonify({"success": False, "message": msg}), 400
+
+
+@import_document_bp.route("/api/imports/document-rules/edit-category", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def edit_rule_category():
+    """Edita uma categoria existente. Se for documento essencial (core), exige senha do administrador."""
+    data = request.get_json() or {}
+    doc_type = data.get("doc_type", "").strip().upper()
+    label = data.get("label", "").strip()
+    req_water = bool(data.get("required_on_water", False))
+    req_cleared = bool(data.get("required_cleared", False))
+    allow_post = bool(data.get("allow_post_attach", True))
+    admin_password = data.get("admin_password", "")
+    user = current_user() or {}
+
+    is_core = doc_type in CORE_DOC_TYPES
+    if is_core:
+        authorized, reason = _verify_admin_password(admin_password)
+        if not authorized:
+            return jsonify({"success": False, "message": reason, "requires_password": True}), 403
+
+    ok, msg = update_document_rule_details(
+        doc_type=doc_type,
+        label=label,
+        required_on_water=req_water,
+        required_cleared=req_cleared,
+        allow_post_attach=allow_post,
+        user_id=user.get("id"),
+    )
+    if ok:
+        return jsonify({"success": True, "message": msg, "rules": get_document_rules(), "core_types": list(CORE_DOC_TYPES)})
+    return jsonify({"success": False, "message": msg}), 400
+
+
+@import_document_bp.route("/api/imports/document-rules/duplicate-category", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def duplicate_rule_category():
+    """Duplica uma categoria. Se a origem for documento essencial (core), exige senha do administrador."""
+    data = request.get_json() or {}
+    source_doc_type = data.get("source_doc_type", "").strip().upper()
+    new_doc_type = data.get("new_doc_type", "").strip().upper()
+    new_label = data.get("new_label", "").strip()
+    admin_password = data.get("admin_password", "")
+    user = current_user() or {}
+
+    is_core = source_doc_type in CORE_DOC_TYPES
+    if is_core:
+        authorized, reason = _verify_admin_password(admin_password)
+        if not authorized:
+            return jsonify({"success": False, "message": reason, "requires_password": True}), 403
+
+    ok, msg = duplicate_document_rule(
+        source_doc_type=source_doc_type,
+        new_doc_type=new_doc_type,
+        new_label=new_label,
+        user_id=user.get("id"),
+    )
+    if ok:
+        return jsonify({"success": True, "message": msg, "rules": get_document_rules(), "core_types": list(CORE_DOC_TYPES)})
+    return jsonify({"success": False, "message": msg}), 400
 
 
 @import_document_bp.route("/api/imports/analyze-docs", methods=["POST"])
+@import_document_bp.route("/api/imports/analyze-batch", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def api_analyze_import_docs():
     """Pré-preenchimento com IA a partir de arquivos selecionados no modal de criação."""
     file_objs = []
-    
-    # 1. Arquivos enviados em lote pelo Dropzone
+
+    # 1. Arquivos específicos do fechamento despachante (upload separado)
+    fechamento_files = request.files.getlist("fechamento_docs") or request.files.getlist("fechamento_file")
+    if not fechamento_files:
+        f_single = request.files.get("fechamento_file") or request.files.get("fechamento_despachante")
+        if f_single and f_single.filename:
+            fechamento_files = [f_single]
+
+    for f in fechamento_files:
+        if f and f.filename:
+            content = f.read()
+            ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
+            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
+            file_objs.append({
+                "bytes": content,
+                "mime_type": mime,
+                "filename": f.filename,
+                "forced_doc_type": "FECHAMENTO_DESPACHANTE",
+            })
+
+    # 2. Arquivos enviados em lote pelo Dropzone principal
     batch_files = request.files.getlist("documents")
     for f in batch_files:
         if f and f.filename:
@@ -230,7 +385,7 @@ def api_analyze_import_docs():
             mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
             file_objs.append({"bytes": content, "mime_type": mime, "filename": f.filename})
 
-    # 2. Arquivos individuais enviados por campos específicos (fallback de compatibilidade)
+    # 3. Arquivos individuais enviados por campos legados
     for key in ["invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
         f = request.files.get(key)
         if f and f.filename and not any(o["filename"] == f.filename for o in file_objs):
@@ -242,8 +397,10 @@ def api_analyze_import_docs():
     if not file_objs:
         return jsonify({"success": False, "message": "Nenhum arquivo enviado para análise da IA."})
 
+    user_notes = (request.form.get("document_notes") or request.form.get("user_notes") or "").strip()
+
     try:
-        res = analyze_import_batch(file_objs)
+        res = analyze_import_batch(file_objs, user_notes=user_notes)
         return jsonify(res)
     except Exception as e:
         logger.error("[api_analyze_import_docs] Erro na análise em lote: %s", e)

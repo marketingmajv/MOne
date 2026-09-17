@@ -20,6 +20,8 @@ from routes.user_routes import user_bp
 from routes.infra_routes import infra_bp
 from routes.connections_routes import connections_bp
 from routes.backup_routes import backup_bp
+from routes.import_settlement_routes import import_settlement_bp
+from routes.import_repository_routes import import_repository_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -33,6 +35,8 @@ ALL_BLUEPRINTS = [
     import_bp,
     import_financial_bp,
     import_document_bp,
+    import_settlement_bp,
+    import_repository_bp,
     bling_bp,
     copilot_bp,
     user_bp,

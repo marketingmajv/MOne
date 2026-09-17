@@ -1,198 +1,295 @@
 <!-- Modal: Configurações de Regras de Documentos (templates/imports/modal_doc_rules.html) -->
 {% if me.role in ['admin', 'support'] %}
+<style>
+.comex-doc-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+.comex-doc-table th,
+.comex-doc-table td {
+  white-space: normal !important;
+  box-sizing: border-box;
+}
+</style>
+
 <div class="modal" id="docRulesModal" style="display: none;" onclick="if(event.target===this)closeModal('docRulesModal')">
-  <div class="modal-card large" style="max-width: 960px;">
+  <div class="modal-card large" style="max-width: 1040px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
     <div class="modal-head">
       <div>
         <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">⚙️ Configurações de Regras Documentais (Comex)</h3>
         <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
-          Parametrize a obrigatoriedade dos documentos por estágio e a permissão de anexo posterior.
+          Parametrize a obrigatoriedade por estágio, adicione, edite ou duplique categorias com controle de acesso.
         </p>
       </div>
       <button type="button" onclick="closeModal('docRulesModal')">×</button>
     </div>
 
-    <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.2); font-size: 12px; color: var(--text); line-height: 1.5;">
-      💡 <strong>Como funciona a Trava Operacional:</strong> Quando o operador inicia o cadastro no Wizard, a IA valida os arquivos enviados contra estas regras. Se algum documento marcado como <em>Obrigatório</em> estiver ausente, o avanço para a criação do lote fica bloqueado até a anexação.
+    <!-- Abas de Navegação -->
+    <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--line); margin-bottom: 16px; padding-bottom: 8px;">
+      <button type="button" id="tabBtnDocMatrix" class="btn small" onclick="switchDocRulesTab('matrix')" style="background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-weight: 700;">
+        📋 Matriz de Obrigatoriedade
+      </button>
+      <button type="button" id="tabBtnDocCategories" class="btn small outline" onclick="switchDocRulesTab('categories')" style="color: var(--muted); font-weight: 600;">
+        📑 Categorias Cadastradas & Autonomia de Gestão
+      </button>
     </div>
 
-    <form id="docRulesForm" onsubmit="saveDocumentRules(event)">
-      <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px;">
-        <table class="table" style="width: 100%; margin: 0; font-size: 13px;">
-          <thead>
-            <tr style="background: var(--panel2);">
-              <th style="padding: 12px 14px; text-align: left; color: var(--text);">Documento</th>
-              <th style="padding: 12px 14px; text-align: left; color: var(--muted);">Identificador / Tipo</th>
-              <th style="padding: 12px 14px; text-align: center; color: #0369A1;">Exigência: Embarcado</th>
-              <th style="padding: 12px 14px; text-align: center; color: #047857;">Exigência: Desembaraçado</th>
-              <th style="padding: 12px 14px; text-align: center; color: #B45309;">Anexável Depois?</th>
-            </tr>
-          </thead>
-          <tbody id="docRulesTableBody">
-            <!-- Povoado dinamicamente via JavaScript -->
-            <tr>
-              <td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">Carregando regras...</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Aba 1: Matriz de Obrigatoriedade -->
+    <div id="tabContentDocMatrix" style="display: block; overflow-y: auto; flex: 1;">
+      <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.2); font-size: 12px; color: var(--text); line-height: 1.5;">
+        💡 <strong>Trava Operacional:</strong> Documentos definidos como obrigatórios no estágio ativo bloqueiam a finalização do lote no Wizard até que sejam anexados ou reclassificados.
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px;">
-        <button type="button" class="btn outline" onclick="resetDocumentRules()" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
-          ↺ Restaurar Padrão Oficial
-        </button>
-
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <button type="button" class="btn outline" onclick="closeModal('docRulesModal')">Cancelar</button>
-          <button type="submit" class="btn primary" id="btnSaveRules">
-            💾 Salvar Alterações
-          </button>
+      <form id="docRulesForm" onsubmit="saveDocumentRules(event)">
+        <div style="overflow: hidden; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px; width: 100%;">
+          <table class="table comex-doc-table" style="margin: 0; font-size: 12px;">
+            <colgroup>
+              <col style="width: 32%;">
+              <col style="width: 18%;">
+              <col style="width: 17%;">
+              <col style="width: 17%;">
+              <col style="width: 16%;">
+            </colgroup>
+            <thead>
+              <tr style="background: var(--panel2);">
+                <th style="padding: 10px 12px; text-align: left; color: var(--text);">Documento</th>
+                <th style="padding: 10px 12px; text-align: left; color: var(--muted);">Identificador / Tipo</th>
+                <th style="padding: 10px 8px; text-align: center; color: #0369A1;">Exigência: Embarcado</th>
+                <th style="padding: 10px 8px; text-align: center; color: #047857;">Exigência: Desembaraçado</th>
+                <th style="padding: 10px 8px; text-align: center; color: #B45309;">Anexável Depois?</th>
+              </tr>
+            </thead>
+            <tbody id="docRulesTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">Carregando regras...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px;">
+          <button type="button" class="btn outline" onclick="resetDocumentRules()" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+            ↺ Restaurar Padrão Oficial
+          </button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn outline" onclick="closeModal('docRulesModal')">Cancelar</button>
+            <button type="submit" class="btn primary" id="btnSaveRules">💾 Salvar Alterações</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Aba 2: Categorias Cadastradas & Autonomia de Gestão -->
+    <div id="tabContentDocCategories" style="display: none; overflow-y: auto; flex: 1;">
+      <!-- Formulário de Adição de Nova Categoria -->
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 800; color: var(--text);">
+          ➕ Cadastrar Nova Categoria de Documento
+        </h4>
+        <form id="newDocCategoryForm" onsubmit="addNewDocumentCategory(event)" style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase;">
+                Nome do Documento / Rótulo *
+              </label>
+              <input type="text" id="newDocLabel" placeholder="Ex: Laudo Técnico INMETRO" required oninput="autoGenerateDocCode(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 13px; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase;">
+                Identificador Único (Código) *
+              </label>
+              <input type="text" id="newDocType" placeholder="Ex: LAUDO_INMETRO" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 4px 0;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocReqWater" style="width: 16px; height: 16px;">
+              Obrigatório: Embarcado
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocReqCleared" style="width: 16px; height: 16px;">
+              Obrigatório: Desembaraçado
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocAllowPost" checked style="width: 16px; height: 16px;">
+              Permitir Anexo Posterior
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn primary small" id="btnAddNewDoc">+ Adicionar Categoria</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabela de Categorias Ativas -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text);">
+            📑 Categorias Ativas no Sistema
+          </h4>
+          <span style="font-size: 11px; color: var(--muted);">
+            🔒 Itens Essenciais exigem confirmação com senha de administrador para edição, duplicação e exclusão.
+          </span>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden; width: 100%;">
+          <table class="table comex-doc-table" style="margin: 0; font-size: 12px;">
+            <colgroup>
+              <col style="width: 36%;">
+              <col style="width: 20%;">
+              <col style="width: 14%;">
+              <col style="width: 30%;">
+            </colgroup>
+            <thead>
+              <tr style="background: var(--panel2);">
+                <th style="padding: 10px 12px; text-align: left; color: var(--text);">Nome do Documento</th>
+                <th style="padding: 10px 10px; text-align: left; color: var(--muted);">Código</th>
+                <th style="padding: 10px 8px; text-align: center; color: var(--muted);">Tipo</th>
+                <th style="padding: 10px 12px; text-align: right; color: var(--muted);">Ações Administrativas</th>
+              </tr>
+            </thead>
+            <tbody id="docCategoriesListBody">
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--muted);">Carregando categorias...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAIS DE GESTÃO (EDIÇÃO, DUPLICAÇÃO E EXCLUSÃO MEDIANTE SENHA)
+     ========================================================================= -->
+
+<!-- Submodal: Editar Categoria -->
+<div class="modal" id="modalEditDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">✏️ Editar Categoria</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalEditDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveEditDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="editDocTypeHidden">
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">CÓDIGO (FIXO)</label>
+        <div id="editDocTypeDisplay" style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #0284C7; padding: 6px 10px; background: var(--panel2); border-radius: 6px;"></div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOME / RÓTULO *</label>
+        <input type="text" id="editDocLabel" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 13px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 0;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocReqWater" style="width: 16px; height: 16px;">
+          Exigir no estágio: Embarcado
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocReqCleared" style="width: 16px; height: 16px;">
+          Exigir no estágio: Desembaraçado
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocAllowPost" style="width: 16px; height: 16px;">
+          Permitir anexo posterior
+        </label>
+      </div>
+      <!-- Alerta e campo de senha para Core -->
+      <div id="editDocCoreWarning" style="display: none; padding: 10px 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3);">
+        <div style="font-size: 12px; font-weight: 700; color: #EF4444; margin-bottom: 6px;">
+          🔒 Item Essencial Protegido
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">
+          Confirme sua senha de administrador para autorizar a alteração deste documento essencial.
+        </div>
+        <input type="password" id="editDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalEditDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary small" id="btnSubmitEditDoc">Salvar Alterações</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
-let currentDocRules = [];
+<!-- Submodal: Duplicar Categoria -->
+<div class="modal" id="modalDuplicateDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">📋 Duplicar Categoria</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalDuplicateDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveDuplicateDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="dupDocSourceHidden">
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">DOCUMENTO DE ORIGEM</label>
+        <div id="dupDocSourceDisplay" style="font-size: 12px; font-weight: 700; color: var(--text); padding: 6px 10px; background: var(--panel2); border-radius: 6px;"></div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOME DA NOVA CATEGORIA *</label>
+        <input type="text" id="dupDocNewLabel" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 13px; box-sizing: border-box;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOVO CÓDIGO IDENTIFICADOR *</label>
+        <input type="text" id="dupDocNewType" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; box-sizing: border-box;">
+      </div>
+      <!-- Alerta e campo de senha para Core -->
+      <div id="dupDocCoreWarning" style="display: none; padding: 10px 12px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.3);">
+        <div style="font-size: 12px; font-weight: 700; color: #0284C7; margin-bottom: 6px;">
+          🔒 Origem Essencial (Core)
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">
+          Digite sua senha de administrador para autorizar a clonagem desta categoria essencial.
+        </div>
+        <input type="password" id="dupDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalDuplicateDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary small" id="btnSubmitDupDoc">Confirmar Duplicação</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-async function loadDocumentRules() {
-  try {
-    const res = await fetch('/api/imports/document-rules');
-    const data = await res.json();
-    if (data.success && data.rules) {
-      currentDocRules = data.rules;
-      renderDocRulesTable(currentDocRules);
-    }
-  } catch (err) {
-    console.error('Erro ao carregar regras:', err);
-  }
-}
+<!-- Submodal: Excluir Categoria -->
+<div class="modal" id="modalDeleteDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 480px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #EF4444;">🗑️ Confirmar Exclusão</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalDeleteDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveDeleteDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="deleteDocTypeHidden">
+      <div>
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--text);">
+          Tem certeza que deseja excluir permanentemente a categoria:
+        </p>
+        <div id="deleteDocNameDisplay" style="font-weight: 700; font-size: 13px; color: #EF4444; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-radius: 6px;"></div>
+      </div>
+      <div id="deleteDocNormalNotice" style="font-size: 11px; color: var(--muted);">
+        Esta ação removerá a categoria da matriz e dos seletores de documentos de importação.
+      </div>
+      <!-- Alerta e senha para Core -->
+      <div id="deleteDocCoreWarning" style="display: none; padding: 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid #EF4444;">
+        <div style="font-size: 12px; font-weight: 800; color: #EF4444; margin-bottom: 4px;">
+          ⚠️ AVISO DE SEGURANÇA: DOCUMENTO ESSENCIAL
+        </div>
+        <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; line-height: 1.4;">
+          A exclusão de um documento essencial altera fluxos críticos do Comex. Digite sua senha de administrador para autorizar.
+        </div>
+        <input type="password" id="deleteDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalDeleteDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn small" id="btnSubmitDeleteDoc" style="background: #EF4444; color: #fff; border: none; font-weight: 700; padding: 6px 14px;">Confirmar Exclusão</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-function renderDocRulesTable(rules) {
-  const tbody = document.getElementById('docRulesTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  rules.forEach((r, idx) => {
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid var(--line)';
-    tr.innerHTML = `
-      <td style="padding: 12px 14px; font-weight: 700; color: var(--text);">
-        ${r.label}
-        <input type="hidden" name="doc_type_${idx}" value="${r.doc_type}">
-        <input type="hidden" name="label_${idx}" value="${r.label}">
-        <input type="hidden" name="order_num_${idx}" value="${r.order_num || (idx + 1)}">
-      </td>
-      <td style="padding: 12px 14px; font-family: var(--font-mono); font-size: 11px; color: var(--muted);">
-        <code>${r.doc_type}</code>
-      </td>
-      <td style="padding: 12px 14px; text-align: center;">
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-          <input type="checkbox" id="req_water_${idx}" ${r.required_on_water ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
-          <span style="font-size: 12px; font-weight: 600; color: ${r.required_on_water ? '#0369A1' : 'var(--muted)'};">
-            ${r.required_on_water ? 'Obrigatório' : 'Opcional'}
-          </span>
-        </label>
-      </td>
-      <td style="padding: 12px 14px; text-align: center;">
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-          <input type="checkbox" id="req_clear_${idx}" ${r.required_cleared ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
-          <span style="font-size: 12px; font-weight: 600; color: ${r.required_cleared ? '#047857' : 'var(--muted)'};">
-            ${r.required_cleared ? 'Obrigatório' : 'Opcional'}
-          </span>
-        </label>
-      </td>
-      <td style="padding: 12px 14px; text-align: center;">
-        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
-          <input type="checkbox" id="allow_post_${idx}" ${r.allow_post_attach ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
-          <span style="font-size: 12px; font-weight: 600; color: ${r.allow_post_attach ? '#B45309' : 'var(--muted)'};">
-            ${r.allow_post_attach ? 'Permitido' : 'Não'}
-          </span>
-        </label>
-      </td>
-    `;
-    tbody.appendChild(tr);
-
-    // Reatividade dos rótulos ao clicar nos checkboxes
-    const chkWater = tr.querySelector(`#req_water_${idx}`);
-    chkWater.addEventListener('change', (e) => {
-      const sp = e.target.nextElementSibling;
-      sp.textContent = e.target.checked ? 'Obrigatório' : 'Opcional';
-      sp.style.color = e.target.checked ? '#0369A1' : 'var(--muted)';
-    });
-
-    const chkClear = tr.querySelector(`#req_clear_${idx}`);
-    chkClear.addEventListener('change', (e) => {
-      const sp = e.target.nextElementSibling;
-      sp.textContent = e.target.checked ? 'Obrigatório' : 'Opcional';
-      sp.style.color = e.target.checked ? '#047857' : 'var(--muted)';
-    });
-
-    const chkPost = tr.querySelector(`#allow_post_${idx}`);
-    chkPost.addEventListener('change', (e) => {
-      const sp = e.target.nextElementSibling;
-      sp.textContent = e.target.checked ? 'Permitido' : 'Não';
-      sp.style.color = e.target.checked ? '#B45309' : 'var(--muted)';
-    });
-  });
-}
-
-async function saveDocumentRules(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btnSaveRules');
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-
-  const updatedRules = currentDocRules.map((r, idx) => {
-    return {
-      doc_type: r.doc_type,
-      label: r.label,
-      order_num: r.order_num || (idx + 1),
-      required_on_water: document.getElementById(`req_water_${idx}`).checked,
-      required_cleared: document.getElementById(`req_clear_${idx}`).checked,
-      allow_post_attach: document.getElementById(`allow_post_${idx}`).checked
-    };
-  });
-
-  try {
-    const res = await fetch('/api/imports/document-rules', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rules: updatedRules })
-    });
-    const data = await res.json();
-    if (data.success) {
-      currentDocRules = data.rules;
-      renderDocRulesTable(currentDocRules);
-      alert('✓ Regras documentais atualizadas com sucesso!');
-      closeModal('docRulesModal');
-    } else {
-      alert('Erro ao salvar: ' + (data.message || 'Falha na requisição.'));
-    }
-  } catch (err) {
-    alert('Erro ao salvar regras: ' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar Alterações'; }
-  }
-}
-
-async function resetDocumentRules() {
-  if (!confirm('Deseja realmente restaurar as regras de documentos para o Padrão Oficial da MAJ?')) return;
-  try {
-    const res = await fetch('/api/imports/document-rules/reset', { method: 'POST' });
-    const data = await res.json();
-    if (data.success && data.rules) {
-      currentDocRules = data.rules;
-      renderDocRulesTable(currentDocRules);
-      alert('✓ Regras restauradas para o padrão oficial com sucesso!');
-    }
-  } catch (err) {
-    alert('Erro ao restaurar regras: ' + err.message);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadDocumentRules();
-});
-</script>
+<script src="{{ url_for('static', filename='js/import-doc-rules.js') }}"></script>
 {% endif %}
