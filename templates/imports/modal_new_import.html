@@ -42,6 +42,11 @@
     <!-- Formulário Global da Criação -->
     <form method="post" action="{{ url_for('imports.create_import') }}" enctype="multipart/form-data" id="wizardImportForm">
       <input type="hidden" name="documents_meta" id="hiddenDocsMeta" value="[]">
+      <input type="hidden" name="initial_debits_json" id="hiddenInitialDebitsJson" value="[]">
+      <input type="hidden" name="initial_debit_description" id="inp_debit_desc" value="">
+      <input type="hidden" name="initial_debit_amount_usd" id="inp_debit_usd" value="">
+      <input type="hidden" name="initial_debit_amount_brl" id="inp_debit_brl" value="">
+      <input type="hidden" name="initial_debit_exchange_rate" id="inp_debit_rate" value="">
 
       <!-- ===================================================================
            PASSO 1: UPLOAD EM LOTE & ESTÁGIO
@@ -125,24 +130,17 @@
             </span>
           </div>
           <p style="margin: 0 0 12px 0; font-size: 12px; color: var(--muted); line-height: 1.45;">
-            Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, <strong>digite os valores diretamente aqui</strong>. O envio de comprovantes é totalmente dispensado.
+            Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, <strong>digite os valores abaixo</strong>. Use o botão <strong>(+)</strong> para adicionar quantos lances precisar.
           </p>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px;">
-            <div style="grid-column: span 2;">
-              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Descrição do Débito</label>
-              <input type="text" id="inp_debit_desc_p1" placeholder="Ex: Sinal rateado pago junto com contêiner 2..." style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'desc')">
-            </div>
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor em Dólar (USD)</label>
-              <input type="number" step="0.01" id="inp_debit_usd_p1" placeholder="0.00" style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'usd')">
-            </div>
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor Debitado (R$)</label>
-              <input type="number" step="0.01" id="inp_debit_brl_p1" placeholder="0.00" style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'brl')">
-            </div>
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Câmbio Efetivo (R$)</label>
-              <input type="number" step="0.0001" id="inp_debit_rate_p1" placeholder="Automático" style="font-size: 12.5px; background: var(--panel2);" oninput="syncDebitFields(this.value, 'rate')">
+          <div id="debit_rows_container_p1">
+            <!-- Linhas de lançamentos geradas dinamicamente via JS -->
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed rgba(245, 158, 11, 0.3);">
+            <button type="button" class="btn sm" onclick="addNewDebitRow()" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; font-size: 12px; cursor: pointer;">
+              ➕ Adicionar Outro Lançamento
+            </button>
+            <div id="debit_totals_summary_p1" style="font-size: 12px; font-weight: 700; color: var(--text);">
+              <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">Total: US$ 0.00 (R$ 0,00)</span>
             </div>
           </div>
         </div>
@@ -440,7 +438,7 @@
 
           <!-- Bloco: Outros Lançamentos (Opcional) -->
           <div class="span-2" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 14px; margin-top: 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 16px;">💳</span>
                 <strong style="font-size: 13px; color: var(--text);">Outros Lançamentos (Opcional)</strong>
@@ -448,24 +446,17 @@
               <span class="badge" style="font-size: 10px; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #B45309;">Rateio & Digitação Manual</span>
             </div>
             <p style="margin: 0 0 12px 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">
-              Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, informe os valores abaixo. <strong>Dispensado o envio de comprovantes neste momento</strong>.
+              Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, informe os valores abaixo. Use o botão <strong>(+)</strong> para adicionar múltiplos lançamentos.
             </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
-              <div style="grid-column: span 2;">
-                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Descrição do Débito</label>
-                <input type="text" name="initial_debit_description" id="inp_debit_desc" placeholder="Ex: Sinal rateado pago com contêiner 2..." style="font-size: 12px;" oninput="syncDebitFields(this.value, 'desc')">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor em Dólar (USD)</label>
-                <input type="number" step="0.01" name="initial_debit_amount_usd" id="inp_debit_usd" placeholder="0.00" oninput="syncDebitFields(this.value, 'usd')" style="font-size: 12px;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor Debitado (R$)</label>
-                <input type="number" step="0.01" name="initial_debit_amount_brl" id="inp_debit_brl" placeholder="0.00" oninput="syncDebitFields(this.value, 'brl')" style="font-size: 12px;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Câmbio Efetivo (R$)</label>
-                <input type="number" step="0.0001" name="initial_debit_exchange_rate" id="inp_debit_rate" placeholder="Automático" style="font-size: 12px; background: var(--panel2);" oninput="syncDebitFields(this.value, 'rate')">
+            <div id="debit_rows_container_p3">
+              <!-- Linhas sincronizadas com o Passo 1 -->
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed rgba(245, 158, 11, 0.3);">
+              <button type="button" class="btn sm" onclick="addNewDebitRow()" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; font-size: 12px; cursor: pointer;">
+                ➕ Adicionar Outro Lançamento
+              </button>
+              <div id="debit_totals_summary_p3" style="font-size: 12px; font-weight: 700; color: var(--text);">
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">Total: US$ 0.00 (R$ 0,00)</span>
               </div>
             </div>
           </div>
@@ -494,42 +485,144 @@ let activeImportStage = 'water';
 let activeRules = [];
 let aiAnalysisResult = null;
 
-function recalcWizardDebitRate() {
-  const usd = parseFloat(document.getElementById('inp_debit_usd')?.value || document.getElementById('inp_debit_usd_p1')?.value || 0);
-  const brl = parseFloat(document.getElementById('inp_debit_brl')?.value || document.getElementById('inp_debit_brl_p1')?.value || 0);
-  const rateInput = document.getElementById('inp_debit_rate');
-  const rateInputP1 = document.getElementById('inp_debit_rate_p1');
-  if (usd > 0 && brl > 0) {
-    const rateVal = (brl / usd).toFixed(4);
-    if (rateInput) rateInput.value = rateVal;
-    if (rateInputP1) rateInputP1.value = rateVal;
-  }
+let wizardDebitsList = [
+  { id: 1, desc: '', usd: '', brl: '', rate: '' }
+];
+let nextDebitId = 2;
+
+function renderWizardDebits() {
+  const containerP1 = document.getElementById('debit_rows_container_p1');
+  const containerP3 = document.getElementById('debit_rows_container_p3');
+
+  const buildHtml = (prefix) => {
+    return wizardDebitsList.map((item, index) => {
+      const isMultiple = wizardDebitsList.length > 1;
+      return `
+        <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;" id="${prefix}_row_${item.id}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 700; color: #B45309;">Lançamento #${index + 1}</span>
+            ${isMultiple ? `
+              <button type="button" onclick="removeWizardDebitRow(${item.id})" style="background: none; border: none; color: #EF4444; font-size: 12px; cursor: pointer; padding: 2px 6px; font-weight: 700;" title="Remover este lançamento">
+                ✕ Remover
+              </button>
+            ` : ''}
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+            <div style="grid-column: span 2;">
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Descrição do Lançamento</label>
+              <input type="text" placeholder="Ex: Sinal rateado, seguro por fora, SWIFT..." value="${item.desc || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'desc', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Valor (USD)</label>
+              <input type="number" step="0.01" placeholder="0.00" value="${item.usd || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'usd', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Valor Debitado (R$)</label>
+              <input type="number" step="0.01" placeholder="0.00" value="${item.brl || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'brl', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Câmbio Efetivo (R$)</label>
+              <input type="number" step="0.0001" placeholder="Auto" value="${item.rate || ''}" style="font-size: 12px; background: var(--panel2);" oninput="updateWizardDebit(${item.id}, 'rate', this.value)">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  if (containerP1) containerP1.innerHTML = buildHtml('p1');
+  if (containerP3) containerP3.innerHTML = buildHtml('p3');
+
+  updateWizardDebitTotals();
 }
 
-function syncDebitFields(val, type) {
-  if (type === 'desc') {
-    const el3 = document.getElementById('inp_debit_desc');
-    const el1 = document.getElementById('inp_debit_desc_p1');
-    if (el3 && el3.value !== val) el3.value = val;
-    if (el1 && el1.value !== val) el1.value = val;
-  } else if (type === 'usd') {
-    const el3 = document.getElementById('inp_debit_usd');
-    const el1 = document.getElementById('inp_debit_usd_p1');
-    if (el3 && el3.value !== val) el3.value = val;
-    if (el1 && el1.value !== val) el1.value = val;
-    recalcWizardDebitRate();
-  } else if (type === 'brl') {
-    const el3 = document.getElementById('inp_debit_brl');
-    const el1 = document.getElementById('inp_debit_brl_p1');
-    if (el3 && el3.value !== val) el3.value = val;
-    if (el1 && el1.value !== val) el1.value = val;
-    recalcWizardDebitRate();
-  } else if (type === 'rate') {
-    const el3 = document.getElementById('inp_debit_rate');
-    const el1 = document.getElementById('inp_debit_rate_p1');
-    if (el3 && el3.value !== val) el3.value = val;
-    if (el1 && el1.value !== val) el1.value = val;
+function addNewDebitRow() {
+  wizardDebitsList.push({ id: nextDebitId++, desc: '', usd: '', brl: '', rate: '' });
+  renderWizardDebits();
+}
+
+function removeWizardDebitRow(id) {
+  if (wizardDebitsList.length <= 1) return;
+  wizardDebitsList = wizardDebitsList.filter(it => it.id !== id);
+  renderWizardDebits();
+}
+
+function updateWizardDebit(id, field, val) {
+  const item = wizardDebitsList.find(it => it.id === id);
+  if (!item) return;
+  item[field] = val;
+
+  if (field === 'usd' || field === 'brl') {
+    const u = parseFloat(item.usd || 0);
+    const b = parseFloat(item.brl || 0);
+    if (u > 0 && b > 0) {
+      item.rate = (b / u).toFixed(4);
+    }
   }
+
+  // Sincronizar os inputs no outro passo para manter os passos alinhados sem perder o foco
+  ['p1', 'p3'].forEach(p => {
+    const row = document.getElementById(`${p}_row_${id}`);
+    if (row) {
+      const inputs = row.querySelectorAll('input');
+      if (inputs.length >= 4) {
+        if (field === 'desc' && document.activeElement !== inputs[0]) inputs[0].value = item.desc || '';
+        if (field === 'usd' && document.activeElement !== inputs[1]) inputs[1].value = item.usd || '';
+        if (field === 'brl' && document.activeElement !== inputs[2]) inputs[2].value = item.brl || '';
+        if ((field === 'rate' || field === 'usd' || field === 'brl') && document.activeElement !== inputs[3]) {
+          inputs[3].value = item.rate || '';
+        }
+      }
+    }
+  });
+
+  updateWizardDebitTotals();
+}
+
+function updateWizardDebitTotals() {
+  let totUsd = 0;
+  let totBrl = 0;
+  wizardDebitsList.forEach(it => {
+    totUsd += parseFloat(it.usd || 0);
+    totBrl += parseFloat(it.brl || 0);
+  });
+
+  const formattedStr = `Total: US$ ${totUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (R$ ${totBrl.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+
+  const badgeP1 = document.getElementById('debit_totals_summary_p1');
+  const badgeP3 = document.getElementById('debit_totals_summary_p3');
+  if (badgeP1) badgeP1.innerHTML = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">${formattedStr}</span>`;
+  if (badgeP3) badgeP3.innerHTML = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">${formattedStr}</span>`;
+
+  // Atualizar campo JSON oculto que vai no POST
+  const validDebits = wizardDebitsList.filter(it => (parseFloat(it.usd || 0) > 0 || parseFloat(it.brl || 0) > 0 || (it.desc || '').trim().length > 0));
+  const hiddenJson = document.getElementById('hiddenInitialDebitsJson');
+  if (hiddenJson) {
+    hiddenJson.value = JSON.stringify(validDebits.map(it => ({
+      description: it.desc || 'Outros Lançamentos',
+      amount_usd: parseFloat(it.usd || 0),
+      amount_brl: parseFloat(it.brl || 0),
+      exchange_rate: it.rate || (parseFloat(it.usd || 0) > 0 && parseFloat(it.brl || 0) > 0 ? (parseFloat(it.brl)/parseFloat(it.usd)).toFixed(4) : null)
+    })));
+  }
+
+  // Preencher também os campos retrocompatíveis do primeiro item
+  const first = validDebits[0] || {};
+  const inDesc = document.getElementById('inp_debit_desc');
+  const inUsd = document.getElementById('inp_debit_usd');
+  const inBrl = document.getElementById('inp_debit_brl');
+  const inRate = document.getElementById('inp_debit_rate');
+  if (inDesc) inDesc.value = first.desc || '';
+  if (inUsd) inUsd.value = first.usd || '';
+  if (inBrl) inBrl.value = first.brl || '';
+  if (inRate) inRate.value = first.rate || '';
+}
+
+// Inicializar linhas do wizard ao carregar
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderWizardDebits);
+} else {
+  renderWizardDebits();
 }
 
 let DOC_OPTIONS = [

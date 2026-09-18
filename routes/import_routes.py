@@ -149,27 +149,47 @@ def create_import():
         from services.import_ai_service import persist_creation_documents
         persist_creation_documents(new_id, request, conn, me.get("id"))
 
-        # Registra lançamento inicial de Outros Lançamentos se informado
-        debit_desc = request.form.get("initial_debit_description", "").strip()
-        debit_usd = request.form.get("initial_debit_amount_usd", "0").strip() or "0"
-        debit_brl = request.form.get("initial_debit_amount_brl", "0").strip() or "0"
-        debit_rate = request.form.get("initial_debit_exchange_rate") or None
-        try:
-            val_u, val_b = float(debit_usd), float(debit_brl)
-            if val_u > 0 or val_b > 0:
-                if not debit_rate and val_u > 0 and val_b > 0:
-                    debit_rate = str(round(val_b / val_u, 4))
-                conn.execute(
-                    """
-                    INSERT INTO import_payments_china (
-                        import_id, payment_category, description, amount_usd, amount_brl,
-                        exchange_rate, bank_fees_brl, paid_at, is_verified
-                    ) VALUES (%s, 'other_debit', %s, %s, %s, %s, 0.0, CURRENT_DATE, TRUE)
-                    """,
-                    (new_id, debit_desc or "Outros Lançamentos (Registro Inicial)", debit_usd, debit_brl, debit_rate),
-                )
-        except Exception as deb_err:
-            logger.warning("Falha ao registrar débito inicial na criação: %s", deb_err)
+        # Registra lançamentos de Outros Lançamentos (suporta 1 ou múltiplos lances)
+        raw_debits_json = request.form.get("initial_debits_json", "").strip()
+        debit_items = []
+        if raw_debits_json:
+            try:
+                parsed = json.loads(raw_debits_json)
+                if isinstance(parsed, list):
+                    debit_items = parsed
+            except Exception:
+                pass
+
+        if not debit_items:
+            d_u = request.form.get("initial_debit_amount_usd", "0").strip() or "0"
+            d_b = request.form.get("initial_debit_amount_brl", "0").strip() or "0"
+            try:
+                if float(d_u) > 0 or float(d_b) > 0:
+                    debit_items.append({
+                        "description": request.form.get("initial_debit_description", "").strip() or "Outros Lançamentos",
+                        "amount_usd": float(d_u),
+                        "amount_brl": float(d_b),
+                        "exchange_rate": request.form.get("initial_debit_exchange_rate") or None,
+                    })
+            except Exception:
+                pass
+
+        for deb in debit_items:
+            try:
+                du, db = float(deb.get("amount_usd") or 0), float(deb.get("amount_brl") or 0)
+                if du > 0 or db > 0:
+                    dr = deb.get("exchange_rate") or (str(round(db / du, 4)) if du > 0 and db > 0 else None)
+                    conn.execute(
+                        """
+                        INSERT INTO import_payments_china (
+                            import_id, payment_category, description, amount_usd, amount_brl,
+                            exchange_rate, bank_fees_brl, paid_at, is_verified
+                        ) VALUES (%s, 'other_debit', %s, %s, %s, %s, 0.0, CURRENT_DATE, TRUE)
+                        """,
+                        (new_id, str(deb.get("description") or "Outros Lançamentos").strip(), du, db, dr),
+                    )
+            except Exception as deb_err:
+                logger.warning("Falha ao registrar débito inicial: %s", deb_err)
 
         calculate_import_financials(new_id, conn)
         run_import_audit_checks(new_id, conn)
