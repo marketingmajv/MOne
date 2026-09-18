@@ -2499,4 +2499,32 @@ html:not([data-theme="dark"]) .mone-preloader-track {
   50% { transform: scale(1.15); opacity: 0.8; }
 }
 
+@keyframes aiOrbGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.35), inset 0 0 12px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 38px rgba(168, 85, 247, 0.6), inset 0 0 18px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes aiStarRotate {
+  0% { transform: rotate(0deg) scale(0.95); }
+  50% { transform: rotate(180deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(0.95); }
+}
+
+@keyframes aiSparkleTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+@keyframes aiRingSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
 

@@ -167,7 +167,46 @@
       <div id="wizard-pane-2" class="wizard-pane" style="display: none;">
         <!-- Barra de Carregamento da IA -->
         <div id="aiLoadingBox" style="display: none; padding: 24px; text-align: center;">
-          <div style="font-size: 32px; margin-bottom: 10px; animation: pulse 1.5s infinite;">🤖</div>
+          <!-- Ícone Animado Gemini IA -->
+          <div style="width: 72px; height: 72px; margin: 0 auto 16px auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(56, 189, 248, 0.2), rgba(124, 58, 237, 0.22) 55%, rgba(236, 72, 153, 0.16)); border: 1.5px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; position: relative; animation: aiOrbGlow 2.8s ease-in-out infinite;">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+              <defs>
+                <linearGradient id="aiGrad1" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#38BDF8" />
+                  <stop offset="48%" stop-color="#818CF8" />
+                  <stop offset="100%" stop-color="#EC4899" />
+                </linearGradient>
+                <linearGradient id="aiRingGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.85" />
+                  <stop offset="50%" stop-color="#A855F7" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="#EC4899" stop-opacity="0.85" />
+                </linearGradient>
+                <filter id="aiStarGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.2" result="glow" />
+                  <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                </filter>
+              </defs>
+
+              <!-- Anel Orbital Externo Rotativo -->
+              <circle cx="32" cy="32" r="28" stroke="url(#aiRingGrad)" stroke-width="1.5" stroke-dasharray="5 4" fill="none" style="animation: aiRingSpin 10s linear infinite; transform-origin: center;" />
+
+              <!-- Estrela Principal Gemini IA com Pulso e Rotação Suave -->
+              <g style="animation: aiStarRotate 7s ease-in-out infinite; transform-origin: 32px 32px;">
+                <path d="M32 10 C32 20 20 32 10 32 C20 32 32 44 32 54 C32 44 44 32 54 32 C44 32 32 20 32 10 Z" fill="url(#aiGrad1)" filter="url(#aiStarGlow)" />
+                <circle cx="32" cy="32" r="2.5" fill="#FFFFFF" opacity="0.95" />
+              </g>
+
+              <!-- Micro-Brilho Satélite 1 (Superior Direito) -->
+              <g style="animation: aiSparkleTwinkle 2s ease-in-out infinite; transform-origin: 47px 17px;">
+                <path d="M47 11 C47 14.5 44 17 41 17 C44 17 47 19.5 47 23 C47 19.5 50 17 53 17 C50 17 47 14.5 47 11 Z" fill="#38BDF8" opacity="0.9" />
+              </g>
+
+              <!-- Micro-Brilho Satélite 2 (Inferior Esquerdo) -->
+              <g style="animation: aiSparkleTwinkle 2.5s ease-in-out infinite 0.7s; transform-origin: 17px 47px;">
+                <path d="M17 42 C17 44.5 15 47 13 47 C15 47 17 49 17 52 C17 49 19 47 21 47 C19 47 17 44.5 17 42 Z" fill="#EC4899" opacity="0.9" />
+              </g>
+            </svg>
+          </div>
           <h4 style="margin: 0; font-size: 16px; color: var(--text);" id="aiLoadingTitle">A IA Gemini está analisando seus documentos...</h4>
           <p style="margin: 6px 0 16px 0; font-size: 12px; color: var(--muted);">Classificando tipos, extraindo valores em USD, BL e chassis...</p>
           <div style="width: 100%; max-width: 400px; height: 8px; background: var(--line); border-radius: 4px; margin: 0 auto; overflow: hidden;">
