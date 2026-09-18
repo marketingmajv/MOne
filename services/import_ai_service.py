@@ -142,31 +142,37 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (APENAS JSON ESTRITO):
 }}
 """
 
-    parts: list[dict[str, Any]] = []
-    # Anexa dados multimodais
-    b64_data = base64.b64encode(file_bytes).decode("utf-8")
-    parts.append({
-        "inlineData": {
-            "mimeType": mime_type or "application/pdf",
-            "data": b64_data,
-        }
-    })
-    parts.append({"text": prompt})
+    try:
+        parts: list[dict[str, Any]] = []
+        # Se temos texto extraído de PDF e o arquivo for grande (> 1.5MB), usamos o texto para evitar estourar o limite de payload/timeout
+        use_inline = len(file_bytes) <= 1_500_000 or not extracted_text
+        if use_inline and file_bytes:
+            b64_data = base64.b64encode(file_bytes).decode("utf-8")
+            parts.append({
+                "inlineData": {
+                    "mimeType": mime_type or "application/pdf",
+                    "data": b64_data,
+                }
+            })
+        parts.append({"text": prompt})
 
-    payload = {
-        "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
-    }
-
-    res = execute_gemini_payload(payload, timeout=35)
-
-    # Fallback puramente textual se multimodal falhar e houver texto extraído
-    if not res.get("success") and extracted_text:
-        text_payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        payload = {
+            "contents": [{"role": "user", "parts": parts}],
             "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
         }
-        res = execute_gemini_payload(text_payload, timeout=25)
+
+        res = execute_gemini_payload(payload, timeout=20)
+
+        # Fallback puramente textual se multimodal falhar e houver texto extraído
+        if not res.get("success") and extracted_text and use_inline:
+            text_payload = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+            }
+            res = execute_gemini_payload(text_payload, timeout=15)
+    except Exception as gem_err:
+        logger.error("[classify_and_extract_document] Falha na chamada da IA para %s: %s", filename, gem_err)
+        res = {"success": False, "message": str(gem_err)}
 
     extracted_json: dict[str, Any] = {}
     if res.get("success") and res.get("data"):
@@ -219,10 +225,10 @@ def analyze_import_batch(file_items: list[dict[str, Any]], user_notes: str | Non
     }
     all_chassis_items: list[dict[str, str]] = []
 
+    gemini_items = []
     for item in file_items:
         filename = item.get("filename", "")
         file_bytes = item.get("bytes", b"")
-        mime_type = item.get("mime_type", "")
         forced_doc_type = item.get("forced_doc_type")
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
@@ -250,73 +256,98 @@ def analyze_import_batch(file_items: list[dict[str, Any]], user_notes: str | Non
             except Exception as e:
                 logger.info("[analyze_import_batch] Arquivo %s não é planilha de chassis pura: %s", filename, e)
 
-        # 2. Documentos PDF / Imagens via IA Gemini
-        res = classify_and_extract_document(
-            file_bytes=file_bytes,
-            filename=filename,
-            mime_type=mime_type,
-            import_context=extracted_fields,
-            user_notes=user_notes,
-        )
-        doc_data = res.get("data") or {}
-        doc_type = forced_doc_type or res.get("doc_type", "OTHER")
+        gemini_items.append(item)
 
-        # Normalizar tipos e legados
-        normalized_doc_type = doc_type
-        if doc_type in ["TAX_GUIDE", "ICMS_GUIDE"]:
-            normalized_doc_type = "ICMS_GUIDE"
-        elif doc_type in ["BROKER_SETTLEMENT", "FECHAMENTO_DESPACHANTE"]:
-            normalized_doc_type = "FECHAMENTO_DESPACHANTE"
-        elif doc_type == "NUMERARIO":
-            normalized_doc_type = "FECHAMENTO_DESPACHANTE"
+    # 2. Processar documentos PDF / Imagens via IA Gemini em paralelo
+    if gemini_items:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        detected_docs.append({
-            "filename": filename,
-            "doc_type": normalized_doc_type,
-            "original_doc_type": doc_type,
-            "doc_type_label": DOC_TYPES_MAP.get(normalized_doc_type, DOC_TYPES_MAP.get(doc_type, "Documento")),
-            "title": res.get("title", filename),
-            "document_number": doc_data.get("document_number"),
-            "total_amount": doc_data.get("total_amount"),
-            "currency": doc_data.get("currency"),
-            "summary": doc_data.get("summary", ""),
-        })
+        def _worker(item_dict):
+            try:
+                res = classify_and_extract_document(
+                    file_bytes=item_dict.get("bytes", b""),
+                    filename=item_dict.get("filename", ""),
+                    mime_type=item_dict.get("mime_type", ""),
+                    import_context=extracted_fields,
+                    user_notes=user_notes,
+                )
+                return item_dict, res
+            except Exception as e:
+                logger.error("[analyze_import_batch] Erro no worker IA para %s: %s", item_dict.get("filename"), e)
+                return item_dict, {"success": False, "data": {}, "doc_type": "OTHER", "title": item_dict.get("filename", "")}
 
-        # Preenchimento inteligente prioritário dos campos da importação
-        if doc_data.get("bl_no") and not extracted_fields.get("bl_no"):
-            extracted_fields["bl_no"] = doc_data["bl_no"]
-            if not extracted_fields.get("reference"):
-                extracted_fields["reference"] = doc_data["bl_no"]
+        max_workers = min(4, len(gemini_items))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_worker, it) for it in gemini_items]
+            for fut in as_completed(futures):
+                item, res = fut.result()
+                forced_doc_type = item.get("forced_doc_type")
+                filename = item.get("filename", "")
+                doc_data = res.get("data") or {}
+                doc_type = forced_doc_type or res.get("doc_type", "OTHER")
 
-        if doc_type == "BL":
-            if doc_data.get("document_number"):
-                extracted_fields["bl_no"] = doc_data["document_number"]
-                if not extracted_fields.get("reference"):
-                    extracted_fields["reference"] = doc_data["document_number"]
-            if doc_data.get("issue_date") and not extracted_fields.get("departure_date_estimated"):
-                extracted_fields["departure_date_estimated"] = doc_data["issue_date"]
+                # Normalizar tipos e legados
+                normalized_doc_type = doc_type
+                if doc_type in ["TAX_GUIDE", "ICMS_GUIDE"]:
+                    normalized_doc_type = "ICMS_GUIDE"
+                elif doc_type in ["BROKER_SETTLEMENT", "FECHAMENTO_DESPACHANTE"]:
+                    normalized_doc_type = "FECHAMENTO_DESPACHANTE"
+                elif doc_type == "NUMERARIO":
+                    normalized_doc_type = "FECHAMENTO_DESPACHANTE"
 
-        if doc_type == "CI":
-            if doc_data.get("document_number"):
-                extracted_fields["invoice_no"] = doc_data["document_number"]
-            if doc_data.get("total_amount"):
-                extracted_fields["ci_amount_usd"] = float(doc_data["total_amount"])
-                if not extracted_fields.get("pi_amount_usd"):
-                    extracted_fields["pi_amount_usd"] = float(doc_data["total_amount"])
-            if doc_data.get("supplier_name") and not extracted_fields.get("supplier_name"):
-                extracted_fields["supplier_name"] = doc_data["supplier_name"]
+                detected_docs.append({
+                    "filename": filename,
+                    "doc_type": normalized_doc_type,
+                    "original_doc_type": doc_type,
+                    "doc_type_label": DOC_TYPES_MAP.get(normalized_doc_type, DOC_TYPES_MAP.get(doc_type, "Documento")),
+                    "title": res.get("title", filename),
+                    "document_number": doc_data.get("document_number"),
+                    "total_amount": doc_data.get("total_amount"),
+                    "currency": doc_data.get("currency"),
+                    "summary": doc_data.get("summary", ""),
+                })
 
-        if doc_type == "PI":
-            if doc_data.get("total_amount") and not extracted_fields.get("pi_amount_usd"):
-                extracted_fields["pi_amount_usd"] = float(doc_data["total_amount"])
-            if doc_data.get("supplier_name") and not extracted_fields.get("supplier_name"):
-                extracted_fields["supplier_name"] = doc_data["supplier_name"]
+                # Preenchimento inteligente prioritário dos campos da importação
+                if doc_data.get("bl_no") and not extracted_fields.get("bl_no"):
+                    extracted_fields["bl_no"] = doc_data["bl_no"]
+                    if not extracted_fields.get("reference"):
+                        extracted_fields["reference"] = doc_data["bl_no"]
 
-        # Extração de chassis embutidos em texto se houver
-        if doc_data.get("chassis_list") and isinstance(doc_data["chassis_list"], list):
-            for c in doc_data["chassis_list"]:
-                if isinstance(c, str) and c.strip():
-                    all_chassis_items.append({"model": "Veículo Elétrico", "chassis": c.strip(), "motor": "", "color": ""})
+                if doc_type == "BL":
+                    if doc_data.get("document_number"):
+                        extracted_fields["bl_no"] = doc_data["document_number"]
+                        if not extracted_fields.get("reference"):
+                            extracted_fields["reference"] = doc_data["document_number"]
+                    if doc_data.get("issue_date") and not extracted_fields.get("departure_date_estimated"):
+                        extracted_fields["departure_date_estimated"] = doc_data["issue_date"]
+
+                if doc_type == "CI":
+                    if doc_data.get("document_number"):
+                        extracted_fields["invoice_no"] = doc_data["document_number"]
+                    if doc_data.get("total_amount"):
+                        try:
+                            extracted_fields["ci_amount_usd"] = float(doc_data["total_amount"])
+                            if not extracted_fields.get("pi_amount_usd"):
+                                extracted_fields["pi_amount_usd"] = float(doc_data["total_amount"])
+                        except (ValueError, TypeError):
+                            pass
+                    if doc_data.get("supplier_name") and not extracted_fields.get("supplier_name"):
+                        extracted_fields["supplier_name"] = doc_data["supplier_name"]
+
+                if doc_type == "PI":
+                    if doc_data.get("total_amount") and not extracted_fields.get("pi_amount_usd"):
+                        try:
+                            extracted_fields["pi_amount_usd"] = float(doc_data["total_amount"])
+                        except (ValueError, TypeError):
+                            pass
+                    if doc_data.get("supplier_name") and not extracted_fields.get("supplier_name"):
+                        extracted_fields["supplier_name"] = doc_data["supplier_name"]
+
+                # Extração de chassis embutidos em texto se houver
+                if doc_data.get("chassis_list") and isinstance(doc_data["chassis_list"], list):
+                    for c in doc_data["chassis_list"]:
+                        if isinstance(c, str) and c.strip():
+                            all_chassis_items.append({"model": "Veículo Elétrico", "chassis": c.strip(), "motor": "", "color": ""})
 
     # Verificar duplicidade de chassis no banco de dados
     unique_chassis_vins = list({item["chassis"].strip().upper() for item in all_chassis_items if item.get("chassis")})

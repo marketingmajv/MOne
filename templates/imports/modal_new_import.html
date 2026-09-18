@@ -613,6 +613,14 @@ async function startAIAnalysis() {
     return;
   }
 
+  // Validação preventiva de tamanho de lote (limite 4.2 MB para compatibilidade total com Vercel)
+  const totalSizeBytes = selectedFilesList.reduce((acc, f) => acc + (f.size || 0), 0);
+  if (totalSizeBytes > 4.2 * 1024 * 1024) {
+    const sizeMb = (totalSizeBytes / (1024 * 1024)).toFixed(1);
+    alert(`Atenção: Os arquivos selecionados somam ${sizeMb} MB. O limite da plataforma para análise em lote é de 4.2 MB por envio.\n\nDica: Envie os documentos principais (Commercial Invoice, BL, etc.) em arquivos menores ou preencha manualmente.`);
+    return;
+  }
+
   goToStep(2);
   const loadingBox = document.getElementById('aiLoadingBox');
   const checklistContent = document.getElementById('checklistContent');
@@ -628,13 +636,27 @@ async function startAIAnalysis() {
 
   try {
     const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
-    const result = await res.json();
+
+    let result;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      result = await res.json();
+    } else {
+      const rawErr = await res.text();
+      if (res.status === 413) {
+        throw new Error('O volume total dos arquivos ultrapassou o limite do servidor em nuvem (4.5 MB). Tente selecionar menos arquivos por vez.');
+      }
+      if (res.status === 504 || res.status === 408) {
+        throw new Error('Tempo limite de análise esgotado (Timeout). Experimente enviar os documentos em etapas ou preencha manualmente.');
+      }
+      throw new Error(`Falha no servidor (${res.status}): ${rawErr.slice(0, 150)}...`);
+    }
 
     loadingBox.style.display = 'none';
     checklistContent.style.display = 'block';
 
     if (!result.success) {
-      alert('Aviso da análise: ' + (result.message || 'Não foi possível analisar os documentos.'));
+      alert('Aviso da análise: ' + (result.message || 'Não foi possível analisar os documentos.') + '\n\nVocê pode avançar e preencher manualmente os dados na Revisão.');
       return;
     }
 
@@ -656,7 +678,7 @@ async function startAIAnalysis() {
   } catch (err) {
     loadingBox.style.display = 'none';
     checklistContent.style.display = 'block';
-    alert('Erro ao processar documentos com a IA: ' + err.message);
+    alert('Aviso ao analisar com a IA:\n' + err.message + '\n\nVocê pode prosseguir preenchendo os dados diretamente na aba "Revisão & Criar" no topo.');
   }
 }
 
