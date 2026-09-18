@@ -578,22 +578,19 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
         if p_id and db_conn:
             try:
-                cur = db_conn.execute("SELECT id, name, wholesale_price, weight_kg, length_cm, width_cm, height_cm FROM products WHERE id = %s", (int(p_id),))
+                cur = db_conn.execute("SELECT id, name, wholesale_price FROM products WHERE id = %s", (int(p_id),))
                 p = cur.fetchone()
                 if p:
                     p_dict = dict(p) if hasattr(p, "keys") else p
                     p_name = p_dict["name"] if isinstance(p_dict, dict) else p_dict[1]
                     w_price = float(p_dict["wholesale_price"] if isinstance(p_dict, dict) else (p_dict[2] or 0))
-                    if w == 0 and isinstance(p_dict, dict) and p_dict.get("weight_kg"):
-                        w = float(p_dict["weight_kg"])
-                    if l == 0 and isinstance(p_dict, dict) and p_dict.get("length_cm"):
-                        l = float(p_dict["length_cm"])
-                    if w_dim == 0 and isinstance(p_dict, dict) and p_dict.get("width_cm"):
-                        w_dim = float(p_dict["width_cm"])
-                    if h == 0 and isinstance(p_dict, dict) and p_dict.get("height_cm"):
-                        h = float(p_dict["height_cm"])
             except Exception as e:
                 print("[Freight Service] Erro ao buscar produto:", e)
+                if hasattr(db_conn, "rollback"):
+                    try:
+                        db_conn.rollback()
+                    except Exception:
+                        pass
 
         # Regra da MAJ: 1/3 do valor de atacado para seguro
         if w_price > 0:
@@ -666,6 +663,11 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         all_rates = cur.fetchall()
     except Exception as e:
         print("[Freight Service] Erro ao consultar tarifas:", e)
+        if hasattr(db_conn, "rollback"):
+            try:
+                db_conn.rollback()
+            except Exception:
+                pass
         all_rates = []
 
     dest_int = int(clean_dest)
