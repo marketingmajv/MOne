@@ -78,62 +78,69 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
 <div class="space-y-6">
 
   <!-- KPI Top Metrics Bar (Alto Contraste Claro e Escuro) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
     <!-- 01 Fator de Custo -->
-    <div class="comex-card" style="border-top: 3px solid #B45309;">
-      <div class="comex-label">01 Fator de Custo</div>
-      <div class="comex-value comex-value-amber">
-        R$ {{ "%.4f"|format(financials.cost_factor or 0) }}
-        <span style="font-size: 11px; font-weight: 500; color: var(--muted);">/ US$</span>
+    <div class="comex-card" style="border-left: 4px solid #B45309;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span class="comex-label">01 Fator de Custo</span>
+        <span class="badge" style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: {{ 'rgba(5,150,105,0.15)' if financials.cost_factor_status == 'final' else 'rgba(245,158,11,0.15)' }}; color: {{ '#047857' if financials.cost_factor_status == 'final' else '#B45309' }};">
+          {{ 'FINAL' if financials.cost_factor_status == 'final' else 'PROVISÓRIO' }}
+        </span>
       </div>
-      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        Total: {{ financials.total_disbursed_brl|money }} ÷ PI: {{ financials.pi_fob_usd|money_usd }}
+      <div class="comex-value comex-value-amber" style="font-size: 24px;">
+        {% if financials.cost_factor %}
+          R$ {{ '%.4f'|format(financials.cost_factor) }} <span style="font-size: 12px; font-weight: 500; color: var(--muted);">/ US$</span>
+        {% else %}
+          <span style="font-size: 16px; color: var(--muted);">Fator indisponível</span>
+        {% endif %}
       </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ PI: <strong style="color: var(--text);">{{ financials.pi_fob_usd|money_usd }}</strong>
+      </p>
     </div>
 
     <!-- 02 A Base da Mercadoria -->
-    <div class="comex-card" style="border-top: 3px solid #059669;">
-      <div class="comex-label">02 Base da Mercadoria</div>
-      <div class="comex-value comex-value-emerald">
+    <div class="comex-card" style="border-left: 4px solid #059669;">
+      <div class="comex-label" style="margin-bottom: 6px;">02 Base da Mercadoria (CI)</div>
+      <div class="comex-value comex-value-emerald" style="font-size: 24px;">
         {{ financials.goods_base_usd|money_usd }}
       </div>
-      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        {{ financials.goods_base_brl|money }} • CI (Commercial Invoice)
-      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <strong style="color: var(--text);">{{ financials.goods_base_brl|money }}</strong> • CI (Commercial Invoice)
+      </p>
     </div>
 
     <!-- 03 Câmbio Liquidado -->
-    <div class="comex-card" style="border-top: 3px solid #0284C7;">
-      <div class="comex-label">03 Câmbio Liquidado</div>
-      <div class="comex-value comex-value-blue">
+    <div class="comex-card" style="border-left: 4px solid #0284C7;">
+      <div class="comex-label" style="margin-bottom: 6px;">03 Câmbio Liquidado (PI)</div>
+      <div class="comex-value comex-value-blue" style="font-size: 24px;">
         {{ financials.cambio_liquidado_usd|money_usd }}
       </div>
-      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        {{ financials.cambio_liquidado_brl|money }} • PI (Proforma Invoice)
-      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <strong style="color: var(--text);">{{ financials.cambio_liquidado_brl|money }}</strong> • PI (Proforma Invoice)
+      </p>
     </div>
 
     <!-- 04 Total Desembolsado -->
-    <div class="comex-card" style="border-top: 3px solid #6366F1;">
-      <div class="comex-label">04 Total Desembolsado</div>
-      <div class="comex-value" style="color: var(--text);">
+    <div class="comex-card" style="border-left: 4px solid #6366F1;">
+      <div class="comex-label" style="margin-bottom: 6px;">04 Total Desembolsado</div>
+      <div class="comex-value" style="font-size: 24px; color: var(--text);">
         {{ financials.total_disbursed_usd|money_usd }}
       </div>
-      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        {{ financials.total_disbursed_brl|money }} • CI + PI + Despesas
-      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> • CI + PI + Despesas
+      </p>
     </div>
 
     <!-- 05 VIN / Chassis -->
-    <div class="comex-card" style="border-top: 3px solid #8B5CF6;">
-      <div class="comex-label">05 VIN / Chassis</div>
-      <div class="comex-value comex-value-purple">
-        {{ unique_chassis_count or i.chassis_count or 0 }}
-        <span style="font-size: 12px; font-weight: 600; color: var(--muted);">chassis</span>
+    <div class="comex-card" style="border-left: 4px solid #8B5CF6;">
+      <div class="comex-label" style="margin-bottom: 6px;">05 VIN / Chassis</div>
+      <div class="comex-value comex-value-purple" style="font-size: 24px;">
+        {{ unique_chassis_count or i.chassis_count or 0 }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">chassis</span>
       </div>
-      <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        {{ unique_chassis_count or i.chassis_count or 0 }} diferentes na planilha
-      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <strong style="color: var(--text);">{{ unique_chassis_count or i.chassis_count or 0 }}</strong> diferentes na planilha
+      </p>
     </div>
   </div>
 
