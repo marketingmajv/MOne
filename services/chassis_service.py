@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import re
 
 try:
     from openpyxl import load_workbook
@@ -70,8 +71,52 @@ def extract_text_from_spreadsheet(file_bytes: bytes, filename: str) -> str:
     return ""
 
 
+def _is_chassis_header(cell) -> bool:
+    s = str(cell or "").strip().lower()
+    if not s:
+        return False
+    if "车架" in s or "vin码" in s or "车架号" in s:
+        return True
+    tokens = set(re.findall(r"[a-z0-9]+", s))
+    if any(t in tokens for t in ["chassi", "chassis", "vin", "frame", "quadro", "serial"]):
+        return True
+    return any(p in s for p in ["chassi", "chassis", "vin", "frame no", "serial no", "quadro"])
+
+
+def _is_model_header(cell) -> bool:
+    s = str(cell or "").strip().lower()
+    if not s:
+        return False
+    if "型号" in s or "车型" in s:
+        return True
+    tokens = set(re.findall(r"[a-z0-9]+", s))
+    if any(t in tokens for t in ["modelo", "model", "produto", "product", "descricao", "description", "item", "tipo", "especificacao"]):
+        return True
+    return any(p in s for p in ["modelo", "model", "produto", "product", "item"])
+
+
+def _is_motor_header(cell) -> bool:
+    s = str(cell or "").strip().lower()
+    if not s:
+        return False
+    if "电机" in s or "发动机" in s:
+        return True
+    tokens = set(re.findall(r"[a-z0-9]+", s))
+    return any(t in tokens for t in ["motor", "engine"])
+
+
+def _is_color_header(cell) -> bool:
+    s = str(cell or "").strip().lower()
+    if not s:
+        return False
+    if "颜色" in s:
+        return True
+    tokens = set(re.findall(r"[a-z0-9]+", s))
+    return any(t in tokens for t in ["cor", "color", "colour"])
+
+
 def parse_chassis_file(file_storage) -> list[dict[str, str]]:
-    """Lê arquivo CSV ou XLSX e extrai lista de dicionários de chassis com detecção tolerante a cabeçalhos."""
+    """Lê arquivo CSV ou XLSX e extrai lista de dicionários de chassis com detecção tolerante a cabeçalhos compostos e padrões de VIN."""
     ext = file_storage.filename.rsplit(".", 1)[1].lower() if "." in file_storage.filename else ""
     data = file_storage.read()
     all_sheets_rows: list[list[list]] = []
@@ -98,52 +143,64 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
     else:
         raise ValueError("Use CSV ou XLSX para a planilha de chassis.")
 
-    candidates_chassis = [
-        "chassi", "chassis", "quadro", "frame", "frame no", "frame number", "vin",
-        "serial", "serial no", "serial number", "numero do chassi", "n chassi", "numero chassi",
-        "nº chassi", "chassi nº"
-    ]
-    candidates_model = [
-        "modelo", "model", "produto", "product", "descricao", "description", "item",
-        "mercadoria", "tipo", "veiculo", "desc", "especificacao"
-    ]
-    candidates_motor = ["motor", "motor no", "motor number", "numero do motor", "n motor", "engine", "engine no"]
-    candidates_color = ["cor", "color", "colour"]
-
     for all_rows in all_sheets_rows:
         if not all_rows:
             continue
 
-        # Procurar a linha de cabeçalho nas primeiras 15 linhas
         header_row_idx = None
         i_chassis = None
         i_model = None
         i_motor = None
         i_color = None
 
-        max_scan = min(15, len(all_rows))
+        # 1. Varredura inteligente de cabeçalhos nas primeiras 20 linhas
+        max_scan = min(20, len(all_rows))
         for r_idx in range(max_scan):
-            row_normalized = normalize_headers(all_rows[r_idx])
-            for ch_cand in candidates_chassis:
-                if ch_cand in row_normalized:
-                    i_chassis = row_normalized.index(ch_cand)
+            row = all_rows[r_idx]
+            for col_idx, cell in enumerate(row):
+                if _is_chassis_header(cell):
+                    i_chassis = col_idx
                     header_row_idx = r_idx
                     break
             if header_row_idx is not None:
-                # Encontrou a linha de cabeçalhos! Mapear demais colunas
-                for md_cand in candidates_model:
-                    if md_cand in row_normalized:
-                        i_model = row_normalized.index(md_cand)
-                        break
-                for mot_cand in candidates_motor:
-                    if mot_cand in row_normalized:
-                        i_motor = row_normalized.index(mot_cand)
-                        break
-                for col_cand in candidates_color:
-                    if col_cand in row_normalized:
-                        i_color = row_normalized.index(col_cand)
-                        break
+                # Mapear colunas complementares na mesma linha
+                for col_idx, cell in enumerate(row):
+                    if col_idx == i_chassis:
+                        continue
+                    if i_model is None and _is_model_header(cell):
+                        i_model = col_idx
+                    elif i_motor is None and _is_motor_header(cell):
+                        i_motor = col_idx
+                    elif i_color is None and _is_color_header(cell):
+                        i_color = col_idx
                 break
+
+        # 2. Fallback por conteúdo: caso cabeçalho não seja óbvio ou contenha células mescladas
+        if i_chassis is None:
+            vin_pattern = re.compile(r"^[A-HJ-NPR-Z0-9]{10,20}$", re.IGNORECASE)
+            best_col = None
+            best_count = 0
+            best_start_row = 1
+            num_cols = max(len(r) for r in all_rows) if all_rows else 0
+
+            for c_idx in range(num_cols):
+                matches = 0
+                first_row = None
+                for r_idx, row in enumerate(all_rows):
+                    if c_idx < len(row):
+                        val = str(row[c_idx] or "").strip()
+                        if vin_pattern.match(val):
+                            matches += 1
+                            if first_row is None:
+                                first_row = r_idx
+                if matches > best_count and matches >= 2:
+                    best_count = matches
+                    best_col = c_idx
+                    best_start_row = first_row or 1
+
+            if best_col is not None:
+                i_chassis = best_col
+                header_row_idx = max(0, best_start_row - 1)
 
         if i_chassis is None:
             continue
@@ -153,7 +210,7 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
             chassis = str(raw[i_chassis] or "").strip() if i_chassis < len(raw) else ""
             if not chassis or len(chassis) < 4:
                 continue
-            if chassis.lower() in candidates_chassis:
+            if _is_chassis_header(chassis):
                 continue
 
             model = str(raw[i_model] or "").strip() if (i_model is not None and i_model < len(raw)) else "Veículo Elétrico"
