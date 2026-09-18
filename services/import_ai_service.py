@@ -12,6 +12,7 @@ import json
 import logging
 from typing import Any
 
+from services.chassis_service import extract_text_from_spreadsheet
 from services.gemini_client import execute_gemini_payload
 from services.pdf_extractor import extract_text_from_pdf
 
@@ -55,14 +56,18 @@ def classify_and_extract_document(
     import_context = import_context or {}
     file_hash = calculate_file_hash(file_bytes)
 
-    # 1. Extração digital em memória se for PDF
+    # 1. Extração digital em memória se for PDF ou Planilha
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    is_spreadsheet = ext in ["xlsx", "xls", "csv"]
     extracted_text = ""
-    if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
+    if mime_type == "application/pdf" or ext == "pdf":
         extracted_text = extract_text_from_pdf(file_bytes)
+    elif is_spreadsheet:
+        extracted_text = extract_text_from_spreadsheet(file_bytes, filename)
 
     # 2. Montar prompt com vocabulário aduaneiro
     text_snippet = (
-        f"\n--- TEXTO EXTRAÍDO NATIVAMENTE DO ARQUIVO ({filename}) ---\n{extracted_text[:12000]}\n"
+        f"\n--- TEXTO EXTRAÍDO NATIVAMENTE DO ARQUIVO ({filename}) ---\n{extracted_text[:14000]}\n"
         if extracted_text
         else ""
     )
@@ -144,8 +149,8 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (APENAS JSON ESTRITO):
 
     try:
         parts: list[dict[str, Any]] = []
-        # Se temos texto extraído de PDF e o arquivo for grande (> 1.5MB), usamos o texto para evitar estourar o limite de payload/timeout
-        use_inline = len(file_bytes) <= 1_500_000 or not extracted_text
+        # Para planilhas (XLSX/CSV), o Gemini NÃO suporta inlineData binário; enviamos apenas o texto tabular extraído
+        use_inline = (not is_spreadsheet) and (len(file_bytes) <= 1_500_000 or not extracted_text)
         if use_inline and file_bytes:
             b64_data = base64.b64encode(file_bytes).decode("utf-8")
             parts.append({

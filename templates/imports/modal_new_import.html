@@ -966,12 +966,16 @@ function renderStep2Checklist(result) {
   const isClearedStage = (activeImportStage === 'cleared');
   document.getElementById('stageRulesLabel').textContent = `Estágio: ${isClearedStage ? 'Desembaraçado / Concluído' : 'Embarcado / Em Trânsito'}`;
 
-  // 1. Renderizar lista de arquivos detectados com seletor manual
+  // 1. Renderizar lista de arquivos detectados com seletor manual e botão de confirmação
   const filesList = document.getElementById('detectedFilesList');
   filesList.innerHTML = '';
   
   files.forEach((f, idx) => {
+    const ext = (f.filename || '').split('.').pop().toLowerCase();
+    const fileIcon = ['xlsx', 'xls', 'csv'].includes(ext) ? '📊' : (['pdf'].includes(ext) ? '📄' : '🖼️');
+
     const item = document.createElement('div');
+    item.id = `file_classification_row_${idx}`;
     item.style.display = 'flex';
     item.style.justifyContent = 'space-between';
     item.style.alignItems = 'center';
@@ -987,15 +991,18 @@ function renderStep2Checklist(result) {
     ).join('');
 
     item.innerHTML = `
-      <div style="flex: 1; min-width: 180px;">
-        <strong style="color: var(--text); display: block;">📄 ${f.filename}</strong>
-        <small style="color: var(--muted);">${f.summary || (f.total_amount ? ('Valor: ' + f.currency + ' ' + f.total_amount) : '')}</small>
+      <div style="flex: 1; min-width: 170px;">
+        <strong style="color: var(--text); display: block;">${fileIcon} ${f.filename}</strong>
+        <small style="color: var(--muted); font-size: 11px;">${f.summary || (f.total_amount ? ('Valor: ' + (f.currency || 'USD') + ' ' + f.total_amount) : '')}</small>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
         <span style="font-size: 11px; color: var(--muted);">Classificar como:</span>
-        <select onchange="onManualDocTypeChange(${idx}, this.value)" style="padding: 4px 8px; border-radius: 6px; font-size: 11px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
+        <select id="select_doctype_${idx}" style="padding: 5px 8px; border-radius: 6px; font-size: 11px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
           ${optionsHtml}
         </select>
+        <button type="button" id="btn_confirm_doctype_${idx}" class="btn sm" onclick="confirmFileClassification(${idx})" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; font-weight: 700; font-size: 11px; padding: 5px 11px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); transition: all 0.2s ease;">
+          <span>✓</span> <span>Confirmar</span>
+        </button>
       </div>
     `;
     filesList.appendChild(item);
@@ -1004,11 +1011,55 @@ function renderStep2Checklist(result) {
   updateChecklistGate();
 }
 
-function onManualDocTypeChange(fileIdx, newType) {
-  if (aiAnalysisResult && aiAnalysisResult.files && aiAnalysisResult.files[fileIdx]) {
-    aiAnalysisResult.files[fileIdx].doc_type = newType;
-    updateChecklistGate();
+function confirmFileClassification(fileIdx) {
+  if (!aiAnalysisResult || !aiAnalysisResult.files || !aiAnalysisResult.files[fileIdx]) return;
+  const selectElem = document.getElementById(`select_doctype_${fileIdx}`);
+  const newType = selectElem ? selectElem.value : aiAnalysisResult.files[fileIdx].doc_type;
+
+  aiAnalysisResult.files[fileIdx].doc_type = newType;
+
+  // Feedback visual no botão de confirmar
+  const btn = document.getElementById(`btn_confirm_doctype_${fileIdx}`);
+  if (btn) {
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<span>✅</span> <span>Confirmado!</span>';
+    btn.style.background = '#047857';
+    setTimeout(() => {
+      if (btn) {
+        btn.innerHTML = origHtml;
+        btn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+      }
+    }, 1500);
   }
+
+  // Atualizar a grade de conferência de documentos e a trava do lote
+  updateChecklistGate();
+
+  // Rolar suavemente e destacar a seção detectada correspondente
+  setTimeout(() => {
+    let targetCard = document.getElementById(`rule_card_${newType}`);
+    if (!targetCard) {
+      targetCard = document.getElementById('rule_card_OTHER');
+    }
+    if (targetCard) {
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      targetCard.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+      targetCard.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.6), 0 8px 18px rgba(16, 185, 129, 0.25)';
+      targetCard.style.borderColor = '#10B981';
+      targetCard.style.transform = 'translateY(-2px) scale(1.02)';
+      setTimeout(() => {
+        if (targetCard) {
+          targetCard.style.boxShadow = '';
+          targetCard.style.borderColor = '';
+          targetCard.style.transform = '';
+        }
+      }, 1600);
+    }
+  }, 100);
+}
+
+function onManualDocTypeChange(fileIdx, newType) {
+  confirmFileClassification(fileIdx);
 }
 
 function updateChecklistGate() {
@@ -1028,28 +1079,41 @@ function updateChecklistGate() {
   rules.forEach(rule => {
     const isRequired = isClearedStage ? rule.required_cleared : rule.required_on_water;
     const isPresent = presentDocTypes.has(rule.doc_type);
+    const matchedFiles = files.filter(f => f.doc_type === rule.doc_type);
 
     if (isRequired && !isPresent) {
       missingRequiredCount++;
     }
 
     const card = document.createElement('div');
+    card.id = `rule_card_${rule.doc_type}`;
     card.style.padding = '10px 12px';
     card.style.borderRadius = '8px';
-    card.style.border = '1px solid ' + (isPresent ? 'rgba(4, 120, 87, 0.3)' : (isRequired ? 'rgba(239, 68, 68, 0.3)' : 'var(--line)'));
+    card.style.border = '1px solid ' + (isPresent ? 'rgba(4, 120, 87, 0.35)' : (isRequired ? 'rgba(239, 68, 68, 0.3)' : 'var(--line)'));
     card.style.background = isPresent ? 'rgba(4, 120, 87, 0.06)' : (isRequired ? 'rgba(239, 68, 68, 0.05)' : 'var(--panel2)');
     card.style.display = 'flex';
     card.style.justifyContent = 'space-between';
-    card.style.alignItems = 'center';
+    card.style.alignItems = 'flex-start';
 
     card.innerHTML = `
-      <div>
+      <div style="flex: 1; min-width: 0;">
         <strong style="display: block; font-size: 12px; color: var(--text);">${rule.label}</strong>
         <small style="font-size: 10px; color: var(--muted);">
           ${isRequired ? '<span style="color: #EF4444; font-weight: 700;">Exigido neste estágio</span>' : (rule.allow_post_attach ? 'Anexável depois' : 'Opcional')}
         </small>
+        ${matchedFiles.length > 0 ? `
+          <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+            ${matchedFiles.map(mf => {
+              const ext = (mf.filename || '').split('.').pop().toLowerCase();
+              const icon = ['xlsx', 'xls', 'csv'].includes(ext) ? '📊' : '📄';
+              return `<span style="font-size: 10.5px; color: #047857; background: rgba(4, 120, 87, 0.12); border: 1px solid rgba(4, 120, 87, 0.25); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${mf.filename}">
+                ${icon} ${mf.filename}
+              </span>`;
+            }).join('')}
+          </div>
+        ` : ''}
       </div>
-      <div>
+      <div style="margin-left: 8px; flex-shrink: 0;">
         ${isPresent ? '<span class="badge" style="background: rgba(4, 120, 87, 0.15); color: #047857; font-weight: 700; font-size: 10px;">✅ Detectado</span>' : 
           (isRequired ? '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-weight: 700; font-size: 10px;">⚠️ Faltando</span>' : 
            '<span class="badge" style="background: var(--panel); color: var(--muted); font-size: 10px;">—</span>')}
@@ -1057,6 +1121,38 @@ function updateChecklistGate() {
     `;
     checklistGrid.appendChild(card);
   });
+
+  // Card para outros documentos classificados fora do checklist padrão
+  const ruleCodes = new Set(rules.map(r => r.doc_type));
+  const extraDocs = files.filter(f => !ruleCodes.has(f.doc_type));
+  if (extraDocs.length > 0) {
+    const otherCard = document.createElement('div');
+    otherCard.id = 'rule_card_OTHER';
+    otherCard.style.padding = '10px 12px';
+    otherCard.style.borderRadius = '8px';
+    otherCard.style.border = '1px solid var(--line)';
+    otherCard.style.background = 'var(--panel2)';
+    otherCard.style.display = 'flex';
+    otherCard.style.justifyContent = 'space-between';
+    otherCard.style.alignItems = 'flex-start';
+    otherCard.innerHTML = `
+      <div style="flex: 1; min-width: 0;">
+        <strong style="display: block; font-size: 12px; color: var(--text);">Outros Lançamentos & Anexos Livres</strong>
+        <small style="font-size: 10px; color: var(--muted);">Documentos adicionais vinculados ao lote</small>
+        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+          ${extraDocs.map(mf => `
+            <span style="font-size: 10.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              📎 ${mf.filename} (${DOC_OPTIONS.find(o => o.code === mf.doc_type)?.label || mf.doc_type})
+            </span>
+          `).join('')}
+        </div>
+      </div>
+      <div style="margin-left: 8px; flex-shrink: 0;">
+        <span class="badge" style="background: var(--panel); color: var(--text); font-size: 10px;">${extraDocs.length} anexo${extraDocs.length > 1 ? 's' : ''}</span>
+      </div>
+    `;
+    checklistGrid.appendChild(otherCard);
+  }
 
   // Atualizar Banner e Botão de Avanço (Trava de Validação)
   const gateAlertBox = document.getElementById('gateAlertBox');

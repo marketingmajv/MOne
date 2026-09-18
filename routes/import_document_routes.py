@@ -364,14 +364,22 @@ def api_analyze_import_docs():
         if f_single and f_single.filename:
             fechamento_files = [f_single]
 
+    def _get_mime(fn: str) -> str:
+        e = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+        if e == "pdf":
+            return "application/pdf"
+        if e in ["xlsx", "xls"]:
+            return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if e == "xlsx" else "application/vnd.ms-excel"
+        if e == "csv":
+            return "text/csv"
+        return f"image/{e if e != 'jpg' else 'jpeg'}"
+
     for f in fechamento_files:
         if f and f.filename:
             content = f.read()
-            ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
-            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
             file_objs.append({
                 "bytes": content,
-                "mime_type": mime,
+                "mime_type": _get_mime(f.filename),
                 "filename": f.filename,
                 "forced_doc_type": "FECHAMENTO_DESPACHANTE",
             })
@@ -381,18 +389,14 @@ def api_analyze_import_docs():
     for f in batch_files:
         if f and f.filename:
             content = f.read()
-            ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
-            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
-            file_objs.append({"bytes": content, "mime_type": mime, "filename": f.filename})
+            file_objs.append({"bytes": content, "mime_type": _get_mime(f.filename), "filename": f.filename})
 
     # 3. Arquivos individuais enviados por campos legados
     for key in ["invoice_file", "bl_file", "nf_entry_file", "chassis_file"]:
         f = request.files.get(key)
         if f and f.filename and not any(o["filename"] == f.filename for o in file_objs):
             content = f.read()
-            ext = f.filename.rsplit(".", 1)[-1].lower() if "." in f.filename else ""
-            mime = "application/pdf" if ext == "pdf" else ("text/csv" if ext == "csv" else f"image/{ext if ext != 'jpg' else 'jpeg'}")
-            file_objs.append({"bytes": content, "mime_type": mime, "filename": f.filename})
+            file_objs.append({"bytes": content, "mime_type": _get_mime(f.filename), "filename": f.filename})
 
     if not file_objs:
         return jsonify({"success": False, "message": "Nenhum arquivo enviado para análise da IA."})
