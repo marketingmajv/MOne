@@ -149,7 +149,7 @@ def create_import():
         from services.import_ai_service import persist_creation_documents
         persist_creation_documents(new_id, request, conn, me.get("id"))
 
-        # Registra lançamento inicial de Outros Débitos se informado
+        # Registra lançamento inicial de Outros Lançamentos se informado
         debit_desc = request.form.get("initial_debit_description", "").strip()
         debit_usd = request.form.get("initial_debit_amount_usd", "0").strip() or "0"
         debit_brl = request.form.get("initial_debit_amount_brl", "0").strip() or "0"
@@ -166,7 +166,7 @@ def create_import():
                         exchange_rate, bank_fees_brl, paid_at, is_verified
                     ) VALUES (%s, 'other_debit', %s, %s, %s, %s, 0.0, CURRENT_DATE, TRUE)
                     """,
-                    (new_id, debit_desc or "Outros Débitos (Registro Inicial)", debit_usd, debit_brl, debit_rate),
+                    (new_id, debit_desc or "Outros Lançamentos (Registro Inicial)", debit_usd, debit_brl, debit_rate),
                 )
         except Exception as deb_err:
             logger.warning("Falha ao registrar débito inicial na criação: %s", deb_err)

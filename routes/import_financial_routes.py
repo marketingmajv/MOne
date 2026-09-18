@@ -63,7 +63,7 @@ def add_payment_china(iid: int):
                     with open(save_path, "wb") as out_f:
                         out_f.write(file_bytes)
                     doc_type = "SUPPLIER_PAYMENT"
-                    title = f"Comprovante - {description or ('Outros Débitos' if category in ('additional_payment', 'other_debit') else 'Pagamento')}"
+                    title = f"Comprovante - {description or ('Outros Lançamentos' if category in ('additional_payment', 'other_debit') else 'Pagamento')}"
                     new_doc = conn.execute(
                         """
                         INSERT INTO import_documents (

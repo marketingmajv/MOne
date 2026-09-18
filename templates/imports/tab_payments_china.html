@@ -7,12 +7,12 @@
         <h4 style="margin: 0; font-size: 16px; color: var(--text);">🌏 Controle da Compra e Pagamentos na China</h4>
         <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
           A <strong>Proforma Invoice (PI)</strong> representa o teto total da compra. A <strong>Commercial Invoice (CI)</strong> representa a parcela oficial declarada.
-          Os <strong>Outros Débitos</strong> completam a compra sem duplicar despesas.
+          Os <strong>Outros Lançamentos</strong> completam a compra sem duplicar despesas.
         </p>
       </div>
       <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
         <button type="button" class="btn sm" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;" onclick="document.getElementById('addOtherDebitModal').style.display='flex'">
-          💳 + Lançar Outros Débitos
+          💳 + Lançar Outros Lançamentos
         </button>
         <button type="button" class="btn sm primary" onclick="document.getElementById('addChinaPaymentModal').style.display='flex'">
           + Registrar Pagamento CI
@@ -35,7 +35,7 @@
         <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">{{ financials.ci_paid_usd|money_usd }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
-        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Outros Débitos (Por Fora)</span>
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Outros Lançamentos</span>
         <div class="comex-value-amber" style="font-size: 18px; font-weight: 800;">{{ financials.additional_paid_usd|money_usd }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
@@ -47,7 +47,7 @@
     </div>
   </div>
 
-  <!-- Card Destacado: Seção Dedicada de [Outros Débitos] -->
+  <!-- Card Destacado: Seção Dedicada de [Outros Lançamentos] -->
   {% set other_debit_list = [] %}
   {% for p in china_payments %}
     {% if p.payment_category in ['additional_payment', 'other_debit'] %}
@@ -61,7 +61,7 @@
         <span style="font-size: 20px;">💳</span>
         <div>
           <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text);">
-            Outros Débitos & Pagamentos por Fora
+            Outros Lançamentos
           </h4>
           <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">
             Valores pagos fora da CI ou rateados entre contêineres. Comprovante 100% opcional.
@@ -70,14 +70,14 @@
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="text-align: right;">
-          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; display: block;">Total Outros Débitos</span>
+          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; display: block;">Total Outros Lançamentos</span>
           <strong style="color: #B45309; font-size: 16px; font-family: var(--font-mono);">
             {{ financials.additional_paid_usd|money_usd }}
             <span style="font-size: 12px; color: var(--muted);">({{ financials.additional_paid_brl|money }})</span>
           </strong>
         </div>
         <button type="button" class="btn sm" style="background: #B45309; color: #fff; font-weight: 700; border: none;" onclick="document.getElementById('addOtherDebitModal').style.display='flex'">
-          + Lançar Outro Débito
+          + Lançar Outro Lançamento
         </button>
       </div>
     </div>
@@ -88,7 +88,7 @@
           <thead>
             <tr style="background: var(--panel2);">
               <th style="width: 95px;">Data</th>
-              <th style="min-width: 180px;">Descrição do Débito</th>
+              <th style="min-width: 180px;">Descrição do Lançamento</th>
               <th style="text-align: right; width: 110px;">Valor (USD)</th>
               <th style="text-align: right; width: 100px;">Câmbio (R$)</th>
               <th style="text-align: right; width: 120px;">Valor Débito (R$)</th>
@@ -100,7 +100,7 @@
             {% for d in other_debit_list %}
               <tr>
                 <td>{{ d.paid_at.strftime('%d/%m/%Y') if d.paid_at else '—' }}</td>
-                <td><strong style="color: var(--text);">{{ d.description or 'Outros Débitos' }}</strong></td>
+                <td><strong style="color: var(--text);">{{ d.description or 'Outros Lançamentos' }}</strong></td>
                 <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: #B45309;">{{ d.amount_usd|money_usd }}</td>
                 <td style="text-align: right; color: var(--muted); font-family: var(--font-mono);">{{ ('R$ %.4f'|format(d.exchange_rate)) if d.exchange_rate else '—' }}</td>
                 <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: var(--text);">{{ d.amount_brl|money }}</td>
@@ -112,7 +112,7 @@
                   {% endif %}
                 </td>
                 <td style="text-align: center;">
-                  <form method="post" action="{{ url_for('import_financial.delete_payment_china', iid=i.id, pid=d.id) }}" onsubmit="return confirm('Remover este lançamento de Outros Débitos?')">
+                  <form method="post" action="{{ url_for('import_financial.delete_payment_china', iid=i.id, pid=d.id) }}" onsubmit="return confirm('Remover este item de Outros Lançamentos?')">
                     <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
                   </form>
                 </td>
@@ -123,7 +123,7 @@
       </div>
     {% else %}
       <div style="text-align: center; padding: 20px; color: var(--muted); font-size: 12.5px; background: var(--panel2); border-radius: 8px;">
-        Nenhum débito ou pagamento por fora lançado para este contêiner. Clique no botão acima para adicionar.
+        Nenhum outro lançamento registrado para este contêiner. Clique no botão acima para adicionar.
       </div>
     {% endif %}
   </div>
@@ -153,7 +153,7 @@
                 <td style="color: var(--text); font-size: 12.5px;">{{ p.paid_at.strftime('%d/%m/%Y') if p.paid_at else '—' }}</td>
                 <td>
                   <span class="badge" style="font-size: 11px; font-weight: 600; background: {{ 'rgba(3, 105, 161, 0.12)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.12)' }}; color: {{ '#0369A1' if p.payment_category == 'ci_payment' else '#B45309' }}; border: 1px solid {{ 'rgba(3, 105, 161, 0.25)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.25)' }};">
-                    {{ 'Parcela da CI' if p.payment_category == 'ci_payment' else 'Outros Débitos (Por Fora)' }}
+                    {{ 'Parcela da CI' if p.payment_category == 'ci_payment' else 'Outros Lançamentos' }}
                   </span>
                 </td>
                 <td style="white-space: normal; min-width: 160px; max-width: 260px; line-height: 1.35;">
@@ -188,13 +188,13 @@
   </div>
 </div>
 
-<!-- Modal 1: Registrar Outros Débitos (Dedicado) -->
+<!-- Modal 1: Registrar Outros Lançamentos (Dedicado) -->
 <div class="modal" id="addOtherDebitModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal-card" style="max-width: 580px;">
     <div class="modal-head">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 18px;">💳</span>
-        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text);">Lançar Outros Débitos</h3>
+        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text);">Lançar Outros Lançamentos</h3>
       </div>
       <button type="button" onclick="document.getElementById('addOtherDebitModal').style.display='none'">×</button>
     </div>
@@ -207,36 +207,38 @@
       </div>
 
       <div class="span-2">
-        <label>Descrição do Débito / Finalidade <span style="color: #EF4444;">*</span>
-          <input name="description" placeholder="Ex: Sinal rateado pago junto com contêiner 2, Diferença fora da CI..." required>
+        <label>Descrição do Lançamento / Finalidade <span style="color: #EF4444;">*</span>
+          <input name="description" placeholder="Ex: Sinal rateado pago junto com contêiner 2, valor por fora..." required>
         </label>
       </div>
 
-      <label>Valor em Dólar (USD) <span style="color: #EF4444;">*</span>
-        <input type="number" step="0.01" name="amount_usd" id="modal_debit_usd" placeholder="0.00" oninput="recalcOtherDebitRate()" required>
-      </label>
-
-      <label>Valor Debitado (R$) <span style="color: #EF4444;">*</span>
-        <input type="number" step="0.01" name="amount_brl" id="modal_debit_brl" placeholder="0.00" oninput="recalcOtherDebitRate()" required>
-      </label>
-
-      <label>Taxa de Câmbio Efetiva (R$)
-        <input type="number" step="0.0001" name="exchange_rate" id="modal_debit_rate" placeholder="Calculado automaticamente" style="background: var(--panel2);">
-      </label>
-
-      <label>Data da Liquidação / Pagamento
+      <label>Data do Pagamento
         <input type="date" name="paid_at" value="{{ today }}">
       </label>
 
-      <div class="span-2">
-        <label>Comprovante de Pagamento <span style="color: var(--muted); font-weight: normal;">(Opcional — apenas se quiser arquivar)</span>
-          <input type="file" name="receipt_file" accept=".pdf,image/*">
-        </label>
-      </div>
+      <label>Valor em Dólar (USD) <span style="color: #EF4444;">*</span>
+        <input type="number" step="0.01" name="amount_usd" id="mod_deb_usd" placeholder="0.00" required oninput="calcDebitRate()">
+      </label>
 
-      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+      <label>Valor Total Debitado (R$) <span style="color: #EF4444;">*</span>
+        <input type="number" step="0.01" name="amount_brl" id="mod_deb_brl" placeholder="0.00" required oninput="calcDebitRate()">
+      </label>
+
+      <label>Câmbio Efetivo Calculado (R$)
+        <input type="number" step="0.0001" name="exchange_rate" id="mod_deb_rate" placeholder="Automático" style="background: var(--panel2);">
+      </label>
+
+      <label>Tarifas Bancárias / IOF (R$)
+        <input type="number" step="0.01" name="bank_fees_brl" placeholder="0.00">
+      </label>
+
+      <label class="span-2">Comprovante / Recibo Bancário <span style="font-size: 11px; color: var(--muted); font-weight: normal;">(opcional)</span>
+        <input type="file" name="payment_proof" accept=".pdf,image/*">
+      </label>
+
+      <div class="span-2 modal-actions" style="margin-top: 10px;">
         <button type="button" class="btn outline" onclick="document.getElementById('addOtherDebitModal').style.display='none'">Cancelar</button>
-        <button type="submit" class="btn primary" style="background: #B45309; border-color: #B45309; color: #fff; font-weight: 700;">Salvar Débito</button>
+        <button type="submit" class="btn" style="background: #B45309; color: #fff; font-weight: 700;">Salvar Lançamento</button>
       </div>
     </form>
   </div>
@@ -253,7 +255,7 @@
       <label>Finalidade / Categoria
         <select name="payment_category" required>
           <option value="ci_payment" selected>Parcela da Commercial Invoice (CI)</option>
-          <option value="other_debit">Outros Débitos (Por Fora / Rateado)</option>
+          <option value="other_debit">Outros Lançamentos (Por Fora / Rateado)</option>
         </select>
       </label>
       <label>Data da Liquidação / Remessa
