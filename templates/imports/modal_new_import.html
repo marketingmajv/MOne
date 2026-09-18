@@ -207,10 +207,76 @@
               </g>
             </svg>
           </div>
-          <h4 style="margin: 0; font-size: 16px; color: var(--text);" id="aiLoadingTitle">A IA Gemini está analisando seus documentos...</h4>
-          <p style="margin: 6px 0 16px 0; font-size: 12px; color: var(--muted);">Classificando tipos, extraindo valores em USD, BL e chassis...</p>
-          <div style="width: 100%; max-width: 400px; height: 8px; background: var(--line); border-radius: 4px; margin: 0 auto; overflow: hidden;">
-            <div style="width: 60%; height: 100%; background: linear-gradient(90deg, #0284C7, #7C3AED); border-radius: 4px; animation: shimmer 1.8s infinite;"></div>
+          <h4 style="margin: 0; font-size: 16.5px; font-weight: 800; color: var(--text);" id="aiLoadingTitle">
+            A IA Gemini está analisando seus documentos...
+          </h4>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 16px 0; font-size: 12px; color: var(--muted); flex-wrap: wrap;">
+            <span id="aiLoadingSubtitle">Classificando tipos, extraindo valores e cruzando chassis...</span>
+            <span class="badge" id="aiLoadingTimerBadge" style="font-family: var(--font-mono); font-size: 11px; background: var(--panel2); border: 1px solid var(--line);">⏱️ 0s</span>
+          </div>
+
+          <!-- Barra de Progresso com Porcentagem e Status -->
+          <div style="max-width: 520px; margin: 0 auto 16px auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11.5px; font-weight: 700;">
+              <span id="aiProgressStatusText" style="color: var(--text);">Preparando documentos...</span>
+              <span id="aiProgressPercent" style="color: #7C3AED; font-family: var(--font-mono);">15%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;">
+              <div id="aiProgressBarFill" style="width: 15%; height: 100%; background: linear-gradient(90deg, #0284C7, #7C3AED, #EC4899); border-radius: 6px; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Linha do Tempo de 4 Etapas Vivas -->
+          <div id="aiStepsTimeline" style="max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; text-align: left;">
+            
+            <!-- Etapa 1 -->
+            <div id="ai-step-row-1" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-1" style="font-size: 16px;">⏳</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">1. Envio & Recepção dos Arquivos</strong>
+                  <small id="ai-step-detail-1" style="font-size: 11px; color: var(--muted);">Validando integridade e formatos...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-1" class="badge" style="font-size: 10px; font-weight: 700;">EM ANDAMENTO</span>
+            </div>
+
+            <!-- Etapa 2 -->
+            <div id="ai-step-row-2" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-2" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">2. Leitura & Classificação Multimodal (Gemini 2.5)</strong>
+                  <small id="ai-step-detail-2" style="font-size: 11px; color: var(--muted);">Identificando se é Commercial Invoice, BL, Packing List ou Câmbio...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-2" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
+            <!-- Etapa 3 -->
+            <div id="ai-step-row-3" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-3" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">3. Extração de Dados Financeiros & Operacionais</strong>
+                  <small id="ai-step-detail-3" style="font-size: 11px; color: var(--muted);">Capturando valores em USD, número de BL, fornecedor e datas...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-3" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
+            <!-- Etapa 4 -->
+            <div id="ai-step-row-4" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-4" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">4. Rastreio de Chassis & Auditoria Anti-Duplicidade</strong>
+                  <small id="ai-step-detail-4" style="font-size: 11px; color: var(--muted);">Extraindo VINs e conferindo histórico de chassis já cadastrados...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-4" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
           </div>
         </div>
 
@@ -607,6 +673,117 @@ function goToStep(stepNum) {
   });
 }
 
+let aiProgressTimer = null;
+let aiProgressSeconds = 0;
+let aiTimelineTimeouts = [];
+
+function setPreloaderStepState(stepNum, state, detailText) {
+  const row = document.getElementById(`ai-step-row-${stepNum}`);
+  const icon = document.getElementById(`ai-step-icon-${stepNum}`);
+  const badge = document.getElementById(`ai-step-badge-${stepNum}`);
+  const detail = document.getElementById(`ai-step-detail-${stepNum}`);
+  if (!row || !icon || !badge) return;
+
+  if (detailText && detail) {
+    detail.textContent = detailText;
+  }
+
+  if (state === 'active') {
+    row.style.opacity = '1';
+    row.style.background = 'rgba(124, 58, 237, 0.08)';
+    row.style.border = '1px solid rgba(124, 58, 237, 0.35)';
+    row.style.boxShadow = '0 0 14px rgba(124, 58, 237, 0.12)';
+    icon.textContent = '⚡';
+    badge.textContent = 'PROCESSANDO';
+    badge.style.background = 'rgba(124, 58, 237, 0.18)';
+    badge.style.color = '#7C3AED';
+    badge.style.borderColor = 'rgba(124, 58, 237, 0.3)';
+  } else if (state === 'done') {
+    row.style.opacity = '1';
+    row.style.background = 'rgba(4, 120, 87, 0.06)';
+    row.style.border = '1px solid rgba(4, 120, 87, 0.3)';
+    row.style.boxShadow = 'none';
+    icon.textContent = '✅';
+    badge.textContent = 'CONCLUÍDO';
+    badge.style.background = 'rgba(4, 120, 87, 0.15)';
+    badge.style.color = '#047857';
+    badge.style.borderColor = 'rgba(4, 120, 87, 0.3)';
+  } else {
+    row.style.opacity = '0.65';
+    row.style.background = 'var(--panel2)';
+    row.style.border = '1px solid var(--line)';
+    row.style.boxShadow = 'none';
+    icon.textContent = '⚪';
+    badge.textContent = 'AGUARDANDO';
+    badge.style.background = 'var(--panel)';
+    badge.style.color = 'var(--muted)';
+    badge.style.borderColor = 'var(--line)';
+  }
+}
+
+function updatePreloaderProgress(percent, statusMsg) {
+  const bar = document.getElementById('aiProgressBarFill');
+  const txt = document.getElementById('aiProgressPercent');
+  const status = document.getElementById('aiProgressStatusText');
+  if (bar) bar.style.width = `${percent}%`;
+  if (txt) txt.textContent = `${percent}%`;
+  if (status && statusMsg) status.textContent = statusMsg;
+}
+
+function startPreloaderTimeline(filesList) {
+  clearInterval(aiProgressTimer);
+  aiTimelineTimeouts.forEach(t => clearTimeout(t));
+  aiTimelineTimeouts = [];
+
+  aiProgressSeconds = 0;
+  const timerBadge = document.getElementById('aiLoadingTimerBadge');
+  if (timerBadge) timerBadge.textContent = '⏱️ 0s';
+
+  aiProgressTimer = setInterval(() => {
+    aiProgressSeconds++;
+    if (timerBadge) timerBadge.textContent = `⏱️ ${aiProgressSeconds}s`;
+  }, 1000);
+
+  const fileCount = filesList.length;
+  const fileNamesStr = filesList.map(f => f.name).slice(0, 3).join(', ') + (fileCount > 3 ? ` (+${fileCount - 3})` : '');
+
+  setPreloaderStepState(1, 'active', `${fileCount} arquivo${fileCount > 1 ? 's' : ''}: ${fileNamesStr}`);
+  setPreloaderStepState(2, 'waiting');
+  setPreloaderStepState(3, 'waiting');
+  setPreloaderStepState(4, 'waiting');
+  updatePreloaderProgress(20, `Enviando ${fileCount} arquivo${fileCount > 1 ? 's' : ''} para o servidor...`);
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(1, 'done');
+    setPreloaderStepState(2, 'active', 'IA analisando layout e classificando tipos documentais...');
+    updatePreloaderProgress(45, 'Leitura multimodal e classificação com Gemini 2.5...');
+  }, 800));
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(2, 'done');
+    setPreloaderStepState(3, 'active', 'Extraindo moeda, valores da fatura, número de BL e fornecedor...');
+    updatePreloaderProgress(70, 'Extraindo campos estruturados e faturas...');
+  }, 2400));
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(3, 'done');
+    setPreloaderStepState(4, 'active', 'Conferindo relação de chassis e checando duplicidades no estoque...');
+    updatePreloaderProgress(88, 'Validando unicidade de chassis e estoque...');
+  }, 4200));
+}
+
+function completePreloaderTimeline() {
+  clearInterval(aiProgressTimer);
+  aiTimelineTimeouts.forEach(t => clearTimeout(t));
+  aiTimelineTimeouts = [];
+
+  setPreloaderStepState(1, 'done');
+  setPreloaderStepState(2, 'done');
+  setPreloaderStepState(3, 'done');
+  setPreloaderStepState(4, 'done');
+  updatePreloaderProgress(100, '✨ Análise concluída com sucesso!');
+}
+
 async function startAIAnalysis() {
   if (selectedFilesList.length === 0) {
     alert('Por favor, selecione ou arraste pelo menos um documento para iniciar a análise.');
@@ -626,6 +803,9 @@ async function startAIAnalysis() {
   const checklistContent = document.getElementById('checklistContent');
   loadingBox.style.display = 'block';
   checklistContent.style.display = 'none';
+
+  // Iniciar preloader detalhado com linha do tempo viva e cronômetro
+  startPreloaderTimeline(selectedFilesList);
 
   const fd = new FormData();
   selectedFilesList.forEach(f => fd.append('documents', f));
@@ -652,6 +832,10 @@ async function startAIAnalysis() {
       throw new Error(`Falha no servidor (${res.status}): ${rawErr.slice(0, 150)}...`);
     }
 
+    completePreloaderTimeline();
+    // Breve pausa para o usuário contemplar os 100% concluídos
+    await new Promise(r => setTimeout(r, 450));
+
     loadingBox.style.display = 'none';
     checklistContent.style.display = 'block';
 
@@ -676,6 +860,7 @@ async function startAIAnalysis() {
     populateStep3Fields(result);
 
   } catch (err) {
+    completePreloaderTimeline();
     loadingBox.style.display = 'none';
     checklistContent.style.display = 'block';
     alert('Aviso ao analisar com a IA:\n' + err.message + '\n\nVocê pode prosseguir preenchendo os dados diretamente na aba "Revisão & Criar" no topo.');
