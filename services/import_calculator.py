@@ -74,7 +74,7 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
             ci_paid_usd += amt_usd
             ci_paid_brl += amt_brl
             total_paid_supplier_usd += amt_usd
-        elif cat == "additional_payment":
+        elif cat in ("additional_payment", "other_debit"):
             additional_paid_usd += amt_usd
             additional_paid_brl += amt_brl
             total_paid_supplier_usd += amt_usd
@@ -215,6 +215,8 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "ci_paid_brl": float(ci_paid_brl),
         "additional_paid_usd": float(additional_paid_usd),
         "additional_paid_brl": float(additional_paid_brl),
+        "other_debits_usd": float(additional_paid_usd),
+        "other_debits_brl": float(additional_paid_brl),
         "total_supplier_paid_usd": float(total_paid_supplier_usd),
         "total_supplier_paid_brl": float(total_supplier_paid_brl),
         "total_bank_fees_brl": float(total_bank_fees_brl),

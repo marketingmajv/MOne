@@ -149,6 +149,28 @@ def create_import():
         from services.import_ai_service import persist_creation_documents
         persist_creation_documents(new_id, request, conn, me.get("id"))
 
+        # Registra lançamento inicial de Outros Débitos se informado
+        debit_desc = request.form.get("initial_debit_description", "").strip()
+        debit_usd = request.form.get("initial_debit_amount_usd", "0").strip() or "0"
+        debit_brl = request.form.get("initial_debit_amount_brl", "0").strip() or "0"
+        debit_rate = request.form.get("initial_debit_exchange_rate") or None
+        try:
+            val_u, val_b = float(debit_usd), float(debit_brl)
+            if val_u > 0 or val_b > 0:
+                if not debit_rate and val_u > 0 and val_b > 0:
+                    debit_rate = str(round(val_b / val_u, 4))
+                conn.execute(
+                    """
+                    INSERT INTO import_payments_china (
+                        import_id, payment_category, description, amount_usd, amount_brl,
+                        exchange_rate, bank_fees_brl, paid_at, is_verified
+                    ) VALUES (%s, 'other_debit', %s, %s, %s, %s, 0.0, CURRENT_DATE, TRUE)
+                    """,
+                    (new_id, debit_desc or "Outros Débitos (Registro Inicial)", debit_usd, debit_brl, debit_rate),
+                )
+        except Exception as deb_err:
+            logger.warning("Falha ao registrar débito inicial na criação: %s", deb_err)
+
         calculate_import_financials(new_id, conn)
         run_import_audit_checks(new_id, conn)
         audit("import.created", f"import_id={new_id}, ref={ref}")
@@ -272,6 +294,7 @@ def import_detail(iid: int):
         doc_types=DOC_TYPES_MAP,
         steps_order=STEPS_ORDER,
         active_tab=active_tab,
+        today=date.today().isoformat(),
     )
 
 

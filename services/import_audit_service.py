@@ -64,7 +64,7 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     add_paid_usd = sum(
         to_dec(p.get("amount_usd"))
         for p in china_payments
-        if p.get("payment_category") == "additional_payment"
+        if p.get("payment_category") in ("additional_payment", "other_debit")
     )
     ci_paid_usd = sum(
         to_dec(p.get("amount_usd"))
@@ -78,9 +78,9 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
         status = "ok" if abs(diff_balance) <= Decimal("1.00") else ("pending_info" if add_paid_usd < expected_diff else "divergent")
         checks.append({
             "check_code": "PI_VS_CI_ADDITIONAL",
-            "title": "Conferência da Compra: PI vs (CI + Adicionais)",
+            "title": "Conferência da Compra: PI vs (CI + Outros Débitos)",
             "status": status,
-            "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Adicionais Comprovados: US$ {add_paid_usd:,.2f}.",
+            "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Outros Débitos: US$ {add_paid_usd:,.2f}.",
             "left_value": f"US$ {pi_usd:,.2f}",
             "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
             "diff_value": float(diff_balance),

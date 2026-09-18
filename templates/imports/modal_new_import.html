@@ -14,23 +14,23 @@
       <button type="button" onclick="closeModal('newImport')">×</button>
     </div>
 
-    <!-- Stepper Visual de 3 Passos -->
+    <!-- Stepper Visual de 3 Passos (Navegação Livre) -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
-      <div id="step-tab-1" class="wizard-step active" style="padding: 10px; border-radius: 8px; background: rgba(3, 105, 161, 0.1); border: 1px solid #0284C7; display: flex; align-items: center; gap: 8px;">
+      <div id="step-tab-1" class="wizard-step active" onclick="goToStep(1)" style="padding: 10px; border-radius: 8px; background: rgba(3, 105, 161, 0.1); border: 1px solid #0284C7; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
         <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284C7; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800;">1</span>
         <div>
           <strong style="display: block; font-size: 12px; color: #0284C7;">Arquivos & Estágio</strong>
           <small style="color: var(--muted); font-size: 10px;">Upload em lote</small>
         </div>
       </div>
-      <div id="step-tab-2" class="wizard-step" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px;">
+      <div id="step-tab-2" class="wizard-step" onclick="goToStep(2)" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
         <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">2</span>
         <div>
           <strong style="display: block; font-size: 12px; color: var(--muted);">Checklist da IA</strong>
           <small style="color: var(--muted); font-size: 10px;">Trava e validação</small>
         </div>
       </div>
-      <div id="step-tab-3" class="wizard-step" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px;">
+      <div id="step-tab-3" class="wizard-step" onclick="goToStep(3)" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
         <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">3</span>
         <div>
           <strong style="display: block; font-size: 12px; color: var(--muted);">Revisão & Criar</strong>
@@ -113,12 +113,51 @@
           <textarea id="inputDocumentNotes" name="document_notes" rows="2" placeholder="Ex: O invoice veio em 2 páginas; o BL correto é o Master; atentar para comprovante de ICMS separado..." style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
         </div>
 
+        <!-- Bloco no Passo 1: Outros Débitos (Digitação Direta / Valores Pagos por Fora) -->
+        <div style="margin-bottom: 16px; padding: 14px; border-radius: 10px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">💳</span>
+              <strong style="font-size: 13.5px; color: var(--text);">Outros Débitos / Valores Pagos por Fora (Opcional)</strong>
+            </div>
+            <span class="badge" style="font-size: 10.5px; font-weight: 700; background: rgba(245, 158, 11, 0.18); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.3);">
+              Rateio & Digitação Manual (Sem Comprovante)
+            </span>
+          </div>
+          <p style="margin: 0 0 12px 0; font-size: 12px; color: var(--muted); line-height: 1.45;">
+            Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, <strong>digite os valores diretamente aqui</strong>. O envio de comprovantes é totalmente dispensado.
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px;">
+            <div style="grid-column: span 2;">
+              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Descrição do Débito</label>
+              <input type="text" id="inp_debit_desc_p1" placeholder="Ex: Sinal rateado pago junto com contêiner 2..." style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'desc')">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor em Dólar (USD)</label>
+              <input type="number" step="0.01" id="inp_debit_usd_p1" placeholder="0.00" style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'usd')">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor Debitado (R$)</label>
+              <input type="number" step="0.01" id="inp_debit_brl_p1" placeholder="0.00" style="font-size: 12.5px;" oninput="syncDebitFields(this.value, 'brl')">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Câmbio Efetivo (R$)</label>
+              <input type="number" step="0.0001" id="inp_debit_rate_p1" placeholder="Automático" style="font-size: 12.5px; background: var(--panel2);" oninput="syncDebitFields(this.value, 'rate')">
+            </div>
+          </div>
+        </div>
+
         <!-- Rodapé do Passo 1 -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px; flex-wrap: wrap; gap: 10px;">
           <button type="button" class="btn outline" onclick="closeModal('newImport')">Cancelar</button>
-          <button type="button" class="btn primary" id="btnAnalyzeBatch" onclick="startAIAnalysis()" style="font-weight: 700; padding: 10px 20px;">
-            ⚡ Analisar Arquivos com IA
-          </button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn secondary" onclick="goToStep(3)" style="font-weight: 700; padding: 10px 18px; border: 1px solid var(--line);">
+              ✏️ Preencher Manualmente / Pular Upload ➡️
+            </button>
+            <button type="button" class="btn primary" id="btnAnalyzeBatch" onclick="startAIAnalysis()" style="font-weight: 700; padding: 10px 20px;">
+              ⚡ Analisar Arquivos com IA
+            </button>
+          </div>
         </div>
       </div>
 
@@ -294,6 +333,38 @@
             </label>
           </div>
 
+          <!-- Bloco: Outros Débitos (Opcional) -->
+          <div class="span-2" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 14px; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">💳</span>
+                <strong style="font-size: 13px; color: var(--text);">Outros Débitos / Pagamentos por Fora (Opcional)</strong>
+              </div>
+              <span class="badge" style="font-size: 10px; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #B45309;">Rateio & Digitação Manual</span>
+            </div>
+            <p style="margin: 0 0 12px 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">
+              Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, informe os valores abaixo. <strong>Dispensado o envio de comprovantes neste momento</strong>.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+              <div style="grid-column: span 2;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Descrição do Débito</label>
+                <input type="text" name="initial_debit_description" id="inp_debit_desc" placeholder="Ex: Sinal rateado pago com contêiner 2..." style="font-size: 12px;" oninput="syncDebitFields(this.value, 'desc')">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor em Dólar (USD)</label>
+                <input type="number" step="0.01" name="initial_debit_amount_usd" id="inp_debit_usd" placeholder="0.00" oninput="syncDebitFields(this.value, 'usd')" style="font-size: 12px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Valor Debitado (R$)</label>
+                <input type="number" step="0.01" name="initial_debit_amount_brl" id="inp_debit_brl" placeholder="0.00" oninput="syncDebitFields(this.value, 'brl')" style="font-size: 12px;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px;">Câmbio Efetivo (R$)</label>
+                <input type="number" step="0.0001" name="initial_debit_exchange_rate" id="inp_debit_rate" placeholder="Automático" style="font-size: 12px; background: var(--panel2);" oninput="syncDebitFields(this.value, 'rate')">
+              </div>
+            </div>
+          </div>
+
           <label class="span-2">Observações Gerais
             <textarea name="notes" id="inp_notes" placeholder="Detalhes adicionais, contêineres, orientações..." rows="2"></textarea>
           </label>
@@ -317,6 +388,44 @@ let selectedFilesList = [];
 let activeImportStage = 'water';
 let activeRules = [];
 let aiAnalysisResult = null;
+
+function recalcWizardDebitRate() {
+  const usd = parseFloat(document.getElementById('inp_debit_usd')?.value || document.getElementById('inp_debit_usd_p1')?.value || 0);
+  const brl = parseFloat(document.getElementById('inp_debit_brl')?.value || document.getElementById('inp_debit_brl_p1')?.value || 0);
+  const rateInput = document.getElementById('inp_debit_rate');
+  const rateInputP1 = document.getElementById('inp_debit_rate_p1');
+  if (usd > 0 && brl > 0) {
+    const rateVal = (brl / usd).toFixed(4);
+    if (rateInput) rateInput.value = rateVal;
+    if (rateInputP1) rateInputP1.value = rateVal;
+  }
+}
+
+function syncDebitFields(val, type) {
+  if (type === 'desc') {
+    const el3 = document.getElementById('inp_debit_desc');
+    const el1 = document.getElementById('inp_debit_desc_p1');
+    if (el3 && el3.value !== val) el3.value = val;
+    if (el1 && el1.value !== val) el1.value = val;
+  } else if (type === 'usd') {
+    const el3 = document.getElementById('inp_debit_usd');
+    const el1 = document.getElementById('inp_debit_usd_p1');
+    if (el3 && el3.value !== val) el3.value = val;
+    if (el1 && el1.value !== val) el1.value = val;
+    recalcWizardDebitRate();
+  } else if (type === 'brl') {
+    const el3 = document.getElementById('inp_debit_brl');
+    const el1 = document.getElementById('inp_debit_brl_p1');
+    if (el3 && el3.value !== val) el3.value = val;
+    if (el1 && el1.value !== val) el1.value = val;
+    recalcWizardDebitRate();
+  } else if (type === 'rate') {
+    const el3 = document.getElementById('inp_debit_rate');
+    const el1 = document.getElementById('inp_debit_rate_p1');
+    if (el3 && el3.value !== val) el3.value = val;
+    if (el1 && el1.value !== val) el1.value = val;
+  }
+}
 
 let DOC_OPTIONS = [
   { code: 'PI', label: 'Proforma Invoice (PI)' },

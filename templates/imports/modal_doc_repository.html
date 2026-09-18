@@ -1,9 +1,9 @@
 <!-- Modal: Repositório de Documentos de Importação (templates/imports/modal_doc_repository.html) -->
 <div class="modal" id="docRepositoryModal" style="display: none;" onclick="if(event.target===this)closeRepositoryModal()">
-  <div class="modal-card large" style="max-width: 1100px; width: min(1100px, 96vw); margin: auto !important; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);">
+  <div class="modal-card large" style="max-width: 1100px; width: min(1100px, 96vw); margin: auto !important; height: 90vh; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);">
     
     <!-- Topbar Header -->
-    <div style="padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <div style="padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; flex-shrink: 0;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(37, 99, 235, 0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 22px;">
           📁
@@ -30,14 +30,14 @@
           <span>Baixar Dossiê ZIP</span>
         </button>
         {% endif %}
-        <button type="button" onclick="closeRepositoryModal()" style="background: none; border: none; font-size: 26px; cursor: pointer; color: var(--muted); line-height: 1; padding: 4px;">
-          &times;
+        <button type="button" onclick="closeRepositoryModal()" class="repo-modal-close" title="Fechar">
+          ✕
         </button>
       </div>
     </div>
 
     <!-- Controls Bar: Seletor de Importação & Barra de Busca Instantânea -->
-    <div style="padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <div style="padding: 12px 24px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; flex-shrink: 0;">
       <div style="flex: 1; min-width: 260px;">
         <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px;">
           Lote de Importação
@@ -52,26 +52,31 @@
           Busca Instantânea no Repositório
         </label>
         <div style="position: relative;">
-          <input type="text" id="repoSearchInput" oninput="onRepositorySearchInput(this.value)" placeholder="🔍 Buscar por nome, número, tipo (ex: CI, ICMS, 58400, Carreta)..." style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 0 12px 0 34px; font-size: 13px;">
-          <span style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted); pointer-events: none;">🔎</span>
+          <input type="text" id="repoSearchInput" oninput="onRepositorySearchInput(this.value)" placeholder="Buscar por nome, número, tipo (ex: CI, ICMS, 58400, Carreta)..." style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); padding: 0 12px 0 38px; font-size: 13px; box-sizing: border-box;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--muted); pointer-events: none; line-height: 1;">🔍</span>
         </div>
       </div>
     </div>
 
     <!-- Repository Stats Banner -->
-    <div id="repoStatsBanner" style="padding: 10px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 8px;">
-      <div>
-        Total no Dossiê: <strong id="repoTotalFilesCount" style="color: var(--text);">0 arquivos</strong>
-        <span style="margin: 0 6px;">•</span>
-        Tamanho Acumulado: <strong id="repoTotalSize" style="color: var(--text);">0 KB</strong>
+    <div id="repoStatsBanner" style="padding: 10px 24px; background: var(--panel2); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 10px; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div>
+          Total no Dossiê: <strong id="repoTotalFilesCount" style="color: var(--text);">0 arquivos</strong>
+          <span style="margin: 0 6px;">•</span>
+          Tamanho Acumulado: <strong id="repoTotalSize" style="color: var(--text);">0 KB</strong>
+        </div>
+        <button type="button" id="btnToggleAllFolders" class="btn sm" onclick="toggleAllRepositoryFolders()" style="font-size: 11px; font-weight: 700; padding: 2px 8px; height: 26px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); color: var(--text);">
+          ▾ Expandir Pastas
+        </button>
       </div>
-      <div id="repoFolderPills" style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <div id="repoFolderPills" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
         <!-- Pills de pastas preenchidas via JS -->
       </div>
     </div>
 
     <!-- Repository Body (Pastas em Acordeão) -->
-    <div id="repoBodyContent" style="flex: 1; overflow-y: auto; padding: 20px 24px; background: var(--panel); display: flex; flex-direction: column; gap: 14px;">
+    <div id="repoBodyContent" style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px 24px; background: var(--panel); display: flex; flex-direction: column; gap: 12px;">
       <!-- Preenchido dinamicamente pelo JS -->
       <div style="text-align: center; padding: 40px; color: var(--muted);">
         Selecione uma importação acima para carregar os documentos.
@@ -83,10 +88,10 @@
 
 <!-- Submodal: Visualizador Integrado de Documentos com Metadados da IA -->
 <div class="modal" id="repoDocViewerModal" style="display: none; z-index: 1100;" onclick="if(event.target===this)closeDocumentViewer()">
-  <div class="modal-card" style="max-width: 1150px; width: min(1150px, 96vw); margin: auto !important; height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 25px 60px -10px rgba(0,0,0,0.5);">
+  <div class="modal-card" style="max-width: 1150px; width: min(1150px, 96vw); margin: auto !important; height: 90vh; max-height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 25px 60px -10px rgba(0,0,0,0.5);">
     
     <!-- Viewer Header -->
-    <div style="padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;">
       <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
         <span id="viewerDocIcon" style="font-size: 20px;">📄</span>
         <div>
@@ -103,14 +108,14 @@
         <a id="viewerOpenTabBtn" href="#" target="_blank" class="btn sm secondary" style="font-weight: 700; height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
           ↗ Abrir em Nova Aba
         </a>
-        <button type="button" onclick="closeDocumentViewer()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted); padding: 4px; line-height: 1;">
-          &times;
+        <button type="button" onclick="closeDocumentViewer()" class="repo-modal-close" title="Fechar">
+          ✕
         </button>
       </div>
     </div>
 
     <!-- Viewer Body: Split (Left: File Preview, Right: AI Metadata) -->
-    <div style="flex: 1; display: flex; overflow: hidden; background: #0F172A;">
+    <div style="flex: 1; min-height: 0; display: flex; overflow: hidden; background: #0F172A;">
       <!-- Preview Container -->
       <div style="flex: 1.6; height: 100%; border-right: 1px solid var(--line); position: relative; display: flex; align-items: center; justify-content: center; background: #090D16;">
         <iframe id="viewerFrame" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
@@ -174,6 +179,7 @@
   justify-content: center !important;
   align-items: center !important;
   padding: 20px !important;
+  z-index: 1050;
 }
 #docRepositoryModal.show,
 #repoDocViewerModal.show {
@@ -183,20 +189,41 @@
 #repoDocViewerModal .modal-card {
   margin: auto !important;
 }
+.repo-modal-close {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+.repo-modal-close:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
 .repo-folder-card {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--panel2);
   overflow: hidden;
   transition: all 0.2s ease;
+  flex-shrink: 0 !important; /* CRITICAL FIX: previne encolhimento forçado do flexbox */
 }
 .repo-folder-header {
-  padding: 12px 18px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
+  background: var(--panel2);
+  transition: background 0.15s ease;
 }
 .repo-folder-header:hover {
   background: rgba(0, 0, 0, 0.03);
@@ -205,13 +232,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 18px;
+  padding: 12px 18px;
   border-top: 1px solid var(--line);
   font-size: 12.5px;
   background: var(--panel);
+  transition: background 0.15s ease;
 }
 .repo-doc-row:hover {
   background: var(--panel2);
+}
+.repo-pill-btn {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.repo-pill-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
 }
 </style>
 

@@ -7,12 +7,17 @@
         <h4 style="margin: 0; font-size: 16px; color: var(--text);">🌏 Controle da Compra e Pagamentos na China</h4>
         <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--muted); line-height: 1.5;">
           A <strong>Proforma Invoice (PI)</strong> representa o teto total da compra. A <strong>Commercial Invoice (CI)</strong> representa a parcela oficial declarada.
-          Os pagamentos adicionais completam a compra sem duplicar despesas.
+          Os <strong>Outros Débitos</strong> completam a compra sem duplicar despesas.
         </p>
       </div>
-      <button class="btn sm primary" onclick="document.getElementById('addChinaPaymentModal').style.display='flex'">
-        + Registrar Pagamento na China
-      </button>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn sm" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;" onclick="document.getElementById('addOtherDebitModal').style.display='flex'">
+          💳 + Lançar Outros Débitos
+        </button>
+        <button type="button" class="btn sm primary" onclick="document.getElementById('addChinaPaymentModal').style.display='flex'">
+          + Registrar Pagamento CI
+        </button>
+      </div>
     </div>
 
     <!-- Indicadores da Compra -->
@@ -30,7 +35,7 @@
         <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">{{ financials.ci_paid_usd|money_usd }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
-        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Pagamentos Adicionais</span>
+        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Outros Débitos (Por Fora)</span>
         <div class="comex-value-amber" style="font-size: 18px; font-weight: 800;">{{ financials.additional_paid_usd|money_usd }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
@@ -42,16 +47,97 @@
     </div>
   </div>
 
-  <!-- Tabela de Pagamentos Registrados -->
+  <!-- Card Destacado: Seção Dedicada de [Outros Débitos] -->
+  {% set other_debit_list = [] %}
+  {% for p in china_payments %}
+    {% if p.payment_category in ['additional_payment', 'other_debit'] %}
+      {% set _ = other_debit_list.append(p) %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="comex-card" style="margin-bottom: 24px; border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.02);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 20px;">💳</span>
+        <div>
+          <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text);">
+            Outros Débitos & Pagamentos por Fora
+          </h4>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">
+            Valores pagos fora da CI ou rateados entre contêineres. Comprovante 100% opcional.
+          </p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="text-align: right;">
+          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; display: block;">Total Outros Débitos</span>
+          <strong style="color: #B45309; font-size: 16px; font-family: var(--font-mono);">
+            {{ financials.additional_paid_usd|money_usd }}
+            <span style="font-size: 12px; color: var(--muted);">({{ financials.additional_paid_brl|money }})</span>
+          </strong>
+        </div>
+        <button type="button" class="btn sm" style="background: #B45309; color: #fff; font-weight: 700; border: none;" onclick="document.getElementById('addOtherDebitModal').style.display='flex'">
+          + Lançar Outro Débito
+        </button>
+      </div>
+    </div>
+
+    {% if other_debit_list %}
+      <div class="table-container" style="overflow-x: auto; width: 100%; border: 1px solid var(--line); border-radius: 8px;">
+        <table class="table" style="width: 100%; margin: 0; font-size: 12.5px;">
+          <thead>
+            <tr style="background: var(--panel2);">
+              <th style="width: 95px;">Data</th>
+              <th style="min-width: 180px;">Descrição do Débito</th>
+              <th style="text-align: right; width: 110px;">Valor (USD)</th>
+              <th style="text-align: right; width: 100px;">Câmbio (R$)</th>
+              <th style="text-align: right; width: 120px;">Valor Débito (R$)</th>
+              <th style="text-align: center; width: 90px;">Comprovante</th>
+              <th style="text-align: center; width: 50px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in other_debit_list %}
+              <tr>
+                <td>{{ d.paid_at.strftime('%d/%m/%Y') if d.paid_at else '—' }}</td>
+                <td><strong style="color: var(--text);">{{ d.description or 'Outros Débitos' }}</strong></td>
+                <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: #B45309;">{{ d.amount_usd|money_usd }}</td>
+                <td style="text-align: right; color: var(--muted); font-family: var(--font-mono);">{{ ('R$ %.4f'|format(d.exchange_rate)) if d.exchange_rate else '—' }}</td>
+                <td style="text-align: right; font-weight: 700; font-family: var(--font-mono); color: var(--text);">{{ d.amount_brl|money }}</td>
+                <td style="text-align: center;">
+                  {% if d.doc_url %}
+                    <a href="{{ url_for('uploads', filename=d.doc_url) }}" target="_blank" class="badge" style="text-decoration: none;">📄 Ver</a>
+                  {% else %}
+                    <span style="font-size: 11px; color: var(--muted); font-style: italic;">Manual</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: center;">
+                  <form method="post" action="{{ url_for('import_financial.delete_payment_china', iid=i.id, pid=d.id) }}" onsubmit="return confirm('Remover este lançamento de Outros Débitos?')">
+                    <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 20px; color: var(--muted); font-size: 12.5px; background: var(--panel2); border-radius: 8px;">
+        Nenhum débito ou pagamento por fora lançado para este contêiner. Clique no botão acima para adicionar.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Tabela Global de Pagamentos Registrados -->
   <div class="comex-card">
-    <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text);">Histórico de Remessas e Liquidações ao Exportador</h4>
+    <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text);">Histórico Completo de Remessas e Liquidações</h4>
     {% if china_payments %}
       <div class="table-container" style="overflow-x: auto; width: 100%; max-width: 100%;">
         <table class="table" style="width: 100%; min-width: 820px; border-collapse: collapse;">
           <thead>
             <tr>
               <th style="width: 95px;">Data</th>
-              <th style="width: 150px;">Finalidade / Categoria</th>
+              <th style="width: 160px;">Finalidade / Categoria</th>
               <th style="min-width: 160px;">Descrição</th>
               <th style="text-align: right; width: 110px;">Valor (USD)</th>
               <th style="text-align: right; width: 100px;">Câmbio (R$)</th>
@@ -67,7 +153,7 @@
                 <td style="color: var(--text); font-size: 12.5px;">{{ p.paid_at.strftime('%d/%m/%Y') if p.paid_at else '—' }}</td>
                 <td>
                   <span class="badge" style="font-size: 11px; font-weight: 600; background: {{ 'rgba(3, 105, 161, 0.12)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.12)' }}; color: {{ '#0369A1' if p.payment_category == 'ci_payment' else '#B45309' }}; border: 1px solid {{ 'rgba(3, 105, 161, 0.25)' if p.payment_category == 'ci_payment' else 'rgba(180, 83, 9, 0.25)' }};">
-                    {{ 'Parcela da CI' if p.payment_category == 'ci_payment' else 'Pagamento Adicional' }}
+                    {{ 'Parcela da CI' if p.payment_category == 'ci_payment' else 'Outros Débitos (Por Fora)' }}
                   </span>
                 </td>
                 <td style="white-space: normal; min-width: 160px; max-width: 260px; line-height: 1.35;">
@@ -81,7 +167,7 @@
                   {% if p.doc_url %}
                     <a href="{{ url_for('uploads', filename=p.doc_url) }}" target="_blank" class="badge" style="text-decoration: none;">📄 Ver</a>
                   {% else %}
-                    <span style="color: var(--muted);">—</span>
+                    <span style="color: var(--muted); font-size: 11px;">—</span>
                   {% endif %}
                 </td>
                 <td style="text-align: center;">
@@ -102,18 +188,72 @@
   </div>
 </div>
 
-<!-- Modal: Registrar Pagamento na China -->
+<!-- Modal 1: Registrar Outros Débitos (Dedicado) -->
+<div class="modal" id="addOtherDebitModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 580px;">
+    <div class="modal-head">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 18px;">💳</span>
+        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text);">Lançar Outros Débitos</h3>
+      </div>
+      <button type="button" onclick="document.getElementById('addOtherDebitModal').style.display='none'">×</button>
+    </div>
+
+    <form method="post" action="{{ url_for('import_financial.add_payment_china', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <input type="hidden" name="payment_category" value="other_debit">
+
+      <div class="span-2" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text); line-height: 1.4;">
+        💡 <strong>Flexibilidade:</strong> Digite o valor efetivo pago para este contêiner. O comprovante é <strong>100% opcional</strong> para facilitar pagamentos unificados em lote.
+      </div>
+
+      <div class="span-2">
+        <label>Descrição do Débito / Finalidade <span style="color: #EF4444;">*</span>
+          <input name="description" placeholder="Ex: Sinal rateado pago junto com contêiner 2, Diferença fora da CI..." required>
+        </label>
+      </div>
+
+      <label>Valor em Dólar (USD) <span style="color: #EF4444;">*</span>
+        <input type="number" step="0.01" name="amount_usd" id="modal_debit_usd" placeholder="0.00" oninput="recalcOtherDebitRate()" required>
+      </label>
+
+      <label>Valor Debitado (R$) <span style="color: #EF4444;">*</span>
+        <input type="number" step="0.01" name="amount_brl" id="modal_debit_brl" placeholder="0.00" oninput="recalcOtherDebitRate()" required>
+      </label>
+
+      <label>Taxa de Câmbio Efetiva (R$)
+        <input type="number" step="0.0001" name="exchange_rate" id="modal_debit_rate" placeholder="Calculado automaticamente" style="background: var(--panel2);">
+      </label>
+
+      <label>Data da Liquidação / Pagamento
+        <input type="date" name="paid_at" value="{{ today }}">
+      </label>
+
+      <div class="span-2">
+        <label>Comprovante de Pagamento <span style="color: var(--muted); font-weight: normal;">(Opcional — apenas se quiser arquivar)</span>
+          <input type="file" name="receipt_file" accept=".pdf,image/*">
+        </label>
+      </div>
+
+      <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
+        <button type="button" class="btn outline" onclick="document.getElementById('addOtherDebitModal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary" style="background: #B45309; border-color: #B45309; color: #fff; font-weight: 700;">Salvar Débito</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Registrar Pagamento Oficial na China (CI) -->
 <div class="modal" id="addChinaPaymentModal" style="display: none;" onclick="if(event.target===this)this.style.display='none'">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>Registrar Pagamento na China</h3>
+      <h3>Registrar Pagamento na China (CI)</h3>
       <button type="button" onclick="document.getElementById('addChinaPaymentModal').style.display='none'">×</button>
     </div>
-    <form method="post" action="{{ url_for('import_financial.add_payment_china', iid=i.id) }}" class="form-grid">
+    <form method="post" action="{{ url_for('import_financial.add_payment_china', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
       <label>Finalidade / Categoria
         <select name="payment_category" required>
-          <option value="ci_payment">Parcela da Commercial Invoice (CI)</option>
-          <option value="additional_payment">Pagamento Adicional / Fora da CI</option>
+          <option value="ci_payment" selected>Parcela da Commercial Invoice (CI)</option>
+          <option value="other_debit">Outros Débitos (Por Fora / Rateado)</option>
         </select>
       </label>
       <label>Data da Liquidação / Remessa
@@ -136,6 +276,11 @@
       <label>Tarifas Bancárias / IOF (R$)
         <input type="number" step="0.01" name="bank_fees_brl" value="0.00">
       </label>
+      <div class="span-2">
+        <label>Comprovante (Opcional)
+          <input type="file" name="receipt_file" accept=".pdf,image/*">
+        </label>
+      </div>
       <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
         <button type="button" class="btn outline" onclick="document.getElementById('addChinaPaymentModal').style.display='none'">Cancelar</button>
         <button type="submit" class="btn primary">Salvar Pagamento</button>
@@ -143,3 +288,14 @@
     </form>
   </div>
 </div>
+
+<script>
+function recalcOtherDebitRate() {
+  const usd = parseFloat(document.getElementById('modal_debit_usd')?.value || 0);
+  const brl = parseFloat(document.getElementById('modal_debit_brl')?.value || 0);
+  const rateInput = document.getElementById('modal_debit_rate');
+  if (rateInput && usd > 0 && brl > 0) {
+    rateInput.value = (brl / usd).toFixed(4);
+  }
+}
+</script>

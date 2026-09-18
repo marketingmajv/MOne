@@ -9,6 +9,7 @@
     selectedImportId: null,
     currentTree: null,
     openFolders: {},
+    allExpanded: false,
   };
 
   function formatBytes(bytes) {
@@ -25,6 +26,13 @@
     if (["jpg", "jpeg", "png", "webp"].includes(ext)) return "🖼️";
     if (["xlsx", "xls", "csv"].includes(ext)) return "📊";
     return "📄";
+  }
+
+  function cleanDocTitle(title, filename) {
+    if (!title) return filename || "Documento";
+    const match = title.match(/^Documento\s*\((.*?)\)$/i);
+    if (match && match[1]) return match[1];
+    return title;
   }
 
   window.openRepositoryModal = async function (preselectedId) {
@@ -73,6 +81,7 @@
     const sel = document.getElementById("repoImportSelect");
     const iid = sel.value;
     repoState.selectedImportId = iid;
+    repoState.openFolders = {};
     if (!iid) {
       document.getElementById("repoBodyContent").innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Selecione uma importação acima para carregar os documentos.</div>';
       document.getElementById("repoTotalFilesCount").textContent = "0 arquivos";
@@ -106,15 +115,15 @@
     document.getElementById("repoTotalFilesCount").textContent = `${repo.total_files} arquivo(s)`;
     document.getElementById("repoTotalSize").textContent = formatBytes(repo.total_bytes);
 
-    // Pills de pastas
+    // Pills interativas de pastas no cabeçalho
     const pillsCont = document.getElementById("repoFolderPills");
     pillsCont.innerHTML = (repo.folders || [])
       .filter((f) => f.count > 0)
       .map(
         (f) => `
-        <span class="badge" style="font-size:10.5px;background:${f.bg};color:${f.color};border:1px solid ${f.border};font-weight:700;">
+        <button type="button" class="badge repo-pill-btn" onclick="focusRepositoryFolder('${f.id}')" title="Ir para ${f.title}" style="font-size:11px;background:${f.bg};color:${f.color};border:1px solid ${f.border};font-weight:700;padding:3px 8px;border-radius:6px;">
           ${f.icon} ${f.count}
-        </span>
+        </button>
       `
       )
       .join("");
@@ -127,18 +136,20 @@
 
     cont.innerHTML = repo.folders
       .map((f) => {
-        const isOpen = repoState.openFolders[f.id] !== false && f.count > 0;
+        const hasDocs = f.count > 0;
+        const isOpen = repoState.openFolders[f.id] !== undefined ? repoState.openFolders[f.id] : hasDocs;
+        
         const docsHtml = (f.documents || [])
           .map(
             (d) => `
           <div class="repo-doc-row">
-            <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;min-width:240px;">
-              <span style="font-size:18px;">${getFileIcon(d.filename)}</span>
-              <div style="overflow:hidden;">
-                <strong style="display:block;color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:440px;" title="${d.title || d.filename}">
-                  ${d.title || d.filename}
+            <div style="display:flex;align-items:center;gap:12px;overflow:hidden;flex:1;min-width:240px;">
+              <span style="font-size:22px;line-height:1;flex-shrink:0;">${getFileIcon(d.filename)}</span>
+              <div style="overflow:hidden;min-width:0;">
+                <strong style="display:block;color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;" title="${d.title || d.filename}">
+                  ${cleanDocTitle(d.title, d.filename)}
                 </strong>
-                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:2px;">
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:3px;flex-wrap:wrap;">
                   <span class="badge" style="font-size:9.5px;padding:1px 6px;background:${f.bg};color:${f.color};border:1px solid ${f.border};font-weight:700;">
                     ${d.doc_type_label}
                   </span>
@@ -149,12 +160,12 @@
               </div>
             </div>
 
-            <div style="display:flex;align-items:center;gap:8px;">
-              <button type="button" class="btn sm secondary" onclick="openDocumentViewer(${d.id})" style="font-size:11.5px;font-weight:700;padding:5px 10px;">
-                👁️ Visualizar
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <button type="button" class="btn sm secondary" onclick="openDocumentViewer(${d.id})" style="font-size:11.5px;font-weight:700;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;">
+                <span>👁️</span> Visualizar
               </button>
-              <a href="/uploads/${d.file_url}" download="${d.filename}" class="btn sm secondary" style="font-size:11.5px;font-weight:700;padding:5px 10px;text-decoration:none;">
-                ⬇️ Baixar
+              <a href="/uploads/${d.file_url}" download="${d.filename}" class="btn sm secondary" style="font-size:11.5px;font-weight:700;padding:5px 10px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                <span>⬇️</span> Baixar
               </a>
             </div>
           </div>
@@ -162,25 +173,31 @@
           )
           .join("");
 
+        const emptyNotice = `
+          <div style="padding:14px 18px;font-size:12px;color:var(--muted);background:var(--panel);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;">
+            <span>ℹ️</span> Nenhum documento anexado nesta pasta até o momento.
+          </div>
+        `;
+
         return `
-        <div class="repo-folder-card">
+        <div class="repo-folder-card" id="folder_card_${f.id}" style="${hasDocs ? `border-color: ${f.border};` : 'opacity: 0.85;'}">
           <div class="repo-folder-header" onclick="toggleRepositoryFolder('${f.id}')">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:20px;">${f.icon}</span>
-              <div>
-                <strong style="font-size:13.5px;color:var(--text);">${f.title}</strong>
-                <p style="margin:2px 0 0 0;font-size:11.5px;color:var(--muted);">${f.description}</p>
+            <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+              <span style="font-size:22px;line-height:1;margin-top:2px;flex-shrink:0;">${f.icon}</span>
+              <div style="min-width:0;flex:1;">
+                <strong style="font-size:14px;color:var(--text);display:block;line-height:1.3;">${f.title}</strong>
+                <p style="margin:3px 0 0 0;font-size:11.5px;color:var(--muted);line-height:1.4;word-break:break-word;">${f.description}</p>
               </div>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <span class="badge" style="background:${f.bg};color:${f.color};border:1px solid ${f.border};font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;">
-                ${f.count} doc(s)
+            <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:12px;">
+              <span class="badge" style="background:${hasDocs ? f.bg : 'var(--panel)'};color:${hasDocs ? f.color : 'var(--muted)'};border:1px solid ${hasDocs ? f.border : 'var(--line)'};font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;">
+                ${f.count} doc${f.count === 1 ? '' : 's'}
               </span>
-              <span id="arrow_${f.id}" style="font-size:14px;color:var(--muted);transition:transform 0.2s;transform:${isOpen ? "rotate(180deg)" : "rotate(0deg)"};">▾</span>
+              <span id="arrow_${f.id}" style="font-size:13px;color:var(--muted);transition:transform 0.2s;display:inline-block;transform:${isOpen ? "rotate(180deg)" : "rotate(0deg)"};">▾</span>
             </div>
           </div>
           <div id="folder_body_${f.id}" style="display:${isOpen ? "block" : "none"};">
-            ${f.count > 0 ? docsHtml : '<div style="padding:14px 18px;font-size:12px;color:var(--muted);background:var(--panel);">Nenhum documento anexado nesta etapa.</div>'}
+            ${hasDocs ? docsHtml : emptyNotice}
           </div>
         </div>
       `;
@@ -196,6 +213,40 @@
     body.style.display = isHidden ? "block" : "none";
     if (arrow) arrow.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
     repoState.openFolders[folderId] = isHidden;
+  };
+
+  window.toggleAllRepositoryFolders = function () {
+    if (!repoState.currentTree || !repoState.currentTree.folders) return;
+    repoState.allExpanded = !repoState.allExpanded;
+    const btn = document.getElementById("btnToggleAllFolders");
+    if (btn) {
+      btn.textContent = repoState.allExpanded ? "▴ Recolher Pastas" : "▾ Expandir Pastas";
+    }
+
+    repoState.currentTree.folders.forEach((f) => {
+      repoState.openFolders[f.id] = repoState.allExpanded;
+      const body = document.getElementById(`folder_body_${f.id}`);
+      const arrow = document.getElementById(`arrow_${f.id}`);
+      if (body) body.style.display = repoState.allExpanded ? "block" : "none";
+      if (arrow) arrow.style.transform = repoState.allExpanded ? "rotate(180deg)" : "rotate(0deg)";
+    });
+  };
+
+  window.focusRepositoryFolder = function (folderId) {
+    repoState.openFolders[folderId] = true;
+    const body = document.getElementById(`folder_body_${folderId}`);
+    const arrow = document.getElementById(`arrow_${folderId}`);
+    if (body) body.style.display = "block";
+    if (arrow) arrow.style.transform = "rotate(180deg)";
+
+    const card = document.getElementById(`folder_card_${folderId}`);
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      card.style.outline = "2px solid #2563EB";
+      setTimeout(() => {
+        card.style.outline = "none";
+      }, 1500);
+    }
   };
 
   window.onRepositorySearchInput = async function (val) {
@@ -219,31 +270,32 @@
         }
 
         cont.innerHTML = `
-          <div style="margin-bottom:8px;font-size:12px;font-weight:700;color:var(--muted);">
-            RESULTADOS DA BUSCA (${list.length} encontrados):
+          <div style="margin-bottom:8px;font-size:12px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;align-items:center;">
+            <span>RESULTADOS DA BUSCA (${list.length} encontrados):</span>
+            <button type="button" class="btn sm" onclick="document.getElementById('repoSearchInput').value='';onRepositorySearchInput('');" style="font-size:11px;padding:2px 8px;">✕ Limpar Busca</button>
           </div>
-          <div class="repo-folder-card">
+          <div class="repo-folder-card" style="border-color:#2563EB;">
             ${list
               .map(
                 (d) => `
               <div class="repo-doc-row">
-                <div style="display:flex;align-items:center;gap:10px;overflow:hidden;flex:1;">
-                  <span style="font-size:18px;">${getFileIcon(d.filename)}</span>
-                  <div style="overflow:hidden;">
-                    <strong style="display:block;color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                      ${d.title || d.filename}
+                <div style="display:flex;align-items:center;gap:12px;overflow:hidden;flex:1;">
+                  <span style="font-size:22px;line-height:1;flex-shrink:0;">${getFileIcon(d.filename)}</span>
+                  <div style="overflow:hidden;min-width:0;">
+                    <strong style="display:block;color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${d.title || d.filename}">
+                      ${cleanDocTitle(d.title, d.filename)}
                     </strong>
-                    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:2px;">
-                      <span class="badge" style="font-size:9.5px;padding:1px 6px;background:rgba(2,132,199,0.1);color:#0284C7;border:1px solid rgba(2,132,199,0.25);font-weight:700;">
+                    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:3px;flex-wrap:wrap;">
+                      <span class="badge" style="font-size:9.5px;padding:1px 6px;background:rgba(37,99,235,0.1);color:#2563EB;border:1px solid rgba(37,99,235,0.25);font-weight:700;">
                         ${d.doc_type_label}
                       </span>
-                      <span>Pasta: ${d.folder_title}</span>
+                      <span>Pasta: <strong>${d.folder_title}</strong></span>
                       <span>•</span>
                       <span>${formatBytes(d.file_size)}</span>
                     </div>
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                   <button type="button" class="btn sm secondary" onclick="openDocumentViewer(${d.id})" style="font-size:11.5px;font-weight:700;padding:5px 10px;">
                     👁️ Visualizar
                   </button>
@@ -284,7 +336,7 @@
       const data = await res.json();
       if (data.success && data.document) {
         const d = data.document;
-        document.getElementById("viewerDocTitle").textContent = d.title || d.filename;
+        document.getElementById("viewerDocTitle").textContent = cleanDocTitle(d.title, d.filename);
         document.getElementById("viewerDocBadge").textContent = d.doc_type;
         document.getElementById("viewerDownloadBtn").href = `/uploads/${d.file_url}`;
         document.getElementById("viewerDownloadBtn").download = d.filename;
@@ -309,7 +361,7 @@
         let extData = d.extracted_data || {};
         if (typeof extData === "string") {
           try {
-            extData = json.parse(extData);
+            extData = JSON.parse(extData);
           } catch (e) {
             extData = {};
           }

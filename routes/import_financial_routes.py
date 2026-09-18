@@ -7,7 +7,9 @@ Conciliação de Numerário Aduaneiro e Itens de Produtos.
 from __future__ import annotations
 
 import logging
-from flask import Blueprint, flash, jsonify, redirect, request, url_for
+import os
+from flask import Blueprint, current_app, flash, jsonify, redirect, request, url_for
+from werkzeug.utils import secure_filename
 
 from database import db
 from routes.helpers import audit, current_user, login_required, roles_required
@@ -33,8 +35,48 @@ def add_payment_china(iid: int):
     paid_at = request.form.get("paid_at") or None
     doc_id = request.form.get("document_id") or None
 
+    # Normalizar valores numéricos e câmbio
+    try:
+        val_usd = float(amount_usd or 0)
+        val_brl = float(amount_brl or 0)
+        if not exchange_rate and val_usd > 0 and val_brl > 0:
+            exchange_rate = str(round(val_brl / val_usd, 4))
+    except (ValueError, ZeroDivisionError):
+        pass
+
+    # Upload opcional de comprovante (se fornecido)
+    receipt_file = request.files.get("receipt_file")
+    me = current_user() or {}
+
     try:
         with db() as conn:
+            if receipt_file and receipt_file.filename:
+                orig_filename = secure_filename(receipt_file.filename)
+                file_bytes = receipt_file.read()
+                if file_bytes:
+                    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
+                    os.makedirs(upload_folder, exist_ok=True)
+                    from services.import_ai_service import calculate_file_hash
+                    file_hash = calculate_file_hash(file_bytes)
+                    unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
+                    save_path = os.path.join(upload_folder, unique_filename)
+                    with open(save_path, "wb") as out_f:
+                        out_f.write(file_bytes)
+                    doc_type = "SUPPLIER_PAYMENT"
+                    title = f"Comprovante - {description or ('Outros Débitos' if category in ('additional_payment', 'other_debit') else 'Pagamento')}"
+                    new_doc = conn.execute(
+                        """
+                        INSERT INTO import_documents (
+                            import_id, doc_type, title, filename, file_url, file_size, file_hash,
+                            extracted_data, ai_status, uploaded_by
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, '{}', 'manual', %s)
+                        RETURNING id
+                        """,
+                        (iid, doc_type, title, orig_filename, unique_filename, len(file_bytes), file_hash, me.get("id")),
+                    ).fetchone()
+                    if new_doc:
+                        doc_id = new_doc["id"]
+
             conn.execute(
                 """
                 INSERT INTO import_payments_china (
@@ -46,8 +88,10 @@ def add_payment_china(iid: int):
             )
             calculate_import_financials(iid, conn)
             run_import_audit_checks(iid, conn)
-            audit("import.payment_china_added", f"import_id={iid}, usd={amount_usd}, brl={amount_brl}")
-        flash("Pagamento no exterior registrado com sucesso!", "success")
+            audit("import.payment_china_added", f"import_id={iid}, cat={category}, usd={amount_usd}, brl={amount_brl}")
+        
+        msg = "Outro débito registrado com sucesso!" if category in ("additional_payment", "other_debit") else "Pagamento no exterior registrado com sucesso!"
+        flash(msg, "success")
     except Exception as e:
         logger.error("Erro ao registrar pagamento na China: %s", e)
         flash(f"Erro ao salvar pagamento: {str(e)}", "error")
