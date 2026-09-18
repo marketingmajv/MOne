@@ -47,11 +47,11 @@
 
       <!-- Denominador -->
       <div class="comex-card-subtle" style="text-align: center;">
-        <div class="comex-label" style="margin-bottom: 4px;">Denominador: Base Mercadoria FOB</div>
+        <div class="comex-label" style="margin-bottom: 4px;">Denominador: PI Proforma Invoice (sem frete)</div>
         <div class="comex-value comex-value-emerald" style="font-size: 22px;">
-          US$ {{ "%.2f"|format(financials.goods_base_usd or 0) }}
+          US$ {{ "%.2f"|format(financials.pi_fob_usd or financials.goods_base_usd or 0) }}
         </div>
-        <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">Valor dos produtos sem frete ou acréscimos</p>
+        <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">Valor da PI em dólar sem o frete internacional</p>
       </div>
     </div>
   </div>

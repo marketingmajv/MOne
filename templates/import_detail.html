@@ -78,60 +78,61 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
 <div class="space-y-6">
 
   <!-- KPI Top Metrics Bar (Alto Contraste Claro e Escuro) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-    <!-- Fator de Custo -->
-    <div class="comex-card">
-      <div class="comex-label">Fator de Custo</div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 12px;">
+    <!-- 01 Fator de Custo -->
+    <div class="comex-card" style="border-top: 3px solid #B45309;">
+      <div class="comex-label">01 Fator de Custo</div>
       <div class="comex-value comex-value-amber">
         R$ {{ "%.4f"|format(financials.cost_factor or 0) }}
         <span style="font-size: 11px; font-weight: 500; color: var(--muted);">/ US$</span>
       </div>
       <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        {{ 'Fator Final' if financials.cost_factor_status == 'final' else 'Fator Preliminar' }}
+        Total: {{ financials.total_disbursed_brl|money }} ÷ PI: {{ financials.pi_fob_usd|money_usd }}
       </div>
     </div>
 
-    <!-- Total FOB Mercadoria -->
-    <div class="comex-card">
-      <div class="comex-label">Base Mercadoria</div>
+    <!-- 02 A Base da Mercadoria -->
+    <div class="comex-card" style="border-top: 3px solid #059669;">
+      <div class="comex-label">02 Base da Mercadoria</div>
       <div class="comex-value comex-value-emerald">
-        US$ {{ "%.2f"|format(financials.goods_base_usd or 0) }}
+        {{ financials.goods_base_usd|money_usd }}
       </div>
       <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        PI: US$ {{ "%.2f"|format(financials.pi_amount_usd or 0) }}
+        {{ financials.goods_base_brl|money }} • CI (Commercial Invoice)
       </div>
     </div>
 
-    <!-- Pago Fornecedor R$ -->
-    <div class="comex-card">
-      <div class="comex-label">Câmbio Liquidado</div>
+    <!-- 03 Câmbio Liquidado -->
+    <div class="comex-card" style="border-top: 3px solid #0284C7;">
+      <div class="comex-label">03 Câmbio Liquidado</div>
       <div class="comex-value comex-value-blue">
-        R$ {{ "%.2f"|format(financials.total_supplier_paid_brl or 0) }}
+        {{ financials.cambio_liquidado_usd|money_usd }}
       </div>
       <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        US$ {{ "%.2f"|format(financials.total_supplier_paid_usd or 0) }} pagos
+        {{ financials.cambio_liquidado_brl|money }} • PI (Proforma Invoice)
       </div>
     </div>
 
-    <!-- Total Desembolsado R$ -->
-    <div class="comex-card">
-      <div class="comex-label">Total Desembolsado</div>
+    <!-- 04 Total Desembolsado -->
+    <div class="comex-card" style="border-top: 3px solid #6366F1;">
+      <div class="comex-label">04 Total Desembolsado</div>
       <div class="comex-value" style="color: var(--text);">
-        R$ {{ "%.2f"|format(financials.total_disbursed_brl or 0) }}
+        {{ financials.total_disbursed_usd|money_usd }}
       </div>
       <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        Líquido Brasil + Exterior
+        {{ financials.total_disbursed_brl|money }} • CI + PI + Despesas
       </div>
     </div>
 
-    <!-- Saldo Numerário / Chassis -->
-    <div class="comex-card">
-      <div class="comex-label">Chassis / Despachante</div>
+    <!-- 05 VIN / Chassis -->
+    <div class="comex-card" style="border-top: 3px solid #8B5CF6;">
+      <div class="comex-label">05 VIN / Chassis</div>
       <div class="comex-value comex-value-purple">
-        {{ i.chassis_count or 0 }} un
+        {{ unique_chassis_count or i.chassis_count or 0 }}
+        <span style="font-size: 12px; font-weight: 600; color: var(--muted);">chassis</span>
       </div>
       <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-        Num: R$ {{ "%.2f"|format(financials.numerario_balance_brl or 0) }}
+        {{ unique_chassis_count or i.chassis_count or 0 }} diferentes na planilha
       </div>
     </div>
   </div>

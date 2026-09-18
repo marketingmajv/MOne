@@ -298,11 +298,15 @@ def import_detail(iid: int):
         ).fetchall()
 
         products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
+        unique_chassis_count = len({u["chassis"].strip().upper() for u in chassis_units if u.get("chassis") and u["chassis"].strip()})
+        imp_dict = dict(imp)
+        imp_dict["chassis_count"] = unique_chassis_count
 
     return render_template(
         "import_detail.html",
         me=me,
-        i=dict(imp),
+        i=imp_dict,
+        unique_chassis_count=unique_chassis_count,
         financials=financials,
         checks=checks,
         items=items,

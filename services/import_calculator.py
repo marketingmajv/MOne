@@ -165,16 +165,27 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         + net_broker_disbursement
     )
 
-    # 6. Base em Dólares das Mercadorias (Denominador do Fator)
-    # Dólares pagos ao fornecedor pelas mercadorias (se nada foi pago ainda, usa base da PI/CI)
-    goods_base_usd = total_paid_supplier_usd
-    if goods_base_usd <= Decimal("0.00"):
-        goods_base_usd = pi_amount_usd or ci_amount_usd
+    # 6. Base da Mercadoria e Denominador do Fator de Custo
+    # Regra 01: Fator de Custo = Total pago em reais ÷ Valor em dólar da PI sem frete
+    pi_fob_usd = pi_amount_usd if pi_amount_usd > Decimal("0.00") else (ci_amount_usd or total_paid_supplier_usd)
+
+    # Regra 02: A Base da Mercadoria = Valor da CI em dólar
+    goods_base_usd = ci_amount_usd if ci_amount_usd > Decimal("0.00") else pi_amount_usd
 
     # 7. Cálculo do Fator de Custo (R$/US$)
     cost_factor = None
-    if goods_base_usd > Decimal("0.00") and total_disbursed_brl > Decimal("0.00"):
-        cost_factor = round(total_disbursed_brl / goods_base_usd, 4)
+    if pi_fob_usd > Decimal("0.00") and total_disbursed_brl > Decimal("0.00"):
+        cost_factor = round(total_disbursed_brl / pi_fob_usd, 4)
+
+    # Equivalentes em dólar e reais para exibição detalhada nos boxes
+    effective_rate = cost_factor if cost_factor is not None else (
+        round(total_supplier_paid_brl / total_paid_supplier_usd, 4)
+        if (total_supplier_paid_brl > 0 and total_paid_supplier_usd > 0)
+        else Decimal("5.65")
+    )
+    total_disbursed_usd = round(total_disbursed_brl / effective_rate, 2) if effective_rate > 0 else Decimal("0.00")
+    ci_amount_brl = ci_paid_brl if ci_paid_brl > Decimal("0.00") else round(ci_amount_usd * effective_rate, 2)
+    pi_amount_brl = total_supplier_paid_brl if total_supplier_paid_brl > Decimal("0.00") else round(pi_amount_usd * effective_rate, 2)
 
     # Status do Fator
     is_closed = imp.get("step") == "fechado" or imp.get("status") == "closed"
@@ -210,7 +221,9 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     return {
         "import_id": import_id,
         "pi_amount_usd": float(pi_amount_usd),
+        "pi_fob_usd": float(pi_fob_usd),
         "ci_amount_usd": float(ci_amount_usd),
+        "ci_amount_brl": float(ci_amount_brl),
         "ci_paid_usd": float(ci_paid_usd),
         "ci_paid_brl": float(ci_paid_brl),
         "additional_paid_usd": float(additional_paid_usd),
@@ -219,6 +232,8 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "other_debits_brl": float(additional_paid_brl),
         "total_supplier_paid_usd": float(total_paid_supplier_usd),
         "total_supplier_paid_brl": float(total_supplier_paid_brl),
+        "cambio_liquidado_usd": float(pi_amount_usd),
+        "cambio_liquidado_brl": float(pi_amount_brl),
         "total_bank_fees_brl": float(total_bank_fees_brl),
         "documental_diff_usd": float(documental_diff_usd),
         "purchase_balance_usd": float(purchase_balance_usd),
@@ -231,7 +246,10 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "numerario_balance_brl": float(numerario_balance_brl),
         "net_broker_disbursement": float(net_broker_disbursement),
         "total_disbursed_brl": float(total_disbursed_brl),
+        "total_disbursed_usd": float(total_disbursed_usd),
         "goods_base_usd": float(goods_base_usd),
+        "goods_base_brl": float(ci_amount_brl),
+        "effective_rate": float(effective_rate),
         "cost_factor": float(cost_factor) if cost_factor is not None else None,
         "cost_factor_status": factor_status,
         "expenses_by_category": {k: float(v) for k, v in expenses_by_category.items()},

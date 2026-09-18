@@ -27,57 +27,69 @@
   </div>
 
   <!-- Cards de Indicadores Principais -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
-    <!-- Fator de Custo -->
+  <!-- Cards de Indicadores Principais (5 Boxes Padronizados) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px;">
+    <!-- 01 Fator de Custo -->
     <div class="comex-card" style="border-left: 4px solid #B45309;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span class="comex-label">Fator de Custo (R$/US$)</span>
+        <span class="comex-label">01 Fator de Custo</span>
         <span class="badge" style="font-size: 10px; font-weight: 700; text-transform: uppercase; background: {{ 'rgba(5,150,105,0.15)' if financials.cost_factor_status == 'final' else 'rgba(245,158,11,0.15)' }}; color: {{ '#047857' if financials.cost_factor_status == 'final' else '#B45309' }};">
           {{ 'FINAL' if financials.cost_factor_status == 'final' else 'PROVISÓRIO' }}
         </span>
       </div>
-      <div class="comex-value comex-value-amber" style="font-size: 26px;">
+      <div class="comex-value comex-value-amber" style="font-size: 24px;">
         {% if financials.cost_factor %}
-          R$ {{ '%.4f'|format(financials.cost_factor) }} <span style="font-size: 13px; font-weight: 500; color: var(--muted);">/ US$ 1.00</span>
+          R$ {{ '%.4f'|format(financials.cost_factor) }} <span style="font-size: 12px; font-weight: 500; color: var(--muted);">/ US$</span>
         {% else %}
           <span style="font-size: 16px; color: var(--muted);">Fator indisponível</span>
         {% endif %}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        Líquido {{ financials.total_disbursed_brl|money }} ÷ FOB {{ financials.goods_base_usd|money_usd }}
+        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ PI: <strong style="color: var(--text);">{{ financials.pi_fob_usd|money_usd }}</strong>
       </p>
     </div>
 
-    <!-- Compra na China -->
+    <!-- 02 A Base da Mercadoria -->
+    <div class="comex-card" style="border-left: 4px solid #059669;">
+      <div class="comex-label" style="margin-bottom: 6px;">02 Base da Mercadoria (CI)</div>
+      <div class="comex-value comex-value-emerald" style="font-size: 24px;">
+        {{ financials.goods_base_usd|money_usd }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <strong style="color: var(--text);">{{ financials.goods_base_brl|money }}</strong> • CI (Commercial Invoice)
+      </p>
+    </div>
+
+    <!-- 03 Câmbio Liquidado -->
     <div class="comex-card" style="border-left: 4px solid #0284C7;">
-      <div class="comex-label" style="margin-bottom: 6px;">Total Compra na China (PI)</div>
-      <div class="comex-value comex-value-blue" style="font-size: 22px;">
-        {{ financials.pi_amount_usd|money_usd }}
+      <div class="comex-label" style="margin-bottom: 6px;">03 Câmbio Liquidado (PI)</div>
+      <div class="comex-value comex-value-blue" style="font-size: 24px;">
+        {{ financials.cambio_liquidado_usd|money_usd }}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        CI: <strong style="color: var(--text);">{{ financials.ci_amount_usd|money_usd }}</strong> • Saldo: <strong style="color: var(--text);">{{ financials.purchase_balance_usd|money_usd }}</strong>
+        <strong style="color: var(--text);">{{ financials.cambio_liquidado_brl|money }}</strong> • PI (Proforma Invoice)
       </p>
     </div>
 
-    <!-- Desembolso Líquido em Reais -->
-    <div class="comex-card" style="border-left: 4px solid #047857;">
-      <div class="comex-label" style="margin-bottom: 6px;">Desembolso Líquido Total</div>
-      <div class="comex-value comex-value-emerald" style="font-size: 22px;">
-        {{ financials.total_disbursed_brl|money }}
+    <!-- 04 Total Desembolsado -->
+    <div class="comex-card" style="border-left: 4px solid #6366F1;">
+      <div class="comex-label" style="margin-bottom: 6px;">04 Total Desembolsado</div>
+      <div class="comex-value" style="font-size: 24px; color: var(--text);">
+        {{ financials.total_disbursed_usd|money_usd }}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        Fornecedor: <strong style="color: var(--text);">{{ financials.total_supplier_paid_brl|money }}</strong> • Brasil: <strong style="color: var(--text);">{{ (financials.total_direct_expenses_brl + financials.net_broker_disbursement)|money }}</strong>
+        <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> • CI + PI + Despesas
       </p>
     </div>
 
-    <!-- Numerário Aduaneiro -->
-    <div class="comex-card" style="border-left: 4px solid #7C3AED;">
-      <div class="comex-label" style="margin-bottom: 6px;">Saldo Numerário (Despachante)</div>
-      <div class="comex-value comex-value-purple" style="font-size: 22px;">
-        {{ financials.numerario_balance_brl|money }}
+    <!-- 05 VIN / Chassis -->
+    <div class="comex-card" style="border-left: 4px solid #8B5CF6;">
+      <div class="comex-label" style="margin-bottom: 6px;">05 VIN / Chassis</div>
+      <div class="comex-value comex-value-purple" style="font-size: 24px;">
+        {{ unique_chassis_count or i.chassis_count or 0 }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">chassis</span>
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        Adiantado: {{ financials.advances_brl|money }} • Comprovado: {{ financials.proven_num_expenses_brl|money }}
+        <strong style="color: var(--text);">{{ unique_chassis_count or i.chassis_count or 0 }}</strong> chassis diferentes na planilha
       </p>
     </div>
   </div>
