@@ -10,6 +10,7 @@ load_dotenv(".env.local")
 from database import init_db
 from routes import register_blueprints
 from routes.helpers import (
+    UPLOAD_DIR,
     current_user,
     user_has_permission,
     ROLE_LABELS,
@@ -25,6 +26,7 @@ app.secret_key = (
     or "maj-m-one-production-fixed-secret-key-2026-v1"
 )
 
+app.config["UPLOAD_FOLDER"] = str(UPLOAD_DIR)
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=60)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

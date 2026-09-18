@@ -116,9 +116,9 @@ def create_import():
                 reference, importer_company, supplier_name, supplier_contact, currency, incoterm,
                 freight_forwarder, customs_broker, pi_amount_usd, ci_amount_usd, bl_no, invoice_no,
                 freight_included_in_ci, freight_included_in_pi, insurance_included,
-                arrival_date_estimated, departure_date_estimated, notes, step, status, created_by
+                arrival_date, arrival_date_estimated, departure_date_estimated, notes, step, status, created_by
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'compra', 'draft', %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'compra', 'draft', %s
             ) RETURNING id
             """,
             (
@@ -137,6 +137,7 @@ def create_import():
                 freight_ci,
                 freight_pi,
                 insurance_inc,
+                arr_est,
                 arr_est,
                 dep_est,
                 notes,
@@ -176,9 +177,9 @@ def create_import():
 
         for deb in debit_items:
             try:
-                du, db = float(deb.get("amount_usd") or 0), float(deb.get("amount_brl") or 0)
-                if du > 0 or db > 0:
-                    dr = deb.get("exchange_rate") or (str(round(db / du, 4)) if du > 0 and db > 0 else None)
+                d_usd, d_brl = float(deb.get("amount_usd") or 0), float(deb.get("amount_brl") or 0)
+                if d_usd > 0 or d_brl > 0:
+                    dr = deb.get("exchange_rate") or (str(round(d_brl / d_usd, 4)) if d_usd > 0 and d_brl > 0 else None)
                     conn.execute(
                         """
                         INSERT INTO import_payments_china (
@@ -186,7 +187,7 @@ def create_import():
                             exchange_rate, bank_fees_brl, paid_at, is_verified
                         ) VALUES (%s, 'other_debit', %s, %s, %s, %s, 0.0, CURRENT_DATE, TRUE)
                         """,
-                        (new_id, str(deb.get("description") or "Outros Lançamentos").strip(), du, db, dr),
+                        (new_id, str(deb.get("description") or "Outros Lançamentos").strip(), d_usd, d_brl, dr),
                     )
             except Exception as deb_err:
                 logger.warning("Falha ao registrar débito inicial: %s", deb_err)

@@ -379,8 +379,11 @@ def persist_creation_documents(import_id: int, req, conn, user_id: int | None = 
     from werkzeug.utils import secure_filename
     from services.chassis_service import parse_chassis_file
 
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
+    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/tmp/uploads" if os.environ.get("VERCEL") else "uploads")
+    try:
+        os.makedirs(upload_folder, exist_ok=True)
+    except Exception:
+        pass
 
     # 1. Carregar mapeamento manual de classificações se enviado
     meta_map = {}
@@ -453,16 +456,21 @@ def persist_creation_documents(import_id: int, req, conn, user_id: int | None = 
                 logger.warning("[persist_creation_documents] Falha ao processar chassis de %s: %s", orig_name, err)
 
         save_name = f"import_{import_id}_{doc_type.lower()}_{orig_name}"
-        save_path = os.path.join(upload_folder, save_name)
-        with open(save_path, "wb") as out:
-            out.write(content)
+        try:
+            save_path = os.path.join(upload_folder, save_name)
+            with open(save_path, "wb") as out:
+                out.write(content)
+        except Exception as io_err:
+            logger.warning("[persist_creation_documents] Erro ao salvar arquivo em disco: %s", io_err)
 
         conn.execute(
             """
-            INSERT INTO import_documents (import_id, doc_type, title, file_url, file_hash, uploaded_by)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO import_documents (
+                import_id, doc_type, title, filename, file_url, file_size, file_hash,
+                extracted_data, ai_status, uploaded_by
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, '{}', 'processed', %s)
             """,
-            (import_id, doc_type, orig_name, save_name, f_hash, user_id),
+            (import_id, doc_type, orig_name, orig_name, save_name, len(content), f_hash, user_id),
         )
         saved_count += 1
 
