@@ -1,0 +1,412 @@
+{% set ver = app_version if (app_version is defined and app_version) else {
+  'display_version': 'v1.0',
+  'build': '20260921.1',
+  'release_date': '2026-09-21',
+  'title': 'M-One v1.0 • Oficial de Produção',
+  'subtitle': 'Versão oficial estável com segurança reforçada, nova experiência visual e fretes inteligentes.',
+  'highlights': [],
+  'changelog': []
+} %}
+<!-- MODAL DE ATUALIZAÇÃO E NOVIDADES DO M-ONE ({{ ver.display_version }}) -->
+<div id="versionModal" class="modal" onclick="if(event.target === this) closeVersionModal(true)">
+  <div class="modal-card version-modal-card">
+    
+    <!-- Cabeçalho do Modal -->
+    <div class="version-modal-header">
+      <div class="version-header-meta">
+        <div class="version-badge-pill">
+          <span class="version-glow-dot"></span>
+          <strong>M-One {{ ver.display_version }}</strong>
+          <span class="version-build-tag">Build {{ ver.build }}</span>
+        </div>
+        <span class="version-release-date">Lançamento: {{ ver.release_date }}</span>
+      </div>
+      <button type="button" class="version-close-btn" onclick="closeVersionModal(true)" title="Fechar">✕</button>
+    </div>
+
+    <!-- Título Principal -->
+    <div class="version-title-block">
+      <h2 class="version-title">{{ ver.title }}</h2>
+      <p class="version-subtitle">{{ ver.subtitle }}</p>
+    </div>
+
+    <!-- ABAS / MODOS DE VISUALIZAÇÃO -->
+    <div class="version-tabs-nav">
+      <button type="button" id="versionTabSummary" class="version-tab-btn active" onclick="switchVersionView('summary')">
+        ✨ Destaques da Versão
+      </button>
+      <button type="button" id="versionTabDetails" class="version-tab-btn" onclick="switchVersionView('details')">
+        📋 Changelog Completo
+      </button>
+    </div>
+
+    <!-- CONTEÚDO 1: VISÃO RESUMIDA (DESTAQUES EM CARTÕES) -->
+    <div id="versionSummaryView" class="version-view-pane active">
+      <div class="version-highlights-grid">
+        {% for item in ver.highlights %}
+        <div class="version-highlight-card">
+          <div class="highlight-icon">{{ item.icon }}</div>
+          <div class="highlight-info">
+            <h4 class="highlight-title">{{ item.category }}</h4>
+            <p class="highlight-desc">{{ item.summary }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      
+      <div class="version-quick-note">
+        <span>💡 Para ver todas as alterações técnicas implementadas nesta versão, acerte a aba <b>Changelog Completo</b> acima.</span>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO 2: VISÃO DETALHADA (CHANGELOG COMPLETO) -->
+    <div id="versionDetailsView" class="version-view-pane" style="display:none;">
+      <div class="version-changelog-list">
+        {% for log in ver.changelog %}
+        <div class="changelog-item">
+          <div class="changelog-badge-col">
+            <span class="changelog-badge {{ log.type }}">{{ log.badge }}</span>
+          </div>
+          <div class="changelog-content-col">
+            <strong class="changelog-item-title">{{ log.title }}</strong>
+            <p class="changelog-item-desc">{{ log.description }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- RODAPÉ DO MODAL -->
+    <div class="version-modal-foot">
+      <button type="button" class="btn secondary sm" id="versionAltToggleBtn" onclick="toggleVersionView()" style="border-radius:10px; font-weight:600;">
+        🔍 Ver changelog completo
+      </button>
+      <button type="button" class="btn primary sm" onclick="closeVersionModal(true)" style="background:var(--brand-emerald); color:#052e16; font-weight:700; border-radius:10px; padding:9px 20px;">
+        ✓ Entendi, continuar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+/* ESTILOS DO MODAL DE VERSÃO DO M-ONE */
+#versionModal.modal {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  z-index: 99999;
+}
+
+#versionModal.modal.show {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.version-modal-card {
+  margin: auto !important;
+  background: var(--surface-card, #0f172a);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 20px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 26px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-sizing: border-box;
+  animation: versionModalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes versionModalFadeIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.version-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  padding-bottom: 14px;
+}
+
+.version-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.version-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 153, 0.12);
+  border: 1px solid rgba(0, 229, 153, 0.3);
+  color: var(--brand-emerald, #00E599);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.version-glow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00E599;
+  box-shadow: 0 0 8px #00E599;
+}
+
+.version-build-tag {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-left: 1px solid rgba(0, 229, 153, 0.3);
+  padding-left: 8px;
+}
+
+.version-release-date {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.version-close-btn {
+  background: var(--surface-subtle, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--text-muted, #94a3b8);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.version-close-btn:hover {
+  color: var(--text-primary, #f8fafc);
+  border-color: var(--brand-emerald, #00E599);
+}
+
+.version-title-block {
+  margin: 0;
+}
+.version-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  color: var(--text-primary, #f8fafc);
+  letter-spacing: -0.02em;
+}
+.version-subtitle {
+  font-size: 0.86rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.version-tabs-nav {
+  display: flex;
+  gap: 8px;
+  background: var(--surface-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.07));
+  padding: 4px;
+  border-radius: 12px;
+}
+.version-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.version-tab-btn.active {
+  background: var(--surface-card, #0f172a);
+  color: var(--brand-emerald, #00E599);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* CARDS DE DESTAQUE */
+.version-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 600px) {
+  .version-highlights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.version-highlight-card {
+  background: var(--surface-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.version-highlight-card:hover {
+  border-color: rgba(0, 229, 153, 0.3);
+  transform: translateY(-2px);
+}
+.highlight-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.highlight-info {
+  flex: 1;
+}
+.highlight-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text-primary, #f8fafc);
+}
+.highlight-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.version-quick-note {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #cbd5e1);
+}
+
+/* CHANGELOG DETALHADO */
+.version-changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.changelog-item {
+  display: flex;
+  gap: 14px;
+  background: var(--surface-subtle, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  padding: 12px 14px;
+  border-radius: 12px;
+  align-items: flex-start;
+}
+.changelog-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.changelog-badge.feature { background: rgba(0, 229, 153, 0.15); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.3); }
+.changelog-badge.improvement { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.changelog-badge.ui { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+.changelog-badge.security { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.changelog-badge.architecture { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+.changelog-content-col {
+  flex: 1;
+}
+.changelog-item-title {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--text-primary, #f8fafc);
+  margin-bottom: 2px;
+}
+.changelog-item-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* RODAPÉ */
+.version-modal-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+/* BADGE NA SIDEBAR */
+.sidebar-version-block {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.version-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted, #94a3b8);
+}
+.version-label {
+  font-weight: 700;
+  color: var(--text-secondary, #cbd5e1);
+  letter-spacing: -0.01em;
+}
+.version-build {
+  font-size: 0.68rem;
+  opacity: 0.8;
+  font-family: monospace;
+}
+.version-notes-btn {
+  background: transparent;
+  border: none;
+  color: var(--brand-emerald, #00E599);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 2px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+.version-notes-btn:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+}
+</style>

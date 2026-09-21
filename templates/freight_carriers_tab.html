@@ -1,0 +1,230 @@
+<!-- ABA 2: TRANSPORTADORAS & TABELAS (templates/freight_carriers_tab.html) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+  
+  <!-- COLUNA LATERAL: UPLOAD DE TABELA POR IA -->
+  <div class="lg:col-span-5 space-y-4">
+    {% if me and me.role in ['admin', 'support'] %}
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm space-y-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 flex items-center justify-center font-bold text-xs">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </span>
+          <h2 class="text-sm font-bold text-[var(--text-primary)]">Importar Tabela com IA</h2>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] mt-1">Upload de planilhas Excel (.xlsx), PDF ou CSV com auditoria automática de faixas tarifárias</p>
+      </div>
+
+      <form id="freightUploadForm" method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="space-y-3.5" onsubmit="handleFreightUploadSubmit(event)">
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Transportadora *</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </span>
+              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress, TJB" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;" list="carrier_list">
+            </div>
+            <datalist id="carrier_list">
+              {% for c in carriers %}
+              <option value="{{ c.name }}"></option>
+              {% endfor %}
+            </datalist>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Nome da Tabela / Região *</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </span>
+              <input type="text" name="table_name" required placeholder="Ex: Sul e Sudeste 2026" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;">
+            </div>
+          </div>
+        </div>
+
+        <!-- ZONA MODERNA DE DRAG & DROP -->
+        <div>
+          <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Arquivo da Tabela *</label>
+          <div class="relative border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-blue)] rounded-xl p-4 text-center transition-all bg-[var(--surface-subtle)]/40 hover:bg-[var(--surface-subtle)] cursor-pointer" onclick="document.getElementById('table_file_input').click()" id="uploadDropZone">
+            <input type="file" id="table_file_input" name="table_file" required accept=".xlsx,.xls,.pdf,.csv" class="hidden" onchange="updateUploadFilePreview(this)">
+            
+            <div id="dropZoneEmptyState" class="space-y-1.5 py-1 text-xs text-[var(--text-secondary)]">
+              <div class="flex items-center justify-center text-[var(--brand-blue)]">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <p class="font-medium">Clique ou arraste a planilha aqui</p>
+              <p class="text-[10px] text-[var(--text-muted)]">Suporta Excel (.xlsx, .xls), PDF ou CSV</p>
+            </div>
+
+            <div id="dropZoneSelectedState" class="hidden items-center justify-between text-xs px-2 py-1">
+              <div class="flex items-center gap-2 truncate">
+                <span class="text-emerald-400 font-bold text-base">📊</span>
+                <div class="text-left truncate">
+                  <span id="selectedFileName" class="font-bold text-[var(--text-primary)] block truncate">arquivo.xlsx</span>
+                  <span id="selectedFileSize" class="text-[10px] text-[var(--text-muted)]">0 KB</span>
+                </div>
+              </div>
+              <span class="text-[11px] text-[var(--brand-blue)] font-bold ml-2 shrink-0 underline">Trocar</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btnFreightUploadSubmit" type="submit" class="w-full bg-[var(--brand-blue)] hover:opacity-90 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md">
+          <svg class="icon-svg text-amber-300" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span id="btnUploadText">Ler e Auditar Tabela com Gemini IA</span>
+        </button>
+
+        <div id="uploadStatusNotice" class="hidden text-center text-xs text-[var(--brand-blue)] font-medium space-y-1 pt-1">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            <span>Auditando faixas tarifárias com IA...</span>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">O modelo está analisando abas, capitais, interior e regras de seguro.</p>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm space-y-3">
+      <div class="flex items-center gap-2 text-amber-400">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <strong class="text-xs">Gestão de Tabelas Restrita</strong>
+      </div>
+      <p class="text-xs text-[var(--text-secondary)] leading-relaxed">
+        O upload e exclusão de tabelas de frete são de responsabilidade da Diretoria e Suporte Técnico.
+      </p>
+      <p class="text-[11px] text-[var(--text-muted)]">
+        Você pode consultar todas as transportadoras ativas e seus relatórios de auditoria no painel ao lado.
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- CARD DE AJUDA & PADRÃO DE TABELAS -->
+    <div class="bg-[var(--surface-subtle)]/60 border border-[var(--border-subtle)] rounded-xl p-4 text-xs space-y-2">
+      <strong class="text-[var(--text-primary)] block font-bold">💡 Dicas para Upload Perfeito:</strong>
+      <ul class="text-[11px] text-[var(--text-secondary)] space-y-1.5 list-disc list-inside">
+        <li>A planilha deve conter faixas de peso claras (ex: até 30kg, 50kg, 100kg ou excedente).</li>
+        <li>Identifique as cidades/UFs atendidas e o prazo estimado em dias úteis.</li>
+        <li>A IA identifica automaticamente as taxas <em>Ad-Valorem</em> e <em>GRIS</em> para compor o seguro.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ÁREA PRINCIPAL: LISTAGEM EXPANDIDA DE TABELAS ATIVAS -->
+  <div class="lg:col-span-7 bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm space-y-4">
+    
+    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 flex items-center justify-center font-bold text-xs">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          </span>
+          <h2 class="text-sm font-bold text-[var(--text-primary)]">Tabelas Ativas no Sistema</h2>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Transportadoras integradas ao cotador automático com parecer permanente de IA</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase">
+          {{ tables|length }} ATIVAS
+        </span>
+      </div>
+    </div>
+
+    <!-- CAMPO DE BUSCA RÁPIDA DE TRANSPORTADORAS -->
+    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+      <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; pointer-events: none; color: var(--text-muted); line-height: 1;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+      <input type="text" id="carrierCardSearchInput" oninput="filterCarriersCards(this.value)" placeholder="Filtrar transportadora ou região..." class="form-input" style="width: 100%; font-size: 12px; border-radius: 10px; height: 38px; min-height: 38px; padding-left: 38px !important; padding-right: 14px;">
+    </div>
+
+    <!-- LISTA DE CARDS DAS TRANSPORTADORAS -->
+    {% if tables %}
+    <div class="space-y-3" id="carriersCardsContainer">
+      {% for t in tables %}
+      <div class="carrier-card-item carrier-row-card" data-search="{{ t.carrier_name|lower }} {{ t.table_name|lower }}">
+        
+        <!-- Bloco de Identificação (Ícone + Nomes + Metadados) -->
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="carrier-avatar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </div>
+          
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <strong class="text-sm font-bold text-[var(--text-primary)] leading-tight">{{ t.carrier_name }}</strong>
+              <span class="text-xs text-[var(--text-secondary)] font-medium truncate max-w-[260px]">— {{ t.table_name }}</span>
+            </div>
+            <div class="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-[var(--brand-blue)]">📊 {{ t.rates_count }} faixas cadastradas</span>
+              <span>•</span>
+              <span>Origem Vitória/ES</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco de Ações e Status (Alinhado à Direita) -->
+        <div class="flex items-center gap-2.5 shrink-0">
+          {% if t.notes and ('Ausência' in t.notes or 'pendência' in (t.notes|lower) or 'atenção' in (t.notes|lower)) %}
+            <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ponto de atenção no relatório da IA — clique para visualizar">
+              <span>📋 Relatório IA</span>
+              <span class="audit-asterisk" title="Ponto de atenção">*</span>
+            </button>
+          {% else %}
+            <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ver faixas e regras cadastradas">
+              <span>📋 Faixas & Regras</span>
+            </button>
+          {% endif %}
+
+          <span class="carrier-status-pill">
+            ATIVA
+          </span>
+
+          {% if me and me.role in ['admin', 'support'] %}
+          <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir a tabela {{ t.carrier_name }} - {{ t.table_name }}?');" style="margin: 0;">
+            <button type="submit" class="carrier-delete-btn danger" title="Excluir esta tabela">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-12 text-center text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-xl">
+      <p class="text-xs">Nenhuma tabela de frete importada ainda. Faça o upload ao lado.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+function filterCarriersCards(query) {
+  const q = (query || "").toLowerCase().trim();
+  const cards = document.querySelectorAll(".carrier-card-item");
+  cards.forEach(c => {
+    const searchData = c.getAttribute("data-search") || "";
+    if (!q || searchData.includes(q)) {
+      c.style.display = "";
+    } else {
+      c.style.display = "none";
+    }
+  });
+}
+</script>

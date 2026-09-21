@@ -751,11 +751,18 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
     dest_int = int(clean_dest)
     carrier_best_rates = {}
+    active_carriers = {}
+    carrier_rates_map = {}
 
     for r_raw in all_rates:
         r = dict(r_raw) if hasattr(r_raw, "keys") else r_raw
         c_id = r["carrier_id"]
         c_name = r["carrier_name"]
+        t_name = r.get("table_name") or ""
+        if c_id not in active_carriers:
+            active_carriers[c_id] = {"id": c_id, "name": c_name, "table_name": t_name}
+            carrier_rates_map[c_id] = []
+        carrier_rates_map[c_id].append(r)
         
         # Filtro de CEP
         r_cep_start = clean_cep(r.get("cep_start"))
@@ -791,10 +798,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         min_f = float(r.get("min_freight_price") or 0)
         days = int(r.get("delivery_days") or 1)
 
-        # Custo do Peso Total
         weight_cost = total_weight * w_per_kg
-
-        # Custo do Seguro (Ad-valorem + GRIS) sobre 1/3 do Valor de Atacado Total
         insurance_cost = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
 
         total_price = fixed_p + weight_cost + insurance_cost
@@ -817,6 +821,58 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
     options = list(carrier_best_rates.values())
 
+    # Diagnóstico detalhado de transportadoras ativas não classificadas nesta rota
+    unserved_carriers = []
+    served_ids = set(carrier_best_rates.keys())
+    for c_id, c_info in active_carriers.items():
+        if c_id in served_ids:
+            continue
+        c_rates = carrier_rates_map.get(c_id, [])
+        if not c_rates:
+            reason = "Sem faixas tarifárias cadastradas na tabela."
+        else:
+            dest_matching = []
+            for r in c_rates:
+                s_c = clean_cep(r.get("cep_start"))
+                e_c = clean_cep(r.get("cep_end"))
+                u_c = str(r.get("uf") or "").upper().strip()
+                m_cep = False
+                if s_c and e_c:
+                    try:
+                        if int(s_c) <= dest_int <= int(e_c):
+                            m_cep = True
+                    except Exception:
+                        pass
+                m_uf = (u_c and uf_dest and u_c == uf_dest)
+                if m_cep or m_uf or (not s_c and not u_c):
+                    dest_matching.append(r)
+
+            if not dest_matching:
+                dest_str = f"{city_dest}/{uf_dest}" if (city_dest and uf_dest) else (uf_dest or format_cep(clean_dest))
+                reason = f"Não atende esta localidade ({dest_str})."
+            else:
+                max_w_list = [float(r.get("max_weight") or 0) for r in dest_matching if float(r.get("max_weight") or 0) > 0]
+                min_w_list = [float(r.get("min_weight") or 0) for r in dest_matching]
+                highest_max = max(max_w_list) if max_w_list else 0
+                lowest_min = min(min_w_list) if min_w_list else 0
+
+                w_str = f"{total_weight:.1f}".replace(".", ",")
+                if highest_max > 0 and total_weight > highest_max:
+                    max_str = f"{highest_max:.1f}".replace(".", ",")
+                    reason = f"Peso da carga ({w_str} kg) excede o limite máximo da tabela (até {max_str} kg)."
+                elif total_weight < lowest_min:
+                    min_str = f"{lowest_min:.1f}".replace(".", ",")
+                    reason = f"Peso da carga ({w_str} kg) abaixo do limite mínimo da tabela ({min_str} kg)."
+                else:
+                    reason = "Faixa tarifária não contempla os parâmetros da rota."
+
+        unserved_carriers.append({
+            "carrier_id": c_id,
+            "carrier_name": c_info["name"],
+            "table_name": c_info["table_name"],
+            "reason": reason
+        })
+
     if not options:
         return {
             "success": True,
@@ -830,13 +886,13 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "insurance_base_value": round(total_insurance_value, 2),
             "items": processed_items,
             "options": [],
+            "unserved_carriers": unserved_carriers,
             "message": "Nenhuma transportadora atende este CEP / faixa de peso cadastrada."
         }
 
     # Ordenar por Menor Preço
     options.sort(key=lambda x: (x["total_price"], x["delivery_days"]))
 
-    # Identificar Mais Barato e Mais Rápido
     cheapest_price = min(o["total_price"] for o in options)
     fastest_days = min(o["delivery_days"] for o in options)
 
@@ -859,7 +915,8 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         "total_volume_m3": round(total_volume_m3, 3),
         "insurance_base_value": round(total_insurance_value, 2),
         "items": processed_items,
-        "options": options
+        "options": options,
+        "unserved_carriers": unserved_carriers
     }
 
 

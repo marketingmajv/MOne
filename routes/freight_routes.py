@@ -77,7 +77,13 @@ def freight():
         cur_t = conn.execute(sql_t)
         tables = cur_t.fetchall()
 
-        cur_c = conn.execute("SELECT id, name, active FROM carriers ORDER BY name ASC")
+        cur_c = conn.execute(
+            """SELECT DISTINCT c.id, c.name, c.active 
+               FROM carriers c 
+               JOIN freight_tables t ON t.carrier_id = c.id 
+               WHERE c.active = 1 AND t.active = 1 
+               ORDER BY c.name ASC"""
+        )
         carriers = cur_c.fetchall()
 
         cur_fq = conn.execute(
@@ -88,6 +94,10 @@ def freight():
         )
         archived_quotes = cur_fq.fetchall()
 
+    active_tab = request.args.get("tab", "simulator").strip().lower()
+    if active_tab not in ["simulator", "carriers", "quotes"]:
+        active_tab = "simulator"
+
     return render_template(
         "freight.html",
         me=me,
@@ -96,6 +106,7 @@ def freight():
         tables=tables,
         carriers=carriers,
         archived_quotes=archived_quotes,
+        active_tab=active_tab,
         default_cep=freight_service.DEFAULT_MAJ_CEP
     )
 
@@ -174,13 +185,13 @@ def freight_quote_status(qid):
     status = request.form.get("status", "").strip().lower()
     if status not in ["cotado", "aprovado", "enviado", "cancelado"]:
         flash("Status de frete inválido.", "warning")
-        return redirect(url_for("freight"))
+        return redirect(url_for("freight", tab="quotes"))
     with db() as conn:
         conn.execute("UPDATE freight_quotes SET status = %s WHERE id = %s", (status, qid))
         conn.commit()
     audit("freight.status_updated", f"quote_id={qid}; status={status}")
     flash(f"Status da cotação de frete atualizado para '{status.upper()}'.", "success")
-    return redirect(url_for("freight"))
+    return redirect(url_for("freight", tab="quotes"))
 
 
 @freight_bp.route("/freight/whatsapp", methods=["POST"])
@@ -289,7 +300,7 @@ def freight_table_upload():
     except Exception as e:
         flash(f"Erro ao importar tabela de frete: {str(e)}", "danger")
 
-    return redirect(url_for("freight"))
+    return redirect(url_for("freight", tab="carriers"))
 
 
 @freight_bp.route("/freight/tables/delete/<int:table_id>", methods=["POST"])
@@ -303,7 +314,7 @@ def freight_table_delete(table_id: int):
         flash("✅ Tabela de frete excluída com sucesso.", "success")
     except Exception as e:
         flash(f"Erro ao excluir tabela: {str(e)}", "danger")
-    return redirect(url_for("freight"))
+    return redirect(url_for("freight", tab="carriers"))
 
 
 @freight_bp.route("/freight/tables/<int:table_id>/details")
@@ -350,3 +361,35 @@ def freight_table_details(table_id: int):
             "rates": rates,
             "total_rates": len(rates)
         })
+
+
+@freight_bp.route("/freight/quotes/select-carrier", methods=["POST"])
+@login_required
+def freight_quote_select_carrier():
+    """Atualiza a transportadora e valor selecionados pelo vendedor na cotação arquivada."""
+    try:
+        data = request.get_json() or {}
+        quote_number = data.get("quote_number")
+        quote_id = data.get("quote_id")
+        carrier_name = data.get("selected_carrier") or data.get("carrier_name")
+        price = data.get("selected_price")
+        if (not quote_number and not quote_id) or not carrier_name:
+            return jsonify({"success": False, "message": "Dados insuficientes"}), 400
+
+        with db() as conn:
+            if quote_number:
+                conn.execute(
+                    "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE quote_number = %s",
+                    (carrier_name, float(price or 0), str(quote_number))
+                )
+            elif quote_id:
+                conn.execute(
+                    "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE id = %s",
+                    (carrier_name, float(price or 0), int(quote_id))
+                )
+            audit("FREIGHT_QUOTE_CARRIER_SELECT", f"Cotação {quote_number or quote_id} marcada com {carrier_name} (R$ {price})")
+
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+

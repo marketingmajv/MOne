@@ -3,23 +3,30 @@
  * Extracted from freight.js for Anti-Monolith Compliance (< 500 lines)
  */
 
-function exportFreightPDF(selectedIdx = null) {
+const FREIGHT_PDF_STYLES = `@page { size: A4; margin: 15mm; } body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background: #FFF; margin: 0; padding: 20px; font-size: 12px; line-height: 1.5; } .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0070F3; padding-bottom: 15px; margin-bottom: 20px; } .brand-title { font-size: 22px; font-weight: 900; color: #0070F3; letter-spacing: -0.5px; } .brand-sub { font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase; } .doc-info { text-align: right; font-size: 11px; color: #64748B; } .doc-info strong { color: #0F172A; font-size: 12px; } .section-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin-bottom: 18px; } .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; letter-spacing: 0.5px; } .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; } table { width: 100%; border-collapse: collapse; margin-top: 6px; } th { background: #F1F5F9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 2px solid #CBD5E1; } .footer { margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 12px; font-size: 10px; color: #94A3B8; text-align: center; } @media print { body { padding: 0; } .no-print { display: none; } }`;
+
+function exportFreightPDF(selectedIdx = null, includeComparison = null) {
   if (!lastFreightCalculationResult || !lastFreightCalculationResult.options || lastFreightCalculationResult.options.length === 0) {
     alert("Realize um cálculo de frete primeiro para exportar o PDF da cotação.");
     return;
   }
-
   const data = lastFreightCalculationResult;
+  const selState = window.freightSelection || { included: new Set(data.options.map((_, i) => i)), recommended: (window.selectedCarrierIndex ?? 0) };
+  const recIdx = (selectedIdx !== null) ? selectedIdx : selState.recommended;
+  includeComparison = includeComparison !== null ? includeComparison : (document.getElementById("modalIncludeComparisonToggle")?.checked ?? true);
   const today = new Date();
   const dateStr = today.toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const refNum = data.quote_number || `COT-${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2,'0')}${today.getDate().toString().padStart(2,'0')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+  const includedIndices = data.options.map((_, i) => i).filter(i => selState.included ? selState.included.has(i) : true);
+  const activeIndices = includedIndices.length > 0 ? includedIndices : data.options.map((_, i) => i);
+
   let selectedBannerHtml = "";
-  if (selectedIdx !== null && data.options[selectedIdx]) {
-    const s = data.options[selectedIdx];
+  if (recIdx !== null && data.options[recIdx]) {
+    const s = data.options[recIdx];
     selectedBannerHtml = `
       <div style="background: #EFF6FF; border: 2px solid #0070F3; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px;">
-        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; letter-spacing: 0.5px;">✓ TRANSPORTADORA SELECIONADA PELO VENDEDOR</div>
+        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; letter-spacing: 0.5px;">⭐ OPÇÃO RECOMENDADA PELA MAJ MOBILIDADE</div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
           <div>
             <strong style="font-size: 16px; color: #0F172A;">${s.carrier_name}</strong>
@@ -39,7 +46,6 @@ function exportFreightPDF(selectedIdx = null) {
   let totalVolCount = 0;
   let grandTotalWeight = 0;
   let grandTotalCubicM3 = 0;
-
   const rawItems = data.items && data.items.length > 0 ? data.items : [];
 
   if (rawItems.length > 0) {
@@ -47,11 +53,8 @@ function exportFreightPDF(selectedIdx = null) {
     rawItems.forEach((item) => {
       const qty = parseInt(item.qty || 1);
       const weight = parseFloat(item.weight_kg || 0);
-      const l = parseFloat(item.length_cm || 0);
-      const w = parseFloat(item.width_cm || 0);
-      const h = parseFloat(item.height_cm || 0);
+      const l = parseFloat(item.length_cm || 0), w = parseFloat(item.width_cm || 0), h = parseFloat(item.height_cm || 0);
       const volM3 = (l > 0 && w > 0 && h > 0) ? ((l * w * h) / 1000000.0) : 0;
-      
       const dimStr = (l > 0 || w > 0 || h > 0) ? `${l} x ${w} x ${h} cm` : '-';
       const volStr = volM3 > 0 ? `${volM3.toFixed(3).replace('.', ',')} m³` : '-';
 
@@ -75,9 +78,7 @@ function exportFreightPDF(selectedIdx = null) {
 
     itemsHtml += `
       <tr style="background-color: #F8FAFC; font-weight: bold;">
-        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">
-          TOTAL DA CARGA: ${totalVolCount} VOLUME(S)
-        </td>
+        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">TOTAL DA CARGA: ${totalVolCount} VOLUME(S)</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${totalVolCount} ud</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${grandTotalWeight.toFixed(1).replace('.', ',')} kg</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #64748B;">-</td>
@@ -97,18 +98,24 @@ function exportFreightPDF(selectedIdx = null) {
     `;
   }
 
+  const carriersToRender = (!includeComparison || activeIndices.length === 1)
+    ? [data.options[(recIdx !== null && activeIndices.includes(recIdx)) ? recIdx : activeIndices[0]]]
+    : activeIndices.map(i => ({ ...data.options[i], _origIdx: i }));
+  const tableTitle = includeComparison ? `Opções Selecionadas de Transporte (${carriersToRender.length})` : "Transportadora Selecionada para Envio";
+
   let optionsHtml = "";
-  data.options.forEach((opt, idx) => {
-    const isSelected = (selectedIdx === idx);
+  carriersToRender.forEach((opt) => {
+    const origIndex = opt._origIdx !== undefined ? opt._origIdx : recIdx;
+    const isRecommended = (origIndex !== null && origIndex === recIdx);
     const isCheap = opt.badges && opt.badges.some(b => b.includes("Barato"));
     const isFast = opt.badges && opt.badges.some(b => b.includes("Rápido"));
     let badgeText = "";
-    if (isSelected) badgeText += `<span style="background: #0070F3; color: #FFFFFF; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">SELECIONADA</span>`;
-    if (isCheap) badgeText += `<span style="background: #DCFCE7; color: #166534; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">MAIS ECONÔMICA</span>`;
-    if (isFast) badgeText += `<span style="background: #DBEAFE; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">MAIS RÁPIDA</span>`;
+    if (isRecommended) badgeText += `<span style="background: #0070F3; color: #FFFFFF; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">⭐ RECOMENDADA</span>`;
+    if (isCheap && includeComparison) badgeText += `<span style="background: #DCFCE7; color: #166534; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">MAIS ECONÔMICA</span>`;
+    if (isFast && includeComparison) badgeText += `<span style="background: #DBEAFE; color: #1E40AF; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; margin-left: 6px;">MAIS RÁPIDA</span>`;
 
     optionsHtml += `
-      <tr style="${isSelected ? 'background-color: #EFF6FF; font-weight: bold;' : (isCheap ? 'background-color: #F0FDF4;' : '')}">
+      <tr style="${isRecommended ? 'background-color: #EFF6FF; font-weight: bold;' : (isCheap ? 'background-color: #F0FDF4;' : '')}">
         <td style="padding: 10px 12px; border-bottom: 1px solid #E2E8F0;">
           <strong style="color: #0F172A; font-size: 13px;">${opt.carrier_name}</strong> ${badgeText}
           <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Tabela: ${opt.table_name}</div>
@@ -117,7 +124,7 @@ function exportFreightPDF(selectedIdx = null) {
           ${opt.delivery_days} dia(s) útil(eis)
         </td>
         <td style="padding: 10px 12px; border-bottom: 1px solid #E2E8F0; text-align: right;">
-          <strong style="font-size: 15px; color: ${isSelected ? '#0070F3' : '#0F172A'};">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</strong>
+          <strong style="font-size: 15px; color: ${isRecommended ? '#0070F3' : '#0F172A'};">R$ ${opt.total_price.toFixed(2).replace('.', ',')}</strong>
         </td>
       </tr>
     `;
@@ -135,25 +142,7 @@ function exportFreightPDF(selectedIdx = null) {
     <head>
       <meta charset="utf-8">
       <title>Cotação de Frete — MAJ Mobilidade (${refNum})</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background: #FFF; margin: 0; padding: 20px; font-size: 12px; line-height: 1.5; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0070F3; padding-bottom: 15px; margin-bottom: 20px; }
-        .brand-title { font-size: 22px; font-weight: 900; color: #0070F3; letter-spacing: -0.5px; }
-        .brand-sub { font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase; }
-        .doc-info { text-align: right; font-size: 11px; color: #64748B; }
-        .doc-info strong { color: #0F172A; font-size: 12px; }
-        .section-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
-        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; letter-spacing: 0.5px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-        th { background: #F1F5F9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 2px solid #CBD5E1; }
-        .footer { margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 12px; font-size: 10px; color: #94A3B8; text-align: center; }
-        @media print {
-          body { padding: 0; }
-          .no-print { display: none; }
-        }
-      </style>
+      <style>${FREIGHT_PDF_STYLES}</style>
     </head>
     <body>
       <div class="no-print" style="margin-bottom: 20px; text-align: right;">
@@ -210,7 +199,7 @@ function exportFreightPDF(selectedIdx = null) {
       </div>
 
       <div style="margin-bottom: 20px;">
-        <div class="section-title">Opções Disponíveis de Transporte</div>
+        <div class="section-title">${tableTitle}</div>
         <table>
           <thead>
             <tr>
@@ -257,13 +246,9 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
   if (Array.isArray(items) && items.length > 0) {
     let volIndex = 0;
     items.forEach((item) => {
-      const qty = parseInt(item.qty || 1);
-      const weight = parseFloat(item.weight_kg || 0);
-      const l = parseFloat(item.length_cm || 0);
-      const w = parseFloat(item.width_cm || 0);
-      const h = parseFloat(item.height_cm || 0);
+      const qty = parseInt(item.qty || 1), weight = parseFloat(item.weight_kg || 0);
+      const l = parseFloat(item.length_cm || 0), w = parseFloat(item.width_cm || 0), h = parseFloat(item.height_cm || 0);
       const volM3 = (l > 0 && w > 0 && h > 0) ? ((l * w * h) / 1000000.0) : 0;
-      
       const dimStr = (l > 0 || w > 0 || h > 0) ? `${l} x ${w} x ${h} cm` : '-';
       const volStr = volM3 > 0 ? `${volM3.toFixed(3).replace('.', ',')} m³` : '-';
 
@@ -287,9 +272,7 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
 
     itemsHtml += `
       <tr style="background-color: #F8FAFC; font-weight: bold;">
-        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">
-          TOTAL DA CARGA: ${totalVolCount} VOLUME(S)
-        </td>
+        <td colspan="2" style="padding: 10px 12px; border-top: 2px solid #CBD5E1; color: #0F172A;">TOTAL DA CARGA: ${totalVolCount} VOLUME(S)</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${totalVolCount} ud</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #0F172A;">${grandTotalWeight.toFixed(1).replace('.', ',')} kg</td>
         <td style="padding: 10px 12px; border-top: 2px solid #CBD5E1; text-align: center; color: #64748B;">-</td>
@@ -315,25 +298,7 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
     <head>
       <meta charset="utf-8">
       <title>Cotação Arquivada — MAJ Mobilidade (${refNum})</title>
-      <style>
-        @page { size: A4; margin: 15mm; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background: #FFF; margin: 0; padding: 20px; font-size: 12px; line-height: 1.5; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0070F3; padding-bottom: 15px; margin-bottom: 20px; }
-        .brand-title { font-size: 22px; font-weight: 900; color: #0070F3; letter-spacing: -0.5px; }
-        .brand-sub { font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase; }
-        .doc-info { text-align: right; font-size: 11px; color: #64748B; }
-        .doc-info strong { color: #0F172A; font-size: 12px; }
-        .section-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
-        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0070F3; margin-bottom: 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; letter-spacing: 0.5px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-        th { background: #F1F5F9; color: #475569; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 2px solid #CBD5E1; }
-        .footer { margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 12px; font-size: 10px; color: #94A3B8; text-align: center; }
-        @media print {
-          body { padding: 0; }
-          .no-print { display: none; }
-        }
-      </style>
+      <style>${FREIGHT_PDF_STYLES}</style>
     </head>
     <body>
       <div class="no-print" style="margin-bottom: 20px; text-align: right;">
@@ -398,6 +363,14 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
         </table>
       </div>
 
+      ${(includeComp && data.unserved_carriers && data.unserved_carriers.length > 0) ? `
+      <div style="margin-top: 14px; padding: 10px 14px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; font-size: 8pt;">
+        <strong style="color: #92400E; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.04em;">Transportadoras Não Classificadas para esta Rota (${data.unserved_carriers.length})</strong>
+        <ul style="margin: 4px 0 0 16px; padding: 0; color: #78350F;">
+          ${data.unserved_carriers.map(u => `<li><strong>${u.carrier_name}:</strong> ${u.reason}</li>`).join("")}
+        </ul>
+      </div>` : ''}
+
       <div class="footer">
         MAJ Mobilidade — Sistema Operacional M-One. Cotação arquivada no histórico de fretes.<br>
         Origem Vitória/ES. Todos os valores incluem taxas operacionais e seguro de transporte regulamentar.
@@ -413,3 +386,112 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
     printWindow.document.close();
   }
 }
+
+/**
+ * Copia resumo da cotação formatado para envio direto via WhatsApp
+ */
+function copyWhatsAppMessage() {
+  if (!lastFreightCalculationResult || !lastFreightCalculationResult.options || lastFreightCalculationResult.options.length === 0) {
+    alert("Realize um cálculo de frete primeiro para copiar o resumo do WhatsApp.");
+    return;
+  }
+  const data = lastFreightCalculationResult;
+  const selState = window.freightSelection || { included: new Set(data.options.map((_, i) => i)), recommended: (window.selectedCarrierIndex ?? 0) };
+  const recIdx = selState.recommended;
+  const toggle = document.getElementById("modalIncludeComparisonToggle");
+  const includeComp = toggle ? toggle.checked : true;
+
+  const includedIndices = data.options.map((_, i) => i).filter(i => selState.included ? selState.included.has(i) : true);
+  const activeIndices = includedIndices.length > 0 ? includedIndices : data.options.map((_, i) => i);
+
+  let text = `🚚 *COTAÇÃO DE FRETE — MAJ MOBILIDADE*\n`;
+  if (data.customer_name) text += `👤 Cliente: ${data.customer_name}\n`;
+  text += `📍 Destino: CEP ${data.cep_dest}\n`;
+  text += `📦 Carga: ${data.product_name || 'Produtos MAJ'}\n`;
+  text += `⚖️ Peso Total: ${data.total_weight_kg.toFixed(1).replace('.', ',')} kg\n\n`;
+
+  if (!includeComp || activeIndices.length === 1) {
+    const chosenIdx = (recIdx !== null && activeIndices.includes(recIdx)) ? recIdx : activeIndices[0];
+    const chosen = data.options[chosenIdx];
+    text += `*OPÇÃO DE TRANSPORTE SELECIONADA:*\n`;
+    text += `🏢 *${chosen.carrier_name}*\n`;
+    text += `   • Valor Total: *R$ ${chosen.total_price.toFixed(2).replace('.', ',')}*\n`;
+    text += `   • Prazo Estimado: *${chosen.delivery_days} dia(s) útil(eis)*\n`;
+    if (chosen.table_name) text += `   • Tabela: ${chosen.table_name}\n`;
+  } else {
+    if (recIdx !== null && data.options[recIdx]) {
+      const rec = data.options[recIdx];
+      text += `*⭐ OPÇÃO RECOMENDADA PELO VENDEDOR:*\n`;
+      text += `👉 *${rec.carrier_name}* — *R$ ${rec.total_price.toFixed(2).replace('.', ',')}* (Prazo: ${rec.delivery_days} d.u.)\n\n`;
+    }
+    text += `*OPÇÕES DE FRETE SELECIONADAS (${activeIndices.length}):*\n`;
+    activeIndices.forEach((idx, pos) => {
+      const opt = data.options[idx];
+      const isRec = (idx === recIdx);
+      text += `${pos + 1}. ${isRec ? '⭐ [RECOMENDADA] ' : ''}*${opt.carrier_name}*\n`;
+      text += `   • Valor: R$ ${opt.total_price.toFixed(2).replace('.', ',')}\n`;
+      text += `   • Prazo: ${opt.delivery_days} dia(s) útil(eis)\n`;
+    });
+  }
+
+  if (includeComp && data.unserved_carriers && data.unserved_carriers.length > 0) {
+    text += `\n*⚠️ TRANSPORTADORAS NÃO CLASSIFICADAS:*\n`;
+    data.unserved_carriers.forEach(u => {
+      text += `• *${u.carrier_name}*: ${u.reason}\n`;
+    });
+  }
+
+  text += `\n_Origem Vitória/ES. Seguro de 1/3 do valor de atacado já incluso na cotação._`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    alert(`Cotação copiada com sucesso (${includeComp ? `${activeIndices.length} opções selecionadas` : 'apenas a opção escolhida'})! Já pode colar no WhatsApp.`);
+  }).catch(err => {
+    alert("Erro ao copiar para a área de transferência: " + err.message);
+  });
+}
+
+window.copyWhatsAppMessage = copyWhatsAppMessage;
+window.exportFreightPDF = exportFreightPDF;
+
+/**
+ * Controle de Abas M-One: Simulador, Transportadoras e Histórico de Cotações
+ */
+function switchFreightTab(tabName) {
+  const tabs = ['simulator', 'carriers', 'quotes'];
+  if (!tabs.includes(tabName)) tabName = 'simulator';
+
+  tabs.forEach(t => {
+    const btn = document.getElementById(`freightTabBtn-${t}`);
+    const pane = document.getElementById(`freightPane-${t}`);
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+    if (pane) {
+      if (t === tabName) {
+        pane.style.display = 'block';
+      } else {
+        pane.style.display = 'none';
+      }
+    }
+  });
+
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabName);
+    window.history.replaceState({}, '', url);
+  } catch (e) {}
+}
+
+window.switchFreightTab = switchFreightTab;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tabFromUrl = params.get('tab') || window.ACTIVE_FREIGHT_TAB;
+  if (tabFromUrl && ['simulator', 'carriers', 'quotes'].includes(tabFromUrl)) {
+    switchFreightTab(tabFromUrl);
+  }
+});

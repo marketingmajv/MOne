@@ -7,19 +7,32 @@
   <span class="pill" style="background: rgba(0, 229, 153, 0.12); color: var(--accent); border: 1px solid rgba(0, 229, 153, 0.25); font-weight: 700; font-size: 0.75rem; padding: 5px 12px; border-radius: 99px;">
     🟢 {{ carriers|length }} Transportadoras Ativas • Origem Vitória/ES
   </span>
-  <button type="button" onclick="resetFreightForm()" class="btn secondary sm" style="font-size: 0.78rem;">
-    <span>↺ Limpar</span>
-  </button>
-  <button type="button" onclick="resetFreightForm()" class="btn accent sm" style="font-size: 0.78rem;">
-    <span>＋ Nova Cotação</span>
+  <button type="button" onclick="resetFreightForm()" class="btn secondary sm" style="font-size: 0.78rem;" title="Limpar todos os campos da cotação">
+    <span>↺ Limpar Formulário</span>
   </button>
 {% endblock %}
 
 {% block content %}
 <div class="w-full space-y-6 text-[var(--text-primary)] font-sans">
 
-  <!-- MAIN SPLIT SCREEN: COLUNA ESQUERDA (FORMULÁRIO) + COLUNA DIREITA (FEED RESULTADOS) -->
-  <div class="freight-main-grid" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; align-items: start;">
+  <!-- BARRA DE SUB-ABAS M-ONE -->
+  <div class="sub-tabs-bar" style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto;">
+    <button type="button" class="tab-btn {% if active_tab == 'simulator' %}active{% endif %}" id="freightTabBtn-simulator" onclick="switchFreightTab('simulator')">
+      <span>🚚 Simulador de Frete</span>
+    </button>
+    <button type="button" class="tab-btn {% if active_tab == 'carriers' %}active{% endif %}" id="freightTabBtn-carriers" onclick="switchFreightTab('carriers')">
+      <span>🏢 Transportadoras & Tabelas</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(56, 189, 248, 0.15); color: var(--brand-blue); border-color: rgba(56, 189, 248, 0.3);">{{ tables|length }}</span>
+    </button>
+    <button type="button" class="tab-btn {% if active_tab == 'quotes' %}active{% endif %}" id="freightTabBtn-quotes" onclick="switchFreightTab('quotes')">
+      <span>📋 Histórico de Cotações & Envios</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(0, 229, 153, 0.15); color: var(--accent); border-color: rgba(0, 229, 153, 0.3);">{{ archived_quotes|length }}</span>
+    </button>
+  </div>
+
+  <!-- ABA 1: SIMULADOR DE FRETE (SPLIT SCREEN: FORMULÁRIO + FEED DE RESULTADOS) -->
+  <div id="freightPane-simulator" class="freight-tab-pane" style="{% if active_tab != 'simulator' %}display: none;{% endif %}">
+    <div class="freight-main-grid" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; align-items: start;">
 
     <!-- COLUNA DA ESQUERDA: CARDS INDEPENDENTES PASSO 1 & PASSO 2 -->
     <div class="space-y-6">
@@ -29,7 +42,7 @@
         <!-- CARD INDEPENDENTE 1: IDENTIFICAÇÃO DO CLIENTE & DESTINO -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm space-y-5 transition-all">
           
-          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
             <div class="flex items-center gap-3">
               <span class="w-7 h-7 rounded-full bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 font-black text-xs flex items-center justify-center shadow-xs">1</span>
               <div>
@@ -37,9 +50,15 @@
                 <p class="text-[11px] text-[var(--text-muted)]">Destinatário da cotação e dados para emissão</p>
               </div>
             </div>
-            <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] font-medium">
-              <span>Origem:</span>
-              <strong class="text-[var(--text-primary)]">{{ default_cep }} (Vitória/ES)</strong>
+            <div class="flex items-center gap-2">
+              <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] font-medium">
+                <span>Origem:</span>
+                <strong class="text-[var(--text-primary)]">{{ default_cep }} (Vitória/ES)</strong>
+              </div>
+              <button type="submit" id="btnFreightSubmitHeader" class="bg-[var(--brand-emerald)] hover:opacity-95 text-[#052e16] font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer">
+                <svg class="icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Calcular Melhores Opções de Frete</span>
+              </button>
             </div>
           </div>
 
@@ -150,14 +169,6 @@
             </div>
           </div>
 
-          <!-- BOTÃO DE AÇÃO PRINCIPAL: CALCULAR FRETE -->
-          <div class="pt-2">
-            <button type="submit" class="w-full bg-[var(--brand-emerald)] text-[#052e16] font-extrabold text-sm py-4 rounded-xl shadow-md flex items-center justify-center gap-2 hover:opacity-95 transition-all cursor-pointer">
-              <svg class="icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <span>Calcular Melhores Opções de Frete</span>
-            </button>
-          </div>
-
         </div>
 
       </form>
@@ -211,18 +222,22 @@
         </div>
 
       </div>
-
     </div>
-
+  </div>
   </div>
 
-  <!-- SEÇÃO INFERIOR MODULAR: TABELAS E COTAÇÕES ARQUIVADAS -->
-  {% include 'freight_history_panel.html' %}
+  <!-- ABA 2: TRANSPORTADORAS & TABELAS (UPLOAD IA + TABELAS ATIVAS) -->
+  <div id="freightPane-carriers" class="freight-tab-pane" style="{% if active_tab != 'carriers' %}display: none;{% endif %}">
+    {% include 'freight_carriers_tab.html' %}
+  </div>
 
-  <!-- MODAL EXECUTIVO SOBREPOSTO DE RESULTADOS -->
+  <!-- ABA 3: HISTÓRICO DE COTAÇÕES & STATUS DE ENVIO -->
+  <div id="freightPane-quotes" class="freight-tab-pane" style="{% if active_tab != 'quotes' %}display: none;{% endif %}">
+    {% include 'freight_quotes_tab.html' %}
+  </div>
+
+  <!-- MODAIS EXECUTIVOS SOBREPOSTOS -->
   {% include 'modal_freight_results.html' %}
-
-  <!-- MODAL DE AUDITORIA PERMANENTE & FAIXAS DA TRANSPORTADORA -->
   {% include 'modal_table_details.html' %}
 
 </div>
@@ -233,7 +248,9 @@
   window.productsCatalog = {{ products|tojson }};
   window.DEFAULT_FREIGHT_CEP = "{{ default_cep }}";
   window.FREIGHT_CALCULATE_URL = "{{ url_for('freight_calculate') }}";
+  window.ACTIVE_FREIGHT_TAB = "{{ active_tab }}";
 </script>
-<script src="{{ url_for('static', filename='js/freight.js') }}?v=20260914_v2"></script>
-<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20260914_v2"></script>
+<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20260921_v4"></script>
+<script src="{{ url_for('static', filename='js/freight.js') }}?v=20260921_v4"></script>
+<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20260921_v4"></script>
 {% endblock %}

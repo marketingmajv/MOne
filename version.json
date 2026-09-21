@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "display_version": "v1.0",
+  "build": "20260921.1",
+  "release_date": "2026-09-21",
+  "title": "M-One v1.0 • Oficial de Produção",
+  "subtitle": "Versão oficial estável com segurança reforçada, nova experiência visual e fretes inteligentes.",
+  "highlights": [
+    {
+      "icon": "🛡️",
+      "category": "Segurança & Conexões",
+      "summary": "Proteção CSRF ativa em todos os formulários e chamadas assíncronas, headers HSTS e auditoria reforçada."
+    },
+    {
+      "icon": "🎨",
+      "category": "Interface & Experiência",
+      "summary": "Novo layout moderno, alternância fluida de temas (Claro/Escuro) e cards alinhados com alto contraste."
+    },
+    {
+      "icon": "🚚",
+      "category": "Fretes Inteligentes",
+      "summary": "Seleção customizada de transportadoras para exportação em PDF e compartilhamento imediato via WhatsApp."
+    },
+    {
+      "icon": "⚡",
+      "category": "Performance & Vercel",
+      "summary": "Arquitetura modular anti-monólito, pooler de conexão IPv4 Supabase e tempos de resposta otimizados."
+    }
+  ],
+  "changelog": [
+    {
+      "badge": "Novidade",
+      "type": "feature",
+      "title": "Sistema Oficial de Versionamento e Notas de Atualização",
+      "description": "Exibição da versão ativa no rodapé da barra lateral e modal com destaques resumidos e changelog detalhado."
+    },
+    {
+      "badge": "Fretes",
+      "type": "improvement",
+      "title": "Seleção Personalizada para PDF e WhatsApp",
+      "description": "Possibilidade de marcar transportadoras específicas para composição da proposta comercial do cliente, mantendo recomendação automática destacada."
+    },
+    {
+      "badge": "Design",
+      "type": "ui",
+      "title": "Alinhamento e Contraste Refinados",
+      "description": "Ajuste na legibilidade dos dados de fretes e transportadoras não classificadas com maior contraste para leitura em qualquer tela."
+    },
+    {
+      "badge": "Segurança",
+      "type": "security",
+      "title": "Proteção CSRF Global e HSTS",
+      "description": "Validação obrigatória de tokens anti-CSRF para requisições de formulários nativos, Fetch e HTMX."
+    },
+    {
+      "badge": "Arquitetura",
+      "type": "architecture",
+      "title": "Modularização e Auditoria Anti-Monólito",
+      "description": "Separação de controladores, rotas e scripts mantendo todos os arquivos abaixo do limite estrito de 500 linhas."
+    }
+  ]
+}

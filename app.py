@@ -9,6 +9,7 @@ load_dotenv(".env.local")
 
 from database import init_db
 from routes import register_blueprints
+from services.version_service import get_version_info
 from routes.helpers import (
     UPLOAD_DIR,
     current_user,
@@ -101,6 +102,7 @@ def inject_globals():
         "now": datetime.utcnow(),
         "user_has_permission": user_has_permission,
         "csrf_token": generate_csrf_token,
+        "app_version": get_version_info(),
     }
 
 

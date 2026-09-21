@@ -1986,19 +1986,71 @@ button[onclick="addProductRow()"]:active {
   transform: scale(0.98) !important;
 }
 
-/* Botão Remover Item (Lixeira Vermelha) */
-button[onclick*="removeProductRow"] {
+/* Botão Remover Item (Lixeira Vermelha + Identificação) */
+button[onclick*="removeProductRow"], .btn-remove-item {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #EF4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  cursor: pointer !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  white-space: nowrap !important;
 }
 
-button[onclick*="removeProductRow"]:hover {
+button[onclick*="removeProductRow"]:hover, .btn-remove-item:hover {
   background: rgba(239, 68, 68, 0.22) !important;
   border-color: rgba(239, 68, 68, 0.45) !important;
-  transform: scale(1.06) !important;
+  color: #DC2626 !important;
+  transform: scale(1.02) !important;
 }
 
-button[onclick*="removeProductRow"]:active {
+button[onclick*="removeProductRow"]:active, .btn-remove-item:active {
   transform: scale(0.96) !important;
+}
+
+button[onclick*="removeProductRow"] svg, .btn-remove-item svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+  stroke: #EF4444 !important;
+  display: block !important;
+}
+
+button[onclick*="removeProductRow"]:hover svg, .btn-remove-item:hover svg {
+  stroke: #DC2626 !important;
+}
+
+[data-theme="light"] button[onclick*="removeProductRow"],
+[data-theme="light"] .btn-remove-item {
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  color: #DC2626 !important;
+}
+
+[data-theme="light"] button[onclick*="removeProductRow"]:hover,
+[data-theme="light"] .btn-remove-item:hover {
+  background: #FEE2E2 !important;
+  border-color: #F87171 !important;
+  color: #B91C1C !important;
+}
+
+[data-theme="light"] button[onclick*="removeProductRow"] svg,
+[data-theme="light"] .btn-remove-item svg {
+  stroke: #DC2626 !important;
+}
+
+[data-theme="light"] button[onclick*="removeProductRow"]:hover svg,
+[data-theme="light"] .btn-remove-item:hover svg {
+  stroke: #B91C1C !important;
 }
 
 /* Botões Secundários Adaptativos (Limpar Campos, Nova Cotação, WhatsApp, PDF) */
@@ -2526,5 +2578,409 @@ html:not([data-theme="dark"]) .mone-preloader-track {
   100% { transform: rotate(360deg); }
 }
 
+/* Sub Tabs Bar & Tab Buttons (Used across Connections, Freight, etc.) */
+.sub-tabs-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  overflow-x: auto;
+}
 
+.tab-btn {
+  background: var(--surface-subtle, #1E293B) !important;
+  border: 1px solid var(--border-subtle, #334155) !important;
+  color: var(--text-muted, #94A3B8) !important;
+  padding: 8px 16px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  min-height: 38px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+.tab-btn:hover {
+  background: var(--panel-hover, #334155) !important;
+  color: var(--text-primary, #fff) !important;
+}
+
+.tab-btn.active {
+  background: var(--brand-blue, #0070F3) !important;
+  color: #FFFFFF !important;
+  border-color: var(--brand-blue, #0070F3) !important;
+  box-shadow: 0 2px 8px rgba(0, 112, 243, 0.25) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: #FFFFFF !important;
+  color: #475569 !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .tab-btn:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-color: #94A3B8 !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  background: #0070F3 !important;
+  color: #FFFFFF !important;
+  border-color: #0070F3 !important;
+}
+
+/* Carrier Cards Clean Alignment & Modern Layout */
+.carrier-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--surface-card, #1E293B);
+  border: 1px solid var(--border-subtle, #334155);
+  transition: all 0.2s ease;
+}
+
+.carrier-row-card:hover {
+  border-color: rgba(0, 112, 243, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.carrier-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--brand-blue, #0070F3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.carrier-audit-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  background-color: var(--surface-subtle, #1E293B) !important;
+  color: var(--text-primary, #E2E8F0) !important;
+  border: 1px solid var(--border-subtle, #334155) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease !important;
+}
+
+.carrier-audit-btn:hover {
+  background-color: var(--panel-hover, #334155) !important;
+  border-color: var(--line, #475569) !important;
+  color: #FFFFFF !important;
+}
+
+.carrier-audit-btn .audit-asterisk {
+  color: #F59E0B;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+.carrier-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+button.carrier-delete-btn,
+button.carrier-delete-btn.danger,
+.carrier-delete-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 1px solid var(--border-subtle, #334155) !important;
+  color: var(--text-muted, #94A3B8) !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+button.carrier-delete-btn:hover,
+button.carrier-delete-btn.danger:hover,
+.carrier-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #EF4444 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .carrier-row-card {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .carrier-avatar {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #0284C7;
+}
+
+[data-theme="light"] .carrier-audit-btn {
+  background-color: #F8FAFC !important;
+  color: #334155 !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+[data-theme="light"] .carrier-audit-btn:hover {
+  background-color: #F1F5F9 !important;
+  border-color: #94A3B8 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .carrier-audit-btn .audit-asterisk {
+  color: #D97706;
+}
+
+[data-theme="light"] .carrier-status-pill {
+  background: #ECFDF5;
+  color: #059669;
+  border-color: #A7F3D0;
+}
+
+[data-theme="light"] button.carrier-delete-btn,
+[data-theme="light"] button.carrier-delete-btn.danger,
+[data-theme="light"] .carrier-delete-btn {
+  border-color: #CBD5E1 !important;
+  color: #64748B !important;
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+}
+
+[data-theme="light"] button.carrier-delete-btn:hover,
+[data-theme="light"] button.carrier-delete-btn.danger:hover,
+[data-theme="light"] .carrier-delete-btn:hover {
+  background: #FEF2F2 !important;
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #DC2626 !important;
+}
+
+/* Modal Freight Ranking Card Selection */
+.modal-carrier-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-subtle, #334155);
+  background: var(--surface-card, #1E293B);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.modal-carrier-card:hover {
+  border-color: rgba(0, 112, 243, 0.45);
+  transform: translateY(-1px);
+}
+
+.modal-carrier-card {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.modal-carrier-card.recommended,
+.modal-carrier-card.selected {
+  border-color: #0070F3 !important;
+  background: rgba(0, 112, 243, 0.09) !important;
+  box-shadow: 0 0 0 1.5px #0070F3, 0 4px 14px rgba(0, 112, 243, 0.18) !important;
+}
+
+.modal-carrier-card.excluded {
+  opacity: 0.5;
+  filter: grayscale(0.25);
+  border-style: dashed !important;
+}
+
+.carrier-include-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #0070F3;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.carrier-star-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.carrier-star-btn:hover {
+  border-color: #F59E0B;
+  color: #B45309;
+}
+
+.carrier-star-btn.recommended {
+  background: #FEF3C7 !important;
+  border-color: #FCD34D !important;
+  color: #B45309 !important;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+}
+
+[data-theme="dark"] .carrier-star-btn.recommended {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #FBBF24 !important;
+}
+
+[data-theme="light"] .modal-carrier-card {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+}
+
+[data-theme="light"] .modal-carrier-card.recommended,
+[data-theme="light"] .modal-carrier-card.selected {
+  border-color: #0070F3 !important;
+  background: #F0F7FF !important;
+  box-shadow: 0 0 0 1px #0070F3, 0 4px 14px rgba(0, 112, 243, 0.12) !important;
+}
+
+[data-theme="light"] .carrier-select-indicator {
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+}
+
+[data-theme="light"] .modal-carrier-card.selected .carrier-select-indicator {
+  border-color: #0070F3 !important;
+  background: #EFF6FF !important;
+}
+
+[data-theme="light"] .carrier-chosen-tag {
+  background: #EFF6FF;
+  color: #0284C7;
+  border-color: #BFDBFE;
+}
+
+.unserved-carrier-card {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.unserved-carrier-card .unserved-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.unserved-carrier-card .unserved-table {
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.unserved-carrier-card .unserved-badge {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid #FCA5A5;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.unserved-carrier-card .unserved-reason {
+  font-size: 0.78rem;
+  color: #92400E;
+  font-weight: 700;
+  margin: 4px 0 0;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .unserved-carrier-card {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .unserved-carrier-card .unserved-title {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .unserved-carrier-card .unserved-table {
+  color: #CBD5E1;
+}
+
+[data-theme="dark"] .unserved-carrier-card .unserved-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="dark"] .unserved-carrier-card .unserved-reason {
+  color: #FBBF24;
+}
+
+/* Maior contraste para textos secundários no modal de fretes */
+[data-theme="light"] .modal-carrier-card small {
+  color: #334155 !important;
+}
+
+[data-theme="light"] #modalDestSubtitle {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .modal-bento-label {
+  color: #334155 !important;
+}
 

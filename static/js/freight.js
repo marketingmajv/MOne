@@ -10,33 +10,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function resetFreightForm() {
-  const form = document.getElementById("freightCalcForm");
-  if (form) form.reset();
-  
-  const customerName = document.getElementById("customer_name");
-  if (customerName) customerName.value = "";
-  
-  const cepDest = document.getElementById("cep_dest");
-  if (cepDest) cepDest.value = "";
-  
-  const cepOrig = document.getElementById("cep_orig");
-  if (cepOrig && window.DEFAULT_FREIGHT_CEP) cepOrig.value = window.DEFAULT_FREIGHT_CEP;
-  
-  const txtElem = document.getElementById("cepLocationText");
-  if (txtElem) txtElem.innerText = "";
-  
+  document.getElementById("freightCalcForm")?.reset();
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  setVal("customer_name", ""); setVal("cep_dest", "");
+  if (window.DEFAULT_FREIGHT_CEP) setVal("cep_orig", window.DEFAULT_FREIGHT_CEP);
+  const txtElem = document.getElementById("cepLocationText"); if (txtElem) txtElem.innerText = "";
   const container = document.getElementById("productRowsContainer");
   if (container) container.innerHTML = "";
-  itemRowCounter = 0;
-  addProductRow();
-
-  const emptyState = document.getElementById("freightEmptyState");
+  itemRowCounter = 0; addProductRow();
+  document.getElementById("freightEmptyState")?.classList.remove("hidden");
   const optionsList = document.getElementById("freightOptionsList");
-  if (emptyState) emptyState.classList.remove("hidden");
-  if (optionsList) {
-    optionsList.classList.add("hidden");
-    optionsList.innerHTML = "";
-  }
+  if (optionsList) { optionsList.classList.add("hidden"); optionsList.innerHTML = ""; }
   lastFreightCalculationResult = null;
 }
 
@@ -66,8 +50,9 @@ function addProductRow() {
         </select>
       </div>
       <div class="flex-shrink-0">
-        <button type="button" class="h-10 w-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 flex items-center justify-center transition-all icon-svg cursor-pointer shadow-xs" onclick="removeProductRow('${rowId}')" title="Remover item">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <button type="button" class="btn-remove-item" onclick="removeProductRow('${rowId}')" title="Remover este item da carga" aria-label="Remover item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+          <span>Remover</span>
         </button>
       </div>
     </div>
@@ -118,85 +103,44 @@ function removeProductRow(rowId) {
 function onProductSelectChange(rowId) {
   const row = document.getElementById(rowId);
   if (!row) return;
-
   const select = row.querySelector(".product-select");
-  const selectedOpt = select.options[select.selectedIndex];
-
-  if (selectedOpt && selectedOpt.value) {
-    const oneThirdVal = parseFloat(selectedOpt.getAttribute("data-onethird") || 0);
-    const weightVal = selectedOpt.getAttribute("data-weight");
-    const lengthVal = selectedOpt.getAttribute("data-l");
-    const widthVal = selectedOpt.getAttribute("data-w");
-    const heightVal = selectedOpt.getAttribute("data-h");
-
-    row.querySelector(".product-onethird-display").innerText = `R$ ${oneThirdVal.toFixed(2).replace('.', ',')}`;
-    row.querySelector(".product-weight").value = weightVal !== null ? weightVal : "";
-    row.querySelector(".product-length").value = lengthVal !== null ? lengthVal : "";
-    row.querySelector(".product-width").value = widthVal !== null ? widthVal : "";
-    row.querySelector(".product-height").value = heightVal !== null ? heightVal : "";
-  } else {
-    row.querySelector(".product-onethird-display").innerText = "R$ 0,00";
-    row.querySelector(".product-weight").value = "";
-    row.querySelector(".product-length").value = "";
-    row.querySelector(".product-width").value = "";
-    row.querySelector(".product-height").value = "";
-  }
-
+  const opt = select.options[select.selectedIndex];
+  const hasVal = opt && opt.value;
+  const oneThird = hasVal ? parseFloat(opt.getAttribute("data-onethird") || 0) : 0;
+  row.querySelector(".product-onethird-display").innerText = `R$ ${oneThird.toFixed(2).replace('.', ',')}`;
+  row.querySelector(".product-weight").value = (hasVal && opt.getAttribute("data-weight") !== null) ? opt.getAttribute("data-weight") : "";
+  row.querySelector(".product-length").value = (hasVal && opt.getAttribute("data-l") !== null) ? opt.getAttribute("data-l") : "";
+  row.querySelector(".product-width").value = (hasVal && opt.getAttribute("data-w") !== null) ? opt.getAttribute("data-w") : "";
+  row.querySelector(".product-height").value = (hasVal && opt.getAttribute("data-h") !== null) ? opt.getAttribute("data-h") : "";
   updateTotalsSummary();
 }
 
 function updateTotalsSummary() {
   const rows = document.querySelectorAll("#productRowsContainer > .product-item-card");
-  let totalQty = 0;
-  let totalPhysicalWeight = 0;
-  let totalCubicWeight = 0;
-  let totalInsurance = 0;
-
+  let totalQty = 0, totalPhysicalWeight = 0, totalCubicWeight = 0, totalInsurance = 0;
   rows.forEach(row => {
-    const select = row.querySelector(".product-select");
-    const qtyInput = row.querySelector(".product-qty");
-    const weightInput = row.querySelector(".product-weight");
-    const lInput = row.querySelector(".product-length");
-    const wInput = row.querySelector(".product-width");
-    const hInput = row.querySelector(".product-height");
-    const selectedOpt = select.options[select.selectedIndex];
-
-    const qty = intVal(qtyInput.value, 1);
-    const weight = floatVal(weightInput.value, 0);
-    const l = floatVal(lInput.value, 0);
-    const w = floatVal(wInput.value, 0);
-    const h = floatVal(hInput.value, 0);
-    const oneThirdVal = parseFloat(selectedOpt ? selectedOpt.getAttribute("data-onethird") || 0 : 0);
-
-    const cubicWeightPerUnit = (l * w * h) / 6000.0;
-
+    const sel = row.querySelector(".product-select");
+    const opt = sel ? sel.options[sel.selectedIndex] : null;
+    const qty = intVal(row.querySelector(".product-qty")?.value, 1);
+    const w = floatVal(row.querySelector(".product-weight")?.value, 0);
+    const l = floatVal(row.querySelector(".product-length")?.value, 0);
+    const wid = floatVal(row.querySelector(".product-width")?.value, 0);
+    const h = floatVal(row.querySelector(".product-height")?.value, 0);
+    const oneThird = parseFloat(opt ? opt.getAttribute("data-onethird") || 0 : 0);
     totalQty += qty;
-    totalPhysicalWeight += (weight * qty);
-    totalCubicWeight += (cubicWeightPerUnit * qty);
-    totalInsurance += (oneThirdVal * qty);
+    totalPhysicalWeight += (w * qty);
+    totalCubicWeight += (((l * wid * h) / 6000.0) * qty);
+    totalInsurance += (oneThird * qty);
   });
-
-  const elQty = document.getElementById("summaryTotalQty");
-  if (elQty) elQty.innerText = totalQty;
-  
-  const elW = document.getElementById("summaryTotalWeight");
-  if (elW) elW.innerText = `${totalPhysicalWeight.toFixed(1).replace('.', ',')} kg`;
-  
-  const elCw = document.getElementById("summaryCubicWeight");
-  if (elCw) elCw.innerText = `${totalCubicWeight.toFixed(1).replace('.', ',')} kg`;
-  
-  const elIns = document.getElementById("summaryTotalInsurance");
-  if (elIns) elIns.innerText = `R$ ${totalInsurance.toFixed(2).replace('.', ',')}`;
+  const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
+  setEl("summaryTotalQty", totalQty);
+  setEl("summaryTotalWeight", `${totalPhysicalWeight.toFixed(1).replace('.', ',')} kg`);
+  setEl("summaryCubicWeight", `${totalCubicWeight.toFixed(1).replace('.', ',')} kg`);
+  setEl("summaryTotalInsurance", `R$ ${totalInsurance.toFixed(2).replace('.', ',')}`);
 }
 
-function intVal(v, def=0) {
-  const p = parseInt(v);
-  return isNaN(p) ? def : p;
-}
-function floatVal(v, def=0.0) {
-  const p = parseFloat(v);
-  return isNaN(p) ? def : p;
-}
+const intVal = (v, def=0) => { const p = parseInt(v); return isNaN(p) ? def : p; };
+const floatVal = (v, def=0.0) => { const p = parseFloat(v); return isNaN(p) ? def : p; };
 
 async function lookupViaCEP(cepVal) {
   if (!cepVal) return;
@@ -222,14 +166,10 @@ async function lookupViaCEP(cepVal) {
 }
 
 async function runFreightCalculation() {
-  const cep_dest = document.getElementById("cep_dest").value.trim();
-  const cep_orig = document.getElementById("cep_orig").value.trim();
-  const customer_name = (document.getElementById("customer_name")?.value || "").trim();
-  const company_name = (document.getElementById("company_name")?.value || "").trim();
-  const cpf_cnpj = (document.getElementById("cpf_cnpj")?.value || "").trim();
-  const contact_phone = (document.getElementById("contact_phone")?.value || "").trim();
-  const contact_person = (document.getElementById("contact_person")?.value || "").trim();
-  const full_address = (document.getElementById("full_address")?.value || "").trim();
+  const getVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const cep_dest = getVal("cep_dest"), cep_orig = getVal("cep_orig"), customer_name = getVal("customer_name");
+  const company_name = getVal("company_name"), cpf_cnpj = getVal("cpf_cnpj"), contact_phone = getVal("contact_phone");
+  const contact_person = getVal("contact_person"), full_address = getVal("full_address");
 
   if (!cep_dest) {
     alert("Informe o CEP de destino.");
@@ -276,17 +216,16 @@ async function runFreightCalculation() {
 
   const emptyState = document.getElementById("freightEmptyState");
   const optionsList = document.getElementById("freightOptionsList");
-  const submitBtn = document.querySelector("#freightCalcForm button[type='submit']");
-  const origBtnHtml = submitBtn ? submitBtn.innerHTML : "";
-  
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.classList.add("opacity-80", "cursor-wait");
-    submitBtn.innerHTML = `
-      <svg class="icon-svg animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+  const submitBtns = document.querySelectorAll("#freightCalcForm button[type='submit'], #btnFreightSubmitHeader");
+  submitBtns.forEach(btn => {
+    if (!btn.dataset.origHtml) btn.dataset.origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add("opacity-80", "cursor-wait");
+    btn.innerHTML = `
+      <svg class="icon-svg animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
       <span>Consultando Transportadoras...</span>
     `;
-  }
+  });
 
   if (emptyState) emptyState.classList.add("hidden");
   if (optionsList) {
@@ -327,7 +266,7 @@ async function runFreightCalculation() {
     });
     
     const data = await resp.json();
-    lastFreightCalculationResult = { ...data, items: data.items || items, customer_name, cep_dest };
+    window.lastFreightCalculationResult = lastFreightCalculationResult = { ...data, items: data.items || items, customer_name, cep_dest };
 
     if (!data.success || !data.options || data.options.length === 0) {
       optionsList.innerHTML = `
@@ -338,9 +277,15 @@ async function runFreightCalculation() {
       return;
     }
 
-    // Ordenação por menor preço
+    // Ordenação por menor preço e inicialização da seleção múltipla
     data.options.sort((a, b) => a.total_price - b.total_price || a.delivery_days - b.delivery_days);
-    const rankingCardsHtml = buildCarrierRankingHtml(data.options);
+    if (window.freightSelection) {
+      window.freightSelection.included = new Set(data.options.map((_, i) => i));
+      window.freightSelection.recommended = 0;
+    }
+
+    const rankingCardsHtml = (typeof buildCarrierRankingHtml === "function") ? buildCarrierRankingHtml(data.options) : "";
+    const unservedHtml = (typeof buildUnservedCarriersHtml === "function") ? buildUnservedCarriersHtml(data.unserved_carriers) : "";
 
     optionsList.innerHTML = `
       <div class="animate-fade-in space-y-3">
@@ -357,139 +302,24 @@ async function runFreightCalculation() {
           </div>
         </div>
         <div class="rank-list">${rankingCardsHtml}</div>
+        ${unservedHtml}
       </div>
     `;
 
-    // Abrir Modal Executivo Sobreposto Instantaneamente
-    openFreightModal(data, rankingCardsHtml);
+    if (typeof openFreightModal === "function") {
+      openFreightModal(data, rankingCardsHtml);
+    }
   } catch (err) {
     if (optionsList) {
       optionsList.innerHTML = `<div class="bg-red-950/60 border border-red-800/60 text-red-300 p-4 rounded-xl text-xs">Erro ao realizar cálculo: ${err.message}</div>`;
     }
   } finally {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.classList.remove("opacity-80", "cursor-wait");
-      submitBtn.innerHTML = origBtnHtml;
-    }
+    document.querySelectorAll("#freightCalcForm button[type='submit'], #btnFreightSubmitHeader").forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove("opacity-80", "cursor-wait");
+      if (btn.dataset.origHtml) {
+        btn.innerHTML = btn.dataset.origHtml;
+      }
+    });
   }
 }
-
-function copyWhatsAppMessage() {
-  if (!lastFreightCalculationResult || !lastFreightCalculationResult.options || lastFreightCalculationResult.options.length === 0) {
-    alert("Realize um cálculo de frete primeiro para copiar o resumo do WhatsApp.");
-    return;
-  }
-  const data = lastFreightCalculationResult;
-  let text = `🚚 *COTAÇÃO DE FRETE — MAJ MOBILIDADE*\n`;
-  if (data.customer_name) text += `👤 Cliente: ${data.customer_name}\n`;
-  text += `📍 Destino: CEP ${data.cep_dest}\n`;
-  text += `📦 Carga: ${data.product_name || 'Produtos MAJ'}\n`;
-  text += `⚖️ Peso Total: ${data.total_weight_kg.toFixed(1).replace('.', ',')} kg\n\n`;
-  text += `*OPÇÕES DE TRANSPORTE:*\n`;
-  data.options.forEach((opt, idx) => {
-    text += `${idx + 1}. *${opt.carrier_name}*\n`;
-    text += `   • Valor: R$ ${opt.total_price.toFixed(2).replace('.', ',')}\n`;
-    text += `   • Prazo: ${opt.delivery_days} dia(s) útil(eis)\n`;
-  });
-  text += `\n_Origem Vitória/ES. Seguro de 1/3 do valor de atacado já incluso na cotação._`;
-
-  navigator.clipboard.writeText(text).then(() => {
-    alert("Cotação formatada copiada com sucesso! Você já pode colar na conversa do WhatsApp.");
-  }).catch(err => {
-    alert("Erro ao copiar para a área de transferência: " + err.message);
-  });
-}
-
-function buildCarrierRankingHtml(options) {
-  if (!options || options.length === 0) return "";
-  return options.map((opt, idx) => {
-    const isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
-    const isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
-    const rankBg = isCheapest ? "var(--brand-emerald)" : (isFastest ? "var(--brand-blue)" : "var(--primary)");
-    const rankColor = (isCheapest || isFastest) ? "#042211" : "var(--text)";
-    const badgeHtml = isCheapest ? `<span class="badge" style="background: rgba(0,229,153,0.12); color: var(--accent); border-color: rgba(0,229,153,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS ECONÔMICA</span>`
-      : (isFastest ? `<span class="badge" style="background: rgba(56,189,248,0.12); color: var(--brand-blue); border-color: rgba(56,189,248,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS RÁPIDA</span>` : "");
-
-    return `
-      <div class="rank-row" style="border: 1px solid ${isCheapest ? 'rgba(0, 229, 153, 0.35)' : 'var(--line)'}; padding: 12px 14px; gap: 12px;">
-        <span class="rank" style="background: ${rankBg}; color: ${rankColor}; flex-shrink: 0;">${idx + 1}</span>
-        <div class="grow" style="min-width: 0;">
-          <div style="display: flex; align-items: center; flex-wrap: wrap;">
-            <b style="font-size: 0.88rem; color: var(--text);">${opt.carrier_name}</b>${badgeHtml}
-          </div>
-          <small style="color: var(--muted); font-size: 0.74rem; display: block; margin-top: 2px;">
-            Tabela: ${opt.table_name} • Prazo: <strong style="color: var(--text);">${opt.delivery_days} dia(s) útil(eis)</strong>
-          </small>
-          ${opt.insurance_cost > 0 ? `<small style="color: var(--muted); font-size: 0.7rem; display: block;">Seguro incluso: R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
-        </div>
-        <div style="text-align: right; flex-shrink: 0;">
-          <strong class="tabular-nums" style="display: block; font-size: 1.15rem; font-weight: 800; color: ${isCheapest ? 'var(--accent)' : 'var(--brand-blue)'};">
-            R$ ${opt.total_price.toFixed(2).replace('.', ',')}
-          </strong>
-          <button type="button" onclick="exportFreightPDF(${idx})" class="link-btn" style="font-size: 0.72rem; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Exportar PDF desta transportadora">
-            <span>Exportar PDF ↗</span>
-          </button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function openFreightModal(data, rankingHtml) {
-  const modal = document.getElementById("freightResultsModal");
-  if (!modal) return;
-  if (modal.parentElement !== document.body) {
-    document.body.appendChild(modal);
-  }
-
-  const loc = `${data.city ? data.city + '/' : ''}${data.uf || ''}`;
-  const sub = document.getElementById("modalDestSubtitle");
-  if (sub) {
-    sub.innerHTML = `Destino: <strong style="color: var(--text);">${loc}</strong> (CEP ${data.cep_dest}) • Cliente: <strong style="color: var(--text);">${data.customer_name || 'Consumidor'}</strong>`;
-  }
-
-  const bQuote = document.getElementById("modalQuoteNumberBadge");
-  if (bQuote && data.quote_number) bQuote.innerText = data.quote_number;
-
-  const cSum = document.getElementById("modalCargoSummary");
-  if (cSum) {
-    const vol = data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1);
-    cSum.innerText = `${vol} vol • ${data.product_name || 'Carga'}`;
-  }
-
-  const wSum = document.getElementById("modalWeightSummary");
-  if (wSum) {
-    const wVal = parseFloat(data.total_weight_kg) || 0;
-    wSum.innerText = `${wVal.toFixed(1).replace('.', ',')} kg físicos`;
-  }
-
-  const iSum = document.getElementById("modalInsuranceSummary");
-  if (iSum) {
-    const iVal = parseFloat(data.insurance_base_value) || 0;
-    iSum.innerText = `R$ ${iVal.toFixed(2).replace('.', ',')}`;
-  }
-
-  const mList = document.getElementById("modalCarrierRankingList");
-  if (mList) {
-    mList.innerHTML = `<div class="rank-list">${rankingHtml || buildCarrierRankingHtml(data.options)}</div>`;
-  }
-
-  modal.style.removeProperty("display");
-  modal.style.display = "grid";
-  modal.classList.add("show");
-}
-
-function closeFreightModal() {
-  const modal = document.getElementById("freightResultsModal");
-  if (!modal) return;
-  modal.classList.remove("show");
-  modal.style.display = "none";
-}
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeFreightModal();
-});
-
-// Note: PDF generation and archived quote exports are modularized in static/js/freight-quotes.js
-
