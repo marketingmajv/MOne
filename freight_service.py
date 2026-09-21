@@ -8,9 +8,8 @@ import re
 import json
 import base64
 import urllib.request
-import urllib.error
 from pathlib import Path
-from gemini_service import get_gemini_api_key
+from services.gemini_client import execute_gemini_payload, get_gemini_api_key
 
 # CEP Padrão da Loja/CD MAJ (Vitória - ES)
 DEFAULT_MAJ_CEP = "29045-660"
@@ -429,104 +428,184 @@ def seed_vinislog_rate_table(conn):
         print("[Vinislog Seeder Error]:", e)
 
 
-def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> list:
+def extract_text_from_spreadsheet(file_path: str) -> str:
+    """Extrai todas as linhas e abas de arquivos Excel (.xlsx, .xls) ou CSV de forma legível."""
+    p = Path(file_path)
+    ext = p.suffix.lower()
+    
+    if ext in [".xlsx", ".xlsm", ".xltx"]:
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
+            lines = []
+            for sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+                lines.append(f"=== ABA: {sheet_name} ===")
+                row_count = 0
+                for row in sheet.iter_rows(values_only=True):
+                    if not any(v is not None and str(v).strip() != "" for v in row):
+                        continue
+                    cells = [str(v).strip() if v is not None else "" for v in row]
+                    lines.append(" | ".join(cells))
+                    row_count += 1
+                    if row_count >= 800:
+                        lines.append("... [linhas adicionais truncadas para brevidade]")
+                        break
+            return "\n".join(lines)
+        except Exception as e:
+            print(f"[Spreadsheet Parser] Erro no openpyxl: {e}")
+
+    # Fallback CSV ou texto
+    for enc in ["utf-8", "latin1", "cp1252"]:
+        try:
+            with open(file_path, "r", encoding=enc, errors="ignore") as f:
+                content = f.read(60000)
+                if content and any(delim in content[:500] for delim in [";", ",", "\t", "|"]):
+                    return content
+        except Exception:
+            pass
+    return ""
+
+
+def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
     """
-    Utiliza o Gemini 2.5/2.0 para analisar arquivos PDF/Excel/CSV de transportadoras
-    e extrair automaticamente as regras de CEP, peso, valores e prazos.
+    Utiliza o Gemini 2.5/2.0 para analisar arquivos PDF/Excel/CSV de transportadoras,
+    auditar pendências e extrair automaticamente as regras de CEP, peso, valores e prazos.
+    Retorna dict com {'is_valid': bool, 'issues': list[str], 'rates': list[dict]}.
     """
     api_key = get_gemini_api_key()
     if not api_key:
         print("[Gemini Freight Parser] API key não configurada.")
-        return []
+        return {"is_valid": False, "issues": ["API Key do Gemini não está configurada no servidor."], "rates": []}
 
     file_path = str(file_path)
     if not os.path.exists(file_path):
-        return []
+        return {"is_valid": False, "issues": ["Arquivo da tabela não encontrado no servidor."], "rates": []}
 
-    # Determinar tipo de arquivo e converter se necessário
-    mime_type = "application/pdf"
-    if file_path.lower().endswith((".xlsx", ".xls", ".csv")):
-        mime_type = "text/csv"
-        # Tentar ler CSV/Planilha se possível ou converter para texto
-        try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                csv_sample = f.read(50000)
-            file_data = csv_sample.encode("utf-8")
-        except Exception:
-            with open(file_path, "rb") as f:
-                file_data = f.read()
-    else:
-        with open(file_path, "rb") as f:
-            file_data = f.read()
+    p = Path(file_path)
+    ext = p.suffix.lower()
 
-    b64_file = base64.b64encode(file_data).decode("utf-8") if 'base64' in globals() else ""
+    # Se for planilha Excel ou CSV, extraímos em texto legível
+    sheet_text = ""
+    if ext in [".xlsx", ".xls", ".csv", ".tsv"]:
+        sheet_text = extract_text_from_spreadsheet(file_path)
 
     prompt = f"""
-    Você é um especialista em logística e cálculo de frete rodoviário brasileiro.
-    Analise a tabela de frete da transportadora '{carrier_name}' enviada em anexo.
+    Você é um auditor especialista em logística e tabelas de frete rodoviário brasileiro.
+    Analise a tabela de frete da transportadora '{carrier_name}' enviada.
 
-    Extraia TODAS as regras de frete presentes no documento em formato JSON estrito:
-    Uma lista de objetos com o seguinte esquema:
-    [
-      {{
-        "uf": "UF de destino (ex: ES, RJ, SP, MG, etc. ou null se for por CEP)",
-        "city": "Nome da cidade se especificado ou null",
-        "cep_start": "CEP inicial de 8 dígitos numéricos (ex: 29000000) ou null",
-        "cep_end": "CEP final de 8 dígitos numéricos (ex: 29999999) ou null",
-        "min_weight": 0.0,
-        "max_weight": 100.0,
-        "fixed_price": 150.0,
-        "weight_price_per_kg": 1.5,
-        "ad_valorem_percent": 0.5,
-        "gris_percent": 0.2,
-        "min_freight_price": 50.0,
-        "delivery_days": 3,
-        "notes": "Observações adicionais se houver"
-      }}
-    ]
+    MISSÃO CRÍTICA:
+    1. Auditar a completude dos dados da tabela. Para que uma tabela de frete seja operacional no sistema M-One, ela PRECISA conter:
+       - Estados (UF), Cidades ou Faixas de CEP de destino atendidos.
+       - Faixas de peso (ex: 0-20kg, 20-50kg, etc.) ou tarifas por kg excedente.
+       - Preços fixos ou taxas básicas por faixa de peso.
+       - Prazos de entrega estimados em dias úteis (delivery_days).
+       - Taxa de seguro / Ad-valorem / GRIS em % ou taxa de despacho.
+    2. Se faltarem informações fundamentais para calcular o frete, liste claramente as pendências em 'issues' (para que o usuário possa solicitar diretamente à transportadora).
+    3. Extrair todas as regras operacionais válidas em 'rates'.
 
-    Regras importantes:
-    - Retorne APENAS o JSON puro dentro do bloco ```json ```, sem conversas.
-    - Se a tabela usar faixas de peso (ex: 0 a 50kg, 51 a 100kg), crie uma regra separada para cada faixa.
-    - Se houver taxa de ad-valorem/seguro em %, informe em 'ad_valorem_percent'.
-    - Se o CEP for informado com traço (ex: 29000-000), remova o traço e deixe apenas os 8 números.
+    Retorne ESTRITAMENTE um JSON no seguinte formato:
+    ```json
+    {{
+      "is_valid": true,
+      "issues": [
+        "Descreva aqui eventuais pendências ou informações faltantes na planilha (ex: 'Faltam prazos de entrega em dias úteis para o Nordeste', 'Ausência de valor por kg para carga acima de 100kg', etc.)"
+      ],
+      "rates": [
+        {{
+          "uf": "UF de 2 letras (ex: ES, RJ, SP, BA, PE) ou null",
+          "city": "Nome da cidade ou tipo (Capital/Interior) ou null",
+          "cep_start": "CEP de 8 dígitos numéricos (ex: 29000000) ou null",
+          "cep_end": "CEP de 8 dígitos numéricos (ex: 29999999) ou null",
+          "min_weight": 0.0,
+          "max_weight": 100.0,
+          "fixed_price": 150.0,
+          "weight_price_per_kg": 1.5,
+          "ad_valorem_percent": 0.3,
+          "gris_percent": 0.2,
+          "min_freight_price": 40.0,
+          "delivery_days": 3,
+          "notes": "Observações se houver"
+        }}
+      ]
+    }}
+    ```
+
+    Regras obrigatórias:
+    - Retorne APENAS o bloco ```json ```, sem introduções ou conclusões.
+    - Se a tabela tiver dados operacionais suficientes, "is_valid" deve ser true.
+    - Se a tabela for ilegível, não contiver faixas de peso ou faltarem preços essenciais, defina "is_valid": false e liste as pendências em "issues".
+    - Remova traços de CEP (ex: 29000-000 -> 29000000).
     """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    parts = []
+    if sheet_text:
+        parts.append({"text": f"{prompt}\n\nCONTEÚDO DA PLANILHA EXTRAÍDO:\n{sheet_text[:80000]}"})
+    else:
+        # Envio binário para PDF
+        try:
+            with open(file_path, "rb") as f:
+                raw_bytes = f.read()
+            b64_file = base64.b64encode(raw_bytes).decode("utf-8")
+            mime_type = "application/pdf" if ext == ".pdf" else "application/octet-stream"
+            parts.append({"text": prompt})
+            parts.append({
+                "inline_data": {
+                    "mime_type": mime_type,
+                    "data": b64_file
+                }
+            })
+        except Exception as e:
+            return {"is_valid": False, "issues": [f"Erro ao ler arquivo: {e}"], "rates": []}
+
     payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": mime_type,
-                            "data": b64_file
-                        }
-                    }
-                ]
-            }
-        ],
+        "contents": [{"parts": parts}],
         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 8192}
     }
 
     try:
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-            
-            # Extrair bloco JSON
-            match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL)
-            json_str = match.group(1) if match else text
-            return json.loads(json_str)
+        gemini_res = execute_gemini_payload(payload, api_key=api_key, timeout=60)
+        if not gemini_res.get("success"):
+            err_msg = gemini_res.get("message") or "Falha na comunicação com o serviço de IA."
+            return {"is_valid": False, "issues": [err_msg], "rates": []}
+
+        raw_text = gemini_res.get("text", "")
+        match = re.search(r"```json\s*(.*?)\s*```", raw_text, re.DOTALL)
+        json_str = match.group(1) if match else raw_text
+        parsed = json.loads(json_str)
+
+        # Normalização de retorno (caso venha lista direta ou dict)
+        if isinstance(parsed, list):
+            rates = parsed
+            issues = []
+        elif isinstance(parsed, dict):
+            rates = parsed.get("rates", [])
+            issues = parsed.get("issues", [])
+        else:
+            return {"is_valid": False, "issues": ["Formato de resposta inesperado da IA."], "rates": []}
+
+        # Sanitizar prazos de entrega faltantes com fallback inteligente (3 dias Capital, 5 dias Interior)
+        for r in rates:
+            if not r.get("delivery_days") or int(r.get("delivery_days") or 0) <= 0:
+                desc = f"{r.get('city') or ''} {r.get('notes') or ''} {r.get('uf') or ''}".lower()
+                if "capital" in desc or "metropolitana" in desc:
+                    r["delivery_days"] = 3
+                elif "interior" in desc:
+                    r["delivery_days"] = 5
+                else:
+                    r["delivery_days"] = 4
+
+        if rates and len(rates) > 0:
+            is_valid = True
+        else:
+            is_valid = False
+            if not issues:
+                issues.append("Nenhuma faixa tarifária de frete pôde ser extraída da tabela.")
+
+        return {"is_valid": is_valid, "issues": issues, "rates": rates}
     except Exception as e:
         print(f"[Gemini Freight Parser] Erro na análise por IA: {e}")
-        return []
+        return {"is_valid": False, "issues": [f"Falha ao interpretar resposta da IA: {str(e)}"], "rates": []}
 
 
 def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None) -> dict:

@@ -64,6 +64,7 @@ def freight():
                 t.id AS table_id,
                 t.name AS table_name,
                 t.file_url,
+                t.notes,
                 t.created_at,
                 c.id AS carrier_id,
                 c.name AS carrier_name,
@@ -222,7 +223,19 @@ def freight_table_upload():
         file_path = UPLOAD_DIR / f"freight_{int(time.time())}_{filename}"
         file.save(file_path)
 
-        rates = freight_service.parse_freight_table_with_gemini(file_path, carrier_name)
+        parsed_result = freight_service.parse_freight_table_with_gemini(file_path, carrier_name)
+        rates = parsed_result.get("rates", []) if isinstance(parsed_result, dict) else (parsed_result if isinstance(parsed_result, list) else [])
+        issues = parsed_result.get("issues", []) if isinstance(parsed_result, dict) else []
+        is_valid = parsed_result.get("is_valid", len(rates) > 0) if isinstance(parsed_result, dict) else (len(rates) > 0)
+
+        if not is_valid or len(rates) == 0:
+            issues_msg = " • ".join(issues) if issues else "Não foram identificadas faixas tarifárias ou preços válidos no arquivo enviado."
+            flash(
+                f"⚠️ Pendências na planilha da transportadora '{carrier_name}': {issues_msg}. "
+                f"A tabela NÃO foi ativada para evitar simulações incorretas. Solicite estes dados à transportadora.",
+                "warning"
+            )
+            return redirect(url_for("freight"))
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
@@ -235,9 +248,10 @@ def freight_table_upload():
                 cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", (carrier_name,))
                 carrier_id = cur_ins.fetchone()["id"]
 
+            report_text = " • ".join(issues) if issues else "Tabela importada e auditada com 100% de conformidade operacional."
             cur_t = conn.execute(
-                "INSERT INTO freight_tables (carrier_id, name, file_url) VALUES (%s, %s, %s) RETURNING id",
-                (carrier_id, table_name, str(file_path.name))
+                "INSERT INTO freight_tables (carrier_id, name, file_url, notes) VALUES (%s, %s, %s, %s) RETURNING id",
+                (carrier_id, table_name, str(file_path.name), report_text)
             )
             table_id = cur_t.fetchone()["id"]
 
@@ -270,7 +284,8 @@ def freight_table_upload():
                 )
                 inserted_count += 1
 
-        flash(f"✅ Tabela '{table_name}' da transportadora '{carrier_name}' importada com sucesso! ({inserted_count} regras processadas pela IA)", "success")
+        obs_msg = f" (Observações: {' • '.join(issues)})" if issues else ""
+        flash(f"✅ Tabela '{table_name}' da transportadora '{carrier_name}' importada com sucesso! ({inserted_count} regras cadastradas){obs_msg}", "success")
     except Exception as e:
         flash(f"Erro ao importar tabela de frete: {str(e)}", "danger")
 
@@ -289,3 +304,49 @@ def freight_table_delete(table_id: int):
     except Exception as e:
         flash(f"Erro ao excluir tabela: {str(e)}", "danger")
     return redirect(url_for("freight"))
+
+
+@freight_bp.route("/freight/tables/<int:table_id>/details")
+@login_required
+def freight_table_details(table_id: int):
+    """Retorna detalhes, relatório de auditoria permanente da IA e faixas de uma tabela."""
+    with db() as conn:
+        cur_t = conn.execute(
+            """
+            SELECT 
+                t.id AS table_id, t.name AS table_name, t.file_url,
+                t.notes, t.created_at, c.id AS carrier_id, c.name AS carrier_name
+            FROM freight_tables t
+            JOIN carriers c ON c.id = t.carrier_id
+            WHERE t.id = %s
+            """,
+            (table_id,)
+        )
+        t_row = cur_t.fetchone()
+        if not t_row:
+            return jsonify({"success": False, "message": "Tabela não encontrada."}), 404
+
+        table_data = dict(t_row)
+        table_data["created_at_fmt"] = t_row["created_at"].strftime("%d/%m/%Y %H:%M") if t_row.get("created_at") else ""
+
+        cur_r = conn.execute(
+            """
+            SELECT 
+                id, uf, city, cep_start, cep_end, min_weight, max_weight,
+                fixed_price, weight_price_per_kg, ad_valorem_percent,
+                gris_percent, delivery_days, notes
+            FROM freight_rates
+            WHERE table_id = %s
+            ORDER BY uf ASC, city ASC, min_weight ASC
+            LIMIT 150
+            """,
+            (table_id,)
+        )
+        rates = [dict(r) for r in cur_r.fetchall()]
+
+        return jsonify({
+            "success": True,
+            "table": table_data,
+            "rates": rates,
+            "total_rates": len(rates)
+        })

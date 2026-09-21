@@ -38,10 +38,10 @@ def get_candidate_models() -> list[str]:
     """Retorna a lista ordenada de modelos candidatos para failover automático."""
     primary = os.environ.get("GEMINI_MODEL", "gemini-flash-latest").strip() or "gemini-flash-latest"
     # Ordem prioritária de resiliência:
-    # 1. Modelo principal configurado
-    # 2. Flash-Lite (altíssima disponibilidade e baixa latência contra picos de 503)
+    # 1. Flash-Lite (altíssima disponibilidade e baixa latência contra picos de 503)
+    # 2. Modelo principal configurado
     # 3. Gemini 3 Flash Preview (segundo nó de redundância)
-    preferred = [primary, "gemini-flash-lite-latest", "gemini-3-flash-preview"]
+    preferred = ["gemini-flash-lite-latest", primary, "gemini-3-flash-preview"]
     seen = set()
     result = []
     for m in preferred:

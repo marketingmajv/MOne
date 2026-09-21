@@ -338,13 +338,17 @@ async function runFreightCalculation() {
       return;
     }
 
-    let html = `
+    // Ordenação por menor preço
+    data.options.sort((a, b) => a.total_price - b.total_price || a.delivery_days - b.delivery_days);
+    const rankingCardsHtml = buildCarrierRankingHtml(data.options);
+
+    optionsList.innerHTML = `
       <div class="animate-fade-in space-y-3">
         <div class="radar-item" style="padding: 12px 14px; margin-bottom: 8px;">
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <strong style="color: var(--text); font-size: 0.84rem;">${data.product_name}</strong>
-              <span class="badge" style="font-size: 0.7rem; font-weight: 700;">${data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1)} volume(s)</span>
+              <span class="badge" style="font-size: 0.7rem; font-weight: 700;">${data.total_volumes_count || 1} volume(s)</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--muted); margin-top: 4px;">
               <span>Peso Físico: <strong style="color: var(--text);">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></span>
@@ -352,64 +356,12 @@ async function runFreightCalculation() {
             </div>
           </div>
         </div>
-
-        <div class="rank-list">
-    `;
-
-    // Ordenação por menor preço
-    data.options.sort((a, b) => a.total_price - b.total_price || a.delivery_days - b.delivery_days);
-
-    data.options.forEach((opt, idx) => {
-      let isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
-      let isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
-
-      let rankBg = "var(--primary)";
-      let rankColor = "#042211";
-      let rowBorder = "1px solid var(--line)";
-      let badgeHtml = "";
-
-      if (isCheapest) {
-        rankBg = "var(--brand-emerald)";
-        rankColor = "#042211";
-        rowBorder = "1px solid rgba(0, 229, 153, 0.35)";
-        badgeHtml = `<span class="badge" style="background: rgba(0,229,153,0.12); color: var(--accent); border-color: rgba(0,229,153,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS ECONÔMICA</span>`;
-      } else if (isFastest) {
-        rankBg = "var(--brand-blue)";
-        rankColor = "#FFFFFF";
-        rowBorder = "1px solid rgba(56, 189, 248, 0.35)";
-        badgeHtml = `<span class="badge" style="background: rgba(56,189,248,0.12); color: var(--brand-blue); border-color: rgba(56,189,248,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS RÁPIDA</span>`;
-      }
-
-      html += `
-        <div class="rank-row" style="border: ${rowBorder}; padding: 12px 14px; gap: 12px;">
-          <span class="rank" style="background: ${rankBg}; color: ${rankColor}; flex-shrink: 0;">${idx + 1}</span>
-          <div class="grow" style="min-width: 0;">
-            <div style="display: flex; align-items: center; flex-wrap: wrap;">
-              <b style="font-size: 0.88rem; color: var(--text);">${opt.carrier_name}</b>
-              ${badgeHtml}
-            </div>
-            <small style="color: var(--muted); font-size: 0.74rem; display: block; margin-top: 2px;">
-              Tabela: ${opt.table_name} • Prazo: <strong style="color: var(--text);">${opt.delivery_days} dia(s) útil(eis)</strong>
-            </small>
-            ${opt.insurance_cost > 0 ? `<small style="color: var(--muted); font-size: 0.7rem; display: block;">Seguro incluso: R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
-          </div>
-          <div style="text-align: right; flex-shrink: 0;">
-            <strong class="tabular-nums" style="display: block; font-size: 1.15rem; font-weight: 800; color: ${isCheapest ? 'var(--accent)' : 'var(--brand-blue)'};">
-              R$ ${opt.total_price.toFixed(2).replace('.', ',')}
-            </strong>
-            <button type="button" onclick="exportFreightPDF(${idx})" class="link-btn" style="font-size: 0.72rem; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Exportar PDF desta transportadora">
-              <span>Exportar PDF ↗</span>
-            </button>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-        </div>
+        <div class="rank-list">${rankingCardsHtml}</div>
       </div>
     `;
-    optionsList.innerHTML = html;
+
+    // Abrir Modal Executivo Sobreposto Instantaneamente
+    openFreightModal(data, rankingCardsHtml);
   } catch (err) {
     if (optionsList) {
       optionsList.innerHTML = `<div class="bg-red-950/60 border border-red-800/60 text-red-300 p-4 rounded-xl text-xs">Erro ao realizar cálculo: ${err.message}</div>`;
@@ -448,6 +400,96 @@ function copyWhatsAppMessage() {
     alert("Erro ao copiar para a área de transferência: " + err.message);
   });
 }
+
+function buildCarrierRankingHtml(options) {
+  if (!options || options.length === 0) return "";
+  return options.map((opt, idx) => {
+    const isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
+    const isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
+    const rankBg = isCheapest ? "var(--brand-emerald)" : (isFastest ? "var(--brand-blue)" : "var(--primary)");
+    const rankColor = (isCheapest || isFastest) ? "#042211" : "var(--text)";
+    const badgeHtml = isCheapest ? `<span class="badge" style="background: rgba(0,229,153,0.12); color: var(--accent); border-color: rgba(0,229,153,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS ECONÔMICA</span>`
+      : (isFastest ? `<span class="badge" style="background: rgba(56,189,248,0.12); color: var(--brand-blue); border-color: rgba(56,189,248,0.25); font-size: 9px; padding: 2px 6px; margin-left: 6px;">MAIS RÁPIDA</span>` : "");
+
+    return `
+      <div class="rank-row" style="border: 1px solid ${isCheapest ? 'rgba(0, 229, 153, 0.35)' : 'var(--line)'}; padding: 12px 14px; gap: 12px;">
+        <span class="rank" style="background: ${rankBg}; color: ${rankColor}; flex-shrink: 0;">${idx + 1}</span>
+        <div class="grow" style="min-width: 0;">
+          <div style="display: flex; align-items: center; flex-wrap: wrap;">
+            <b style="font-size: 0.88rem; color: var(--text);">${opt.carrier_name}</b>${badgeHtml}
+          </div>
+          <small style="color: var(--muted); font-size: 0.74rem; display: block; margin-top: 2px;">
+            Tabela: ${opt.table_name} • Prazo: <strong style="color: var(--text);">${opt.delivery_days} dia(s) útil(eis)</strong>
+          </small>
+          ${opt.insurance_cost > 0 ? `<small style="color: var(--muted); font-size: 0.7rem; display: block;">Seguro incluso: R$ ${opt.insurance_cost.toFixed(2).replace('.', ',')}</small>` : ''}
+        </div>
+        <div style="text-align: right; flex-shrink: 0;">
+          <strong class="tabular-nums" style="display: block; font-size: 1.15rem; font-weight: 800; color: ${isCheapest ? 'var(--accent)' : 'var(--brand-blue)'};">
+            R$ ${opt.total_price.toFixed(2).replace('.', ',')}
+          </strong>
+          <button type="button" onclick="exportFreightPDF(${idx})" class="link-btn" style="font-size: 0.72rem; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Exportar PDF desta transportadora">
+            <span>Exportar PDF ↗</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openFreightModal(data, rankingHtml) {
+  const modal = document.getElementById("freightResultsModal");
+  if (!modal) return;
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
+
+  const loc = `${data.city ? data.city + '/' : ''}${data.uf || ''}`;
+  const sub = document.getElementById("modalDestSubtitle");
+  if (sub) {
+    sub.innerHTML = `Destino: <strong style="color: var(--text);">${loc}</strong> (CEP ${data.cep_dest}) • Cliente: <strong style="color: var(--text);">${data.customer_name || 'Consumidor'}</strong>`;
+  }
+
+  const bQuote = document.getElementById("modalQuoteNumberBadge");
+  if (bQuote && data.quote_number) bQuote.innerText = data.quote_number;
+
+  const cSum = document.getElementById("modalCargoSummary");
+  if (cSum) {
+    const vol = data.total_volumes_count || (data.items ? data.items.reduce((acc, it) => acc + (it.qty || 1), 0) : 1);
+    cSum.innerText = `${vol} vol • ${data.product_name || 'Carga'}`;
+  }
+
+  const wSum = document.getElementById("modalWeightSummary");
+  if (wSum) {
+    const wVal = parseFloat(data.total_weight_kg) || 0;
+    wSum.innerText = `${wVal.toFixed(1).replace('.', ',')} kg físicos`;
+  }
+
+  const iSum = document.getElementById("modalInsuranceSummary");
+  if (iSum) {
+    const iVal = parseFloat(data.insurance_base_value) || 0;
+    iSum.innerText = `R$ ${iVal.toFixed(2).replace('.', ',')}`;
+  }
+
+  const mList = document.getElementById("modalCarrierRankingList");
+  if (mList) {
+    mList.innerHTML = `<div class="rank-list">${rankingHtml || buildCarrierRankingHtml(data.options)}</div>`;
+  }
+
+  modal.style.removeProperty("display");
+  modal.style.display = "grid";
+  modal.classList.add("show");
+}
+
+function closeFreightModal() {
+  const modal = document.getElementById("freightResultsModal");
+  if (!modal) return;
+  modal.classList.remove("show");
+  modal.style.display = "none";
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeFreightModal();
+});
 
 // Note: PDF generation and archived quote exports are modularized in static/js/freight-quotes.js
 

@@ -12,15 +12,15 @@
       <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Upload de tabela em PDF, Excel (.xlsx) ou CSV para leitura automática</p>
     </div>
 
-    <form method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="space-y-3">
+    <form id="freightUploadForm" method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="space-y-3.5" onsubmit="handleFreightUploadSubmit(event)">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Transportadora *</label>
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-[var(--text-muted)] icon-svg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <div class="relative flex items-center">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             </span>
-            <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress" class="form-input w-full pl-9 pr-3 py-2 text-xs" list="carrier_list">
+            <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress, TJB" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;" list="carrier_list">
           </div>
           <datalist id="carrier_list">
             {% for c in carriers %}
@@ -31,24 +31,51 @@
 
         <div>
           <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Nome da Tabela / Região *</label>
-          <div class="relative">
-            <span class="absolute left-3 top-2.5 text-[var(--text-muted)] icon-svg">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div class="relative flex items-center">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </span>
-            <input type="text" name="table_name" required placeholder="Ex: Tabela Sudeste 2026" class="form-input w-full pl-9 pr-3 py-2 text-xs">
+            <input type="text" name="table_name" required placeholder="Ex: Sul e Sudeste 2026" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;">
           </div>
         </div>
       </div>
 
+      <!-- ZONA MODERNA DE UPLOAD COM PREVIEW -->
       <div>
         <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Arquivo da Tabela *</label>
-        <input type="file" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="form-input w-full text-xs text-[var(--text-muted)] py-1.5 px-3 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[var(--surface-subtle)] file:text-[var(--text-primary)]">
+        <div class="relative border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-blue)] rounded-xl p-3.5 text-center transition-all bg-[var(--surface-subtle)]/40 hover:bg-[var(--surface-subtle)] cursor-pointer" onclick="document.getElementById('table_file_input').click()" id="uploadDropZone">
+          <input type="file" id="table_file_input" name="table_file" required accept=".pdf,.xlsx,.xls,.csv" class="hidden" onchange="updateUploadFilePreview(this)">
+          
+          <div id="dropZoneEmptyState" class="flex items-center justify-center gap-2.5 text-xs text-[var(--text-secondary)]">
+            <span class="text-[var(--brand-blue)] icon-svg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </span>
+            <span>Clique para selecionar ou arraste o arquivo <strong>(.xlsx, .pdf, .csv)</strong></span>
+          </div>
+
+          <div id="dropZoneSelectedState" class="hidden items-center justify-between text-xs px-2">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-emerald-400 font-bold">📄</span>
+              <span id="selectedFileName" class="font-bold text-[var(--text-primary)] truncate">arquivo.xlsx</span>
+              <span id="selectedFileSize" class="text-[10px] text-[var(--text-muted)] bg-[var(--surface-card)] px-1.5 py-0.5 rounded border border-[var(--border-subtle)]">0 KB</span>
+            </div>
+            <span class="text-[11px] text-[var(--brand-blue)] font-bold ml-2 shrink-0">Trocar</span>
+          </div>
+        </div>
       </div>
 
-      <button type="submit" class="w-full bg-[var(--surface-subtle)] hover:bg-[var(--border-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-bold text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
-        <svg class="icon-svg text-amber-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>Ler Tabela com Gemini IA</span>
+      <button id="btnFreightUploadSubmit" type="submit" class="w-full bg-[var(--brand-blue)] hover:opacity-90 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md">
+        <svg class="icon-svg text-amber-300" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span id="btnUploadText">Ler e Auditar Tabela com Gemini IA</span>
       </button>
+
+      <div id="uploadStatusNotice" class="hidden text-center text-xs text-[var(--brand-blue)] font-medium space-y-1 pt-1">
+        <div class="flex items-center justify-center gap-2">
+          <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          <span>Lendo abas da planilha e auditando faixas com IA...</span>
+        </div>
+        <p class="text-[10px] text-[var(--text-muted)]">Aguarde alguns instantes enquanto o M-One valida as tarifas.</p>
+      </div>
     </form>
   </div>
   {% endif %}
@@ -68,18 +95,29 @@
     {% if tables %}
     <div class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
       {% for t in tables %}
-      <div class="p-3 bg-[var(--surface-subtle)] border border-[var(--border-subtle)] rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-[var(--brand-blue)] transition-all">
+      <div class="p-3 bg-[var(--surface-subtle)] border border-[var(--border-subtle)] rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 hover:border-[var(--brand-blue)] transition-all cursor-pointer group shadow-xs" onclick="openTableDetailsModal({{ t.table_id }})" title="Clique para ver o relatório permanente de auditoria e faixas">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-[var(--surface-card)] text-[var(--brand-blue)] flex items-center justify-center icon-svg border border-[var(--border-subtle)]">
+          <div class="w-8 h-8 rounded-lg bg-[var(--surface-card)] text-[var(--brand-blue)] flex items-center justify-center icon-svg border border-[var(--border-subtle)] group-hover:bg-[var(--brand-blue)] group-hover:text-white transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           </div>
           <div>
-            <strong class="text-xs font-bold text-[var(--text-primary)] block">{{ t.carrier_name }}</strong>
-            <span class="text-[11px] text-[var(--text-muted)]">{{ t.table_name }} — <span class="text-[var(--brand-blue)] font-semibold">{{ t.rates_count }} faixas</span></span>
+            <div class="flex items-center gap-2">
+              <strong class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-blue)] transition-colors">{{ t.carrier_name }}</strong>
+              {% if t.notes and ('Ausência' in t.notes or 'pendência' in (t.notes|lower) or 'atenção' in (t.notes|lower)) %}
+                <button type="button" onclick="event.stopPropagation(); openTableDetailsModal({{ t.table_id }});" class="badge hover:opacity-100 transition-all cursor-pointer" style="font-size: 9px; padding: 2px 7px; background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.15);" title="Clique para abrir o relatório de auditoria da IA">
+                  <span>⚠️ Relatório IA</span>
+                </button>
+              {% else %}
+                <button type="button" onclick="event.stopPropagation(); openTableDetailsModal({{ t.table_id }});" class="badge hover:opacity-100 transition-all cursor-pointer" style="font-size: 9px; padding: 2px 7px; background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Clique para ver o relatório e faixas cadastradas">
+                  <span>📋 Faixas & Regras</span>
+                </button>
+              {% endif %}
+            </div>
+            <span class="text-[11px] text-[var(--text-muted)]">{{ t.table_name }} — <span class="text-[var(--brand-blue)] font-semibold">{{ t.rates_count }} faixas</span> • <button type="button" onclick="event.stopPropagation(); openTableDetailsModal({{ t.table_id }});" class="text-[10px] text-[var(--brand-blue)] underline hover:opacity-100 opacity-85 font-medium cursor-pointer bg-transparent border-0 p-0 inline">Ver auditoria permanente ↗</button></span>
           </div>
         </div>
 
-        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end" onclick="event.stopPropagation()">
           <span class="bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
             ATIVA
           </span>
@@ -199,3 +237,39 @@
   </div>
   {% endif %}
 </div>
+
+<script>
+function updateUploadFilePreview(input) {
+  const file = input && input.files ? input.files[0] : null;
+  const emptyState = document.getElementById("dropZoneEmptyState");
+  const selectedState = document.getElementById("dropZoneSelectedState");
+  const fileNameElem = document.getElementById("selectedFileName");
+  const fileSizeElem = document.getElementById("selectedFileSize");
+
+  if (file) {
+    if (emptyState) emptyState.classList.add("hidden");
+    if (selectedState) {
+      selectedState.classList.remove("hidden");
+      selectedState.classList.add("flex");
+    }
+    if (fileNameElem) fileNameElem.innerText = file.name;
+    if (fileSizeElem) {
+      const kb = file.size / 1024;
+      fileSizeElem.innerText = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb.toFixed(1)} KB`;
+    }
+  }
+}
+
+function handleFreightUploadSubmit(e) {
+  const btn = document.getElementById("btnFreightUploadSubmit");
+  const btnText = document.getElementById("btnUploadText");
+  const statusNotice = document.getElementById("uploadStatusNotice");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add("opacity-70", "cursor-wait");
+    if (btnText) btnText.innerText = "Auditando Tabela com Gemini IA...";
+  }
+  if (statusNotice) statusNotice.classList.remove("hidden");
+}
+</script>
