@@ -15,17 +15,33 @@ _VERSION_CACHE: Dict[str, Any] | None = None
 _LAST_MTIME: float = 0.0
 
 DEFAULT_VERSION_INFO: Dict[str, Any] = {
-    "version": "1.0.0",
-    "display_version": "v1.0",
-    "build": "20260921.1",
-    "release_date": "2026-09-21",
-    "title": "M-One v1.0 • Oficial",
-    "subtitle": "Versão oficial estável do sistema M-One.",
+    "version": "1.1.0",
+    "display_version": "v1.1",
+    "build": "20260922.1",
+    "release_date": "2026-09-22",
+    "title": "M-One v1.1 • Fretes Cubados & Modal Avançado",
+    "subtitle": "Cálculo de peso cubado para veículos elétricos, modal cadastral em 4 abas e ergonomia visual aprimorada.",
     "highlights": [
-        {"icon": "🛡️", "category": "Segurança", "summary": "Proteção ativa e auditoria reforçada."},
-        {"icon": "🎨", "category": "Interface", "summary": "Visual modernizado e responsivo."},
-        {"icon": "🚚", "category": "Fretes", "summary": "Cotações inteligentes e seleção para propostas."},
-        {"icon": "⚡", "category": "Performance", "summary": "Conexões otimizadas e arquitetura modular."}
+        {
+            "icon": "⚖️",
+            "category": "Regra do Peso Cubado",
+            "summary": "Motor de cálculo atualizado para aplicar max(peso bruto, volume * 300kg/m³), evitando perdas em fretes de bikes e scooters."
+        },
+        {
+            "icon": "🏢",
+            "category": "Modal em 4 Abas",
+            "summary": "Ficha Cadastral, Regras & Taxas (TEC/TAS/POS), Faixas Tarifárias com busca por cidade e Auditoria IA."
+        },
+        {
+            "icon": "🎨",
+            "category": "Ergonomia & Tipografia",
+            "summary": "Base de tipografia ajustada para 14px (padrão Stripe/Linear) com melhor contraste e legibilidade em todas as telas."
+        },
+        {
+            "icon": "🛡️",
+            "category": "Segurança & Integridade",
+            "summary": "Proteção anti-CSRF global, autenticação PBKDF2:SHA256 com rehash transparente e 100% anti-monólito."
+        }
     ],
     "changelog": []
 }

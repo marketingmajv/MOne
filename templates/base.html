@@ -10,8 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <meta name="mone-version" content="{{ app_version.version if (app_version is defined and app_version) else '1.0.0' }}">
-  <meta name="mone-build" content="{{ app_version.build if (app_version is defined and app_version) else '20260921.1' }}">
+  <meta name="mone-version" content="{{ app_version.version if (app_version is defined and app_version) else '1.1.0' }}">
+  <meta name="mone-build" content="{{ app_version.build if (app_version is defined and app_version) else '20260922.1' }}">
   <script>
     (function() {
       const savedTheme = localStorage.getItem('mone_theme') || 'light';
@@ -250,7 +250,7 @@
   
   {% include 'profile_modal.html' %}
   {% include 'version_modal.html' %}
-  <script src="{{ url_for('static', filename='js/version-manager.js', v='20260921_v2') }}"></script>
+  <script src="{{ url_for('static', filename='js/version-manager.js', v='20260922_v1') }}"></script>
   <script src="{{ url_for('static', filename='js/preloader.js', v='20260915_v1') }}"></script>
 </body>
 </html>

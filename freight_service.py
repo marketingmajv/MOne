@@ -94,37 +94,76 @@ def get_uf_from_cep(cep_raw: str) -> str:
 _freight_tables_ensured = False
 
 
+def execute_db(conn, sql: str, params=()):
+    """Executa consultas SQL adaptando sintaxe de parâmetros %s -> ? para SQLite quando necessário."""
+    if params:
+        is_pg = hasattr(conn, "pool") or type(conn).__name__ == "PGConnWrapper"
+        if not is_pg and "%s" in sql:
+            sql = sql.replace("%s", "?")
+    return conn.execute(sql, params)
+
+
+def insert_and_get_id(conn, sql: str, params=()):
+    """Insere registro e retorna a chave primária de forma compatível com SQLite e PostgreSQL."""
+    is_pg = hasattr(conn, "pool") or type(conn).__name__ == "PGConnWrapper"
+    if not is_pg and "%s" in sql:
+        sql = sql.replace("%s", "?")
+    if not is_pg and "RETURNING" in sql.upper():
+        sql_clean = re.sub(r"\s+RETURNING\s+\w+", "", sql, flags=re.IGNORECASE)
+        cur = conn.execute(sql_clean, params)
+        return getattr(cur, "lastrowid", 1)
+
+    cur = conn.execute(sql, params)
+    if is_pg:
+        row = cur.fetchone() if hasattr(cur, "fetchone") else None
+        if row and (hasattr(row, "keys") or isinstance(row, dict)):
+            return row["id"]
+        elif row and len(row) > 0:
+            return row[0]
+
+    return getattr(cur, "lastrowid", 1)
+
+
 def ensure_freight_tables(conn):
     """Inicializa as tabelas do banco de dados para o módulo de fretes apenas uma vez no processo."""
     global _freight_tables_ensured
     if _freight_tables_ensured:
         return
 
-    carrier_sql = """
+    is_pg = hasattr(conn, "pool") or type(conn).__name__ == "PGConnWrapper"
+    pk_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+
+    carrier_sql = f"""
         CREATE TABLE IF NOT EXISTS carriers (
-            id SERIAL PRIMARY KEY,
+            id {pk_type},
             name TEXT NOT NULL UNIQUE,
             active INTEGER NOT NULL DEFAULT 1,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """
 
-    tables_sql = """
+    tables_sql = f"""
         CREATE TABLE IF NOT EXISTS freight_tables (
-            id SERIAL PRIMARY KEY,
+            id {pk_type},
             carrier_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             file_url TEXT,
             notes TEXT,
+            origin_city TEXT DEFAULT 'Cariacica/ES',
+            cubing_factor REAL DEFAULT 300.0,
+            tec_percent REAL DEFAULT 7.5,
+            tas_fixed REAL DEFAULT 0.0,
+            pos_percent REAL DEFAULT 0.0,
+            gris_min REAL DEFAULT 0.0,
             active INTEGER NOT NULL DEFAULT 1,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(carrier_id) REFERENCES carriers(id) ON DELETE CASCADE
         );
     """
 
-    rates_sql = """
+    rates_sql = f"""
         CREATE TABLE IF NOT EXISTS freight_rates (
-            id SERIAL PRIMARY KEY,
+            id {pk_type},
             table_id INTEGER NOT NULL,
             uf TEXT,
             city TEXT,
@@ -143,9 +182,9 @@ def ensure_freight_tables(conn):
         );
     """
 
-    quotes_sql = """
+    quotes_sql = f"""
         CREATE TABLE IF NOT EXISTS freight_quotes (
-            id SERIAL PRIMARY KEY,
+            id {pk_type},
             quote_number TEXT UNIQUE,
             customer_name TEXT,
             cpf_cnpj TEXT,
@@ -178,6 +217,22 @@ def ensure_freight_tables(conn):
                 except Exception:
                     pass
 
+    # Colunas dinâmicas para bases de dados pré-existentes
+    for col, col_def in [
+        ("origin_city", "TEXT DEFAULT 'Cariacica/ES'"),
+        ("cubing_factor", "REAL DEFAULT 300.0"),
+        ("tec_percent", "REAL DEFAULT 7.5"),
+        ("tas_fixed", "REAL DEFAULT 0.0"),
+        ("pos_percent", "REAL DEFAULT 0.0"),
+        ("gris_min", "REAL DEFAULT 0.0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE freight_tables ADD COLUMN {col} {col_def}")
+            if hasattr(conn, "commit"):
+                conn.commit()
+        except Exception:
+            pass
+
     # Se não existirem tabelas ou se Vinislog/Generoso estiverem ausentes, semear automaticamente
     try:
         cur_check = conn.execute("SELECT COUNT(*) AS total FROM freight_tables")
@@ -188,11 +243,11 @@ def ensure_freight_tables(conn):
             seed_vinislog_rate_table(conn)
         else:
             # Verificar se a Vinislog está semeada
-            cur_v_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%vinislog%",))
+            cur_v_check = execute_db(conn, "SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%vinislog%",))
             if not cur_v_check.fetchone():
                 seed_vinislog_rate_table(conn)
             # Verificar se Generoso está semeada
-            cur_g_check = conn.execute("SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%generoso%",))
+            cur_g_check = execute_db(conn, "SELECT c.id FROM carriers c JOIN freight_tables t ON t.carrier_id = c.id WHERE LOWER(c.name) LIKE %s", ("%generoso%",))
             if not cur_g_check.fetchone():
                 seed_generoso_rate_table(conn)
     except Exception as e:
@@ -239,37 +294,36 @@ GENEROSO_DATA = [
     ("AC", "Interior", 349.94, 361.76, 442.14, 473.54, 558.91, 612.88, 701.74, 790.61, 3.901, 8),
 ]
 
+
 def seed_generoso_rate_table(conn):
     """Semeia automaticamente a tabela oficial do Transporte Generoso no banco de dados."""
     try:
-        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s OR LOWER(name) LIKE %s", ("%generoso%", "transporte generoso"))
+        cur_c = execute_db(conn, "SELECT id FROM carriers WHERE LOWER(name) LIKE %s OR LOWER(name) LIKE %s", ("%generoso%", "transporte generoso"))
         row_c = cur_c.fetchone()
 
         if row_c:
-            carrier_id = row_c["id"]
+            carrier_id = row_c["id"] if (hasattr(row_c, "keys") or isinstance(row_c, dict)) else row_c[0]
         else:
             try:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Transporte Generoso",))
-                row_ins = cur_ins.fetchone()
-                carrier_id = row_ins["id"] if row_ins else cur_ins.lastrowid
+                carrier_id = insert_and_get_id(conn, "INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Transporte Generoso",))
+                if hasattr(conn, "commit"):
+                    conn.commit()
             except Exception:
-                if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
-                    try:
-                        conn.conn.rollback()
-                    except Exception:
-                        pass
-                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%generoso%",))
+                cur_c = execute_db(conn, "SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%generoso%",))
                 row_c = cur_c.fetchone()
-                carrier_id = row_c["id"] if row_c else 1
-
+                if row_c:
+                    carrier_id = row_c["id"] if (hasattr(row_c, "keys") or isinstance(row_c, dict)) else row_c[0]
+                else:
+                    return
 
         # Criar Tabela de Frete Oficial Generoso
-        cur_t = conn.execute(
-            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (%s, %s, %s) RETURNING id",
-            (carrier_id, "Proposta Comercial Oficial (CIF ES / Nível Brasil)", "Tabela com Seguro 0.30%, GRIS 0.20%, Pedágio e TEC")
+        table_id = insert_and_get_id(
+            conn,
+            "INSERT INTO freight_tables (carrier_id, name, notes, cubing_factor) VALUES (%s, %s, %s, %s) RETURNING id",
+            (carrier_id, "Proposta Comercial Oficial (CIF ES / Nível Brasil)", "Tabela com Seguro 0.30%, GRIS 0.20%, Pedágio e TEC", 300.0)
         )
-        row_t = cur_t.fetchone()
-        table_id = row_t["id"] if row_t else cur_t.lastrowid
+        if hasattr(conn, "commit"):
+            conn.commit()
 
         weight_brackets = [
             (0.0, 10.0),
@@ -313,7 +367,7 @@ def seed_generoso_rate_table(conn):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for r_item in rates_to_insert:
-            conn.execute(sql_ins, r_item)
+            execute_db(conn, sql_ins, r_item)
 
         if hasattr(conn, "commit"):
             conn.commit()
@@ -341,38 +395,37 @@ VINISLOG_DATA = [
 def seed_vinislog_rate_table(conn):
     """Semeia automaticamente a tabela oficial da Vinislog Transportes no banco de dados."""
     try:
-        cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
+        cur_c = execute_db(conn, "SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
         row_c = cur_c.fetchone()
 
         if row_c:
-            carrier_id = row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]
+            carrier_id = row_c["id"] if (hasattr(row_c, "keys") or isinstance(row_c, dict)) else row_c[0]
         else:
             try:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Vinislog Transportes",))
-                row_ins = cur_ins.fetchone()
-                carrier_id = row_ins["id"] if row_ins else cur_ins.lastrowid
+                carrier_id = insert_and_get_id(conn, "INSERT INTO carriers (name) VALUES (%s) RETURNING id", ("Vinislog Transportes",))
+                if hasattr(conn, "commit"):
+                    conn.commit()
             except Exception:
-                if hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
-                    try:
-                        conn.conn.rollback()
-                    except Exception:
-                        pass
-                cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
+                cur_c = execute_db(conn, "SELECT id FROM carriers WHERE LOWER(name) LIKE %s", ("%vinislog%",))
                 row_c = cur_c.fetchone()
-                carrier_id = (row_c["id"] if hasattr(row_c, "keys") or isinstance(row_c, dict) else row_c[0]) if row_c else 2
+                if row_c:
+                    carrier_id = row_c["id"] if (hasattr(row_c, "keys") or isinstance(row_c, dict)) else row_c[0]
+                else:
+                    return
 
         # Verificar se já existe a tabela da Vinislog
-        cur_t_check = conn.execute("SELECT id FROM freight_tables WHERE carrier_id = %s", (carrier_id,))
+        cur_t_check = execute_db(conn, "SELECT id FROM freight_tables WHERE carrier_id = %s", (carrier_id,))
         if cur_t_check.fetchone():
             return
 
         # Criar Tabela de Frete Oficial Vinislog
-        cur_t = conn.execute(
-            "INSERT INTO freight_tables (carrier_id, name, notes) VALUES (%s, %s, %s) RETURNING id",
-            (carrier_id, "Tabela MAJ Vinislog (Origem VIX - ES, RJ, SP)", "Tabela de Frete Fracionado oficial Vinislog com Ad-valorem, GRIS e Taxa")
+        table_id = insert_and_get_id(
+            conn,
+            "INSERT INTO freight_tables (carrier_id, name, notes, cubing_factor) VALUES (%s, %s, %s, %s) RETURNING id",
+            (carrier_id, "Tabela MAJ Vinislog (Origem VIX - ES, RJ, SP)", "Tabela de Frete Fracionado oficial Vinislog com Ad-valorem, GRIS e Taxa", 300.0)
         )
-        row_t = cur_t.fetchone()
-        table_id = row_t["id"] if row_t else cur_t.lastrowid
+        if hasattr(conn, "commit"):
+            conn.commit()
 
         weight_brackets = [
             (0.0, 20.0),
@@ -417,7 +470,7 @@ def seed_vinislog_rate_table(conn):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for r_item in rates_to_insert:
-            conn.execute(sql_ins, r_item)
+            execute_db(conn, sql_ins, r_item)
 
         if hasattr(conn, "commit"):
             conn.commit()
@@ -718,6 +771,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             c.name AS carrier_name,
             t.id AS table_id,
             t.name AS table_name,
+            t.cubing_factor,
             r.uf,
             r.city,
             r.cep_start,
@@ -784,13 +838,19 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         if not (match_cep or match_uf or (not r_cep_start and not r_uf)):
             continue
 
-        # Filtro de Peso Total
+        # Regra do Peso Cubado MAJ: peso_tarifado = max(peso_bruto, volume_m3 * cubing_factor)
+        cubing_factor = float(r.get("cubing_factor") or 300.0)
+        cubic_weight = total_volume_m3 * cubing_factor
+        charged_weight = max(total_weight, cubic_weight)
+
+        # Filtro por Peso Tarifado
         min_w = float(r.get("min_weight") or 0)
         max_w = float(r.get("max_weight") or 999999)
-        if total_weight > 0 and not (min_w <= total_weight <= max_w):
+        check_w = charged_weight if charged_weight > 0 else total_weight
+        if check_w > 0 and not (min_w <= check_w <= max_w):
             continue
 
-        # Cálculo do frete
+        # Cálculo do frete considerando o peso tarifado
         fixed_p = float(r.get("fixed_price") or 0)
         w_per_kg = float(r.get("weight_price_per_kg") or 0)
         ad_val_pct = float(r.get("ad_valorem_percent") or 0)
@@ -798,7 +858,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         min_f = float(r.get("min_freight_price") or 0)
         days = int(r.get("delivery_days") or 1)
 
-        weight_cost = total_weight * w_per_kg
+        weight_cost = check_w * w_per_kg
         insurance_cost = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
 
         total_price = fixed_p + weight_cost + insurance_cost
@@ -813,6 +873,10 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "fixed_price": round(fixed_p, 2),
             "insurance_cost": round(insurance_cost, 2),
             "delivery_days": days,
+            "gross_weight_kg": round(total_weight, 2),
+            "cubic_weight_kg": round(cubic_weight, 2),
+            "charged_weight_kg": round(charged_weight, 2),
+            "cubing_factor": cubing_factor,
             "notes": r.get("notes") or ""
         }
 
@@ -856,13 +920,15 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
                 highest_max = max(max_w_list) if max_w_list else 0
                 lowest_min = min(min_w_list) if min_w_list else 0
 
-                w_str = f"{total_weight:.1f}".replace(".", ",")
-                if highest_max > 0 and total_weight > highest_max:
+                check_w = max(total_weight, total_volume_m3 * 300.0)
+                w_gross_str = f"{total_weight:.1f}".replace(".", ",")
+                w_charged_str = f"{check_w:.1f}".replace(".", ",")
+                if highest_max > 0 and check_w > highest_max:
                     max_str = f"{highest_max:.1f}".replace(".", ",")
-                    reason = f"Peso da carga ({w_str} kg) excede o limite máximo da tabela (até {max_str} kg)."
-                elif total_weight < lowest_min:
+                    reason = f"Peso tarifado ({w_charged_str} kg [Bruto: {w_gross_str}kg]) excede o limite máximo da tabela (até {max_str} kg)."
+                elif check_w < lowest_min:
                     min_str = f"{lowest_min:.1f}".replace(".", ",")
-                    reason = f"Peso da carga ({w_str} kg) abaixo do limite mínimo da tabela ({min_str} kg)."
+                    reason = f"Peso tarifado ({w_charged_str} kg) abaixo do limite mínimo da tabela ({min_str} kg)."
                 else:
                     reason = "Faixa tarifária não contempla os parâmetros da rota."
 
@@ -872,6 +938,8 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "table_name": c_info["table_name"],
             "reason": reason
         })
+
+    overall_charged_weight = max(total_weight, total_volume_m3 * 300.0)
 
     if not options:
         return {
@@ -883,6 +951,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "total_weight_kg": round(total_weight, 2),
             "total_volumes_count": total_volumes_count,
             "total_volume_m3": round(total_volume_m3, 3),
+            "charged_weight_kg": round(overall_charged_weight, 2),
             "insurance_base_value": round(total_insurance_value, 2),
             "items": processed_items,
             "options": [],
@@ -913,6 +982,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         "total_weight_kg": round(total_weight, 2),
         "total_volumes_count": total_volumes_count,
         "total_volume_m3": round(total_volume_m3, 3),
+        "charged_weight_kg": round(overall_charged_weight, 2),
         "insurance_base_value": round(total_insurance_value, 2),
         "items": processed_items,
         "options": options,

@@ -10,5 +10,7 @@ m_one.db
 uploads/
 backups/
 *.zip
+scratch/
 .DS_Store
+
 
