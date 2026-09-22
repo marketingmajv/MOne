@@ -145,7 +145,7 @@ html, body {
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -1385,10 +1385,10 @@ tr:hover td {
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   border: 1px solid transparent;
 }
 
@@ -1714,14 +1714,14 @@ tr:hover td {
 .min-h-\[14px\] { min-height: 14px; }
 .min-h-\[360px\] { min-height: 360px; }
 .min-h-\[380px\] { min-height: 380px; }
-.text-\[10px\] { font-size: 10px; }
-.text-\[11px\] { font-size: 11px; }
-.text-xs { font-size: 0.75rem; }
-.text-sm { font-size: 0.875rem; }
-.text-base { font-size: 1rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
-.text-2xl { font-size: 1.5rem; }
+.text-\[10px\] { font-size: 11.5px; font-weight: 600; }
+.text-\[11px\] { font-size: 12.5px; }
+.text-xs { font-size: 12px; }
+.text-sm { font-size: 13.5px; }
+.text-base { font-size: 14.5px; }
+.text-lg { font-size: 16px; }
+.text-xl { font-size: 18px; }
+.text-2xl { font-size: 22px; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .uppercase { text-transform: uppercase; }

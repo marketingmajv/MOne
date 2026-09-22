@@ -146,11 +146,11 @@
     {% if tables %}
     <div class="space-y-3" id="carriersCardsContainer">
       {% for t in tables %}
-      <div class="carrier-card-item carrier-row-card" data-search="{{ t.carrier_name|lower }} {{ t.table_name|lower }}">
+      <div class="carrier-card-item carrier-row-card" data-search="{{ t.carrier_name|lower }} {{ t.table_name|lower }} {{ (t.trade_name or '')|lower }} {{ (t.sales_rep_name or '')|lower }}" onclick="openTableDetailsModal({{ t.table_id }});" style="cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);" onmouseover="this.style.transform='translateY(-1px)'; this.style.borderColor='var(--brand-blue)';" onmouseout="this.style.transform='none'; this.style.borderColor='var(--border-subtle)';" title="Clique para abrir a ficha completa e regras da transportadora">
         
-        <!-- Bloco de Identificação (Ícone + Nomes + Metadados) -->
+        <!-- Bloco de Identificação (Ícone + Nomes + Metadados Enriquecidos) -->
         <div class="flex items-center gap-3.5 min-w-0">
-          <div class="carrier-avatar">
+          <div class="carrier-avatar" style="background: rgba(56, 189, 248, 0.1); color: var(--brand-blue);">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="1" y="3" width="15" height="13"></rect>
               <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
@@ -162,26 +162,39 @@
           <div class="min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <strong class="text-sm font-bold text-[var(--text-primary)] leading-tight">{{ t.carrier_name }}</strong>
+              {% if t.trade_name and t.trade_name != t.carrier_name %}
+              <span class="text-xs text-[var(--text-muted)] font-medium">({{ t.trade_name }})</span>
+              {% endif %}
               <span class="text-xs text-[var(--text-secondary)] font-medium truncate max-w-[260px]">— {{ t.table_name }}</span>
             </div>
             <div class="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-2 flex-wrap">
-              <span class="font-semibold text-[var(--brand-blue)]">📊 {{ t.rates_count }} faixas cadastradas</span>
+              <span class="font-semibold text-[var(--brand-blue)]">📊 {{ t.rates_count }} faixas</span>
               <span>•</span>
-              <span>Origem Vitória/ES</span>
+              <span>Origem {{ t.origin_city or 'Vitória' }}/ES</span>
+              <span>•</span>
+              <span class="font-semibold text-amber-400">📦 {{ (t.cubing_factor or 300)|int }} kg/m³</span>
+              {% if t.cnpj %}
+              <span>•</span>
+              <span class="font-mono text-[10px] text-[var(--text-secondary)]">{{ t.cnpj }}</span>
+              {% endif %}
+              {% if t.sales_rep_name %}
+              <span>•</span>
+              <span class="text-[10px] text-[var(--brand-emerald)] font-medium">👤 {{ t.sales_rep_name }}</span>
+              {% endif %}
             </div>
           </div>
         </div>
 
         <!-- Bloco de Ações e Status (Alinhado à Direita) -->
-        <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2.5 shrink-0" onclick="event.stopPropagation();">
           {% if t.notes and ('Ausência' in t.notes or 'pendência' in (t.notes|lower) or 'atenção' in (t.notes|lower)) %}
             <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ponto de atenção no relatório da IA — clique para visualizar">
-              <span>📋 Relatório IA</span>
+              <span>📋 Ficha & Parecer IA</span>
               <span class="audit-asterisk" title="Ponto de atenção">*</span>
             </button>
           {% else %}
-            <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ver faixas e regras cadastradas">
-              <span>📋 Faixas & Regras</span>
+            <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ver ficha cadastral, regras e faixas">
+              <span>📋 Ficha Completa</span>
             </button>
           {% endif %}
 
@@ -190,8 +203,8 @@
           </span>
 
           {% if me and me.role in ['admin', 'support'] %}
-          <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir a tabela {{ t.carrier_name }} - {{ t.table_name }}?');" style="margin: 0;">
-            <button type="submit" class="carrier-delete-btn danger" title="Excluir esta tabela">
+          <form method="post" action="{{ url_for('freight_table_delete', table_id=t.table_id) }}" onsubmit="return confirm('Deseja excluir a tabela {{ t.carrier_name }} - {{ t.table_name }}?');" style="margin: 0;" onclick="event.stopPropagation();">
+            <button type="submit" class="carrier-delete-btn danger" title="Excluir esta tabela" onclick="event.stopPropagation();">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>

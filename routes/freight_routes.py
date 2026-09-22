@@ -65,9 +65,18 @@ def freight():
                 t.name AS table_name,
                 t.file_url,
                 t.notes,
+                t.origin_city,
+                t.cubing_factor,
+                t.tec_percent,
+                t.tas_fixed,
+                t.pos_fixed,
                 t.created_at,
                 c.id AS carrier_id,
                 c.name AS carrier_name,
+                c.trade_name,
+                c.cnpj,
+                c.phone,
+                c.sales_rep_name,
                 c.active AS carrier_active,
                 (SELECT COUNT(*) FROM freight_rates r WHERE r.table_id = t.id) AS rates_count
             FROM freight_tables t
@@ -320,13 +329,17 @@ def freight_table_delete(table_id: int):
 @freight_bp.route("/freight/tables/<int:table_id>/details")
 @login_required
 def freight_table_details(table_id: int):
-    """Retorna detalhes, relatório de auditoria permanente da IA e faixas de uma tabela."""
+    """Retorna detalhes cadastrais, contratuais, relatório IA e faixas tarifárias da tabela."""
     with db() as conn:
         cur_t = conn.execute(
             """
             SELECT 
-                t.id AS table_id, t.name AS table_name, t.file_url,
-                t.notes, t.created_at, c.id AS carrier_id, c.name AS carrier_name
+                t.id AS table_id, t.name AS table_name, t.file_url, t.notes, t.created_at,
+                t.origin_city, t.cubing_factor, t.tec_percent, t.tas_fixed,
+                t.pos_fixed, t.min_gris_value, t.expiration_days,
+                c.id AS carrier_id, c.name AS carrier_name, c.trade_name, c.cnpj,
+                c.address, c.city AS carrier_city, c.uf AS carrier_uf,
+                c.phone, c.website, c.sales_rep_name, c.payment_terms
             FROM freight_tables t
             JOIN carriers c ON c.id = t.carrier_id
             WHERE t.id = %s
@@ -345,11 +358,11 @@ def freight_table_details(table_id: int):
             SELECT 
                 id, uf, city, cep_start, cep_end, min_weight, max_weight,
                 fixed_price, weight_price_per_kg, ad_valorem_percent,
-                gris_percent, delivery_days, notes
+                gris_percent, delivery_days, toll_per_100kg, dispatch_fixed, notes
             FROM freight_rates
             WHERE table_id = %s
             ORDER BY uf ASC, city ASC, min_weight ASC
-            LIMIT 150
+            LIMIT 200
             """,
             (table_id,)
         )
@@ -361,6 +374,58 @@ def freight_table_details(table_id: int):
             "rates": rates,
             "total_rates": len(rates)
         })
+
+
+@freight_bp.route("/freight/carriers/<int:carrier_id>/update", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def freight_carrier_update(carrier_id: int):
+    """Atualiza dados cadastrais, comerciais e operacionais da transportadora pelo modal."""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        with db() as conn:
+            conn.execute(
+                """
+                UPDATE carriers SET
+                    trade_name = %s, cnpj = %s, address = %s, city = %s, uf = %s,
+                    phone = %s, website = %s, sales_rep_name = %s, payment_terms = %s
+                WHERE id = %s
+                """,
+                (
+                    data.get("trade_name") or "", data.get("cnpj") or "",
+                    data.get("address") or "", data.get("city") or "",
+                    data.get("uf") or "", data.get("phone") or "",
+                    data.get("website") or "", data.get("sales_rep_name") or "",
+                    data.get("payment_terms") or "", carrier_id
+                )
+            )
+            table_id = data.get("table_id")
+            if table_id:
+                conn.execute(
+                    """
+                    UPDATE freight_tables SET
+                        origin_city = %s, cubing_factor = %s, tec_percent = %s,
+                        tas_fixed = %s, pos_fixed = %s, min_gris_value = %s,
+                        expiration_days = %s
+                    WHERE id = %s AND carrier_id = %s
+                    """,
+                    (
+                        data.get("origin_city") or "Cariacica",
+                        float(data.get("cubing_factor") or 300.0),
+                        float(data.get("tec_percent") or 0.0),
+                        float(data.get("tas_fixed") or 0.0),
+                        float(data.get("pos_fixed") or 0.0),
+                        float(data.get("min_gris_value") or 0.0),
+                        int(data.get("expiration_days") or 90),
+                        int(table_id), carrier_id
+                    )
+                )
+            if hasattr(conn, "commit"):
+                conn.commit()
+            audit("carrier.updated", f"carrier_id={carrier_id}; trade_name={data.get('trade_name')}")
+            return jsonify({"success": True, "message": "Dados da transportadora atualizados com sucesso!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
 
 
 @freight_bp.route("/freight/quotes/select-carrier", methods=["POST"])

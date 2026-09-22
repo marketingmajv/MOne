@@ -1,79 +1,311 @@
-<!-- MODAL DE AUDITORIA PERMANENTE & FAIXAS DA TRANSPORTADORA (templates/modal_table_details.html) -->
+<!-- MODAL DE INTELIGÊNCIA, CADASTRO COMPLETO & FAIXAS DA TRANSPORTADORA (templates/modal_table_details.html) -->
 <div id="tableDetailsModal" class="modal" onclick="if(event.target === this) closeTableDetailsModal()" style="z-index: 9999; display: none;">
   
-  <div class="modal-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 18px; width: 100%; max-width: 820px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+  <div class="modal-card" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 20px; width: 100%; max-width: 960px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
     
-    <!-- CABEÇALHO DO MODAL -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); border: 1px solid rgba(56, 189, 248, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+    <!-- 1. CABEÇALHO FIXO DO MODAL -->
+    <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">
+        <div style="width: 46px; height: 46px; border-radius: 14px; background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); border: 1px solid rgba(56, 189, 248, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; shrink: 0;">
           🚚
         </div>
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <h3 id="tdModalCarrierName" style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text);">Transportadora</h3>
-            <span id="tdModalRatesBadge" class="badge" style="font-size: 0.72rem; font-weight: 700; background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); border-color: rgba(56, 189, 248, 0.25);">0 faixas</span>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h3 id="tdModalCarrierName" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em;">Transportadora</h3>
+            <span id="tdModalTradeName" style="font-size: 0.88rem; font-weight: 600; color: var(--text-muted);"></span>
+            <span id="tdModalRatesBadge" class="badge" style="font-size: 0.78rem; font-weight: 700; background: rgba(56, 189, 248, 0.12); color: var(--brand-blue); border: 1px solid rgba(56, 189, 248, 0.25); padding: 3px 10px; border-radius: 999px;">0 faixas</span>
+            <span class="badge" style="font-size: 0.78rem; font-weight: 800; background: rgba(16, 185, 129, 0.12); color: var(--brand-emerald); border: 1px solid rgba(16, 185, 129, 0.25); padding: 3px 10px; border-radius: 999px;">ATIVA</span>
           </div>
-          <p id="tdModalTableName" style="margin: 3px 0 0; font-size: 0.78rem; color: var(--muted);">-</p>
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap;">
+            <span id="tdModalTableName" style="color: var(--text-secondary); font-weight: 600;">-</span>
+            <span>•</span>
+            <span id="tdModalOriginCity">Origem Cariacica/ES</span>
+            <span>•</span>
+            <span id="tdModalCubingFactorBadge" style="color: #f59e0b; font-weight: 700;">📦 Cubagem: 300 kg/m³</span>
+          </div>
         </div>
       </div>
       
-      <button type="button" onclick="closeTableDetailsModal()" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem; font-weight: bold; transition: all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'" title="Fechar (Esc)">✕</button>
+      <!-- BOTÕES SUPERIORES DE AÇÃO -->
+      <div style="display: flex; align-items: center; gap: 8px; shrink: 0;">
+        {% if me and me.role in ['admin', 'support'] %}
+        <button id="btnToggleEditCarrier" type="button" onclick="toggleCarrierEditMode()" class="btn sm secondary" style="font-size: 0.8rem; padding: 6px 14px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 6px;" title="Editar dados cadastrais e parâmetros operacionais">
+          <span id="btnToggleEditIcon">✏️</span>
+          <span id="btnToggleEditText">Editar Dados</span>
+        </button>
+        {% endif %}
+        <button type="button" onclick="closeTableDetailsModal()" style="background: var(--surface-card); border: 1px solid var(--border-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: all 0.15s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'" title="Fechar (Esc)">✕</button>
+      </div>
     </div>
 
-    <!-- CORPO COM SCROLL: RELATÓRIO DE AUDITORIA IA + TABELA DE FAIXAS -->
-    <div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- 2. BARRA DE NAVEGAÇÃO EM ABAS INTERNAS -->
+    <div style="display: flex; border-bottom: 1px solid var(--border-subtle); background: var(--surface-card); padding: 0 24px; gap: 4px; overflow-x: auto;">
+      <button type="button" class="carrier-modal-tab active" id="cTabBtn-cadastral" onclick="switchCarrierModalTab('cadastral')">
+        <span>🏢 Ficha Cadastral & Contatos</span>
+      </button>
+      <button type="button" class="carrier-modal-tab" id="cTabBtn-rules" onclick="switchCarrierModalTab('rules')">
+        <span>⚙️ Regras & Taxas Contratuais</span>
+      </button>
+      <button type="button" class="carrier-modal-tab" id="cTabBtn-rates" onclick="switchCarrierModalTab('rates')">
+        <span>📊 Faixas Tarifárias & Prazos</span>
+      </button>
+      <button type="button" class="carrier-modal-tab" id="cTabBtn-audit" onclick="switchCarrierModalTab('audit')">
+        <span>🤖 Auditoria IA & Parecer</span>
+      </button>
+    </div>
+
+    <!-- 3. CORPO COM ROLAGEM INDEPENDENTE -->
+    <div style="padding: 24px; overflow-y: auto; flex: 1;">
       
-      <!-- CARD 1: RELATÓRIO PERMANENTE DE IMPORTAÇÃO & DIAGNÓSTICO IA -->
-      <div style="padding: 16px; border-radius: 14px; border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="font-size: 0.82rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 6px;">
-            <span>📋</span>
-            <span>Relatório Permanente de Auditoria & Importação da IA</span>
-          </span>
-          <button type="button" onclick="copyTableReportNotes()" class="btn sm secondary" style="font-size: 0.72rem; padding: 4px 10px; height: auto;" title="Copiar diagnóstico para enviar à transportadora">
-            <span>Copiar Relatório</span>
-          </button>
-        </div>
-        <div id="tdModalReportText" style="font-size: 0.78rem; color: var(--text); line-height: 1.55; background: var(--surface-card); padding: 12px; border-radius: 10px; border: 1px solid var(--border-subtle);">
-          Carregando relatório...
-        </div>
-      </div>
+      <!-- FORMULÁRIO GERAL (SUPORTA VISUALIZAÇÃO E EDIÇÃO) -->
+      <form id="carrierEditForm" onsubmit="handleCarrierUpdateSubmit(event)">
+        <input type="hidden" id="editCarrierId" name="carrier_id">
+        <input type="hidden" id="editTableId" name="table_id">
 
-      <!-- CARD 2: FAIXAS TARIFÁRIAS CADASTRADAS -->
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h4 style="margin: 0; font-size: 0.76rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Faixas e Regras Cadastradas no Sistema</h4>
-          <small id="tdModalFileUrl" style="font-size: 0.72rem; color: var(--muted); font-family: monospace;"></small>
+        <!-- ABA 1: FICHA CADASTRAL & CONTATOS -->
+        <div id="cTabPane-cadastral" class="carrier-modal-pane">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            
+            <!-- Card 1.1: Identificação Fiscal -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Identificação da Empresa</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Razão Social</label>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vTradeName">-</span>
+                  <input type="text" id="editTradeName" name="trade_name" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">CNPJ</label>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="view-field font-mono font-bold text-xs text-[var(--text-primary)]" id="vCnpj">-</span>
+                    <button type="button" class="view-field btn-copy" onclick="copyCarrierField('vCnpj', 'CNPJ')" title="Copiar CNPJ">📋</button>
+                  </div>
+                  <input type="text" id="editCnpj" name="cnpj" placeholder="00.000.000/0000-00" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Prazo de Faturamento / Pagamento</label>
+                  <span class="view-field font-semibold text-xs text-[var(--brand-emerald)]" id="vPaymentTerms">-</span>
+                  <input type="text" id="editPaymentTerms" name="payment_terms" placeholder="Ex: Semanal + 14 dias" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 1.2: Localização do Hub / Filial -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Endereço Operacional / Hub</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Logradouro e Galpão</label>
+                  <span class="view-field text-xs text-[var(--text-primary)]" id="vAddress">-</span>
+                  <input type="text" id="editAddress" name="address" placeholder="Ex: Rod. Gov. Mario Covas, 4409 Galpão 03" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                  <div>
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Cidade</label>
+                    <span class="view-field font-semibold text-xs text-[var(--text-primary)]" id="vCity">-</span>
+                    <input type="text" id="editCity" name="city" placeholder="Cariacica" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">UF</label>
+                    <span class="view-field font-bold text-xs text-[var(--brand-blue)]" id="vUf">-</span>
+                    <input type="text" id="editUf" name="uf" placeholder="ES" maxlength="2" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 1.3: Atendimento e Suporte -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Canais de Contato & Rastreio</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Telefone do SAC / Operacional</label>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="view-field font-semibold text-xs text-[var(--text-primary)]" id="vPhone">-</span>
+                    <a id="linkPhoneCall" href="#" class="view-field btn-action-pill" title="Ligar">📞 Ligar</a>
+                  </div>
+                  <input type="text" id="editPhone" name="phone" placeholder="(11) 3588 2007" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Site Oficial & Rastreamento</label>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="view-field text-xs truncate max-w-[200px]" id="vWebsite">-</span>
+                    <a id="linkWebsiteOpen" href="#" target="_blank" rel="noopener noreferrer" class="view-field btn-action-pill" title="Abrir Portal">🌐 Acessar</a>
+                  </div>
+                  <input type="text" id="editWebsite" name="website" placeholder="https://www.transportadora.com.br" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 1.4: Contato Comercial / Vendedor -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Executivo de Contas MAJ</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Consultor / Representante Comercial</label>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vSalesRepName">-</span>
+                  <input type="text" id="editSalesRepName" name="sales_rep_name" placeholder="Ex: Valeria Penzin" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Finalidade</label>
+                  <span class="text-[11px] text-[var(--text-secondary)]">Negociação de fretes especiais em lote, liberação de entregas urgentes e cotações B2B.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        <div style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; max-height: 280px; overflow-y: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
-            <thead style="background: var(--panel2); position: sticky; top: 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.7rem; text-transform: uppercase;">
-              <tr>
-                <th style="padding: 10px 12px;">UF / Região</th>
-                <th style="padding: 10px 12px;">Faixa de Peso</th>
-                <th style="padding: 10px 12px; text-align: right;">Preço Fixo</th>
-                <th style="padding: 10px 12px; text-align: right;">Por kg Excedente</th>
-                <th style="padding: 10px 12px; text-align: center;">Seguro %</th>
-                <th style="padding: 10px 12px; text-align: center;">Prazo</th>
-              </tr>
-            </thead>
-            <tbody id="tdModalRatesTbody">
-              <tr>
-                <td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Carregando faixas...</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- ABA 2: REGRAS & TAXAS CONTRATUAIS -->
+        <div id="cTabPane-rules" class="carrier-modal-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            
+            <!-- Card 2.1: Cubagem e Origem -->
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.04em;">📦 Cubagem & Origem</h4>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Fator de Cubagem Padrão (kg/m³)</label>
+                  <div style="display: flex; align-items: baseline; gap: 6px;">
+                    <span class="view-field font-black text-base text-amber-400" id="vCubingFactor">300.0</span>
+                    <span class="view-field text-xs text-[var(--text-muted)]">kg por metro cúbico</span>
+                  </div>
+                  <input type="number" step="1" id="editCubingFactor" name="cubing_factor" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                  <p class="text-[10px] text-[var(--text-muted)] mt-1">Fundamental para bicicletas elétricas: tarifação pela densidade volumétrica.</p>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Hub / Cidade de Origem do Contrato</label>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vOriginCity">Cariacica / ES</span>
+                  <input type="text" id="editOriginCity" name="origin_city" class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2.2: Taxas por Documento / CT-e -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Taxas de Emissão & Despacho</h4>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                  <span class="text-xs text-[var(--text-secondary)]">TAS (Administração/CT-e)</span>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vTasFixed">R$ 8,89</span>
+                  <input type="number" step="0.01" id="editTasFixed" name="tas_fixed" class="edit-field form-input text-xs w-24 rounded-lg text-right" style="display: none;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                  <span class="text-xs text-[var(--text-secondary)]">POS (Seguro Obrigatório Legal)</span>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vPosFixed">R$ 4,85</span>
+                  <input type="number" step="0.01" id="editPosFixed" name="pos_fixed" class="edit-field form-input text-xs w-24 rounded-lg text-right" style="display: none;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="text-xs text-[var(--text-secondary)]">GRIS Mínimo Garantido</span>
+                  <span class="view-field font-bold text-xs text-[var(--text-primary)]" id="vMinGris">R$ 11,62</span>
+                  <input type="number" step="0.01" id="editMinGris" name="min_gris_value" class="edit-field form-input text-xs w-24 rounded-lg text-right" style="display: none;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2.3: Taxas de Rota e Vigência -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Taxas de Carga & Vigência</h4>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                  <span class="text-xs text-[var(--text-secondary)]">TEC (Emergencial Combustível)</span>
+                  <span class="view-field font-bold text-xs text-amber-400" id="vTecPercent">7,50%</span>
+                  <input type="number" step="0.1" id="editTecPercent" name="tec_percent" class="edit-field form-input text-xs w-24 rounded-lg text-right" style="display: none;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                  <span class="text-xs text-[var(--text-secondary)]">Pedágio Contratual</span>
+                  <span class="font-bold text-xs text-[var(--text-primary)]">R$ 5,00 / 100 kg</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="text-xs text-[var(--text-secondary)]">Cláusula de Inatividade</span>
+                  <span class="view-field font-semibold text-xs text-[var(--text-muted)]" id="vExpirationDays">90 dias sem envios</span>
+                  <input type="number" id="editExpirationDays" name="expiration_days" class="edit-field form-input text-xs w-24 rounded-lg text-right" style="display: none;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2.4: Ocorrências e Reversa -->
+            <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px;">
+              <h4 style="margin: 0 0 12px; font-size: 0.78rem; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 0.04em;">Ocorrências Logísticas (Pós-Venda)</h4>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6;">
+                <li><strong>Reentrega:</strong> 50% do frete original (mínimo de R$ 68,43).</li>
+                <li><strong>Devolução:</strong> 100% do frete original de ida.</li>
+                <li><strong>Estadia (TED após 2h):</strong> 3/4 R$ 892 | Toco R$ 1.248 | Truck R$ 1.427.</li>
+                <li><strong>Armazenagem (TAR):</strong> R$ 39,00/ton/dia + 0,20% seguro sobre a NF.</li>
+              </ul>
+            </div>
+
+          </div>
         </div>
-      </div>
+
+        <!-- ABA 3: FAIXAS TARIFÁRIAS & PRAZOS -->
+        <div id="cTabPane-rates" class="carrier-modal-pane" style="display: none;">
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="position: relative; flex: 1; max-width: 320px;">
+              <input type="text" id="filterModalRatesInput" oninput="filterModalRatesRows(this.value)" placeholder="Filtrar por UF ou Cidade..." class="form-input text-xs w-full rounded-lg" style="height: 32px;">
+            </div>
+            <span id="tdModalRatesTableCount" class="text-xs text-[var(--text-muted)] font-semibold">Carregando faixas...</span>
+          </div>
+
+          <div style="border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; max-height: 380px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.76rem; text-align: left;">
+              <thead style="background: var(--surface-subtle); position: sticky; top: 0; border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase;">
+                <tr>
+                  <th style="padding: 10px 12px;">Destino / Polo</th>
+                  <th style="padding: 10px 12px;">Faixa de Peso</th>
+                  <th style="padding: 10px 12px; text-align: right;">Preço Fixo</th>
+                  <th style="padding: 10px 12px; text-align: right;">Excedente/Kg</th>
+                  <th style="padding: 10px 12px; text-align: right;">Pedágio</th>
+                  <th style="padding: 10px 12px; text-align: center;">Seguro %</th>
+                  <th style="padding: 10px 12px; text-align: center;">Prazo SLA</th>
+                </tr>
+              </thead>
+              <tbody id="tdModalRatesTbody">
+                <tr>
+                  <td colspan="7" style="padding: 20px; text-align: center; color: var(--text-muted);">Carregando faixas da transportadora...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ABA 4: AUDITORIA IA & PARECER -->
+        <div id="cTabPane-audit" class="carrier-modal-pane" style="display: none;">
+          <div style="padding: 18px; border-radius: 14px; border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 0.82rem; font-weight: 800; color: #f59e0b; display: flex; align-items: center; gap: 6px;">
+                <span>📋</span>
+                <span>Parecer Permanente de Importação & Auditoria IA</span>
+              </span>
+              <button type="button" onclick="copyTableReportNotes()" class="btn sm secondary" style="font-size: 0.72rem; padding: 5px 12px; border-radius: 8px;" title="Copiar diagnóstico para WhatsApp">
+                <span>Copiar Parecer</span>
+              </button>
+            </div>
+            <div id="tdModalReportText" style="font-size: 0.78rem; color: var(--text-primary); line-height: 1.6; background: var(--surface-card); padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle); white-space: pre-line;">
+              Carregando parecer...
+            </div>
+          </div>
+        </div>
+
+        <!-- BARRA DE AÇÃO EM MODO DE EDIÇÃO (RODAPÉ DO FORM) -->
+        <div id="editActionBar" style="display: none; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle); justify-content: flex-end; gap: 10px;">
+          <button type="button" onclick="toggleCarrierEditMode(false)" class="btn sm secondary" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 10px;">Cancelar</button>
+          <button type="submit" id="btnSaveCarrierData" class="btn sm primary" style="background: var(--brand-blue); color: white; padding: 8px 20px; font-size: 0.8rem; font-weight: 700; border-radius: 10px;">💾 Salvar Alterações</button>
+        </div>
+
+      </form>
 
     </div>
 
-    <!-- RODAPÉ DO MODAL -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line);">
-      <span style="font-size: 0.74rem; color: var(--muted);" id="tdModalCreatedAt">Importado em: -</span>
-      <button type="button" onclick="closeTableDetailsModal()" class="btn sm secondary" style="padding: 8px 18px; font-size: 0.8rem;">
+    <!-- 4. RODAPÉ FIXO DO MODAL -->
+    <div style="padding: 14px 24px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: var(--surface-subtle); font-size: 0.74rem; color: var(--text-muted);">
+      <span id="tdModalCreatedAt">Importado em: -</span>
+      <button type="button" onclick="closeTableDetailsModal()" class="btn sm secondary" style="padding: 6px 16px; font-size: 0.78rem; border-radius: 8px;">
         <span>Fechar</span>
       </button>
     </div>
@@ -82,109 +314,51 @@
 
 </div>
 
-<script>
-let currentModalReportNotes = "";
-
-async function openTableDetailsModal(tableId) {
-  const m = document.getElementById("tableDetailsModal");
-  if (!m) return;
-
-  // Move para o body para garantir viewport fixed independente de scroll ou containers
-  if (m.parentElement !== document.body) {
-    document.body.appendChild(m);
-  }
-
-  // Resetar conteúdo
-  document.getElementById("tdModalCarrierName").innerText = "Carregando...";
-  document.getElementById("tdModalTableName").innerText = "";
-  document.getElementById("tdModalRatesBadge").innerText = "...";
-  document.getElementById("tdModalReportText").innerText = "Buscando relatório de auditoria...";
-  document.getElementById("tdModalRatesTbody").innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Buscando regras da tabela...</td></tr>`;
-
-  // Abrir no padrão canônico M-One
-  m.style.removeProperty("display");
-  m.style.display = "grid";
-  m.style.zIndex = "99999";
-  m.classList.add("show");
-
-  try {
-    const resp = await fetch(`/freight/tables/${tableId}/details`);
-    const data = await resp.json();
-    if (!data.success) {
-      alert(data.message || "Erro ao carregar detalhes da tabela.");
-      closeTableDetailsModal();
-      return;
-    }
-
-    const t = data.table;
-    document.getElementById("tdModalCarrierName").innerText = t.carrier_name;
-    document.getElementById("tdModalTableName").innerText = `Tabela: ${t.table_name}`;
-    document.getElementById("tdModalRatesBadge").innerText = `${data.total_rates} faixas cadastradas`;
-    document.getElementById("tdModalCreatedAt").innerText = `Data de Importação: ${t.created_at_fmt || 'Recente'}`;
-    document.getElementById("tdModalFileUrl").innerText = t.file_url ? `Arquivo: ${t.file_url}` : "";
-
-    currentModalReportNotes = t.notes || "Tabela importada sem pendências registradas.";
-    document.getElementById("tdModalReportText").innerText = currentModalReportNotes;
-
-    // Renderizar tabela de faixas
-    const tbody = document.getElementById("tdModalRatesTbody");
-    if (!data.rates || data.rates.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--muted);">Nenhuma faixa cadastrada nesta tabela.</td></tr>`;
-      return;
-    }
-
-    let rowsHtml = "";
-    data.rates.forEach(r => {
-      const ufText = r.uf ? `<strong style="color: var(--brand-blue);">${r.uf}</strong>` : 'Brasil';
-      const cityText = r.city ? ` <span style="color: var(--muted); font-size: 0.72rem;">(${r.city})</span>` : '';
-      const minW = parseFloat(r.min_weight) || 0;
-      const maxW = parseFloat(r.max_weight) || 0;
-      const weightRange = `${minW.toFixed(0)} a ${maxW >= 99999 ? '∞' : maxW.toFixed(0)} kg`;
-      const fixP = parseFloat(r.fixed_price) || 0;
-      const fixedPrice = fixP > 0 ? `R$ ${fixP.toFixed(2).replace('.', ',')}` : '-';
-      const perKg = parseFloat(r.weight_price_per_kg) || 0;
-      const perKgText = perKg > 0 ? `R$ ${perKg.toFixed(2).replace('.', ',')}` : '-';
-      const adVal = ((parseFloat(r.ad_valorem_percent) || 0) + (parseFloat(r.gris_percent) || 0)).toFixed(2).replace('.', ',');
-      const days = r.delivery_days ? `${r.delivery_days} dia(s)` : '-';
-
-      rowsHtml += `
-        <tr style="border-bottom: 1px solid var(--line);">
-          <td style="padding: 8px 12px;">${ufText}${cityText}</td>
-          <td style="padding: 8px 12px; font-family: monospace; font-size: 0.74rem;">${weightRange}</td>
-          <td style="padding: 8px 12px; text-align: right; font-weight: 700; color: var(--accent);">${fixedPrice}</td>
-          <td style="padding: 8px 12px; text-align: right; color: var(--text);">${perKgText}</td>
-          <td style="padding: 8px 12px; text-align: center; color: var(--muted);">${adVal}%</td>
-          <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: var(--text);">${days}</td>
-        </tr>
-      `;
-    });
-    tbody.innerHTML = rowsHtml;
-  } catch (err) {
-    document.getElementById("tdModalReportText").innerText = `Erro ao buscar dados: ${err.message}`;
-  }
+<style>
+.carrier-modal-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
-
-function closeTableDetailsModal() {
-  const m = document.getElementById("tableDetailsModal");
-  if (m) {
-    m.classList.remove("show");
-    m.style.display = "none";
-  }
+.carrier-modal-tab:hover {
+  color: var(--text-primary);
 }
-
-function copyTableReportNotes() {
-  if (!currentModalReportNotes) return;
-  navigator.clipboard.writeText(currentModalReportNotes).then(() => {
-    alert("Relatório copiado para a área de transferência! Você já pode colar e enviar para a transportadora.");
-  }).catch(err => {
-    alert("Erro ao copiar: " + err.message);
-  });
+.carrier-modal-tab.active {
+  color: var(--brand-blue);
+  border-bottom-color: var(--brand-blue);
 }
-
-window.openTableDetailsModal = openTableDetailsModal;
-window.closeTableDetailsModal = closeTableDetailsModal;
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeTableDetailsModal();
-});
-</script>
+.btn-copy {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.btn-copy:hover {
+  opacity: 1;
+}
+.btn-action-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--brand-blue);
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.btn-action-pill:hover {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: var(--brand-blue);
+}
+</style>
+<script src="{{ url_for('static', filename='js/carrier-details-modal.js') }}?v=20260922_v1"></script>
