@@ -77,8 +77,8 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
 {% block content %}
 <div class="space-y-6">
 
-  <!-- KPI Top Metrics Bar (Alto Contraste Claro e Escuro) -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+  <!-- KPI Top Metrics Bar (Consistência com Anexo 1 / imports.html) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; margin-bottom: 20px;">
     <!-- 01 Fator de Custo -->
     <div class="comex-card" style="border-left: 4px solid #B45309;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -95,40 +95,40 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
         {% endif %}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ PI: <strong style="color: var(--text);">{{ financials.pi_fob_usd|money_usd }}</strong>
+        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ PI: <strong style="color: var(--text);">{{ financials.pi_amount_usd|money_usd }}</strong>
       </p>
     </div>
 
-    <!-- 02 A Base da Mercadoria -->
+    <!-- 02 Total Compra PI (Dólar Médio) -->
+    <div class="comex-card" style="border-left: 4px solid #2563EB;">
+      <div class="comex-label" style="margin-bottom: 6px;">02 Total PI (Dólar Médio)</div>
+      <div class="comex-value comex-value-blue" style="font-size: 24px;">
+        {{ financials.pi_amount_usd|money_usd }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Dólar Médio: <strong style="color: #2563EB;">R$ {{ "%.2f"|format(financials.pi_dolar_medio or 0) }}</strong> • PI = CI + Extra
+      </p>
+    </div>
+
+    <!-- 03 Base Mercadoria (CI) -->
     <div class="comex-card" style="border-left: 4px solid #059669;">
-      <div class="comex-label" style="margin-bottom: 6px;">02 Base da Mercadoria (CI)</div>
+      <div class="comex-label" style="margin-bottom: 6px;">03 Base Mercadoria (CI)</div>
       <div class="comex-value comex-value-emerald" style="font-size: 24px;">
         {{ financials.goods_base_usd|money_usd }}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        <strong style="color: var(--text);">{{ financials.goods_base_brl|money }}</strong> • CI (Commercial Invoice)
-      </p>
-    </div>
-
-    <!-- 03 Câmbio Liquidado -->
-    <div class="comex-card" style="border-left: 4px solid #0284C7;">
-      <div class="comex-label" style="margin-bottom: 6px;">03 Câmbio Liquidado (PI)</div>
-      <div class="comex-value comex-value-blue" style="font-size: 24px;">
-        {{ financials.cambio_liquidado_usd|money_usd }}
-      </div>
-      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        <strong style="color: var(--text);">{{ financials.cambio_liquidado_brl|money }}</strong> • PI = (CI + Pagamento Extra)
+        <strong style="color: var(--text);">{{ financials.goods_base_brl|money }}</strong> • FOB negociado (CI)
       </p>
     </div>
 
     <!-- 04 Total Desembolsado -->
     <div class="comex-card" style="border-left: 4px solid #6366F1;">
       <div class="comex-label" style="margin-bottom: 6px;">04 Total Desembolsado</div>
-      <div class="comex-value" style="font-size: 24px; color: var(--text);">
-        {{ financials.total_disbursed_usd|money_usd }}
+      <div class="comex-value" style="font-size: 24px; font-weight: 800; color: var(--text);">
+        {{ financials.total_disbursed_brl|money }}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> • CI + PI + Despesas
+        Líquido Brasil + China <span style="color: var(--muted);">({{ financials.total_disbursed_usd|money_usd }})</span>
       </p>
     </div>
 
@@ -139,7 +139,18 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
         {{ unique_chassis_count or i.chassis_count or 0 }} <span style="font-size: 13px; font-weight: 600; color: var(--muted);">chassis</span>
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        <strong style="color: var(--text);">{{ unique_chassis_count or i.chassis_count or 0 }}</strong> diferentes na planilha
+        <strong style="color: var(--text);">{{ unique_chassis_count or i.chassis_count or 0 }}</strong> unidades no estoque físico
+      </p>
+    </div>
+
+    <!-- 06 Previsão Chegada -->
+    <div class="comex-card" style="border-left: 4px solid #64748B;">
+      <div class="comex-label" style="margin-bottom: 6px;">06 Previsão Chegada</div>
+      <div class="comex-value" style="font-size: 24px; font-weight: 700; color: var(--text);">
+        {{ i.eta.strftime('%d/%m/%Y') if i.eta else '—' }}
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        Porto de destino
       </p>
     </div>
   </div>
