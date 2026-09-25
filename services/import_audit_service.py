@@ -37,6 +37,7 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     pi_dolar_medio = to_dec(fin.get("pi_dolar_medio"))
     ci_usd = to_dec(fin.get("ci_amount_usd"))
     ci_brl = to_dec(fin.get("ci_amount_brl"))
+    ci_paid_usd = to_dec(fin.get("ci_paid_usd"))
 
     # 1. Checagem: Soma dos Itens vs Valor Declarado na CI ou Chassis Vinculados
     items = conn.execute("SELECT * FROM import_items WHERE import_id = %s", (import_id,)).fetchall()
