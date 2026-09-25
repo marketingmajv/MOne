@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M-Pay • Leitor Inteligente de Comprovantes | MAJ Mobilidade</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mpay.css', v='20260925_standalone_v3') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('mone_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+</head>
+<body style="background-color: var(--bg, #f4f6f8); min-height: 100vh; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif;">
+
+<div class="mpay-container">
+
+  <!-- Cabeçalho Principal M-Pay (Totalmente Independente) -->
+  <div class="mpay-top-header">
+    <div class="mpay-brand">
+      <div class="mpay-logo-badge">💳</div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: var(--text, #0f172a);">M-Pay</h2>
+          <span style="background: rgba(37,99,235,0.12); color: #2563EB; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">
+            Leitor Inteligente de Comprovantes
+          </span>
+        </div>
+        <p style="margin: 4px 0 0 0; font-size: 12.5px; color: var(--muted, #64748b);">
+          Envie comprovantes bancários por PDF, fotos ou câmera móvel. A IA preenche a planilha automaticamente.
+        </p>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button type="button" class="btn outline sm" onclick="openSheetsModal()" style="font-weight: 700; border-color: {% if sheets_webhook_url %}#059669; color: #059669;{% else %}#2563EB; color: #2563EB;{% endif %}">
+        📊 {% if sheets_webhook_url %}Google Sheets Conectado{% else %}Conectar Google Sheets{% endif %}
+      </button>
+      <a href="{{ url_for('imports.imports') }}" class="btn outline sm" style="font-weight: 700;">
+        ← Voltar ao M-One
+      </a>
+      <a href="{{ url_for('mpay.export_xlsx', month=current_month_filter, q=search_q) }}" class="btn primary sm" style="font-weight: 700; background: #059669; border-color: #059669;">
+        📥 Exportar Excel
+      </a>
+      <a href="{{ url_for('mpay.export_csv', month=current_month_filter, q=search_q) }}" class="btn outline sm" style="font-weight: 700;">
+        📄 Exportar CSV
+      </a>
+    </div>
+  </div>
+
+  <!-- SESSÃO 1 (SUPERIOR): Captura e Envio de Comprovantes -->
+  <div class="mpay-section-card">
+    <div class="mpay-section-title">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">📷</span>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #0f172a);">
+            1. Captura e Envio de Comprovantes
+          </h3>
+          <span style="font-size: 12px; color: var(--muted, #64748b);">Tire fotos pelo celular ou anexe arquivos múltiplos</span>
+        </div>
+      </div>
+
+      <!-- Botões de Ação de Captura -->
+      <div class="mpay-capture-actions">
+        <!-- Input Câmera Nativa -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileInput(this)">
+        <button type="button" class="btn-capture-camera" onclick="document.getElementById('cameraInput').click()">
+          <span style="font-size: 18px;">📸</span>
+          Fotografar com Câmera do Celular
+        </button>
+
+        <!-- Input Múltiplos Arquivos -->
+        <input type="file" id="batchFileInput" multiple accept=".pdf,image/*" style="display: none;" onchange="handleFileInput(this)">
+        <button type="button" class="btn-capture-files" onclick="document.getElementById('batchFileInput').click()">
+          <span style="font-size: 18px;">📁</span>
+          Selecionar Arquivos (PDF / Fotos)
+        </button>
+      </div>
+    </div>
+
+    <!-- Dropzone Amplo e Centralizado -->
+    <div id="mpayDropzone" class="mpay-dropzone-box"
+         onclick="document.getElementById('batchFileInput').click()"
+         ondragover="event.preventDefault(); this.classList.add('dragover');"
+         ondragleave="this.classList.remove('dragover');"
+         ondrop="handleDrop(event)">
+      <div style="font-size: 40px; margin-bottom: 10px;">☁️</div>
+      <strong style="display: block; font-size: 15px; color: var(--text, #0f172a); margin-bottom: 6px;">
+        Arraste e solte seus comprovantes aqui ou clique nos botões acima
+      </strong>
+      <p style="margin: 0; font-size: 12.5px; color: var(--muted, #64748b); max-width: 600px; margin: 0 auto;">
+        Suporta múltiplos PDFs bancários, capturas de tela e fotos de comprovantes (PIX, TED, Boletos, Cartões).
+      </p>
+
+      <!-- Indicador de Carregamento com IA -->
+      <div id="uploadLoader" style="display: none; margin-top: 18px; color: #2563EB; font-weight: 700; font-size: 14px;">
+        <span class="spinner" style="display: inline-block; width: 16px; height: 16px; border: 2.5px solid #2563EB; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span>
+        <span id="uploadLoaderText">Processando comprovante(s) com IA Gemini...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSÃO 2 (INFERIOR): Planilha de Lançamentos & Google Sheets -->
+  <div class="mpay-section-card">
+    <div class="mpay-sheet-toolbar">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📊</span>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #0f172a);">
+            2. Planilha de Comprovantes
+          </h3>
+        </div>
+
+        <!-- Badges de Resumo Compactas -->
+        <span style="background: rgba(37,99,235,0.1); color: #2563EB; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px;">
+          Total: R$ {{ "%.2f"|format(stats.total_amount or 0) }}
+        </span>
+        <span style="background: var(--panel2, #f8fafc); border: 1px solid var(--line, #e2e8f0); color: var(--muted, #64748b); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px;">
+          {{ stats.total_count or 0 }} comprovante(s)
+        </span>
+      </div>
+
+      <!-- Controles de Filtro, Busca e Nova Linha -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Filtro por Mês -->
+        <form method="get" action="{{ url_for('mpay.index') }}" style="display: flex; gap: 6px; align-items: center;">
+          <select name="month" onchange="this.form.submit()" style="padding: 7px 12px; border-radius: 8px; background: var(--panel2, #f8fafc); color: var(--text, #0f172a); border: 1px solid var(--line, #e2e8f0); font-size: 12.5px; font-weight: 600;">
+            <option value="">Todos os Meses</option>
+            {% for m in available_months %}
+              <option value="{{ m }}" {% if current_month_filter == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+          {% if search_q %}
+            <input type="hidden" name="q" value="{{ search_q }}">
+          {% endif %}
+        </form>
+
+        <!-- Campo de Pesquisa -->
+        <form method="get" action="{{ url_for('mpay.index') }}" style="display: flex; gap: 6px; align-items: center;">
+          {% if current_month_filter %}
+            <input type="hidden" name="month" value="{{ current_month_filter }}">
+          {% endif %}
+          <input type="text" name="q" value="{{ search_q }}" placeholder="Buscar favorecido, banco, obs..." style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line, #e2e8f0); background: var(--panel2, #f8fafc); color: var(--text, #0f172a); font-size: 12.5px; width: 220px;">
+          <button type="submit" class="btn outline sm" style="padding: 7px 12px;">🔍</button>
+        </form>
+
+        <!-- Botão Nova Linha Manual -->
+        <button type="button" class="btn primary sm" onclick="addNewManualRow()" style="font-weight: 700;">
+          + Nova Linha Manual
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabela Estilo Planilha Interativa -->
+    <div class="sheet-table-wrapper">
+      <table class="mpay-sheet-table">
+        <thead>
+          <tr>
+            <th style="width: 90px; text-align: center;">Status IA</th>
+            <th style="width: 105px;">Data</th>
+            <th style="min-width: 180px;">Favorecido / Destino</th>
+            <th style="width: 150px;">CPF / CNPJ / Chave Pix</th>
+            <th style="width: 130px; text-align: right;">Valor (R$)</th>
+            <th style="width: 120px;">Banco Origem</th>
+            <th style="width: 110px;">Método</th>
+            <th style="width: 130px;">Categoria</th>
+            <th style="min-width: 180px;">Observações / Protocolo</th>
+            <th style="width: 60px; text-align: center;">Doc</th>
+            <th style="width: 75px; text-align: center;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="mpaySheetBody">
+          {% for t in transactions %}
+            <tr id="row-{{ t.id }}">
+              <!-- Status IA -->
+              <td style="text-align: center;">
+                <span class="badge-status {{ t.confidence_status or 'verified' }}" title="Confiança da IA">
+                  {% if t.confidence_status == 'verified' %}
+                    ✓ 100%
+                  {% elif t.confidence_status == 'partial' %}
+                    ⚠️ Conferir
+                  {% else %}
+                    ✍️ Manual
+                  {% endif %}
+                </span>
+                <span class="save-indicator" id="save-ind-{{ t.id }}">✓ Salvo</span>
+              </td>
+
+              <!-- Data do Pagamento -->
+              <td>
+                <input type="date" class="cell-input" value="{{ t.paid_at.strftime('%Y-%m-%d') if t.paid_at else '' }}" onchange="updateCell({{ t.id }}, 'paid_at', this.value)">
+              </td>
+
+              <!-- Favorecido / Destino -->
+              <td>
+                <input type="text" class="cell-input" value="{{ t.beneficiary_name or '' }}" placeholder="Nome do favorecido..." onchange="updateCell({{ t.id }}, 'beneficiary_name', this.value)">
+              </td>
+
+              <!-- Documento / Chave Pix -->
+              <td>
+                <input type="text" class="cell-input" value="{{ t.beneficiary_document or '' }}" placeholder="CPF/CNPJ/Pix..." onchange="updateCell({{ t.id }}, 'beneficiary_document', this.value)">
+              </td>
+
+              <!-- Valor (R$) -->
+              <td>
+                <input type="text" class="cell-input amount" value="{{ '%.2f'|format(t.amount or 0.0) }}" placeholder="0,00" onchange="updateCell({{ t.id }}, 'amount', this.value)">
+              </td>
+
+              <!-- Banco de Origem -->
+              <td>
+                <input type="text" class="cell-input" value="{{ t.bank_origin or '' }}" placeholder="Banco..." onchange="updateCell({{ t.id }}, 'bank_origin', this.value)">
+              </td>
+
+              <!-- Método -->
+              <td>
+                <select class="cell-input" onchange="updateCell({{ t.id }}, 'payment_method', this.value)">
+                  <option value="PIX" {% if t.payment_method == 'PIX' %}selected{% endif %}>PIX</option>
+                  <option value="TED" {% if t.payment_method == 'TED' %}selected{% endif %}>TED</option>
+                  <option value="BOLETO" {% if t.payment_method == 'BOLETO' %}selected{% endif %}>Boleto</option>
+                  <option value="CARTAO" {% if t.payment_method == 'CARTAO' %}selected{% endif %}>Cartão</option>
+                  <option value="OUTRO" {% if t.payment_method == 'OUTRO' %}selected{% endif %}>Outro</option>
+                </select>
+              </td>
+
+              <!-- Categoria -->
+              <td>
+                <input type="text" class="cell-input" value="{{ t.category or 'Geral' }}" placeholder="Categoria..." onchange="updateCell({{ t.id }}, 'category', this.value)">
+              </td>
+
+              <!-- Observações -->
+              <td>
+                <input type="text" class="cell-input" value="{{ t.notes or '' }}" placeholder="Autenticação, motivo..." onchange="updateCell({{ t.id }}, 'notes', this.value)">
+              </td>
+
+              <!-- Comprovante -->
+              <td style="text-align: center;">
+                {% if t.file_url %}
+                  <a href="{{ url_for('uploads', filename=t.file_url) }}" target="_blank" class="badge" style="text-decoration: none;" title="Abrir Comprovante">
+                    📄 Ver
+                  </a>
+                {% else %}
+                  <span style="color: var(--muted, #64748b); font-size: 11px;">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Ações (Auditoria & Excluir) -->
+              <td style="text-align: center; white-space: nowrap;">
+                <button type="button" onclick="openAuditModal({{ t.id }})" style="background: none; border: none; color: #2563EB; cursor: pointer; font-size: 13px; padding: 4px;" title="Ver Histórico de Alterações">
+                  📜
+                </button>
+                <button type="button" onclick="deleteRow({{ t.id }})" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 14px; padding: 4px;" title="Excluir">
+                  ✕
+                </button>
+              </td>
+            </tr>
+          {% else %}
+            <tr id="emptyRow">
+              <td colspan="11" style="text-align: center; padding: 36px; color: var(--muted, #64748b);">
+                Nenhum comprovante lançado até o momento. Envie arquivos acima ou clique em <strong>+ Nova Linha Manual</strong>.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% include "mpay_modals.html" %}
+
+<script src="{{ url_for('static', filename='js/mpay.js') }}"></script>
+</body>
+</html>

@@ -22,6 +22,7 @@ from routes.connections_routes import connections_bp
 from routes.backup_routes import backup_bp
 from routes.import_settlement_routes import import_settlement_bp
 from routes.import_repository_routes import import_repository_bp
+from routes.mpay_routes import mpay_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -43,6 +44,7 @@ ALL_BLUEPRINTS = [
     infra_bp,
     connections_bp,
     backup_bp,
+    mpay_bp,
 ]
 
 
