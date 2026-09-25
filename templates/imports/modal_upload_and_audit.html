@@ -24,6 +24,7 @@
 
     <!-- Formulário de Envio Rápido / Drag & Drop -->
     <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id) }}" enctype="multipart/form-data" id="modalBatchUploadForm" style="margin-bottom: 24px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div id="dropZoneArea" style="border: 2px dashed rgba(37, 99, 235, 0.4); border-radius: 14px; background: var(--panel2); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;"
            onclick="document.getElementById('modalFileInput').click()"
            ondragover="event.preventDefault(); this.style.borderColor='#2563EB'; this.style.background='rgba(37,99,235,0.06)'"

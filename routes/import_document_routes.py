@@ -5,6 +5,7 @@ Rotas de envio em lote, classificação por IA, verificação de duplicidade e c
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from flask import Blueprint, current_app, flash, jsonify, redirect, request, send_from_directory, url_for
