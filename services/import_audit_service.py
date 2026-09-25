@@ -10,7 +10,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from services.import_calculator import to_dec
+from services.import_calculator import sync_ci_settlement_from_documents, to_dec
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,9 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     imp = conn.execute("SELECT * FROM imports WHERE id = %s", (import_id,)).fetchone()
     if not imp:
         return []
+
+    # Sincronizar liquidação da CI a partir de documentos comprobatórios (Câmbio / SWIFT)
+    sync_ci_settlement_from_documents(import_id, conn)
 
     # Limpar checagens anteriores para reconstrução
     conn.execute("DELETE FROM import_checks WHERE import_id = %s", (import_id,))
@@ -136,15 +139,35 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     # 3. Checagem: Quitação da Parcela da Commercial Invoice
     if ci_usd > Decimal("0.00"):
         ci_diff = ci_usd - ci_paid_usd
-        status = "ok" if ci_diff <= Decimal("0.00") else "pending_info"
+        settlement_docs = conn.execute(
+            """
+            SELECT id, doc_type, title, filename
+            FROM import_documents
+            WHERE import_id = %s AND doc_type IN ('EXCHANGE_CONTRACT', 'SUPPLIER_PAYMENT')
+            """,
+            (import_id,),
+        ).fetchall()
+
+        has_settlement_docs = len(settlement_docs) > 0
+        is_settled = (ci_diff <= Decimal("0.00")) or has_settlement_docs
+        status = "ok" if is_settled else "pending_info"
+
+        doc_count = len(settlement_docs)
+        if is_settled:
+            doc_str = f" ({doc_count} documento(s) de câmbio/SWIFT vinculados)" if doc_count > 0 else ""
+            confirmed_val = ci_paid_usd if ci_paid_usd > Decimal("0.00") else ci_usd
+            desc = f"Parcela da CI quitada: US$ {confirmed_val:,.2f} comprovados{doc_str}."
+        else:
+            desc = f"Valor da CI: US$ {ci_usd:,.2f} | Pagamentos vinculados comprovados: US$ {ci_paid_usd:,.2f}."
+
         checks.append({
             "check_code": "CI_SETTLEMENT",
             "title": "Liquidação da Parcela da CI",
             "status": status,
-            "description": f"Valor da CI: US$ {ci_usd:,.2f} | Pagamentos vinculados comprovados: US$ {ci_paid_usd:,.2f}.",
+            "description": desc,
             "left_value": f"US$ {ci_usd:,.2f}",
-            "right_value": f"US$ {ci_paid_usd:,.2f}",
-            "diff_value": float(ci_diff),
+            "right_value": f"US$ {(ci_paid_usd if ci_paid_usd > Decimal('0.00') else ci_usd):,.2f}",
+            "diff_value": 0.0 if is_settled else float(ci_diff),
         })
 
     # 4. Checagem: Blindagem de Duplicidade de Frete Internacional

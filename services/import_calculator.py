@@ -6,6 +6,7 @@ conferência financeira, conciliação de numerário e apuração do custo unit�
 
 from __future__ import annotations
 
+import json
 import logging
 from decimal import Decimal
 from typing import Any
@@ -21,6 +22,126 @@ def to_dec(val: Any) -> Decimal:
         return Decimal(str(val))
     except Exception:
         return Decimal("0.00")
+
+
+def sync_ci_settlement_from_documents(import_id: int, conn) -> None:
+    """
+    Sincroniza automaticamente a Liquidação da Parcela da CI (import_payments_china)
+    a partir da presença de Contrato de Câmbio (EXCHANGE_CONTRACT) e/ou
+    Comprovante de Remessa/SWIFT (SUPPLIER_PAYMENT).
+    A presença de um dos dois ou ambos registra e quita oficialmente a parcela de CI.
+    """
+    try:
+        settlement_docs = conn.execute(
+            """
+            SELECT id, doc_type, title, filename, extracted_data
+            FROM import_documents
+            WHERE import_id = %s AND doc_type IN ('EXCHANGE_CONTRACT', 'SUPPLIER_PAYMENT')
+            ORDER BY id ASC
+            """,
+            (import_id,),
+        ).fetchall()
+
+        if not settlement_docs:
+            return
+
+        imp = conn.execute("SELECT * FROM imports WHERE id = %s", (import_id,)).fetchone()
+        if not imp:
+            return
+
+        ci_amount_usd = to_dec(imp.get("ci_amount_usd"))
+
+        exchange_doc = next((d for d in settlement_docs if d["doc_type"] == "EXCHANGE_CONTRACT"), None)
+        swift_doc = next((d for d in settlement_docs if d["doc_type"] == "SUPPLIER_PAYMENT"), None)
+
+        extracted_usd = Decimal("0.00")
+        extracted_rate = None
+        paid_date = None
+
+        for doc in [exchange_doc, swift_doc]:
+            if not doc:
+                continue
+            data = doc.get("extracted_data") or {}
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except Exception:
+                    data = {}
+
+            amt = to_dec(data.get("total_amount"))
+            if amt > Decimal("0.00") and extracted_usd == Decimal("0.00"):
+                extracted_usd = amt
+
+            rate = data.get("exchange_rate")
+            if rate and not extracted_rate:
+                try:
+                    extracted_rate = Decimal(str(rate))
+                except Exception:
+                    pass
+
+            dt = data.get("issue_date")
+            if dt and not paid_date:
+                paid_date = dt
+
+        final_usd = extracted_usd if extracted_usd > Decimal("0.00") else ci_amount_usd
+        if final_usd <= Decimal("0.00"):
+            return
+
+        if extracted_rate and extracted_rate > Decimal("0.00"):
+            final_brl = (final_usd * extracted_rate).quantize(Decimal("0.01"))
+        else:
+            final_brl = Decimal("0.00")
+
+        doc_id = swift_doc["id"] if swift_doc else (exchange_doc["id"] if exchange_doc else None)
+        cambio_id = exchange_doc["id"] if exchange_doc else None
+
+        doc_refs = []
+        if exchange_doc:
+            doc_refs.append("Contrato de Câmbio")
+        if swift_doc:
+            doc_refs.append("SWIFT")
+        desc = f"Liquidação da Parcela da CI ({' + '.join(doc_refs)})"
+
+        existing = conn.execute(
+            "SELECT id, amount_usd, document_id, exchange_contract_doc_id FROM import_payments_china WHERE import_id = %s AND payment_category = 'ci_payment'",
+            (import_id,),
+        ).fetchone()
+
+        if existing:
+            conn.execute(
+                """
+                UPDATE import_payments_china
+                SET document_id = COALESCE(document_id, %s),
+                    exchange_contract_doc_id = COALESCE(exchange_contract_doc_id, %s),
+                    amount_usd = CASE WHEN amount_usd <= 0 THEN %s ELSE amount_usd END,
+                    amount_brl = CASE WHEN amount_brl <= 0 THEN %s ELSE amount_brl END,
+                    exchange_rate = COALESCE(exchange_rate, %s),
+                    is_verified = TRUE
+                WHERE id = %s
+                """,
+                (doc_id, cambio_id, final_usd, final_brl, extracted_rate, existing["id"]),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO import_payments_china (
+                    import_id, payment_category, description, amount_usd, amount_brl,
+                    exchange_rate, bank_fees_brl, paid_at, document_id, exchange_contract_doc_id, is_verified
+                ) VALUES (%s, 'ci_payment', %s, %s, %s, %s, 0.0, COALESCE(%s, CURRENT_DATE), %s, %s, TRUE)
+                """,
+                (
+                    import_id,
+                    desc,
+                    final_usd,
+                    final_brl,
+                    extracted_rate,
+                    paid_date,
+                    doc_id,
+                    cambio_id,
+                ),
+            )
+    except Exception as err:
+        logger.warning("[sync_ci_settlement_from_documents] Falha ao sincronizar liquidação da CI: %s", err)
 
 
 def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
@@ -41,6 +162,9 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
        - Denominador = Total em dólares pago ao fornecedor pelas mercadorias
        - Custo Unitário Gerencial (R$) = Preço USD × Fator de Custo
     """
+    # Sincronização automática documental de Câmbio / SWIFT para quitação da CI
+    sync_ci_settlement_from_documents(import_id, conn)
+
     # 1. Carregar dados da importação
     imp = conn.execute("SELECT * FROM imports WHERE id = %s", (import_id,)).fetchone()
     if not imp:
