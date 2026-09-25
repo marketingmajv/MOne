@@ -123,6 +123,43 @@ def upload_documents_batch(iid: int):
             )
             imported_count += 1
 
+            # Vinculação automática de chassis ao estoque se for planilha/CHASSIS_LIST
+            if doc_type == "CHASSIS_LIST" or orig_filename.lower().endswith((".xlsx", ".xls", ".csv")):
+                try:
+                    from services.chassis_service import parse_chassis_file
+
+                    class MemFile:
+                        def __init__(self, fn: str, b: bytes):
+                            self.filename = fn
+                            self.content = b
+
+                        def read(self):
+                            return self.content
+
+                    ch_rows = parse_chassis_file(MemFile(orig_filename, file_bytes))
+                    if ch_rows:
+                        prod_map = {p["name"].strip().lower(): p["id"] for p in conn.execute("SELECT id, name FROM products").fetchall()}
+                        for cr in ch_rows:
+                            m_name = cr.get("model", "Veículo Elétrico").strip()
+                            p_id = prod_map.get(m_name.lower())
+                            if not p_id:
+                                res_p = conn.execute("INSERT INTO products (name, category) VALUES (%s, 'Motos Elétricas') RETURNING id", (m_name,)).fetchone()
+                                p_id = res_p["id"]
+                                prod_map[m_name.lower()] = p_id
+                            conn.execute(
+                                """
+                                INSERT INTO stock_units (product_id, chassis, motor_no, color, import_id, status)
+                                VALUES (%s, %s, %s, %s, %s, 'unreleased')
+                                ON CONFLICT (chassis) DO UPDATE 
+                                SET motor_no = EXCLUDED.motor_no, 
+                                    color = EXCLUDED.color, 
+                                    import_id = EXCLUDED.import_id;
+                                """,
+                                (p_id, cr["chassis"].strip(), cr.get("motor", "").strip(), cr.get("color", "").strip(), iid),
+                            )
+                except Exception as err:
+                    logger.debug("[upload_documents_batch] Planilha %s sem chassis válidos: %s", orig_filename, err)
+
         calculate_import_financials(iid, conn)
         run_import_audit_checks(iid, conn)
         audit("import.documents_uploaded", f"import_id={iid}, added={imported_count}, duplicates={duplicate_count}")

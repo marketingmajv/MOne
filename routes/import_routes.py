@@ -475,9 +475,12 @@ def upload_chassis_sheet(iid: int):
             # Inserir unidade no estoque vinculado à importação
             conn.execute(
                 """
-                INSERT INTO stock_units (product_id, chassis, motor_number, color, import_id, status)
+                INSERT INTO stock_units (product_id, chassis, motor_no, color, import_id, status)
                 VALUES (%s, %s, %s, %s, %s, 'unreleased')
-                ON CONFLICT DO NOTHING
+                ON CONFLICT (chassis) DO UPDATE 
+                SET motor_no = EXCLUDED.motor_no, 
+                    color = EXCLUDED.color, 
+                    import_id = EXCLUDED.import_id
                 """,
                 (p_id, r["chassis"].strip(), r["motor"].strip(), r["color"].strip(), iid),
             )

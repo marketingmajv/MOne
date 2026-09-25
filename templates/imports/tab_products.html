@@ -88,7 +88,7 @@
               <tr>
                 <td><code style="background: var(--panel2); padding: 2px 6px; border-radius: 4px; color: var(--text); border: 1px solid var(--line);">{{ u.chassis }}</code></td>
                 <td style="color: var(--text); font-weight: 600;">{{ u.product_name or '—' }}</td>
-                <td style="color: var(--muted);">{{ u.motor_number or '—' }}</td>
+                <td style="color: var(--muted); font-family: monospace;">{{ u.motor_no or u.motor_number or '—' }}</td>
                 <td style="color: var(--muted);">{{ u.color or '—' }}</td>
                 <td>
                   <span class="badge {{ u.status }}">

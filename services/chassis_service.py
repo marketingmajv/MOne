@@ -71,9 +71,47 @@ def extract_text_from_spreadsheet(file_bytes: bytes, filename: str) -> str:
     return ""
 
 
+CHINESE_COLOR_MAP = {
+    "碳黑": "Preto Carbono",
+    "亮黑色": "Preto Brilhante",
+    "亮黑": "Preto Brilhante",
+    "纳多灰": "Cinza Nardo",
+    "亚黑": "Preto Fosco",
+    "磨砂黑": "Preto Fosco",
+    "黑色": "Preto",
+    "黑": "Preto",
+    "白色": "Branco",
+    "白": "Branco",
+    "珍珠白": "Branco Pérola",
+    "红色": "Vermelho",
+    "红": "Vermelho",
+    "亮红色": "Vermelho Brilhante",
+    "酒红色": "Vermelho Vinho",
+    "酒红": "Vermelho Vinho",
+    "蓝色": "Azul",
+    "蓝": "Azul",
+    "浅湖蓝色": "Azul Lago Claro",
+    "磨砂深蓝": "Azul Escuro Fosco",
+    "黄色": "Amarelo",
+    "黄": "Amarelo",
+    "灰色": "Cinza",
+    "灰": "Cinza",
+    "银色": "Prata",
+    "银": "Prata",
+    "绿色": "Verde",
+    "绿": "Verde",
+    "墨绿色": "Verde Militar",
+    "橙色": "Laranja",
+    "橙": "Laranja",
+}
+
+
 def _is_chassis_header(cell) -> bool:
     s = str(cell or "").strip().lower()
     if not s:
+        return False
+    # Evitar banners longos de título ou totais de pedido (ex: "26je26订单x13车架号197台")
+    if len(s) > 25 and any(p in s for p in ["订单", "pedido", "order", "total", "台", "unidades", "lista"]):
         return False
     if "车架" in s or "vin码" in s or "车架号" in s:
         return True
@@ -143,6 +181,8 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
     else:
         raise ValueError("Use CSV ou XLSX para a planilha de chassis.")
 
+    vin_pattern = re.compile(r"^[A-HJ-NPR-Z0-9]{8,25}$", re.IGNORECASE)
+
     for all_rows in all_sheets_rows:
         if not all_rows:
             continue
@@ -152,32 +192,55 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
         i_model = None
         i_motor = None
         i_color = None
+        inferred_model = "Veículo Elétrico"
+
+        # Tentar extrair nome do modelo de banners ou títulos iniciais (ex: '26JE26订单X13车架号197台')
+        for banner_row in all_rows[:5]:
+            banner_text = " ".join(str(c or "").strip() for c in banner_row)
+            m_match = re.search(r"(?:^|[^a-zA-Z0-9])(X13|MAX\s*12|V80\s*PRO|V20\s*ULTRA|CLASSIC\s*1000|FLOW\s*ONE|M9\s*PRO|M2|NOVA|RZ-110)(?:$|[^a-zA-Z0-9])", banner_text, re.IGNORECASE)
+            if m_match:
+                inferred_model = m_match.group(1).upper()
+                break
 
         # 1. Varredura inteligente de cabeçalhos nas primeiras 20 linhas
         max_scan = min(20, len(all_rows))
         for r_idx in range(max_scan):
             row = all_rows[r_idx]
+            non_empty_cells = [c for c in row if str(c or "").strip()]
+            if len(non_empty_cells) <= 1:
+                # Linha com apenas 1 célula preenchida é banner/título, não cabeçalho de tabela
+                continue
+
+            cand_chassis = None
             for col_idx, cell in enumerate(row):
                 if _is_chassis_header(cell):
-                    i_chassis = col_idx
-                    header_row_idx = r_idx
+                    cand_chassis = col_idx
                     break
-            if header_row_idx is not None:
-                # Mapear colunas complementares na mesma linha
-                for col_idx, cell in enumerate(row):
-                    if col_idx == i_chassis:
-                        continue
-                    if i_model is None and _is_model_header(cell):
-                        i_model = col_idx
-                    elif i_motor is None and _is_motor_header(cell):
-                        i_motor = col_idx
-                    elif i_color is None and _is_color_header(cell):
-                        i_color = col_idx
-                break
 
-        # 2. Fallback por conteúdo: caso cabeçalho não seja óbvio ou contenha células mescladas
+            if cand_chassis is not None:
+                # Validação ativa: checar se as linhas subsequentes contêm padrões de VIN/chassi
+                valid_count = 0
+                for check_row in all_rows[r_idx + 1: r_idx + 25]:
+                    if cand_chassis < len(check_row):
+                        val = str(check_row[cand_chassis] or "").strip()
+                        if len(val) >= 6 and re.match(r"^[A-Za-z0-9_-]+$", val):
+                            valid_count += 1
+                if valid_count >= 1:
+                    i_chassis = cand_chassis
+                    header_row_idx = r_idx
+                    for col_idx, cell in enumerate(row):
+                        if col_idx == i_chassis:
+                            continue
+                        if i_model is None and _is_model_header(cell):
+                            i_model = col_idx
+                        elif i_motor is None and _is_motor_header(cell):
+                            i_motor = col_idx
+                        elif i_color is None and _is_color_header(cell):
+                            i_color = col_idx
+                    break
+
+        # 2. Fallback por conteúdo: caso cabeçalho não seja óbvio ou tenha sido mesclado
         if i_chassis is None:
-            vin_pattern = re.compile(r"^[A-HJ-NPR-Z0-9]{10,20}$", re.IGNORECASE)
             best_col = None
             best_count = 0
             best_start_row = 1
@@ -189,6 +252,8 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
                 for r_idx, row in enumerate(all_rows):
                     if c_idx < len(row):
                         val = str(row[c_idx] or "").strip()
+                        if _is_chassis_header(val):
+                            continue
                         if vin_pattern.match(val):
                             matches += 1
                             if first_row is None:
@@ -213,11 +278,12 @@ def parse_chassis_file(file_storage) -> list[dict[str, str]]:
             if _is_chassis_header(chassis):
                 continue
 
-            model = str(raw[i_model] or "").strip() if (i_model is not None and i_model < len(raw)) else "Veículo Elétrico"
+            model = str(raw[i_model] or "").strip() if (i_model is not None and i_model < len(raw)) else inferred_model
             if not model:
-                model = "Veículo Elétrico"
+                model = inferred_model
             motor = str(raw[i_motor] or "").strip() if (i_motor is not None and i_motor < len(raw)) else ""
-            color = str(raw[i_color] or "").strip() if (i_color is not None and i_color < len(raw)) else ""
+            raw_color = str(raw[i_color] or "").strip() if (i_color is not None and i_color < len(raw)) else ""
+            color = CHINESE_COLOR_MAP.get(raw_color, raw_color)
 
             rows.append({"model": model, "chassis": chassis, "motor": motor, "color": color})
 

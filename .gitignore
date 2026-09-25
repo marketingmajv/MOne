@@ -11,6 +11,7 @@ uploads/
 backups/
 *.zip
 scratch/
+scratch_*
 .DS_Store
 
 

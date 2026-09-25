@@ -446,9 +446,12 @@ def persist_creation_documents(import_id: int, req, conn, user_id: int | None = 
                             prod_map[model_name.lower()] = p_id
                         conn.execute(
                             """
-                            INSERT INTO stock_units (product_id, chassis, motor_number, color, import_id, status)
+                            INSERT INTO stock_units (product_id, chassis, motor_no, color, import_id, status)
                             VALUES (%s, %s, %s, %s, %s, 'unreleased')
-                            ON CONFLICT DO NOTHING;
+                            ON CONFLICT (chassis) DO UPDATE 
+                            SET motor_no = EXCLUDED.motor_no, 
+                                color = EXCLUDED.color, 
+                                import_id = EXCLUDED.import_id;
                             """,
                             (p_id, cr["chassis"].strip(), cr.get("motor", "").strip(), cr.get("color", "").strip(), import_id),
                         )
