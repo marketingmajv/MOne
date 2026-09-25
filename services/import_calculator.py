@@ -343,6 +343,17 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         except Exception as item_upd_err:
             logger.warning("Erro ao atualizar unit_cost_brl em import_items: %s", item_upd_err)
 
+    # Câmbio Liquidado (PI): refere-se ao Pagamento Extra da compra PI = CI + Pagamento Extra
+    if additional_paid_usd > Decimal("0.00"):
+        cambio_liquidado_usd = additional_paid_usd
+        cambio_liquidado_brl = additional_paid_brl
+    elif pi_amount_usd > ci_amount_usd:
+        cambio_liquidado_usd = pi_amount_usd - ci_amount_usd
+        cambio_liquidado_brl = round((pi_amount_usd - ci_amount_usd) * effective_rate, 2)
+    else:
+        cambio_liquidado_usd = Decimal("0.00")
+        cambio_liquidado_brl = Decimal("0.00")
+
     return {
         "import_id": import_id,
         "pi_amount_usd": float(pi_amount_usd),
@@ -357,8 +368,8 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "other_debits_brl": float(additional_paid_brl),
         "total_supplier_paid_usd": float(total_paid_supplier_usd),
         "total_supplier_paid_brl": float(total_supplier_paid_brl),
-        "cambio_liquidado_usd": float(pi_amount_usd),
-        "cambio_liquidado_brl": float(pi_amount_brl),
+        "cambio_liquidado_usd": float(cambio_liquidado_usd),
+        "cambio_liquidado_brl": float(cambio_liquidado_brl),
         "total_bank_fees_brl": float(total_bank_fees_brl),
         "documental_diff_usd": float(documental_diff_usd),
         "purchase_balance_usd": float(purchase_balance_usd),

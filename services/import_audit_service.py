@@ -107,7 +107,7 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
             extra_val = add_paid_usd - max(Decimal("0.00"), expected_diff)
             checks.append({
                 "check_code": "PI_VS_CI_ADDITIONAL",
-                "title": "Conferência da Compra: PI vs (CI + Pagamento Extra)",
+                "title": "Conferência da Compra: PI = (CI + Pagamento Extra)",
                 "status": status,
                 "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Pagamento Extra/Adicional: US$ {add_paid_usd:,.2f}.",
                 "left_value": f"US$ {pi_usd:,.2f}",
@@ -118,7 +118,7 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
             status = "ok" if abs(diff_balance) <= Decimal("1.00") else "pending_info"
             checks.append({
                 "check_code": "PI_VS_CI_ADDITIONAL",
-                "title": "Conferência da Compra: PI vs (CI + Outros Lançamentos)",
+                "title": "Conferência da Compra: PI = (CI + Pagamento Extra)",
                 "status": status,
                 "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Outros Lançamentos: US$ {add_paid_usd:,.2f}.",
                 "left_value": f"US$ {pi_usd:,.2f}",
