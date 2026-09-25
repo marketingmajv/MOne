@@ -148,12 +148,13 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     """Calcula todos os indicadores financeiros e o Fator de Custo (R$/US$) da importação.
 
     Regras Fundamentais:
-    1. Compra na China:
-       - PI = Teto da compra
-       - CI = Parcela declarada
-       - Diferença Documental = PI - CI - Pagamentos Adicionais
-       - Saldo a Pagar = PI - Pagamentos CI - Pagamentos Adicionais
-       - NÃO somar PI + CI + comprovantes como despesas separadas!
+    1. Compra na China (PI vs CI):
+       - PI = PROFORMA INVOICE: valor total pago ao fornecedor (com frete embutido negociado).
+       - CI = COMMERCIAL INVOICE: valor total pago ao fornecedor declarado à Receita Federal.
+       - EQUAÇÃO FUNDAMENTAL: PI = CI + PAGAMENTO EXTRA (logo, PAGAMENTO EXTRA = PI - CI).
+       - Saldo a Pagar Fornecedor = PI - Pagamentos CI - Pagamentos Extras.
+       - A presença de Contrato de Câmbio e/ou SWIFT quita oficialmente a parcela da CI.
+       - NUNCA somar PI + CI + comprovantes como despesas separadas!
     2. Numerário Aduaneiro:
        - Saldo a Prestar Contas = Adiantamentos - Despesas Comprovadas - Devoluções
        - NUNCA somar adiantamentos e despesas comprovadas no mesmo total de desembolso!

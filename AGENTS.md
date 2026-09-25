@@ -59,6 +59,14 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
   `aws-0-us-west-2.pooler.supabase.com:6543` com `sslmode=require`.
 - **Regra de Vendas**: Toda venda exige chassi existente, liberado (`available`) e não duplicado.
 - **Sigilo**: Custos de contêineres e importações são restritos à Diretoria (`admin`) e Suporte Técnico (`support`).
+- **Regra de Importação (PI vs CI e Quitação de Compra)**:
+  - **PI (Proforma Invoice)**: Valor total pago ao fornecedor (incluindo eventual frete internacional negociado). Representa o montante total da compra.
+  - **CI (Commercial Invoice)**: Valor total oficial pago ao fornecedor declarado à Receita Federal para desembaraço aduaneiro.
+  - **Equação Fundamental da Compra**:
+    $$\mathbf{PI = CI + PAGAMENTO\ EXTRA}$$
+    - Portanto, $\mathbf{PAGAMENTO\ EXTRA = PI - CI}$.
+    - Qualquer valor desembolsado além da CI (ou a diferença entre a fatura proforma total e a fatura comercial alfandegária) é registrado e auditado como **Pagamento Extra / Outro Lançamento**, completando a compra sem duplicar custos.
+    - A presença de **Contrato de Câmbio** e/ou **Comprovante SWIFT** registra e liquida oficialmente a parcela da CI (`ci_payment`), zerando a pendência de dados na auditoria aduaneira.
 
 ---
 
