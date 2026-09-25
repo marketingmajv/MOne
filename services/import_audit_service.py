@@ -10,7 +10,7 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from services.import_calculator import sync_ci_settlement_from_documents, to_dec
+from services.import_calculator import calculate_import_financials, sync_ci_settlement_from_documents, to_dec
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,19 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     # Sincronizar liquidação da CI a partir de documentos comprobatórios (Câmbio / SWIFT)
     sync_ci_settlement_from_documents(import_id, conn)
 
+    # Obter demonstrativo financeiro consolidado
+    fin = calculate_import_financials(import_id, conn)
+
     # Limpar checagens anteriores para reconstrução
     conn.execute("DELETE FROM import_checks WHERE import_id = %s", (import_id,))
 
     checks = []
 
-    pi_usd = to_dec(imp.get("pi_amount_usd"))
-    ci_usd = to_dec(imp.get("ci_amount_usd"))
+    pi_usd = to_dec(fin.get("pi_amount_usd"))
+    pi_brl = to_dec(fin.get("pi_amount_brl"))
+    pi_dolar_medio = to_dec(fin.get("pi_dolar_medio"))
+    ci_usd = to_dec(fin.get("ci_amount_usd"))
+    ci_brl = to_dec(fin.get("ci_amount_brl"))
 
     # 1. Checagem: Soma dos Itens vs Valor Declarado na CI ou Chassis Vinculados
     items = conn.execute("SELECT * FROM import_items WHERE import_id = %s", (import_id,)).fetchall()
@@ -82,49 +88,26 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
             "diff_value": None,
         })
 
-    # 2. Checagem: Conferência PI vs CI + Pagamentos Adicionais
-    china_payments = conn.execute(
-        "SELECT * FROM import_payments_china WHERE import_id = %s", (import_id,)
-    ).fetchall()
-    add_paid_usd = sum(
-        to_dec(p.get("amount_usd"))
-        for p in china_payments
-        if p.get("payment_category") in ("additional_payment", "other_debit")
-    )
-    ci_paid_usd = sum(
-        to_dec(p.get("amount_usd"))
-        for p in china_payments
-        if p.get("payment_category") == "ci_payment"
-    )
+    # 2. Checagem: Conferência PI = CI + Pagamentos Extras
+    add_paid_usd = to_dec(fin.get("additional_paid_usd"))
+    add_paid_brl = to_dec(fin.get("additional_paid_brl"))
 
-    if pi_usd > Decimal("0.00") and ci_usd > Decimal("0.00"):
-        expected_diff = pi_usd - ci_usd
-        diff_balance = expected_diff - add_paid_usd
-
-        # Se houver lançamentos adicionais / extras que excedem a diferença esperada PI vs CI
-        if add_paid_usd > Decimal("0.00") and add_paid_usd > expected_diff:
-            status = "extra_payment"
-            extra_val = add_paid_usd - max(Decimal("0.00"), expected_diff)
-            checks.append({
-                "check_code": "PI_VS_CI_ADDITIONAL",
-                "title": "Conferência da Compra: PI = (CI + Pagamento Extra)",
-                "status": status,
-                "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Pagamento Extra/Adicional: US$ {add_paid_usd:,.2f}.",
-                "left_value": f"US$ {pi_usd:,.2f}",
-                "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
-                "diff_value": float(extra_val),
-            })
-        else:
-            status = "ok" if abs(diff_balance) <= Decimal("1.00") else "pending_info"
-            checks.append({
-                "check_code": "PI_VS_CI_ADDITIONAL",
-                "title": "Conferência da Compra: PI = (CI + Pagamento Extra)",
-                "status": status,
-                "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Outros Lançamentos: US$ {add_paid_usd:,.2f}.",
-                "left_value": f"US$ {pi_usd:,.2f}",
-                "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
-                "diff_value": float(diff_balance),
-            })
+    if pi_usd > Decimal("0.00"):
+        status = "extra_payment" if add_paid_usd > Decimal("0.00") else "ok"
+        desc = (
+            f"PI Total: US$ {pi_usd:,.2f} (R$ {pi_brl:,.2f}) | "
+            f"Dólar Médio: R$ {pi_dolar_medio:.2f} | "
+            f"Composição: CI US$ {ci_usd:,.2f} + Pagamento Extra US$ {add_paid_usd:,.2f}."
+        )
+        checks.append({
+            "check_code": "PI_VS_CI_ADDITIONAL",
+            "title": "Conferência da Compra: PI = (CI + Pagamento Extra)",
+            "status": status,
+            "description": desc,
+            "left_value": f"US$ {pi_usd:,.2f}",
+            "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
+            "diff_value": float(add_paid_usd) if status == "extra_payment" else 0.0,
+        })
     else:
         checks.append({
             "check_code": "PI_VS_CI_ADDITIONAL",

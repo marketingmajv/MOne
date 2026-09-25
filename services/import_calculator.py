@@ -171,8 +171,9 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     if not imp:
         return {}
 
-    pi_amount_usd = to_dec(imp.get("pi_amount_usd"))
+    pi_amount_usd_raw = to_dec(imp.get("pi_amount_usd"))
     ci_amount_usd = to_dec(imp.get("ci_amount_usd"))
+    exchange_rate_estim = to_dec(imp.get("exchange_rate")) or Decimal("5.65")
 
     # 2. Pagamentos no Exterior (China)
     china_rows = conn.execute(
@@ -209,6 +210,24 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
             ci_paid_brl += amt_brl
 
     total_supplier_paid_brl = ci_paid_brl + additional_paid_brl
+
+    # EQUAÇÃO FUNDAMENTAL: PI = CI + PAGAMENTO EXTRA
+    # CI em USD e R$ (se a CI não tiver pagamentos em câmbio quitados em R$, utiliza a taxa estimada do processo)
+    ci_effective_usd = ci_amount_usd if ci_amount_usd > Decimal("0.00") else ci_paid_usd
+    ci_effective_brl = ci_paid_brl if ci_paid_brl > Decimal("0.00") else round(ci_effective_usd * exchange_rate_estim, 2)
+
+    if ci_effective_usd > Decimal("0.00") or additional_paid_usd > Decimal("0.00"):
+        pi_amount_usd = ci_effective_usd + additional_paid_usd
+        pi_amount_brl = ci_effective_brl + additional_paid_brl
+    else:
+        pi_amount_usd = pi_amount_usd_raw if pi_amount_usd_raw > Decimal("0.00") else Decimal("0.00")
+        pi_amount_brl = round(pi_amount_usd * exchange_rate_estim, 2)
+
+    # Dólar Médio pago na operação (PI R$ / PI USD)
+    if pi_amount_usd > Decimal("0.00"):
+        pi_dolar_medio = round(pi_amount_brl / pi_amount_usd, 2)
+    else:
+        pi_dolar_medio = round(exchange_rate_estim, 2)
 
     # Conferência Documental: PI - CI - Adicionais Comprovados
     documental_diff_usd = pi_amount_usd - ci_amount_usd - additional_paid_usd
@@ -357,6 +376,8 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     return {
         "import_id": import_id,
         "pi_amount_usd": float(pi_amount_usd),
+        "pi_amount_brl": float(pi_amount_brl),
+        "pi_dolar_medio": float(pi_dolar_medio),
         "pi_fob_usd": float(pi_fob_usd),
         "ci_amount_usd": float(ci_amount_usd),
         "ci_amount_brl": float(ci_amount_brl),

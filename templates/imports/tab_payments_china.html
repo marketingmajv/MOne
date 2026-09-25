@@ -23,22 +23,36 @@
     </div>
 
     <!-- Indicadores da Compra -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px;">
-      <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
-        <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Total da Compra (PI)</span>
-        <div class="comex-value-blue" style="font-size: 18px; font-weight: 800;">{{ financials.pi_amount_usd|money_usd }}</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px;">
+      <div style="background: var(--panel2); border: 1.5px solid rgba(37,99,235,0.3); padding: 12px; border-radius: 10px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Total da Compra (PI)</span>
+          <span style="background: rgba(37,99,235,0.15); color: #2563EB; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 6px;">
+            Dólar Médio: R$ {{ "%.2f"|format(financials.pi_dolar_medio or 0) }}
+          </span>
+        </div>
+        <div class="comex-value-blue" style="font-size: 18px; font-weight: 800; margin-top: 4px;">
+          {{ financials.pi_amount_usd|money_usd }}
+          <span style="font-size: 13px; font-weight: 600; color: var(--muted);">({{ financials.pi_amount_brl|money }})</span>
+        </div>
+        <div style="font-size: 10.5px; color: var(--muted); margin-top: 6px; border-top: 1px dashed var(--line); padding-top: 4px; font-family: var(--font-mono);">
+          🧩 <strong>CI:</strong> {{ financials.ci_amount_usd|money_usd }} + <strong>Extra:</strong> {{ financials.additional_paid_usd|money_usd }}
+        </div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
         <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Parcela Declarada (CI)</span>
         <div style="font-size: 18px; font-weight: 800; color: var(--text);">{{ financials.ci_amount_usd|money_usd }}</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">{{ financials.ci_amount_brl|money }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
         <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Pagamentos da CI Quitados</span>
         <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">{{ financials.ci_paid_usd|money_usd }}</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">{{ financials.ci_paid_brl|money }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
         <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Outros Lançamentos</span>
         <div class="comex-value-amber" style="font-size: 18px; font-weight: 800;">{{ financials.additional_paid_usd|money_usd }}</div>
+        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">{{ financials.additional_paid_brl|money }}</div>
       </div>
       <div style="background: var(--panel2); border: 1px solid var(--line); padding: 12px; border-radius: 10px;">
         <span style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Saldo a Pagar Fornecedor</span>

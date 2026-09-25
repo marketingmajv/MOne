@@ -127,6 +127,21 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
             <small style="color: var(--muted); font-size: 11px;">R$ / US$</small>
           </div>
 
+          <!-- Total Compra (PI) & Dólar Médio -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #2563EB;">
+            <span class="comex-label">Total PI (Dólar Médio)</span>
+            <div class="comex-value-blue" style="font-size: 18px; font-weight: 800;">
+              US$ {{ "%.2f"|format((i.financials.pi_amount_usd if i.financials else (i.pi_amount_usd or 0)) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">
+              {% if i.financials and i.financials.pi_dolar_medio %}
+                Dólar Médio: <strong style="color: #2563EB;">R$ {{ "%.2f"|format(i.financials.pi_dolar_medio) }}</strong>
+              {% else %}
+                PI = CI + Extra
+              {% endif %}
+            </small>
+          </div>
+
           <!-- Base Mercadoria -->
           <div class="comex-card-subtle">
             <span class="comex-label">Base Mercadoria</span>
