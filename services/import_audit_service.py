@@ -29,9 +29,18 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     pi_usd = to_dec(imp.get("pi_amount_usd"))
     ci_usd = to_dec(imp.get("ci_amount_usd"))
 
-    # 1. Checagem: Soma dos Itens vs Valor Declarado na CI
+    # 1. Checagem: Soma dos Itens vs Valor Declarado na CI ou Chassis Vinculados
     items = conn.execute("SELECT * FROM import_items WHERE import_id = %s", (import_id,)).fetchall()
     total_items_usd = sum(to_dec(it.get("total_price_usd")) for it in items)
+    stock_units = conn.execute(
+        """
+        SELECT su.chassis, p.name as product_name 
+        FROM stock_units su 
+        LEFT JOIN products p ON p.id = su.product_id 
+        WHERE su.import_id = %s
+        """,
+        (import_id,),
+    ).fetchall()
 
     if items:
         if ci_usd > Decimal("0.00"):
@@ -46,6 +55,19 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
                 "right_value": f"US$ {ci_usd:,.2f}",
                 "diff_value": float(diff),
             })
+    elif stock_units:
+        unique_chassis = len({u["chassis"] for u in stock_units if u.get("chassis")})
+        models = sorted(list({u["product_name"] for u in stock_units if u.get("product_name")}))
+        model_str = ", ".join(models) if models else "Veículos Elétricos"
+        checks.append({
+            "check_code": "ITEMS_VS_CI",
+            "title": "Relação de Produtos e Chassis",
+            "status": "ok",
+            "description": f"{unique_chassis} unidades de chassis cadastradas e identificadas no lote ({model_str}).",
+            "left_value": f"{unique_chassis} chassis",
+            "right_value": f"US$ {ci_usd:,.2f}",
+            "diff_value": None,
+        })
     else:
         checks.append({
             "check_code": "ITEMS_VS_CI",
@@ -75,16 +97,31 @@ def run_import_audit_checks(import_id: int, conn) -> list[dict[str, Any]]:
     if pi_usd > Decimal("0.00") and ci_usd > Decimal("0.00"):
         expected_diff = pi_usd - ci_usd
         diff_balance = expected_diff - add_paid_usd
-        status = "ok" if abs(diff_balance) <= Decimal("1.00") else ("pending_info" if add_paid_usd < expected_diff else "divergent")
-        checks.append({
-            "check_code": "PI_VS_CI_ADDITIONAL",
-            "title": "Conferência da Compra: PI vs (CI + Outros Lançamentos)",
-            "status": status,
-            "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Outros Lançamentos: US$ {add_paid_usd:,.2f}.",
-            "left_value": f"US$ {pi_usd:,.2f}",
-            "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
-            "diff_value": float(diff_balance),
-        })
+
+        # Se houver lançamentos adicionais / extras que excedem a diferença esperada PI vs CI
+        if add_paid_usd > Decimal("0.00") and add_paid_usd > expected_diff:
+            status = "extra_payment"
+            extra_val = add_paid_usd - max(Decimal("0.00"), expected_diff)
+            checks.append({
+                "check_code": "PI_VS_CI_ADDITIONAL",
+                "title": "Conferência da Compra: PI vs (CI + Pagamento Extra)",
+                "status": status,
+                "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Pagamento Extra/Adicional: US$ {add_paid_usd:,.2f}.",
+                "left_value": f"US$ {pi_usd:,.2f}",
+                "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
+                "diff_value": float(extra_val),
+            })
+        else:
+            status = "ok" if abs(diff_balance) <= Decimal("1.00") else "pending_info"
+            checks.append({
+                "check_code": "PI_VS_CI_ADDITIONAL",
+                "title": "Conferência da Compra: PI vs (CI + Outros Lançamentos)",
+                "status": status,
+                "description": f"Total PI: US$ {pi_usd:,.2f} | Parcela CI: US$ {ci_usd:,.2f} | Outros Lançamentos: US$ {add_paid_usd:,.2f}.",
+                "left_value": f"US$ {pi_usd:,.2f}",
+                "right_value": f"US$ {(ci_usd + add_paid_usd):,.2f}",
+                "diff_value": float(diff_balance),
+            })
     else:
         checks.append({
             "check_code": "PI_VS_CI_ADDITIONAL",
