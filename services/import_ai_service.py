@@ -348,6 +348,13 @@ def analyze_import_batch(file_items: list[dict[str, Any]], user_notes: str | Non
                     if doc_data.get("supplier_name") and not extracted_fields.get("supplier_name"):
                         extracted_fields["supplier_name"] = doc_data["supplier_name"]
 
+                if doc_type == "FREIGHT_INVOICE":
+                    if doc_data.get("total_amount") and not extracted_fields.get("ocean_freight_usd"):
+                        try:
+                            extracted_fields["ocean_freight_usd"] = float(doc_data["total_amount"])
+                        except (ValueError, TypeError):
+                            pass
+
                 # Extração de chassis embutidos em texto se houver
                 if doc_data.get("chassis_list") and isinstance(doc_data["chassis_list"], list):
                     for c in doc_data["chassis_list"]:
