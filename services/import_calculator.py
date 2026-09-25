@@ -229,6 +229,20 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     else:
         pi_dolar_medio = round(exchange_rate_estim, 2)
 
+    # Frete Marítimo Internacional (Ocean Freight)
+    ocean_freight_usd = to_dec(imp.get("ocean_freight_usd"))
+    ocean_freight_brl = round(ocean_freight_usd * pi_dolar_medio, 2)
+
+    # FOB Negociado (Produtos sem o Frete Marítimo)
+    if ocean_freight_usd > Decimal("0.00"):
+        fob_negotiated_usd = pi_amount_usd - ocean_freight_usd
+        if fob_negotiated_usd < Decimal("0.00"):
+            fob_negotiated_usd = Decimal("0.00")
+    else:
+        fob_negotiated_usd = ci_effective_usd if ci_effective_usd > Decimal("0.00") else pi_amount_usd
+
+    fob_negotiated_brl = round(fob_negotiated_usd * pi_dolar_medio, 2)
+
     # Conferência Documental: PI - CI - Adicionais Comprovados
     documental_diff_usd = pi_amount_usd - ci_amount_usd - additional_paid_usd
 
@@ -404,8 +418,12 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "net_broker_disbursement": float(net_broker_disbursement),
         "total_disbursed_brl": float(total_disbursed_brl),
         "total_disbursed_usd": float(total_disbursed_usd),
-        "goods_base_usd": float(goods_base_usd),
-        "goods_base_brl": float(ci_amount_brl),
+        "goods_base_usd": float(fob_negotiated_usd),
+        "goods_base_brl": float(fob_negotiated_brl),
+        "ocean_freight_usd": float(ocean_freight_usd),
+        "ocean_freight_brl": float(ocean_freight_brl),
+        "fob_negotiated_usd": float(fob_negotiated_usd),
+        "fob_negotiated_brl": float(fob_negotiated_brl),
         "effective_rate": float(effective_rate),
         "cost_factor": float(cost_factor) if cost_factor is not None else None,
         "cost_factor_status": factor_status,

@@ -277,7 +277,20 @@ def ensure_runtime_schema(conn):
                 except Exception:
                     pass
 
-    # 3. Colunas adicionais de pagamentos
+    # 3. Colunas adicionais de importações
+    for col, col_type in [
+        ("ocean_freight_usd", "REAL DEFAULT 0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE imports ADD COLUMN {if_not_exists}{col} {col_type}")
+        except Exception:
+            if is_pg:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+    # 4. Colunas adicionais de pagamentos
     for col, col_type in [
         ("payment_method", "TEXT"),
         ("card_last4", "TEXT"),

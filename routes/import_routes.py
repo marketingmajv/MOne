@@ -99,6 +99,7 @@ def create_import():
     broker = request.form.get("customs_broker", "").strip()
     pi_usd = request.form.get("pi_amount_usd", "0")
     ci_usd = request.form.get("ci_amount_usd", "0")
+    ocean_freight = request.form.get("ocean_freight_usd", "0")
     bl_no = request.form.get("bl_no", "").strip()
     invoice_no = request.form.get("invoice_no", "").strip()
     freight_ci = bool(request.form.get("freight_included_in_ci"))
@@ -114,11 +115,11 @@ def create_import():
             """
             INSERT INTO imports (
                 reference, importer_company, supplier_name, supplier_contact, currency, incoterm,
-                freight_forwarder, customs_broker, pi_amount_usd, ci_amount_usd, bl_no, invoice_no,
+                freight_forwarder, customs_broker, pi_amount_usd, ci_amount_usd, ocean_freight_usd, bl_no, invoice_no,
                 freight_included_in_ci, freight_included_in_pi, insurance_included,
                 arrival_date, arrival_date_estimated, departure_date_estimated, notes, step, status, created_by
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'compra', 'draft', %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'compra', 'draft', %s
             ) RETURNING id
             """,
             (
@@ -132,6 +133,7 @@ def create_import():
                 broker,
                 pi_usd,
                 ci_usd,
+                ocean_freight,
                 bl_no,
                 invoice_no,
                 freight_ci,
@@ -337,6 +339,7 @@ def edit_import(iid: int):
     broker = request.form.get("customs_broker", "").strip()
     pi_usd = request.form.get("pi_amount_usd", "0")
     ci_usd = request.form.get("ci_amount_usd", "0")
+    ocean_freight = request.form.get("ocean_freight_usd", "0")
     bl_no = request.form.get("bl_no", "").strip()
     invoice_no = request.form.get("invoice_no", "").strip()
     notes = request.form.get("notes", "").strip()
@@ -346,11 +349,11 @@ def edit_import(iid: int):
             """
             UPDATE imports
             SET reference=%s, importer_company=%s, supplier_name=%s, currency=%s, incoterm=%s,
-                freight_forwarder=%s, customs_broker=%s, pi_amount_usd=%s, ci_amount_usd=%s,
+                freight_forwarder=%s, customs_broker=%s, pi_amount_usd=%s, ci_amount_usd=%s, ocean_freight_usd=%s,
                 bl_no=%s, invoice_no=%s, notes=%s
             WHERE id=%s
             """,
-            (ref, importer, supplier, currency, incoterm, forwarder, broker, pi_usd, ci_usd, bl_no, invoice_no, notes, iid),
+            (ref, importer, supplier, currency, incoterm, forwarder, broker, pi_usd, ci_usd, ocean_freight, bl_no, invoice_no, notes, iid),
         )
         calculate_import_financials(iid, conn)
         run_import_audit_checks(iid, conn)

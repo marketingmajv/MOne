@@ -142,19 +142,28 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
             </small>
           </div>
 
-          <!-- Base Mercadoria -->
-          <div class="comex-card-subtle">
-            <span class="comex-label">Base Mercadoria</span>
-            <div class="comex-value-emerald" style="font-size: 20px; font-weight: 800;">
-              US$ {{ "%.2f"|format((i.financials.goods_base_usd if i.financials else (i.pi_amount_usd or i.ci_amount_usd or 0)) or 0) }}
+          <!-- FOB Negociado (Produtos) -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #059669;">
+            <span class="comex-label">FOB Produtos (sem frete)</span>
+            <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">
+              US$ {{ "%.2f"|format((i.financials.fob_negotiated_usd if i.financials else (i.pi_amount_usd or i.ci_amount_usd or 0)) or 0) }}
             </div>
-            <small style="color: var(--muted); font-size: 11px;">FOB negociado</small>
+            <small style="color: var(--muted); font-size: 11px;">FOB negociado real</small>
+          </div>
+
+          <!-- Frete Marítimo (US$) -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #0284C7;">
+            <span class="comex-label">Frete Marítimo (US$)</span>
+            <div style="font-size: 18px; font-weight: 800; color: #0284C7;">
+              US$ {{ "%.2f"|format((i.financials.ocean_freight_usd if i.financials else 0) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Frete Internacional</small>
           </div>
 
           <!-- Total Desembolsado -->
           <div class="comex-card-subtle">
             <span class="comex-label">Total Desembolsado</span>
-            <div style="font-size: 20px; font-weight: 800; color: var(--text);">
+            <div style="font-size: 18px; font-weight: 800; color: var(--text);">
               R$ {{ "%.2f"|format((i.financials.total_disbursed_brl if i.financials else 0) or 0) }}
             </div>
             <small style="color: var(--muted); font-size: 11px;">Líquido Brasil + China</small>
