@@ -10,6 +10,7 @@ import base64
 import hashlib
 import json
 import logging
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -24,6 +25,40 @@ def calculate_file_hash(content: bytes) -> str:
     return hashlib.md5(content).hexdigest()
 
 
+def detect_file_mime(file_bytes: bytes, filename: str, mime_type: str | None = None) -> tuple[str, bool]:
+    """Detecta o MIME type real e se é PDF inspecionando magic bytes do arquivo."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    
+    # Inspecionar Magic Bytes nativos do arquivo
+    if file_bytes.startswith(b"%PDF"):
+        return "application/pdf", True
+    if file_bytes.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg", False
+    if file_bytes.startswith(b"\x89PNG"):
+        return "image/png", False
+    if file_bytes.startswith(b"RIFF") and b"WEBP" in file_bytes[:16]:
+        return "image/webp", False
+    if file_bytes.startswith(b"GIF8"):
+        return "image/gif", False
+
+    # Fallback por extensão
+    if ext == "pdf":
+        return "application/pdf", True
+    if ext in ["jpg", "jpeg"]:
+        return "image/jpeg", False
+    if ext == "png":
+        return "image/png", False
+    if ext == "webp":
+        return "image/webp", False
+    if ext in ["heic", "heif"]:
+        return "image/heic", False
+
+    if mime_type and "image/" in mime_type:
+        return mime_type, False
+
+    return mime_type or "application/pdf", (mime_type == "application/pdf" or ext == "pdf")
+
+
 def extract_receipt_data(
     file_bytes: bytes,
     filename: str,
@@ -32,11 +67,11 @@ def extract_receipt_data(
     default_payment_source: str = "Conta da Empresa",
 ) -> dict[str, Any]:
     """
-    Processa um comprovante bancário ou recibo via IA multimodal / OCR.
-    Retorna dicionário padronizado com campos para preenchimento da planilha M-Pay.
+    Processa um comprovante bancário, foto de recibo impresso/manuscrito ou nota via IA Gemini Multimodal.
+    Retorna dicionário padronizado garantindo preenchimento de Data, Valor e Descrição.
     """
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    is_pdf = mime_type == "application/pdf" or ext == "pdf"
+    real_mime, is_pdf = detect_file_mime(file_bytes, filename, mime_type)
+    today_str = date.today().isoformat()
     
     extracted_text = ""
     if is_pdf:
@@ -47,38 +82,38 @@ def extract_receipt_data(
 
     parts: list[dict[str, Any]] = []
 
-    # Prompt especialista em comprovantes bancários brasileiros e internacionais
+    # Prompt especialista em comprovantes bancários, fotos de celular, recibos manuais e cupons fiscais
     prompt_text = f"""
-Você é um auditor financeiro especialista em conferência de comprovantes de pagamento e transferências bancárias.
-Analise detalhadamente o comprovante de pagamento fornecido: "{filename}".
+Você é um auditor financeiro sênior especialista em leitura e auditoria de comprovantes de pagamento, recibos em papel, fotos de notas, recibos manuscritos e comprovantes de transferências (PIX, TED, Boletos, Cartões).
+Analise com extrema atenção a imagem/documento fornecido: "{filename}".
 
-EXTRAIA COM RIGOR OS SEGUINTES CAMPOS EM FORMATO JSON:
-- "paid_at": Data do pagamento/débito no formato "YYYY-MM-DD" (Ex: "2026-09-25"). Se encontrar apenas dia e mês com ano abreviado, ajuste para ano completo de 4 dígitos. Se não encontrar, retorne null.
-- "paying_company": Empresa pagadora identificada no documento se explicitamente citada ("M-one", "Colvix", "Maj Antiga", "Maj Vitória", "Factor", "Groove"). Se não for claramente mencionada, use exatamente "{default_paying_company}".
-- "payment_source": Origem/forma do pagamento ("Conta da Empresa" para conta bancária/PIX/TED/boleto ou "Dinheiro" para recibo em espécie/papel). Se não identificada, use "{default_payment_source}".
-- "beneficiary_name": Nome completo ou Razão Social do FAVORECIDO / DESTINATÁRIO / QUEM RECEBEU O PAGAMENTO (Ex: "COLVIX TRADING IMPORT LTDA", "João da Silva", "Enel SP", etc.). Nunca coloque o nome do pagador aqui!
-- "beneficiary_document": CPF, CNPJ ou Chave PIX do favorecido (limpe caracteres especiais opcionais se quiser, ou mantenha legível). Se não informado, retorne null.
-- "amount": Valor monetário efetivamente pago/debitado em número decimal (Ex: 1250.50, 48499.00). Não inclua símbolo de moeda. Se não encontrar, retorne 0.00.
-- "currency": "BRL" para Real ou "USD" / "EUR" se for internacional. Padrão: "BRL".
-- "bank_origin": Nome da instituição financeira ou banco por onde foi feito o pagamento (Ex: "Itaú", "Bradesco", "Banco do Brasil", "Santander", "Nubank", "Banco BS2", "Banco Inter", "C6 Bank", "Sicoob", "Sicredi", etc.).
-- "payment_method": Tipo do pagamento: "PIX", "TED", "DOC", "BOLETO", "CARTAO", "SWIFT", "DEBITO_AUTOMATICO" ou "OUTRO".
-- "category": Categoria sugerida de despesa (Ex: "Fornecedor", "Impostos / Tributos", "Frete / Logística", "Serviços", "Operacional", "Aluguel", "Geral").
-- "notes": Código de autenticação bancária, ID da transação PIX (E2E), protocolo ou observação relevante do comprovante.
+EXTRAIA OBRIGATORIAMENTE OS CAMPOS EM FORMATO JSON:
+1. "paid_at": Data do pagamento/recibo no formato "YYYY-MM-DD". Procure datas impressas ou manuscritas no recibo (Ex: "26/09/2026", "25/09/26", "25 de Setembro de 2026"). Se encontrar ano com 2 dígitos, converta para 4 dígitos (Ex: 2026). Se NÃO encontrar nenhuma data escrita no documento, retorne exatamente "{today_str}".
+2. "paying_company": Empresa que pagou/emitiu o pagamento se citada ("M-one", "Colvix", "Maj Antiga", "Maj Vitória", "Factor", "Groove"). Se não informada, use exatamente "{default_paying_company}".
+3. "payment_source": Forma de pagamento ("Conta da Empresa" para PIX/TED/banco ou "Dinheiro" para recibos em papel/espécie). Se for recibo em papel/manuscrito ou dinheiro, use "Dinheiro". Senão use "{default_payment_source}".
+4. "beneficiary_name": Nome completo, Razão Social ou Pessoa/Empresa que RECEBEU o dinheiro / Favorecido (Ex: "João da Silva", "Mercado X", "Estacionamento Y", "Fornecedor Z").
+5. "beneficiary_document": CPF, CNPJ ou Chave PIX do favorecido se houver.
+6. "amount": Valor monetário TOTAL efetivamente pago/recebido em número decimal (Ex: 150.00, 48.50, 1250.00). Procure por "Total", "Valor", "R$", "Importância de", "Soma". Não retorne 0.00 a menos que realmente não haja valor visível.
+7. "currency": "BRL" para Real.
+8. "bank_origin": Nome do banco de origem (Ex: "Itaú", "Bradesco", "Banco do Brasil", "Nubank", "Banco Inter", etc.). Se for recibo físico em dinheiro, coloque "Dinheiro / Em Espécie".
+9. "payment_method": "PIX", "TED", "BOLETO", "CARTAO", "DINHEIRO" ou "OUTRO".
+10. "category": Categoria da despesa (Ex: "Operacional", "Alimentação", "Transporte / Frete", "Manutenção", "Serviços", "Suprimentos", "Geral").
+11. "notes": DESCRIÇÃO DA DESPESA ou Histórico/Motivo do recibo (Ex: "Referente a compra de material", "Combustível", "Serviço prestado", "Autenticação N° 123456"). Nunca deixe vazio se houver qualquer descrição ou detalhe no recibo!
 
 RESPOSTA OBRIGATÓRIA:
 Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes ou depois:
 {{
-  "paid_at": "YYYY-MM-DD",
+  "paid_at": "{today_str}",
   "paying_company": "{default_paying_company}",
   "payment_source": "{default_payment_source}",
   "beneficiary_name": "Nome do Favorecido",
-  "beneficiary_document": "CPF/CNPJ/Chave Pix",
+  "beneficiary_document": "CPF/CNPJ/Pix",
   "amount": 0.00,
   "currency": "BRL",
-  "bank_origin": "Nome do Banco",
+  "bank_origin": "Banco de Origem",
   "payment_method": "PIX",
   "category": "Geral",
-  "notes": "Autenticação / Protocolo"
+  "notes": "Descrição da despesa ou motivo"
 }}
 """
 
@@ -86,22 +121,12 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
     if len(extracted_text.strip()) > 50:
         parts.append({"text": f"{prompt_text}\n\n--- TEXTO NATIVO EXTRAÍDO DO COMPROVANTE ---\n{extracted_text[:14000]}"})
     else:
-        # Modo multimodal: envia o arquivo (PDF ou imagem) em base64
-        inline_mime = mime_type
-        if is_pdf:
-            inline_mime = "application/pdf"
-        elif ext in ["jpg", "jpeg"]:
-            inline_mime = "image/jpeg"
-        elif ext == "png":
-            inline_mime = "image/png"
-        elif ext == "webp":
-            inline_mime = "image/webp"
-
+        # Modo multimodal para fotos de celular e imagens
         b64_content = base64.b64encode(file_bytes).decode("utf-8")
         parts.append({"text": prompt_text})
         parts.append({
             "inlineData": {
-                "mimeType": inline_mime,
+                "mimeType": real_mime,
                 "data": b64_content,
             }
         })
@@ -131,11 +156,19 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
 
         data = json.loads(raw_text.strip())
 
-        # Garantir que empresa pagadora e origem do pagamento estejam presentes
+        # Garantir preenchimento dos campos essenciais se nulos/vazios
+        if not data.get("paid_at") or str(data.get("paid_at")).strip() in ["null", "", "None"]:
+            data["paid_at"] = today_str
+
         if not data.get("paying_company"):
             data["paying_company"] = default_paying_company
         if not data.get("payment_source"):
             data["payment_source"] = default_payment_source
+
+        if not data.get("notes") or not str(data.get("notes")).strip():
+            b_name = data.get("beneficiary_name") or "Favorecido"
+            cat = data.get("category") or "Despesa"
+            data["notes"] = f"{cat} - {b_name} (Recibo {filename})"
 
         # Avaliar grau de confiança na extração
         has_amount = float(data.get("amount") or 0) > 0
@@ -162,18 +195,19 @@ def fallback_receipt(
     default_paying_company: str = "M-one",
     default_payment_source: str = "Conta da Empresa",
 ) -> dict[str, Any]:
-    """Retorno padrão caso a IA falhe ou o arquivo não seja legível, permitindo preenchimento manual."""
+    """Retorno padrão garantindo data de hoje e observações legíveis para edição rápida."""
+    today_str = date.today().isoformat()
     return {
-        "paid_at": None,
+        "paid_at": today_str,
         "paying_company": default_paying_company,
         "payment_source": default_payment_source,
-        "beneficiary_name": "",
+        "beneficiary_name": "Novo Favorecido",
         "beneficiary_document": "",
         "amount": 0.00,
         "currency": "BRL",
-        "bank_origin": "",
+        "bank_origin": "Dinheiro / Banco",
         "payment_method": "OUTRO",
         "category": "Geral",
-        "notes": f"Preenchimento manual (arquivo: {filename})",
+        "notes": f"Recibo capturado: {filename}",
         "confidence_status": "manual",
     }
