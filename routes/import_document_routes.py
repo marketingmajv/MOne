@@ -101,14 +101,15 @@ def upload_documents_batch(iid: int):
 
             doc_type = ai_res.get("doc_type", "OTHER")
             title = ai_res.get("title", orig_filename)
-            extracted_data = ai_res.get("data", {})
+            extracted_data = ai_res.get("data") or ai_res.get("extracted_data") or {}
 
-            conn.execute(
+            new_doc = conn.execute(
                 """
                 INSERT INTO import_documents (
                     import_id, doc_type, title, filename, file_url, file_size, file_hash,
                     extracted_data, ai_status, uploaded_by
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'processed', %s)
+                RETURNING id
                 """,
                 (
                     iid,
@@ -121,8 +122,66 @@ def upload_documents_batch(iid: int):
                     json.dumps(extracted_data),
                     user_id,
                 ),
-            )
+            ).fetchone()
+            doc_id = new_doc["id"] if new_doc else None
             imported_count += 1
+
+            # Inclusão e vinculação automática de lançamentos no financeiro via IA
+            try:
+                amt_val = float(extracted_data.get("total_amount") or 0)
+                issue_date = extracted_data.get("issue_date") or None
+                summary_text = extracted_data.get("summary") or f"{title} ({orig_filename})"
+
+                # 1. Numerário Aduaneiro
+                if doc_type in ["NUMERARIO", "FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"]:
+                    entry_type = "actual_expense" if doc_type in ["FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"] else "advance"
+                    conn.execute(
+                        """
+                        INSERT INTO import_numerario (import_id, entry_type, amount, entry_date, description, document_id)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (iid, entry_type, amt_val, issue_date, summary_text, doc_id),
+                    )
+
+                # 2. Despesas e Tributos no Brasil
+                elif doc_type in ["ICMS_GUIDE", "TAX_GUIDE", "NF_FRETE_CARRETA", "AGENTE_CARGA_BR", "AJUDANTES_PAGTO", "ENTRY_NF"]:
+                    cat_map = {
+                        "ICMS_GUIDE": "impostos",
+                        "TAX_GUIDE": "impostos",
+                        "NF_FRETE_CARRETA": "transporte_rodoviario",
+                        "AGENTE_CARGA_BR": "taxa_maritima",
+                        "AJUDANTES_PAGTO": "outras",
+                        "ENTRY_NF": "outras",
+                    }
+                    category = cat_map.get(doc_type, "outras")
+                    provider_name = extracted_data.get("supplier_name") or extracted_data.get("buyer_name") or DOC_TYPES_MAP.get(doc_type, "Lançamento IA")
+                    conn.execute(
+                        """
+                        INSERT INTO import_brazil_expenses (
+                            import_id, category, provider, description, predicted_amount, actual_amount,
+                            paid_at, payment_mode, document_id
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'direct', %s)
+                        """,
+                        (iid, category, provider_name, summary_text, amt_val, amt_val, issue_date, doc_id),
+                    )
+
+                # 3. Pagamentos na China / Remessas / Câmbio
+                elif doc_type in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT"]:
+                    curr = (extracted_data.get("currency") or "USD").upper()
+                    amt_usd = amt_val if curr == "USD" else 0.0
+                    amt_brl = amt_val if curr == "BRL" else 0.0
+                    exch_rate = extracted_data.get("exchange_rate") or None
+                    conn.execute(
+                        """
+                        INSERT INTO import_payments_china (
+                            import_id, payment_category, description, amount_usd, amount_brl,
+                            exchange_rate, paid_at, document_id, is_verified
+                        ) VALUES (%s, 'ci_payment', %s, %s, %s, %s, %s, %s, TRUE)
+                        """,
+                        (iid, summary_text, amt_usd, amt_brl, exch_rate, issue_date, doc_id),
+                    )
+            except Exception as auto_err:
+                logger.warning("[upload_documents_batch] Falha na inserção automática do financeiro para %s: %s", orig_filename, auto_err)
 
             # Vinculação automática de chassis ao estoque se for planilha/CHASSIS_LIST
             if doc_type == "CHASSIS_LIST" or orig_filename.lower().endswith((".xlsx", ".xls", ".csv")):
@@ -165,7 +224,7 @@ def upload_documents_batch(iid: int):
         run_import_audit_checks(iid, conn)
         audit("import.documents_uploaded", f"import_id={iid}, added={imported_count}, duplicates={duplicate_count}")
 
-    msg = f"{imported_count} documento(s) classificado(s) e anexado(s) com sucesso!"
+    msg = f"🤖 IA Analisou: {imported_count} documento(s) classificado(s) e incluído(s) automaticamente no financeiro!"
     if duplicate_count > 0:
         msg += f" ({duplicate_count} arquivo(s) duplicado(s) ignorado(s))."
     flash(msg, "success")
