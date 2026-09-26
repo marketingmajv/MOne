@@ -170,7 +170,8 @@ def upload_documents_batch(iid: int):
         msg += f" ({duplicate_count} arquivo(s) duplicado(s) ignorado(s))."
     flash(msg, "success")
 
-    return redirect(url_for("imports.import_detail", iid=iid, tab="documents"))
+    target_tab = request.args.get("tab") or request.form.get("tab") or "documents"
+    return redirect(url_for("imports.import_detail", iid=iid, tab=target_tab))
 
 
 @import_document_bp.route("/api/imports/<int:iid>/documents/<int:doc_id>/reclassify", methods=["POST"])

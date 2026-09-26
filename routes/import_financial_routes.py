@@ -132,8 +132,38 @@ def add_expense_brazil(iid: int):
     icms_in_num = bool(request.form.get("icms_in_numerario"))
     doc_id = request.form.get("document_id") or None
 
+    receipt_file = request.files.get("receipt_file")
+    me = current_user() or {}
+
     try:
         with db() as conn:
+            if receipt_file and receipt_file.filename:
+                orig_filename = secure_filename(receipt_file.filename)
+                file_bytes = receipt_file.read()
+                if file_bytes:
+                    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
+                    os.makedirs(upload_folder, exist_ok=True)
+                    from services.import_ai_service import calculate_file_hash
+                    file_hash = calculate_file_hash(file_bytes)
+                    unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
+                    save_path = os.path.join(upload_folder, unique_filename)
+                    with open(save_path, "wb") as out_f:
+                        out_f.write(file_bytes)
+                    doc_type = "TAX_GUIDE" if category == "impostos" else "OTHER"
+                    title = f"Comprovante Despesa - {provider or description or category}"
+                    new_doc = conn.execute(
+                        """
+                        INSERT INTO import_documents (
+                            import_id, doc_type, title, filename, file_url, file_size, file_hash,
+                            extracted_data, ai_status, uploaded_by
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, '{}', 'manual', %s)
+                        RETURNING id
+                        """,
+                        (iid, doc_type, title, orig_filename, unique_filename, len(file_bytes), file_hash, me.get("id")),
+                    ).fetchone()
+                    if new_doc:
+                        doc_id = new_doc["id"]
+
             conn.execute(
                 """
                 INSERT INTO import_brazil_expenses (
@@ -182,8 +212,38 @@ def add_numerario_entry(iid: int):
     description = request.form.get("description", "").strip()
     doc_id = request.form.get("document_id") or None
 
+    receipt_file = request.files.get("receipt_file")
+    me = current_user() or {}
+
     try:
         with db() as conn:
+            if receipt_file and receipt_file.filename:
+                orig_filename = secure_filename(receipt_file.filename)
+                file_bytes = receipt_file.read()
+                if file_bytes:
+                    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
+                    os.makedirs(upload_folder, exist_ok=True)
+                    from services.import_ai_service import calculate_file_hash
+                    file_hash = calculate_file_hash(file_bytes)
+                    unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
+                    save_path = os.path.join(upload_folder, unique_filename)
+                    with open(save_path, "wb") as out_f:
+                        out_f.write(file_bytes)
+                    doc_type = "BROKER_PROOF" if entry_type == "actual_expense" else ("PAYMENT_PROOF" if entry_type == "advance" else "OTHER")
+                    title = f"Comprovante Numerário - {description or entry_type}"
+                    new_doc = conn.execute(
+                        """
+                        INSERT INTO import_documents (
+                            import_id, doc_type, title, filename, file_url, file_size, file_hash,
+                            extracted_data, ai_status, uploaded_by
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, '{}', 'manual', %s)
+                        RETURNING id
+                        """,
+                        (iid, doc_type, title, orig_filename, unique_filename, len(file_bytes), file_hash, me.get("id")),
+                    ).fetchone()
+                    if new_doc:
+                        doc_id = new_doc["id"]
+
             conn.execute(
                 """
                 INSERT INTO import_numerario (import_id, entry_type, amount, entry_date, description, document_id)

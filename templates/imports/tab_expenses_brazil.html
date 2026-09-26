@@ -99,7 +99,7 @@
       <h3>Adicionar Despesa / Tributo no Brasil</h3>
       <button type="button" onclick="document.getElementById('addExpenseModal').style.display='none'">×</button>
     </div>
-    <form method="post" action="{{ url_for('import_financial.add_expense_brazil', iid=i.id) }}" class="form-grid">
+    <form method="post" action="{{ url_for('import_financial.add_expense_brazil', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
       <label>Categoria da Despesa
         <select name="category" required>
           <option value="impostos">Impostos de Importação (II, IPI, PIS, COFINS, ICMS)</option>
@@ -140,6 +140,11 @@
         <input type="checkbox" name="icms_in_numerario" id="icms_in_num" value="true">
         <label for="icms_in_num" style="margin: 0; font-weight: normal; cursor: pointer; color: var(--text);">
           ICMS Pago via Conta Corrente do Despachante Aduaneiro (Gare/Guia)
+        </label>
+      </div>
+      <div class="span-2">
+        <label>Anexar Comprovante / Nota Fiscal / Fatura (PDF, Imagem, XLSX)
+          <input type="file" name="receipt_file" accept=".pdf,image/*,.xlsx,.xls,.csv">
         </label>
       </div>
       <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">

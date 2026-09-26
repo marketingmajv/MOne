@@ -11,9 +11,17 @@
           <span style="color: #B45309; font-weight: 700;">⚖️ Regra Contábil de Rigor:</span> A transferência ao despachante entra no controle de desembolso financeiro; as despesas comprovadas entram na composição de custo. <em style="color: var(--text);">Nunca são somados ambos no mesmo total</em>.
         </p>
       </div>
-      <button class="btn sm primary" onclick="document.getElementById('addNumerarioModal').style.display='flex'">
-        + Lançar Movimentação de Numerário
-      </button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='numerario') }}" enctype="multipart/form-data" style="display: inline;">
+          <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="numerarioHeaderFileInput" style="display: none;" onchange="this.form.submit()">
+          <button type="button" class="btn sm secondary" onclick="document.getElementById('numerarioHeaderFileInput').click()" style="font-weight: 700; border-color: rgba(217, 119, 6, 0.4); color: #D97706;">
+            📁 Subir Comprovantes / Arquivos
+          </button>
+        </form>
+        <button class="btn sm primary" onclick="document.getElementById('addNumerarioModal').style.display='flex'">
+          + Lançar Movimentação de Numerário
+        </button>
+      </div>
     </div>
 
     <!-- Indicadores de Conciliação -->
@@ -36,6 +44,31 @@
           {{ financials.numerario_balance_brl|money }}
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Área de Upload de Arquivos / Comprovantes -->
+  <div class="comex-card" style="margin-bottom: 24px; border: 2px dashed rgba(217, 119, 6, 0.35); background: var(--panel2); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(217, 119, 6, 0.12); color: #D97706; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+          📄
+        </div>
+        <div>
+          <h5 style="margin: 0; font-size: 14.5px; color: var(--text); font-weight: 700;">
+            Espaço para Envio de Comprovantes & Extratos do Despachante
+          </h5>
+          <p style="margin: 4px 0 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.4;">
+            Faça upload de recibos de adiantamento, comprovantes de tarifas, guias de impostos ou relatórios de prestação de contas.
+          </p>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='numerario') }}" enctype="multipart/form-data" style="display: inline;">
+        <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="numerarioDropFileInput" style="display: none;" onchange="this.form.submit()">
+        <button type="button" class="btn primary sm" onclick="document.getElementById('numerarioDropFileInput').click()" style="font-weight: 700; height: 38px; padding: 0 16px;">
+          + Selecionar & Subir Arquivos
+        </button>
+      </form>
     </div>
   </div>
 
@@ -103,7 +136,7 @@
       <h3>Lançar Movimentação de Numerário Aduaneiro</h3>
       <button type="button" onclick="document.getElementById('addNumerarioModal').style.display='none'">×</button>
     </div>
-    <form method="post" action="{{ url_for('import_financial.add_numerario_entry', iid=i.id) }}" class="form-grid">
+    <form method="post" action="{{ url_for('import_financial.add_numerario_entry', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
       <label>Tipo de Movimentação
         <select name="entry_type" required>
           <option value="advance">Adiantamento Transferido à Conta do Despachante</option>
@@ -122,6 +155,11 @@
       <div class="span-2">
         <label>Valor (R$)
           <input type="number" step="0.01" name="amount" placeholder="0.00" required>
+        </label>
+      </div>
+      <div class="span-2">
+        <label>Anexar Comprovante / Recibo / Extrato (PDF, Imagem, XLSX)
+          <input type="file" name="receipt_file" accept=".pdf,image/*,.xlsx,.xls,.csv">
         </label>
       </div>
       <div class="span-2 flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line);">
