@@ -25,6 +25,32 @@
     </div>
   </div>
 
+  <!-- Espaço para Envio de Arquivos / Inclusão Automática via IA -->
+  <div class="comex-card" style="margin-bottom: 24px; border: 2px dashed rgba(37, 99, 235, 0.35); background: var(--panel2); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(37, 99, 235, 0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+          🤖
+        </div>
+        <div>
+          <h5 style="margin: 0; font-size: 14.5px; color: var(--text); font-weight: 700;">
+            Espaço para Envio de Documentos do Processo (Inclusão Automática via IA)
+          </h5>
+          <p style="margin: 4px 0 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.4;">
+            Faça upload de Invoices, Guias, Comprovantes ou Planilhas. A IA analisa, extrai dados e atualiza o Fator de Custo e Total Desembolsado.
+          </p>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='costs_factor') }}" enctype="multipart/form-data" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="costsFactorDropFileInput" style="display: none;" onchange="this.form.submit()">
+        <button type="button" class="btn primary sm" onclick="document.getElementById('costsFactorDropFileInput').click()" style="font-weight: 700; height: 38px; padding: 0 16px;">
+          + Selecionar & Subir Arquivos (IA)
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Fórmula Matemática Visual -->
   <div class="comex-card">
     <div class="comex-label" style="margin-bottom: 16px;">Decomposição da Fórmula de Custo Real</div>
