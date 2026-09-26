@@ -32,9 +32,37 @@ from services.import_rules_service import (
     update_document_rule_details,
 )
 
+import re
+from typing import Any
+
 logger = logging.getLogger(__name__)
 
 import_document_bp = Blueprint("import_document", __name__)
+
+
+def clean_float(val: Any) -> float:
+    """Converte com segurança valores numéricos ou strings formatadas (ex: 'R$ 1.500,00', '1,500.00') em float."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).strip()
+    if not s:
+        return 0.0
+    s = re.sub(r"[^\d.,-]", "", s)
+    if not s:
+        return 0.0
+    if "," in s and "." in s:
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "," in s:
+        s = s.replace(",", ".")
+    try:
+        return float(s)
+    except Exception:
+        return 0.0
 
 
 @import_document_bp.route("/api/imports/<int:iid>/documents/upload-batch", methods=["POST"])
@@ -101,7 +129,10 @@ def upload_documents_batch(iid: int):
 
             doc_type = ai_res.get("doc_type", "OTHER")
             title = ai_res.get("title", orig_filename)
-            extracted_data = ai_res.get("data") or ai_res.get("extracted_data") or {}
+            extracted_data = ai_res.get("extracted_data") or ai_res.get("data") or {}
+
+            if not isinstance(extracted_data, dict):
+                extracted_data = {}
 
             new_doc = conn.execute(
                 """
@@ -128,9 +159,11 @@ def upload_documents_batch(iid: int):
 
             # Inclusão e vinculação automática de lançamentos no financeiro via IA
             try:
-                amt_val = float(extracted_data.get("total_amount") or 0)
+                amt_val = clean_float(extracted_data.get("total_amount"))
                 issue_date = extracted_data.get("issue_date") or None
-                summary_text = extracted_data.get("summary") or f"{title} ({orig_filename})"
+                if issue_date and len(str(issue_date)) < 8:
+                    issue_date = None
+                summary_text = str(extracted_data.get("summary") or f"{title} ({orig_filename})")
 
                 # 1. Numerário Aduaneiro
                 if doc_type in ["NUMERARIO", "FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"]:
@@ -154,7 +187,7 @@ def upload_documents_batch(iid: int):
                         "ENTRY_NF": "outras",
                     }
                     category = cat_map.get(doc_type, "outras")
-                    provider_name = extracted_data.get("supplier_name") or extracted_data.get("buyer_name") or DOC_TYPES_MAP.get(doc_type, "Lançamento IA")
+                    provider_name = str(extracted_data.get("supplier_name") or extracted_data.get("buyer_name") or DOC_TYPES_MAP.get(doc_type, "Lançamento IA"))
                     conn.execute(
                         """
                         INSERT INTO import_brazil_expenses (
@@ -167,10 +200,10 @@ def upload_documents_batch(iid: int):
 
                 # 3. Pagamentos na China / Remessas / Câmbio
                 elif doc_type in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT"]:
-                    curr = (extracted_data.get("currency") or "USD").upper()
-                    amt_usd = amt_val if curr == "USD" else 0.0
-                    amt_brl = amt_val if curr == "BRL" else 0.0
-                    exch_rate = extracted_data.get("exchange_rate") or None
+                    curr = str(extracted_data.get("currency") or "USD").upper()
+                    amt_usd = amt_val if "USD" in curr else 0.0
+                    amt_brl = amt_val if "BRL" in curr else 0.0
+                    exch_rate = clean_float(extracted_data.get("exchange_rate")) or None
                     conn.execute(
                         """
                         INSERT INTO import_payments_china (
@@ -181,7 +214,7 @@ def upload_documents_batch(iid: int):
                         (iid, summary_text, amt_usd, amt_brl, exch_rate, issue_date, doc_id),
                     )
             except Exception as auto_err:
-                logger.warning("[upload_documents_batch] Falha na inserção automática do financeiro para %s: %s", orig_filename, auto_err)
+                logger.warning("[upload_documents_batch] Falha na inserção automática do financeiro para %s: %s", orig_filename, auto_err, exc_info=True)
 
             # Vinculação automática de chassis ao estoque se for planilha/CHASSIS_LIST
             if doc_type == "CHASSIS_LIST" or orig_filename.lower().endswith((".xlsx", ".xls", ".csv")):
