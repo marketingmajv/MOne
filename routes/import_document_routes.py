@@ -65,6 +65,31 @@ def clean_float(val: Any) -> float:
         return 0.0
 
 
+def parse_date_safe(val: Any) -> str | None:
+    """Converte qualquer string ou data (ex: '11/09/2026', '11/09/26', '2026-09-11') em formato ISO 'YYYY-MM-DD' aceito pelo PostgreSQL."""
+    if not val:
+        return None
+    s = str(val).strip()
+    if not s or s.lower() in ["null", "none", "n/d", "—", "undefined"]:
+        return None
+
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+        return s
+
+    m = re.match(r"^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})$", s)
+    if m:
+        day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if year < 100:
+            year += 2000
+        try:
+            from datetime import date
+            return date(year, month, day).strftime("%Y-%m-%d")
+        except Exception:
+            return None
+
+    return None
+
+
 def extract_amount_from_doc(extracted_data: dict[str, Any], text_content: str = "", filename: str = "") -> float:
     """Extrai o valor numérico de forma resiliente via IA, dicionário ou regex no texto do arquivo."""
     # 1. Tentar chaves conhecidas do JSON retornado pela IA
@@ -259,9 +284,7 @@ def upload_documents_batch(iid: int):
                     text_content = extract_text_from_spreadsheet(file_bytes, orig_filename)
 
                 amt_val = extract_amount_from_doc(extracted_data, text_content, orig_filename)
-                issue_date = extracted_data.get("issue_date") or None
-                if issue_date and len(str(issue_date)) < 8:
-                    issue_date = None
+                issue_date = parse_date_safe(extracted_data.get("issue_date") or extracted_data.get("date"))
                 summary_text = str(extracted_data.get("summary") or f"{title} ({orig_filename})")
 
                 target_tab = (request.args.get("tab") or request.form.get("tab") or "documents").strip().lower()
@@ -277,7 +300,7 @@ def upload_documents_batch(iid: int):
                     conn.execute(
                         """
                         INSERT INTO import_numerario (import_id, entry_type, amount, entry_date, description, document_id)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, COALESCE(%s, CURRENT_DATE), %s, %s)
                         """,
                         (iid, entry_type, amt_val, issue_date, summary_text, doc_id),
                     )
@@ -299,7 +322,7 @@ def upload_documents_batch(iid: int):
                         INSERT INTO import_brazil_expenses (
                             import_id, category, provider, description, predicted_amount, actual_amount,
                             paid_at, payment_mode, document_id
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'direct', %s)
+                        ) VALUES (%s, %s, %s, %s, %s, %s, COALESCE(%s, CURRENT_DATE), 'direct', %s)
                         """,
                         (iid, category, provider_name, summary_text, amt_val, amt_val, issue_date, doc_id),
                     )
@@ -320,7 +343,7 @@ def upload_documents_batch(iid: int):
                         INSERT INTO import_payments_china (
                             import_id, payment_category, description, amount_usd, amount_brl,
                             exchange_rate, paid_at, document_id, is_verified
-                        ) VALUES (%s, 'ci_payment', %s, %s, %s, %s, %s, %s, TRUE)
+                        ) VALUES (%s, 'ci_payment', %s, %s, %s, %s, COALESCE(%s, CURRENT_DATE), %s, TRUE)
                         """,
                         (iid, summary_text, amt_usd, amt_brl, exch_rate, issue_date, doc_id),
                     )
