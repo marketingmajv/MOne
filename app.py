@@ -75,7 +75,7 @@ def validate_csrf():
             if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify({"success": False, "error": "Token de segurança CSRF inválido ou expirado."}), 403
             flash("Sua sessão de segurança expirou. Por favor, tente novamente.", "danger")
-            return redirect(request.referrer or url_for("dashboard")), 403
+            return redirect(request.referrer or url_for("dashboard"))
 
 
 @app.after_request

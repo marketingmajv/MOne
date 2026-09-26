@@ -28,6 +28,7 @@
         {% endif %}
 
         <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id) }}" enctype="multipart/form-data" id="batchDocForm" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="batchFileInput" style="display: none;" onchange="this.form.submit()">
           <button type="button" class="btn primary sm" onclick="document.getElementById('batchFileInput').click()" style="font-weight: 700; height: 36px; padding: 0 14px;">
             + Enviar Arquivos
@@ -81,6 +82,7 @@
               <div style="display: flex; gap: 6px; align-items: center;">
                 <!-- Reclassificar -->
                 <form method="post" action="{{ url_for('import_document.reclassify_document', iid=i.id, doc_id=d.id) }}" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="doc_type" onchange="this.form.submit()" style="font-size: 11px; padding: 4px 6px; border-radius: 6px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
                     {% for code, label in doc_types.items() %}
                       <option value="{{ code }}" {% if d.doc_type == code %}selected{% endif %}>{{ label }}</option>
@@ -90,6 +92,7 @@
 
                 <!-- Excluir -->
                 <form method="post" action="{{ url_for('import_document.delete_document', iid=i.id, doc_id=d.id) }}" onsubmit="return confirm('Excluir este documento?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn sm" title="Excluir documento" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px;">🗑️</button>
                 </form>
               </div>

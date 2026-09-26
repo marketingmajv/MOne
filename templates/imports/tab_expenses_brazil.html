@@ -76,6 +76,7 @@
                 </td>
                 <td style="text-align: center;">
                   <form method="post" action="{{ url_for('import_financial.delete_expense_brazil', iid=i.id, eid=e.id) }}" onsubmit="return confirm('Remover esta despesa?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
                   </form>
                 </td>
@@ -100,6 +101,7 @@
       <button type="button" onclick="document.getElementById('addExpenseModal').style.display='none'">×</button>
     </div>
     <form method="post" action="{{ url_for('import_financial.add_expense_brazil', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>Categoria da Despesa
         <select name="category" required>
           <option value="impostos">Impostos de Importação (II, IPI, PIS, COFINS, ICMS)</option>

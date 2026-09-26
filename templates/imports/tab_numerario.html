@@ -13,6 +13,7 @@
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='numerario') }}" enctype="multipart/form-data" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="numerarioHeaderFileInput" style="display: none;" onchange="this.form.submit()">
           <button type="button" class="btn sm secondary" onclick="document.getElementById('numerarioHeaderFileInput').click()" style="font-weight: 700; border-color: rgba(217, 119, 6, 0.4); color: #D97706;">
             📁 Subir Comprovantes / Arquivos
@@ -64,6 +65,7 @@
         </div>
       </div>
       <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='numerario') }}" enctype="multipart/form-data" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="numerarioDropFileInput" style="display: none;" onchange="this.form.submit()">
         <button type="button" class="btn primary sm" onclick="document.getElementById('numerarioDropFileInput').click()" style="font-weight: 700; height: 38px; padding: 0 16px;">
           + Selecionar & Subir Arquivos
@@ -113,6 +115,7 @@
                 </td>
                 <td style="text-align: center;">
                   <form method="post" action="{{ url_for('import_financial.delete_numerario_entry', iid=i.id, nid=n.id) }}" onsubmit="return confirm('Remover este lançamento do numerário?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn sm" style="color: #EF4444; background: none; border: none; cursor: pointer; font-size: 14px;">✕</button>
                   </form>
                 </td>
@@ -137,6 +140,7 @@
       <button type="button" onclick="document.getElementById('addNumerarioModal').style.display='none'">×</button>
     </div>
     <form method="post" action="{{ url_for('import_financial.add_numerario_entry', iid=i.id) }}" enctype="multipart/form-data" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label>Tipo de Movimentação
         <select name="entry_type" required>
           <option value="advance">Adiantamento Transferido à Conta do Despachante</option>
