@@ -230,49 +230,54 @@ def upload_documents_batch(iid: int):
                 logger.info("Arquivo duplicado detectado para import_id=%d: %s", iid, orig_filename)
                 continue
 
-            # Classificação inteligente com IA se for arquivo novo
-            ai_res = classify_and_extract_document(
-                file_bytes=file_bytes,
-                filename=orig_filename,
-                mime_type=mime,
-                import_context=import_ctx,
-            )
+            try:
+                # Classificação inteligente com IA se for arquivo novo
+                ai_res = classify_and_extract_document(
+                    file_bytes=file_bytes,
+                    filename=orig_filename,
+                    mime_type=mime,
+                    import_context=import_ctx,
+                )
 
-            # Salvar arquivo no disco
-            unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
-            save_path = os.path.join(upload_folder, unique_filename)
-            with open(save_path, "wb") as out_f:
-                out_f.write(file_bytes)
+                # Salvar arquivo no disco
+                unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
+                save_path = os.path.join(upload_folder, unique_filename)
+                with open(save_path, "wb") as out_f:
+                    out_f.write(file_bytes)
 
-            doc_type = ai_res.get("doc_type", "OTHER")
-            title = ai_res.get("title", orig_filename)
-            extracted_data = ai_res.get("extracted_data") or ai_res.get("data") or {}
+                doc_type = ai_res.get("doc_type", "OTHER")
+                title = ai_res.get("title", orig_filename)
+                extracted_data = ai_res.get("extracted_data") or ai_res.get("data") or {}
 
-            if not isinstance(extracted_data, dict):
-                extracted_data = {}
+                if not isinstance(extracted_data, dict):
+                    extracted_data = {}
 
-            new_doc = conn.execute(
-                """
-                INSERT INTO import_documents (
-                    import_id, doc_type, title, filename, file_url, file_size, file_hash,
-                    extracted_data, ai_status, uploaded_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'processed', %s)
-                RETURNING id
-                """,
-                (
-                    iid,
-                    doc_type,
-                    title,
-                    orig_filename,
-                    unique_filename,
-                    len(file_bytes),
-                    file_hash,
-                    json.dumps(extracted_data),
-                    user_id,
-                ),
-            ).fetchone()
-            doc_id = new_doc["id"] if new_doc else None
-            imported_count += 1
+                new_doc = conn.execute(
+                    """
+                    INSERT INTO import_documents (
+                        import_id, doc_type, title, filename, file_url, file_size, file_hash,
+                        extracted_data, ai_status, uploaded_by
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'processed', %s)
+                    RETURNING id
+                    """,
+                    (
+                        iid,
+                        doc_type,
+                        title,
+                        orig_filename,
+                        unique_filename,
+                        len(file_bytes),
+                        file_hash,
+                        json.dumps(extracted_data, default=str),
+                        user_id,
+                    ),
+                ).fetchone()
+                doc_id = new_doc["id"] if new_doc else None
+                imported_count += 1
+            except Exception as file_err:
+                logger.error("[upload_documents_batch] Erro ao processar arquivo %s: %s", orig_filename, file_err, exc_info=True)
+                flash(f"Aviso: Não foi possível processar o arquivo '{orig_filename}': {file_err}", "warning")
+                continue
 
             # Inclusão e vinculação automática de lançamentos no financeiro via IA
             try:
