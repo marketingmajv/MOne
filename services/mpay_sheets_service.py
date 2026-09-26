@@ -87,10 +87,49 @@ def log_mpay_audit(
         logger.error(f"Erro ao registrar auditoria M-Pay: {e}")
 
 
+import base64
+from pathlib import Path
+
+
+def archive_receipt_to_local_gdrive(file_bytes: bytes, orig_filename: str, company: str = "M-one") -> str | None:
+    """Arquiva uma cópia do comprovante na pasta sincronizada do Google Drive Desktop se disponível."""
+    try:
+        cloud_storage = Path.home() / "Library" / "CloudStorage"
+        target_root = None
+        if cloud_storage.exists():
+            maj_drive = cloud_storage / "GoogleDrive-marketingmajv@gmail.com" / "Meu Drive"
+            if maj_drive.exists():
+                target_root = maj_drive / "Comprovantes M-Pay"
+            else:
+                for entry in cloud_storage.glob("GoogleDrive-*"):
+                    my_drive = entry / "Meu Drive"
+                    if my_drive.exists():
+                        target_root = my_drive / "Comprovantes M-Pay"
+                        break
+        if not target_root:
+            legacy_drive = Path.home() / "Google Drive" / "Comprovantes M-Pay"
+            if legacy_drive.parent.exists():
+                target_root = legacy_drive
+
+        if target_root:
+            folder = target_root / (company or "M-one")
+            folder.mkdir(parents=True, exist_ok=True)
+            target_path = folder / orig_filename
+            target_path.write_bytes(file_bytes)
+            logger.info("[M-Pay Drive] Comprovante arquivado no Google Drive local: %s", target_path)
+            return str(target_path)
+    except Exception as err:
+        logger.warning("[M-Pay Drive] Falha ao arquivar no Google Drive local: %s", err)
+    return None
+
+
 def sync_transaction_to_google_sheet(
     action: str,
     tx_data: dict[str, Any],
     actor_name: str = "M-Pay",
+    file_bytes: bytes | None = None,
+    filename: str | None = None,
+    mime_type: str | None = None,
 ) -> dict[str, Any]:
     """
     Envia atualização para a planilha do Google Sheets via Webhook Apps Script.
@@ -106,24 +145,32 @@ def sync_transaction_to_google_sheet(
     else:
         formatted_date = str(pdate or "")
 
+    tx_payload = {
+        "id": tx_data.get("id"),
+        "paid_at": formatted_date,
+        "paying_company": tx_data.get("paying_company") or "M-one",
+        "payment_source": tx_data.get("payment_source") or "Conta da Empresa",
+        "beneficiary_name": tx_data.get("beneficiary_name") or "",
+        "beneficiary_document": tx_data.get("beneficiary_document") or "",
+        "amount": float(tx_data.get("amount") or 0.0),
+        "bank_origin": tx_data.get("bank_origin") or "",
+        "payment_method": tx_data.get("payment_method") or "",
+        "category": tx_data.get("category") or "",
+        "notes": tx_data.get("notes") or "",
+        "confidence_status": tx_data.get("confidence_status") or "verified",
+        "file_url": tx_data.get("file_url") or "",
+        "orig_filename": filename or tx_data.get("orig_filename") or "",
+    }
+
+    if file_bytes:
+        tx_payload["file_base64"] = base64.b64encode(file_bytes).decode("utf-8")
+        tx_payload["mime_type"] = mime_type or "application/pdf"
+
     payload = {
         "action": action,
         "source": "mpay",
         "actor": actor_name,
-        "transaction": {
-            "id": tx_data.get("id"),
-            "paid_at": formatted_date,
-            "paying_company": tx_data.get("paying_company") or "M-one",
-            "payment_source": tx_data.get("payment_source") or "Conta da Empresa",
-            "beneficiary_name": tx_data.get("beneficiary_name") or "",
-            "beneficiary_document": tx_data.get("beneficiary_document") or "",
-            "amount": float(tx_data.get("amount") or 0.0),
-            "bank_origin": tx_data.get("bank_origin") or "",
-            "payment_method": tx_data.get("payment_method") or "",
-            "category": tx_data.get("category") or "",
-            "notes": tx_data.get("notes") or "",
-            "confidence_status": tx_data.get("confidence_status") or "verified",
-        },
+        "transaction": tx_payload,
     }
 
     try:

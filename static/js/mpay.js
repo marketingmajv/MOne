@@ -256,7 +256,7 @@ function closeAuditModal() {
 
 function copyAppsScriptCode() {
   const code = `/**
- * M-Pay • Sincronizador Bidirecional Google Sheets
+ * M-Pay • Sincronizador Bidirecional & Arquivador Automático no Google Drive
  * Cole este código em Extensões > Apps Script na sua planilha Google.
  * Depois clique em "Implantar" > "Nova Implantação" > "App da Web" (Acesso: Qualquer pessoa).
  */
@@ -276,10 +276,33 @@ function doPost(e) {
     const tx = data.transaction || {};
     const actor = data.actor || "M-Pay IA";
     
+    let driveLink = "";
+    if (tx.file_base64 && tx.orig_filename) {
+      try {
+        var rootFolderName = "Comprovantes M-Pay";
+        var folders = DriveApp.getFoldersByName(rootFolderName);
+        var rootFolder = folders.hasNext() ? folders.next() : DriveApp.createFolder(rootFolderName);
+        
+        var companyName = tx.paying_company || "M-one";
+        var subFolders = rootFolder.getFoldersByName(companyName);
+        var targetFolder = subFolders.hasNext() ? subFolders.next() : rootFolder.createFolder(companyName);
+        
+        var decoded = Utilities.base64Decode(tx.file_base64);
+        var blob = Utilities.newBlob(decoded, tx.mime_type || "application/pdf", tx.orig_filename);
+        var driveFile = targetFolder.createFile(blob);
+        driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        driveLink = driveFile.getUrl();
+      } catch (fErr) {
+        Logger.log("Erro ao arquivar no Google Drive: " + fErr);
+      }
+    }
+    
     if (action === "create") {
       sheetData.appendRow([
         tx.id,
         tx.paid_at,
+        tx.paying_company || "M-one",
+        tx.payment_source || "Conta da Empresa",
         tx.beneficiary_name,
         tx.beneficiary_document,
         tx.amount,
@@ -288,24 +311,26 @@ function doPost(e) {
         tx.category,
         tx.notes,
         tx.confidence_status,
+        driveLink || tx.file_url || "",
         new Date()
       ]);
       logHistory(sheetHistory, tx.id, "CRIAÇÃO", "Todos", "", "Valor: R$ " + tx.amount, actor, "M-Pay");
     } else if (action === "update") {
       const rowIdx = findRowById(sheetData, tx.id);
       if (rowIdx > 0) {
-        sheetData.getRange(rowIdx, 2, 1, 9).setValues([[
+        sheetData.getRange(rowIdx, 2, 1, 10).setValues([[
           tx.paid_at,
+          tx.paying_company || "M-one",
+          tx.payment_source || "Conta da Empresa",
           tx.beneficiary_name,
           tx.beneficiary_document,
           tx.amount,
           tx.bank_origin,
           tx.payment_method,
           tx.category,
-          tx.notes,
-          tx.confidence_status
+          tx.notes
         ]]);
-        sheetData.getRange(rowIdx, 11).setValue(new Date());
+        sheetData.getRange(rowIdx, 14).setValue(new Date());
         logHistory(sheetHistory, tx.id, "EDIÇÃO", "Células", "", "Atualizado por " + actor, actor, "M-Pay");
       }
     } else if (action === "delete") {
@@ -316,7 +341,7 @@ function doPost(e) {
       }
     }
     
-    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, drive_url: driveLink })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -337,13 +362,15 @@ function onEdit(e) {
     
     const colMap = {
       2: "paid_at",
-      3: "beneficiary_name",
-      4: "beneficiary_document",
-      5: "amount",
-      6: "bank_origin",
-      7: "payment_method",
-      8: "category",
-      9: "notes"
+      3: "paying_company",
+      4: "payment_source",
+      5: "beneficiary_name",
+      6: "beneficiary_document",
+      7: "amount",
+      8: "bank_origin",
+      9: "payment_method",
+      10: "category",
+      11: "notes"
     };
     
     const field = colMap[col];
@@ -398,10 +425,11 @@ function setupSheetsIfMissing(ss) {
   }
   if (sheetData.getLastRow() === 0) {
     sheetData.appendRow([
-      "ID M-Pay", "Data", "Favorecido", "CPF/CNPJ/Pix", "Valor (R$)",
-      "Banco Origem", "Método", "Categoria", "Observações", "Status IA", "Sincronizado Em"
+      "ID M-Pay", "Data", "Empresa Pagadora", "Forma / Origem", "Favorecido",
+      "CPF/CNPJ/Pix", "Valor (R$)", "Banco Origem", "Método", "Categoria",
+      "Observações", "Status IA", "Link Comprovante (Drive)", "Sincronizado Em"
     ]);
-    sheetData.getRange("A1:K1").setBackground("#2563EB").setFontColor("#FFFFFF").setFontWeight("bold");
+    sheetData.getRange("A1:N1").setBackground("#2563EB").setFontColor("#FFFFFF").setFontWeight("bold");
     sheetData.setFrozenRows(1);
   }
   

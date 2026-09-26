@@ -24,6 +24,7 @@ from services.mpay_ai_service import calculate_file_hash, extract_receipt_data
 from services.mpay_export_service import export_mpay_dataset
 from services.mpay_sheets_service import (
     apply_google_sheets_update,
+    archive_receipt_to_local_gdrive,
     get_mpay_setting,
     log_mpay_audit,
     set_mpay_setting,
@@ -225,7 +226,13 @@ def upload_receipts():
                 r_dict = dict(row)
                 actor = me.get("name") if me else "Sistema IA"
                 log_mpay_audit(row["id"], "created", "mpay_ai", actor_name=actor)
-                sync_transaction_to_google_sheet("create", r_dict, actor_name=actor)
+                
+                # Arquivar no Google Drive local se disponível
+                archive_receipt_to_local_gdrive(file_bytes, orig_filename, company=paying_company)
+                
+                # Sincronizar com Google Sheets e Google Drive Cloud via Webhook
+                sync_transaction_to_google_sheet("create", r_dict, actor_name=actor, file_bytes=file_bytes, filename=orig_filename, mime_type=mime)
+                
                 imported_items.append({
                     "id": row["id"],
                     "filename": orig_filename,
