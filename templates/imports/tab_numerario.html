@@ -11,14 +11,7 @@
           <span style="color: #B45309; font-weight: 700;">⚖️ Regra Contábil de Rigor:</span> A transferência ao despachante entra no controle de desembolso financeiro; as despesas comprovadas entram na composição de custo. <em style="color: var(--text);">Nunca são somados ambos no mesmo total</em>.
         </p>
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='numerario') }}" enctype="multipart/form-data" style="display: inline;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="numerarioHeaderFileInput" style="display: none;" onchange="this.form.submit()">
-          <button type="button" class="btn sm secondary" onclick="document.getElementById('numerarioHeaderFileInput').click()" style="font-weight: 700; border-color: rgba(217, 119, 6, 0.4); color: #D97706;">
-            📁 Subir Comprovantes / Arquivos
-          </button>
-        </form>
+      <div>
         <button class="btn sm primary" onclick="document.getElementById('addNumerarioModal').style.display='flex'">
           + Lançar Movimentação de Numerário
         </button>

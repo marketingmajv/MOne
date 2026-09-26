@@ -201,9 +201,14 @@ def upload_documents_batch(iid: int):
                 # 3. Pagamentos na China / Remessas / Câmbio
                 elif doc_type in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT"]:
                     curr = str(extracted_data.get("currency") or "USD").upper()
-                    amt_usd = amt_val if "USD" in curr else 0.0
-                    amt_brl = amt_val if "BRL" in curr else 0.0
                     exch_rate = clean_float(extracted_data.get("exchange_rate")) or None
+                    if "BRL" in curr:
+                        amt_brl = amt_val
+                        amt_usd = round(amt_brl / exch_rate, 2) if (exch_rate and exch_rate > 0) else 0.0
+                    else:
+                        amt_usd = amt_val
+                        amt_brl = round(amt_usd * exch_rate, 2) if (exch_rate and exch_rate > 0) else (round(amt_usd * 5.65, 2) if amt_usd > 0 else 0.0)
+
                     conn.execute(
                         """
                         INSERT INTO import_payments_china (

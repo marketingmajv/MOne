@@ -13,13 +13,6 @@
         </p>
       </div>
       <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-        <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='payments') }}" enctype="multipart/form-data" style="display: inline;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="paymentsHeaderFileInput" style="display: none;" onchange="this.form.submit()">
-          <button type="button" class="btn sm secondary" onclick="document.getElementById('paymentsHeaderFileInput').click()" style="font-weight: 700; border-color: rgba(37, 99, 235, 0.4); color: #2563EB;">
-            🤖 Subir Comprovantes / Remessas (IA)
-          </button>
-        </form>
         <button type="button" class="btn sm" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700;" onclick="document.getElementById('addOtherDebitModal').style.display='flex'">
           💳 + Lançar Outros Lançamentos
         </button>

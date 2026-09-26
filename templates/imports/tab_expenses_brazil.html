@@ -10,14 +10,7 @@
           Pendentes: <strong style="color: var(--text);">{{ financials.pending_expenses_brl|money }}</strong>
         </p>
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <form method="post" action="{{ url_for('import_document.upload_documents_batch', iid=i.id, tab='expenses') }}" enctype="multipart/form-data" style="display: inline;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="file" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" id="expensesHeaderFileInput" style="display: none;" onchange="this.form.submit()">
-          <button type="button" class="btn sm secondary" onclick="document.getElementById('expensesHeaderFileInput').click()" style="font-weight: 700; border-color: rgba(180, 83, 9, 0.4); color: #B45309;">
-            🤖 Subir Comprovantes / Notas (IA)
-          </button>
-        </form>
+      <div>
         <button class="btn sm primary" onclick="document.getElementById('addExpenseModal').style.display='flex'">
           + Adicionar Despesa Brasil
         </button>
