@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/mpay.css', v='20260925_standalone_v3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mpay.css', v='20260926_redesign_v1') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <script>
     (function() {
@@ -22,100 +22,114 @@
 
 <div class="mpay-container">
 
-  <!-- Cabeçalho Principal M-Pay (Totalmente Independente) -->
+  <!-- Topo M-Pay (Título Limpo e Moderno) -->
   <div class="mpay-top-header">
     <div class="mpay-brand">
       <div class="mpay-logo-badge">💳</div>
       <div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: var(--text, #0f172a);">M-Pay</h2>
-          <span style="background: rgba(37,99,235,0.12); color: #2563EB; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; text-transform: uppercase;">
+          <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: var(--text, #0f172a); letter-spacing: -0.5px;">M-Pay</h2>
+          <span style="background: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(29,78,216,0.15)); color: #2563EB; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; border: 1px solid rgba(37,99,235,0.25);">
             Leitor Inteligente de Comprovantes
           </span>
         </div>
-        <p style="margin: 4px 0 0 0; font-size: 12.5px; color: var(--muted, #64748b);">
-          Envie comprovantes bancários por PDF, fotos ou câmera móvel. A IA preenche a planilha automaticamente.
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--muted, #64748b);">
+          Fotografe recibos ou envie PDFs. A IA identifica a empresa pagadora, favorecido e dados automaticamente.
         </p>
       </div>
     </div>
-
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-      <button type="button" class="btn outline sm" onclick="openSheetsModal()" style="font-weight: 700; border-color: {% if sheets_webhook_url %}#059669; color: #059669;{% else %}#2563EB; color: #2563EB;{% endif %}">
-        📊 {% if sheets_webhook_url %}Google Sheets Conectado{% else %}Conectar Google Sheets{% endif %}
-      </button>
-      <a href="{{ url_for('imports.imports') }}" class="btn outline sm" style="font-weight: 700;">
-        ← Voltar ao M-One
-      </a>
-      <a href="{{ url_for('mpay.export_xlsx', month=current_month_filter, q=search_q) }}" class="btn primary sm" style="font-weight: 700; background: #059669; border-color: #059669;">
-        📥 Exportar Excel
-      </a>
-      <a href="{{ url_for('mpay.export_csv', month=current_month_filter, q=search_q) }}" class="btn outline sm" style="font-weight: 700;">
-        📄 Exportar CSV
-      </a>
-    </div>
   </div>
 
-  <!-- SESSÃO 1 (SUPERIOR): Captura e Envio de Comprovantes -->
-  <div class="mpay-section-card">
-    <div class="mpay-section-title">
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 20px;">📷</span>
+  <!-- SESSÃO 1 (HERO DE DESTAQUE PRINCIPAL): Fotografar Comprovantes & Configuração de Pagamento -->
+  <div class="mpay-hero-card">
+    <div class="mpay-hero-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="hero-icon-pulse">📸</span>
         <div>
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #0f172a);">
-            1. Captura e Envio de Comprovantes
+          <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #ffffff;">
+            Capturar & Fotografar Comprovantes
           </h3>
-          <span style="font-size: 12px; color: var(--muted, #64748b);">Tire fotos pelo celular ou anexe arquivos múltiplos</span>
+          <span style="font-size: 12.5px; color: rgba(255,255,255,0.85);">
+            Fotografe direto do celular ou selecione múltiplos arquivos da galeria/PDF
+          </span>
         </div>
-      </div>
-
-      <!-- Botões de Ação de Captura -->
-      <div class="mpay-capture-actions">
-        <!-- Input Câmera Nativa -->
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileInput(this)">
-        <button type="button" class="btn-capture-camera" onclick="document.getElementById('cameraInput').click()">
-          <span style="font-size: 18px;">📸</span>
-          Fotografar com Câmera do Celular
-        </button>
-
-        <!-- Input Múltiplos Arquivos -->
-        <input type="file" id="batchFileInput" multiple accept=".pdf,image/*" style="display: none;" onchange="handleFileInput(this)">
-        <button type="button" class="btn-capture-files" onclick="document.getElementById('batchFileInput').click()">
-          <span style="font-size: 18px;">📁</span>
-          Selecionar Arquivos (PDF / Fotos)
-        </button>
       </div>
     </div>
 
-    <!-- Dropzone Amplo e Centralizado -->
-    <div id="mpayDropzone" class="mpay-dropzone-box"
+    <!-- Barra de Configuração: Empresa Pagadora e Origem do Pagamento -->
+    <div class="mpay-config-bar">
+      <div class="config-field">
+        <label for="activeCompanySelect">🏢 Empresa Pagadora:</label>
+        <select id="activeCompanySelect" class="config-select">
+          <option value="M-one" selected>M-one</option>
+          <option value="Colvix">Colvix</option>
+          <option value="Maj Antiga">Maj Antiga</option>
+          <option value="Maj Vitória">Maj Vitória</option>
+          <option value="Factor">Factor</option>
+          <option value="Groove">Groove</option>
+        </select>
+      </div>
+
+      <div class="config-field">
+        <label for="activePaymentSourceSelect">💳 Forma de Pagamento:</label>
+        <select id="activePaymentSourceSelect" class="config-select">
+          <option value="Conta da Empresa" selected>Conta da Empresa</option>
+          <option value="Dinheiro">Dinheiro (Em Espécie)</option>
+        </select>
+      </div>
+
+      <div class="config-hint">
+        💡 Selecione a empresa e forma de pagamento que serão atribuídas aos comprovantes abaixo.
+      </div>
+    </div>
+
+    <!-- Botões de Ação de Captura Prominentes -->
+    <div class="mpay-hero-actions">
+      <!-- Input Câmera Nativa -->
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileInput(this)">
+      <button type="button" class="btn-hero-camera" onclick="document.getElementById('cameraInput').click()">
+        <span style="font-size: 22px;">📸</span>
+        <span>Fotografar com Câmera do Celular</span>
+      </button>
+
+      <!-- Input Múltiplos Arquivos -->
+      <input type="file" id="batchFileInput" multiple accept=".pdf,image/*" style="display: none;" onchange="handleFileInput(this)">
+      <button type="button" class="btn-hero-files" onclick="document.getElementById('batchFileInput').click()">
+        <span style="font-size: 20px;">📁</span>
+        <span>Selecionar Arquivos (PDF / Fotos)</span>
+      </button>
+    </div>
+
+    <!-- Dropzone Amplo e Centralizado com Estilo de Destaque -->
+    <div id="mpayDropzone" class="mpay-hero-dropzone"
          onclick="document.getElementById('batchFileInput').click()"
          ondragover="event.preventDefault(); this.classList.add('dragover');"
          ondragleave="this.classList.remove('dragover');"
          ondrop="handleDrop(event)">
-      <div style="font-size: 40px; margin-bottom: 10px;">☁️</div>
-      <strong style="display: block; font-size: 15px; color: var(--text, #0f172a); margin-bottom: 6px;">
-        Arraste e solte seus comprovantes aqui ou clique nos botões acima
+      <div style="font-size: 44px; margin-bottom: 8px;">☁️</div>
+      <strong style="display: block; font-size: 16px; color: var(--text, #0f172a); margin-bottom: 4px;">
+        Arraste e solte seus comprovantes aqui ou toque nos botões acima
       </strong>
-      <p style="margin: 0; font-size: 12.5px; color: var(--muted, #64748b); max-width: 600px; margin: 0 auto;">
-        Suporta múltiplos PDFs bancários, capturas de tela e fotos de comprovantes (PIX, TED, Boletos, Cartões).
+      <p style="margin: 0; font-size: 13px; color: var(--muted, #64748b); max-width: 650px; margin: 0 auto;">
+        Suporta fotos da câmera, capturas de tela e múltiplos PDFs bancários (PIX, TED, Boletos, Recibos em Dinheiro).
       </p>
 
       <!-- Indicador de Carregamento com IA -->
       <div id="uploadLoader" style="display: none; margin-top: 18px; color: #2563EB; font-weight: 700; font-size: 14px;">
-        <span class="spinner" style="display: inline-block; width: 16px; height: 16px; border: 2.5px solid #2563EB; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span>
+        <span class="spinner" style="display: inline-block; width: 18px; height: 18px; border: 3px solid #2563EB; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span>
         <span id="uploadLoaderText">Processando comprovante(s) com IA Gemini...</span>
       </div>
     </div>
   </div>
 
-  <!-- SESSÃO 2 (INFERIOR): Planilha de Lançamentos & Google Sheets -->
+  <!-- SESSÃO 2 (MEIO): Planilha de Lançamentos & Google Sheets -->
   <div class="mpay-section-card">
     <div class="mpay-sheet-toolbar">
       <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 20px;">📊</span>
           <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text, #0f172a);">
-            2. Planilha de Comprovantes
+            Planilha de Comprovantes
           </h3>
         </div>
 
@@ -148,7 +162,7 @@
           {% if current_month_filter %}
             <input type="hidden" name="month" value="{{ current_month_filter }}">
           {% endif %}
-          <input type="text" name="q" value="{{ search_q }}" placeholder="Buscar favorecido, banco, obs..." style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line, #e2e8f0); background: var(--panel2, #f8fafc); color: var(--text, #0f172a); font-size: 12.5px; width: 220px;">
+          <input type="text" name="q" value="{{ search_q }}" placeholder="Buscar empresa, favorecido, obs..." style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line, #e2e8f0); background: var(--panel2, #f8fafc); color: var(--text, #0f172a); font-size: 12.5px; width: 220px;">
           <button type="submit" class="btn outline sm" style="padding: 7px 12px;">🔍</button>
         </form>
 
@@ -164,17 +178,19 @@
       <table class="mpay-sheet-table">
         <thead>
           <tr>
-            <th style="width: 90px; text-align: center;">Status IA</th>
+            <th style="width: 85px; text-align: center;">Status IA</th>
             <th style="width: 105px;">Data</th>
-            <th style="min-width: 180px;">Favorecido / Destino</th>
-            <th style="width: 150px;">CPF / CNPJ / Chave Pix</th>
-            <th style="width: 130px; text-align: right;">Valor (R$)</th>
-            <th style="width: 120px;">Banco Origem</th>
-            <th style="width: 110px;">Método</th>
-            <th style="width: 130px;">Categoria</th>
-            <th style="min-width: 180px;">Observações / Protocolo</th>
-            <th style="width: 60px; text-align: center;">Doc</th>
-            <th style="width: 75px; text-align: center;">Ação</th>
+            <th style="width: 130px;">Empresa Pagadora</th>
+            <th style="width: 135px;">Forma / Origem</th>
+            <th style="min-width: 170px;">Favorecido / Destino</th>
+            <th style="width: 140px;">CPF / CNPJ / Chave Pix</th>
+            <th style="width: 120px; text-align: right;">Valor (R$)</th>
+            <th style="width: 110px;">Banco Origem</th>
+            <th style="width: 100px;">Método</th>
+            <th style="width: 120px;">Categoria</th>
+            <th style="min-width: 160px;">Observações / Protocolo</th>
+            <th style="width: 55px; text-align: center;">Doc</th>
+            <th style="width: 70px; text-align: center;">Ação</th>
           </tr>
         </thead>
         <tbody id="mpaySheetBody">
@@ -197,6 +213,26 @@
               <!-- Data do Pagamento -->
               <td>
                 <input type="date" class="cell-input" value="{{ t.paid_at.strftime('%Y-%m-%d') if t.paid_at else '' }}" onchange="updateCell({{ t.id }}, 'paid_at', this.value)">
+              </td>
+
+              <!-- Empresa Pagadora -->
+              <td>
+                <select class="cell-input" style="font-weight: 700; color: #2563EB;" onchange="updateCell({{ t.id }}, 'paying_company', this.value)">
+                  <option value="M-one" {% if (t.paying_company or 'M-one') == 'M-one' %}selected{% endif %}>M-one</option>
+                  <option value="Colvix" {% if t.paying_company == 'Colvix' %}selected{% endif %}>Colvix</option>
+                  <option value="Maj Antiga" {% if t.paying_company == 'Maj Antiga' %}selected{% endif %}>Maj Antiga</option>
+                  <option value="Maj Vitória" {% if t.paying_company == 'Maj Vitória' %}selected{% endif %}>Maj Vitória</option>
+                  <option value="Factor" {% if t.paying_company == 'Factor' %}selected{% endif %}>Factor</option>
+                  <option value="Groove" {% if t.paying_company == 'Groove' %}selected{% endif %}>Groove</option>
+                </select>
+              </td>
+
+              <!-- Forma / Origem de Pagamento -->
+              <td>
+                <select class="cell-input" onchange="updateCell({{ t.id }}, 'payment_source', this.value)">
+                  <option value="Conta da Empresa" {% if (t.payment_source or 'Conta da Empresa') == 'Conta da Empresa' %}selected{% endif %}>Conta da Empresa</option>
+                  <option value="Dinheiro" {% if t.payment_source == 'Dinheiro' %}selected{% endif %}>Dinheiro</option>
+                </select>
               </td>
 
               <!-- Favorecido / Destino -->
@@ -263,13 +299,46 @@
             </tr>
           {% else %}
             <tr id="emptyRow">
-              <td colspan="11" style="text-align: center; padding: 36px; color: var(--muted, #64748b);">
+              <td colspan="13" style="text-align: center; padding: 36px; color: var(--muted, #64748b);">
                 Nenhum comprovante lançado até o momento. Envie arquivos acima ou clique em <strong>+ Nova Linha Manual</strong>.
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- SESSÃO 3 (FINAL DA PÁGINA): Rodapé de Exportações & Integrações -->
+  <div class="mpay-footer-card">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 20px;">⚡</span>
+      <div>
+        <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text, #0f172a);">
+          Exportação & Conexão M-One
+        </h4>
+        <span style="font-size: 12px; color: var(--muted, #64748b);">
+          Baixe a planilha em Excel/CSV ou sincronize com o Google Sheets
+        </span>
+      </div>
+    </div>
+
+    <div class="mpay-footer-actions">
+      <button type="button" class="btn outline sm" onclick="openSheetsModal()" style="font-weight: 700; border-color: {% if sheets_webhook_url %}#059669; color: #059669;{% else %}#2563EB; color: #2563EB;{% endif %}">
+        📊 {% if sheets_webhook_url %}Google Sheets Conectado{% else %}Conectar Google Sheets{% endif %}
+      </button>
+
+      <a href="{{ url_for('mpay.export_xlsx', month=current_month_filter, q=search_q) }}" class="btn primary sm" style="font-weight: 700; background: #059669; border-color: #059669;">
+        📥 Exportar Excel
+      </a>
+
+      <a href="{{ url_for('mpay.export_csv', month=current_month_filter, q=search_q) }}" class="btn outline sm" style="font-weight: 700;">
+        📄 Exportar CSV
+      </a>
+
+      <a href="{{ url_for('imports.imports') }}" class="btn outline sm" style="font-weight: 700; background: var(--panel2, #f8fafc);">
+        ← Voltar ao M-One
+      </a>
     </div>
   </div>
 

@@ -23,7 +23,7 @@ def build_mpay_xlsx(rows: list[dict[str, Any]]) -> Response:
     ws.title = "M-Pay Comprovantes"
 
     # Título do Relatório
-    ws.merge_cells("A1:H1")
+    ws.merge_cells("A1:J1")
     title_cell = ws["A1"]
     title_cell.value = "M-PAY • RELATÓRIO DE COMPROVANTES DE PAGAMENTO"
     title_cell.font = Font(size=14, bold=True, color="1E3A8A")
@@ -32,6 +32,8 @@ def build_mpay_xlsx(rows: list[dict[str, Any]]) -> Response:
 
     headers = [
         "Data Pagamento",
+        "Empresa Pagadora",
+        "Forma / Origem",
         "Beneficiário / Destino",
         "Documento / Chave",
         "Valor (R$)",
@@ -65,6 +67,8 @@ def build_mpay_xlsx(rows: list[dict[str, Any]]) -> Response:
         pdate = r.get("paid_at").strftime("%d/%m/%Y") if r.get("paid_at") else ""
         row_vals = [
             pdate,
+            r.get("paying_company") or "M-one",
+            r.get("payment_source") or "Conta da Empresa",
             r.get("beneficiary_name") or "",
             r.get("beneficiary_document") or "",
             val,
@@ -75,19 +79,19 @@ def build_mpay_xlsx(rows: list[dict[str, Any]]) -> Response:
         ]
         ws.append(row_vals)
         current_row = ws.max_row
-        ws.cell(row=current_row, column=4).number_format = '"R$ "#,##0.00'
+        ws.cell(row=current_row, column=6).number_format = '"R$ "#,##0.00'
         for c in range(1, len(headers) + 1):
             ws.cell(row=current_row, column=c).border = border_thin
 
     # Linha de Total
     total_row = ws.max_row + 1
-    ws.cell(row=total_row, column=3, value="TOTAL GERAL:").font = Font(bold=True)
-    total_cell = ws.cell(row=total_row, column=4, value=total_amount)
+    ws.cell(row=total_row, column=5, value="TOTAL GERAL:").font = Font(bold=True)
+    total_cell = ws.cell(row=total_row, column=6, value=total_amount)
     total_cell.font = Font(bold=True, color="047857")
     total_cell.number_format = '"R$ "#,##0.00'
 
     # Ajuste de larguras das colunas
-    col_widths = [18, 34, 24, 18, 18, 14, 18, 30]
+    col_widths = [16, 20, 20, 32, 22, 18, 18, 14, 18, 28]
     for i, w in enumerate(col_widths, 1):
         col_letter = openpyxl.utils.get_column_letter(i)
         ws.column_dimensions[col_letter].width = w
@@ -110,13 +114,15 @@ def build_mpay_csv(rows: list[dict[str, Any]]) -> Response:
     output = io.StringIO()
     output.write("\ufeff")  # BOM para Excel
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Data", "Favorecido", "CPF/CNPJ/Pix", "Valor R$", "Banco", "Metodo", "Categoria", "Observacoes"])
+    writer.writerow(["Data", "Empresa Pagadora", "Forma Pagamento", "Favorecido", "CPF/CNPJ/Pix", "Valor R$", "Banco", "Metodo", "Categoria", "Observacoes"])
 
     for r in rows:
         pdate = r.get("paid_at").strftime("%d/%m/%Y") if r.get("paid_at") else ""
         val = f"{float(r.get('amount') or 0.0):.2f}".replace(".", ",")
         writer.writerow([
             pdate,
+            r.get("paying_company") or "M-one",
+            r.get("payment_source") or "Conta da Empresa",
             r.get("beneficiary_name") or "",
             r.get("beneficiary_document") or "",
             val,
@@ -145,15 +151,15 @@ def export_mpay_dataset(export_format: str, month_filter: str = "", search_q: st
         sql_where.append("TO_CHAR(paid_at, 'YYYY-MM') = %s")
         params.append(month_filter)
     if search_q:
-        sql_where.append("(beneficiary_name ILIKE %s OR notes ILIKE %s OR bank_origin ILIKE %s)")
-        params.extend([f"%{search_q}%"] * 3)
+        sql_where.append("(beneficiary_name ILIKE %s OR notes ILIKE %s OR bank_origin ILIKE %s OR paying_company ILIKE %s OR payment_source ILIKE %s)")
+        params.extend([f"%{search_q}%"] * 5)
 
     where_clause = f"WHERE {' AND '.join(sql_where)}" if sql_where else ""
 
     with db() as conn:
         rows = conn.execute(
             f"""
-            SELECT paid_at, beneficiary_name, beneficiary_document, amount,
+            SELECT paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount,
                    bank_origin, payment_method, category, notes, confidence_status
             FROM mpay_transactions
             {where_clause}

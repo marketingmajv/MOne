@@ -113,6 +113,8 @@ def sync_transaction_to_google_sheet(
         "transaction": {
             "id": tx_data.get("id"),
             "paid_at": formatted_date,
+            "paying_company": tx_data.get("paying_company") or "M-one",
+            "payment_source": tx_data.get("payment_source") or "Conta da Empresa",
             "beneficiary_name": tx_data.get("beneficiary_name") or "",
             "beneficiary_document": tx_data.get("beneficiary_document") or "",
             "amount": float(tx_data.get("amount") or 0.0),
@@ -156,6 +158,8 @@ def apply_google_sheets_update(payload: dict[str, Any]) -> tuple[bool, str]:
     actor = payload.get("actor") or "Google Sheets User"
     allowed_fields = {
         "paid_at",
+        "paying_company",
+        "payment_source",
         "beneficiary_name",
         "beneficiary_document",
         "amount",

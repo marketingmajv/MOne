@@ -1,6 +1,6 @@
-/* M-Pay Stylesheet (static/css/mpay.css) */
+/* M-Pay Stylesheet (static/css/mpay.css) - Standalone & High-Impact UI */
 
-/* M-Pay Standalone Mode (Oculta sidebar e topbar do M-One tornando o M-Pay 100% avulso e tela cheia) */
+/* Standalone Mode (Oculta navbars padrão tornando o M-Pay tela cheia) */
 #sidebar, .sidebar {
   display: none !important;
 }
@@ -19,15 +19,15 @@
 }
 
 .mpay-container {
-  max-width: 1500px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 12px 10px 60px 10px;
+  padding: 14px 12px 60px 12px;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-/* Cabeçalho do M-Pay */
+/* Header Superior */
 .mpay-top-header {
   display: flex;
   justify-content: space-between;
@@ -48,114 +48,197 @@
 }
 
 .mpay-logo-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #2563EB, #1D4ED8);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  font-size: 22px;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
-/* SESSÃO 1: Painel Superior de Captura & Upload */
-.mpay-section-card {
-  background: var(--panel, #ffffff);
-  border: 1px solid var(--line, #e2e8f0);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+/* ==========================================================================
+   HERO CARD EM DESTAQUE PRINCIPAL: Captura & Fotografar Comprovantes
+   ========================================================================== */
+.mpay-hero-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e1b4b 100%);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.25), 0 0 20px rgba(37, 99, 235, 0.15);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
 }
 
-.mpay-section-title {
+.mpay-hero-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-.mpay-capture-actions {
+.hero-icon-pulse {
+  font-size: 26px;
+  background: rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
   display: flex;
-  gap: 12px;
   align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.4);
+}
+
+/* Barra de Configuração de Empresa e Pagamento */
+.mpay-config-bar {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
-.btn-capture-camera {
-  background: #2563EB !important;
-  color: #FFFFFF !important;
-  border: 1px solid #1D4ED8 !important;
-  font-weight: 700;
-  padding: 10px 18px;
-  border-radius: 10px;
-  display: inline-flex;
+.config-field {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
-  transition: all 0.2s;
+  gap: 10px;
 }
 
-.btn-capture-camera:hover {
-  background: #1D4ED8 !important;
-  color: #FFFFFF !important;
-  transform: translateY(-1px);
-}
-
-.btn-capture-files {
-  background: #FFFFFF !important;
-  color: #0F172A !important;
-  border: 2px solid #CBD5E1 !important;
+.config-field label {
+  font-size: 13px;
   font-weight: 700;
-  padding: 10px 18px;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.config-select {
+  background: #1e293b;
+  color: #ffffff;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 8px 14px;
   border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.btn-capture-files:hover {
-  background: #F1F5F9 !important;
-  border-color: #2563EB !important;
-  color: #2563EB !important;
-  transform: translateY(-1px);
+.config-select:focus, .config-select:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
-[data-theme="dark"] .btn-capture-files {
-  background: #1E293B !important;
-  color: #F8FAFC !important;
-  border: 2px solid #475569 !important;
+.config-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: auto;
 }
 
-[data-theme="dark"] .btn-capture-files:hover {
-  background: #334155 !important;
-  border-color: #60A5FA !important;
-  color: #60A5FA !important;
+/* Botões de Ação Hero */
+.mpay-hero-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.mpay-dropzone-box {
-  border: 2px dashed rgba(37, 99, 235, 0.35);
+.btn-hero-camera {
+  flex: 1;
+  min-width: 260px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff !important;
+  border: 1px solid #60a5fa;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 14px 22px;
   border-radius: 14px;
-  background: var(--panel2, #f8fafc);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-hero-camera:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.55);
+}
+
+.btn-hero-files {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px 22px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-hero-files:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: #60a5fa !important;
+  transform: translateY(-2px);
+}
+
+/* Dropzone no Hero */
+.mpay-hero-dropzone {
+  border: 2px dashed rgba(96, 165, 250, 0.4);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.45);
   padding: 36px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.mpay-dropzone-box:hover, .mpay-dropzone-box.dragover {
-  border-color: #2563EB;
-  background: rgba(37, 99, 235, 0.04);
+.mpay-hero-dropzone:hover, .mpay-hero-dropzone.dragover {
+  border-color: #60a5fa;
+  background: rgba(37, 99, 235, 0.15);
 }
 
-/* SESSÃO 2: Painel Inferior da Planilha */
+.mpay-hero-dropzone strong {
+  color: #f8fafc;
+}
+
+.mpay-hero-dropzone p {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   SESSÃO 2: Planilha de Lançamentos
+   ========================================================================== */
+.mpay-section-card {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
 .mpay-sheet-toolbar {
   display: flex;
   justify-content: space-between;
@@ -168,22 +251,22 @@
 .sheet-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--line, #e2e8f0);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--panel, #ffffff);
 }
 
 .mpay-sheet-table {
   width: 100%;
-  min-width: 1100px;
+  min-width: 1350px;
   border-collapse: collapse;
   font-size: 13px;
 }
 
 .mpay-sheet-table th {
   background: var(--panel2, #f8fafc);
-  padding: 12px 14px;
-  font-size: 11.5px;
-  font-weight: 700;
+  padding: 12px 12px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
   color: var(--muted, #64748b);
   border-bottom: 1.5px solid var(--line, #e2e8f0);
@@ -193,7 +276,7 @@
 }
 
 .mpay-sheet-table td {
-  padding: 7px 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--line, #e2e8f0);
   border-right: 1px solid var(--line, #e2e8f0);
   vertical-align: middle;
@@ -201,7 +284,7 @@
 }
 
 .mpay-sheet-table tr:hover td {
-  background: rgba(37, 99, 235, 0.02);
+  background: rgba(37, 99, 235, 0.03);
 }
 
 .cell-input {
@@ -211,7 +294,7 @@
   padding: 6px 8px;
   border-radius: 6px;
   color: var(--text, #1e293b);
-  font-size: 13px;
+  font-size: 12.5px;
   font-family: inherit;
   outline: none;
   transition: all 0.15s;
@@ -236,7 +319,7 @@
   gap: 4px;
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -260,14 +343,39 @@
 }
 
 .save-indicator {
-  font-size: 11px;
+  font-size: 10px;
   color: #047857;
   opacity: 0;
+  display: block;
   transition: opacity 0.3s;
 }
 
 .save-indicator.active {
   opacity: 1;
+}
+
+/* ==========================================================================
+   SESSÃO 3: Rodapé de Ações & Exportações no Final da Página
+   ========================================================================== */
+.mpay-footer-card {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 18px;
+  padding: 18px 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.mpay-footer-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 @keyframes spin {

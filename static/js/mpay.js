@@ -26,10 +26,17 @@ function uploadFiles(fileList) {
     loaderText.textContent = `Processando ${fileList.length} arquivo(s) com IA Gemini...`;
   }
 
+  const companyEl = document.getElementById('activeCompanySelect');
+  const sourceEl = document.getElementById('activePaymentSourceSelect');
+  const payingCompany = companyEl ? companyEl.value : 'M-one';
+  const paymentSource = sourceEl ? sourceEl.value : 'Conta da Empresa';
+
   const formData = new FormData();
   for (let i = 0; i < fileList.length; i++) {
     formData.append('receipts', fileList[i]);
   }
+  formData.append('paying_company', payingCompany);
+  formData.append('payment_source', paymentSource);
 
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
   const headers = { 'X-Requested-With': 'XMLHttpRequest' };
@@ -84,6 +91,11 @@ function updateCell(id, field, value) {
 }
 
 function addNewManualRow() {
+  const companyEl = document.getElementById('activeCompanySelect');
+  const sourceEl = document.getElementById('activePaymentSourceSelect');
+  const payingCompany = companyEl ? companyEl.value : 'M-one';
+  const paymentSource = sourceEl ? sourceEl.value : 'Conta da Empresa';
+
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
   const headers = {
     'Content-Type': 'application/json',
@@ -94,7 +106,7 @@ function addNewManualRow() {
   fetch('/m-pay/api/transactions/new', {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify({})
+    body: JSON.stringify({ paying_company: payingCompany, payment_source: paymentSource })
   })
   .then(res => res.json())
   .then(data => {

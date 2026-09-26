@@ -74,9 +74,9 @@ def index():
         params.append(month_filter)
 
     if search_q:
-        sql_where.append("(beneficiary_name ILIKE %s OR notes ILIKE %s OR bank_origin ILIKE %s OR beneficiary_document ILIKE %s)")
+        sql_where.append("(beneficiary_name ILIKE %s OR notes ILIKE %s OR bank_origin ILIKE %s OR beneficiary_document ILIKE %s OR paying_company ILIKE %s OR payment_source ILIKE %s)")
         like_term = f"%{search_q}%"
-        params.extend([like_term, like_term, like_term, like_term])
+        params.extend([like_term, like_term, like_term, like_term, like_term, like_term])
 
     where_clause = f"WHERE {' AND '.join(sql_where)}" if sql_where else ""
 
@@ -146,6 +146,10 @@ def upload_receipts():
         flash("Nenhum arquivo foi selecionado.", "error")
         return redirect(url_for("mpay.index"))
 
+    # Empresa pagadora e origem de pagamento selecionadas na UI
+    default_company = (request.form.get("paying_company") or request.args.get("paying_company") or "M-one").strip()
+    default_source = (request.form.get("payment_source") or request.args.get("payment_source") or "Conta da Empresa").strip()
+
     user_id = me.get("id") if me else None
     imported_items = []
 
@@ -165,9 +169,17 @@ def upload_receipts():
             save_path.write_bytes(file_bytes)
 
             mime = f.content_type or "application/pdf"
-            extracted = extract_receipt_data(file_bytes=file_bytes, filename=orig_filename, mime_type=mime)
+            extracted = extract_receipt_data(
+                file_bytes=file_bytes,
+                filename=orig_filename,
+                mime_type=mime,
+                default_paying_company=default_company,
+                default_payment_source=default_source,
+            )
 
             paid_at = extracted.get("paid_at") or None
+            paying_company = (extracted.get("paying_company") or default_company).strip()
+            payment_source = (extracted.get("payment_source") or default_source).strip()
             beneficiary = (extracted.get("beneficiary_name") or "").strip()
             doc_num = (extracted.get("beneficiary_document") or "").strip()
             amt = float(extracted.get("amount") or 0.0)
@@ -182,15 +194,17 @@ def upload_receipts():
             row = conn.execute(
                 """
                 INSERT INTO mpay_transactions (
-                    paid_at, beneficiary_name, beneficiary_document, amount,
+                    paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount,
                     bank_origin, payment_method, category, notes,
                     file_url, orig_filename, file_hash, confidence_status,
                     raw_extracted_data, created_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, paid_at, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
                 """,
                 (
                     paid_at,
+                    paying_company,
+                    payment_source,
                     beneficiary,
                     doc_num,
                     amt,
@@ -215,6 +229,8 @@ def upload_receipts():
                 imported_items.append({
                     "id": row["id"],
                     "filename": orig_filename,
+                    "paying_company": paying_company,
+                    "payment_source": payment_source,
                     "beneficiary_name": beneficiary,
                     "amount": amt,
                     "status": conf_status,
@@ -241,6 +257,10 @@ def create_manual_row():
     if not check_mpay_access(me):
         return jsonify({"success": False, "message": "Acesso negado."}), 403
 
+    data = request.get_json() or {}
+    company = data.get("paying_company", "M-one").strip()
+    source = data.get("payment_source", "Conta da Empresa").strip()
+
     user_id = me.get("id") if me else None
     today_str = date.today().isoformat()
     actor = me.get("name") if me else "Usuário"
@@ -249,13 +269,13 @@ def create_manual_row():
         row = conn.execute(
             """
             INSERT INTO mpay_transactions (
-                paid_at, beneficiary_name, beneficiary_document, amount,
+                paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount,
                 bank_origin, payment_method, category, notes,
                 confidence_status, created_by
-            ) VALUES (%s, 'Novo Favorecido', '', 0.00, '', 'PIX', 'Geral', '', 'manual', %s)
-            RETURNING id, paid_at, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
+            ) VALUES (%s, %s, %s, 'Novo Favorecido', '', 0.00, '', 'PIX', 'Geral', '', 'manual', %s)
+            RETURNING id, paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
             """,
-            (today_str, user_id),
+            (today_str, company, source, user_id),
         ).fetchone()
 
     if row:
@@ -277,6 +297,8 @@ def update_transaction(tid: int):
     data = request.get_json() or {}
     allowed_fields = [
         "paid_at",
+        "paying_company",
+        "payment_source",
         "beneficiary_name",
         "beneficiary_document",
         "amount",

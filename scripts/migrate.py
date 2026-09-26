@@ -114,8 +114,19 @@ def run_migrations():
             except Exception as e:
                 print(f"  ⚠️ Coluna {col} em whatsapp_messages: {e}")
 
+        # Colunas adicionais para mpay_transactions
+        mpay_cols = [
+            ("paying_company", "TEXT DEFAULT 'M-one'"),
+            ("payment_source", "TEXT DEFAULT 'Conta da Empresa'"),
+        ]
+        for col, col_def in mpay_cols:
+            try:
+                conn.execute(f"ALTER TABLE mpay_transactions ADD COLUMN IF NOT EXISTS {col} {col_def};")
+            except Exception as e:
+                print(f"  ⚠️ Coluna {col} em mpay_transactions: {e}")
+
         conn.commit()
-    print("  ✓ Tabela whatsapp_monitored_lines e whatsapp_messages atualizadas para Evolution API.")
+    print("  ✓ Tabela whatsapp_monitored_lines, whatsapp_messages e mpay_transactions atualizadas.")
 
     print("\n✅ MIGRAÇÃO CONCLUÍDA COM SUCESSO!")
 

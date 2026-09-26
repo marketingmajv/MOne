@@ -24,7 +24,13 @@ def calculate_file_hash(content: bytes) -> str:
     return hashlib.md5(content).hexdigest()
 
 
-def extract_receipt_data(file_bytes: bytes, filename: str, mime_type: str = "application/pdf") -> dict[str, Any]:
+def extract_receipt_data(
+    file_bytes: bytes,
+    filename: str,
+    mime_type: str = "application/pdf",
+    default_paying_company: str = "M-one",
+    default_payment_source: str = "Conta da Empresa",
+) -> dict[str, Any]:
     """
     Processa um comprovante bancário ou recibo via IA multimodal / OCR.
     Retorna dicionário padronizado com campos para preenchimento da planilha M-Pay.
@@ -48,6 +54,8 @@ Analise detalhadamente o comprovante de pagamento fornecido: "{filename}".
 
 EXTRAIA COM RIGOR OS SEGUINTES CAMPOS EM FORMATO JSON:
 - "paid_at": Data do pagamento/débito no formato "YYYY-MM-DD" (Ex: "2026-09-25"). Se encontrar apenas dia e mês com ano abreviado, ajuste para ano completo de 4 dígitos. Se não encontrar, retorne null.
+- "paying_company": Empresa pagadora identificada no documento se explicitamente citada ("M-one", "Colvix", "Maj Antiga", "Maj Vitória", "Factor", "Groove"). Se não for claramente mencionada, use exatamente "{default_paying_company}".
+- "payment_source": Origem/forma do pagamento ("Conta da Empresa" para conta bancária/PIX/TED/boleto ou "Dinheiro" para recibo em espécie/papel). Se não identificada, use "{default_payment_source}".
 - "beneficiary_name": Nome completo ou Razão Social do FAVORECIDO / DESTINATÁRIO / QUEM RECEBEU O PAGAMENTO (Ex: "COLVIX TRADING IMPORT LTDA", "João da Silva", "Enel SP", etc.). Nunca coloque o nome do pagador aqui!
 - "beneficiary_document": CPF, CNPJ ou Chave PIX do favorecido (limpe caracteres especiais opcionais se quiser, ou mantenha legível). Se não informado, retorne null.
 - "amount": Valor monetário efetivamente pago/debitado em número decimal (Ex: 1250.50, 48499.00). Não inclua símbolo de moeda. Se não encontrar, retorne 0.00.
@@ -61,6 +69,8 @@ RESPOSTA OBRIGATÓRIA:
 Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes ou depois:
 {{
   "paid_at": "YYYY-MM-DD",
+  "paying_company": "{default_paying_company}",
+  "payment_source": "{default_payment_source}",
   "beneficiary_name": "Nome do Favorecido",
   "beneficiary_document": "CPF/CNPJ/Chave Pix",
   "amount": 0.00,
@@ -108,7 +118,7 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
         response_json = execute_gemini_payload(payload, timeout=40)
         candidates = response_json.get("candidates", [])
         if not candidates:
-            return fallback_receipt(filename)
+            return fallback_receipt(filename, default_paying_company, default_payment_source)
 
         raw_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
         raw_text = raw_text.strip()
@@ -120,6 +130,12 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
             raw_text = raw_text[:-3]
 
         data = json.loads(raw_text.strip())
+
+        # Garantir que empresa pagadora e origem do pagamento estejam presentes
+        if not data.get("paying_company"):
+            data["paying_company"] = default_paying_company
+        if not data.get("payment_source"):
+            data["payment_source"] = default_payment_source
 
         # Avaliar grau de confiança na extração
         has_amount = float(data.get("amount") or 0) > 0
@@ -138,13 +154,19 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
 
     except Exception as err:
         logger.error("[M-Pay AI] Erro ao interpretar comprovante %s com Gemini: %s", filename, err)
-        return fallback_receipt(filename)
+        return fallback_receipt(filename, default_paying_company, default_payment_source)
 
 
-def fallback_receipt(filename: str) -> dict[str, Any]:
+def fallback_receipt(
+    filename: str,
+    default_paying_company: str = "M-one",
+    default_payment_source: str = "Conta da Empresa",
+) -> dict[str, Any]:
     """Retorno padrão caso a IA falhe ou o arquivo não seja legível, permitindo preenchimento manual."""
     return {
         "paid_at": None,
+        "paying_company": default_paying_company,
+        "payment_source": default_payment_source,
         "beneficiary_name": "",
         "beneficiary_document": "",
         "amount": 0.00,
