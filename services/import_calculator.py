@@ -363,17 +363,18 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         + net_broker_disbursement
     )
 
-    # 6. Base da Mercadoria e Denominador do Fator de Custo
-    # Regra 01: Fator de Custo = Total pago em reais ÷ Valor em dólar da PI sem frete
-    pi_fob_usd = pi_amount_usd if pi_amount_usd > Decimal("0.00") else (ci_amount_usd or total_paid_supplier_usd)
+    # 6. Denominador do Fator de Custo: Valor Apenas da Mercadoria em Dólar (sem Frete Marítimo)
+    cost_factor_denominator_usd = (
+        fob_negotiated_usd
+        if fob_negotiated_usd > Decimal("0.00")
+        else (pi_amount_usd if pi_amount_usd > Decimal("0.00") else ci_amount_usd)
+    )
 
-    # Regra 02: A Base da Mercadoria = Valor da CI em dólar
-    goods_base_usd = ci_amount_usd if ci_amount_usd > Decimal("0.00") else pi_amount_usd
-
-    # 7. Cálculo do Fator de Custo (R$/US$)
+    # 7. Cálculo do Fator de Custo Gerencial (R$/US$)
+    # Fator de Custo = Total Desembolsado em Reais (com numerário, carreta, ajudantes, impostos, etc.) ÷ Mercadoria sem frete (USD)
     cost_factor = None
-    if pi_fob_usd > Decimal("0.00") and total_disbursed_brl > Decimal("0.00"):
-        cost_factor = round(total_disbursed_brl / pi_fob_usd, 4)
+    if cost_factor_denominator_usd > Decimal("0.00") and total_disbursed_brl > Decimal("0.00"):
+        cost_factor = round(total_disbursed_brl / cost_factor_denominator_usd, 4)
 
     # Equivalentes em dólar e reais para exibição detalhada nos boxes
     effective_rate = cost_factor if cost_factor is not None else (
@@ -432,7 +433,7 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
         "pi_amount_usd": float(pi_amount_usd),
         "pi_amount_brl": float(pi_amount_brl),
         "pi_dolar_medio": float(pi_dolar_medio),
-        "pi_fob_usd": float(pi_fob_usd),
+        "pi_fob_usd": float(cost_factor_denominator_usd),
         "ci_amount_usd": float(ci_amount_usd),
         "ci_amount_brl": float(ci_amount_brl),
         "ci_paid_usd": float(ci_paid_usd),

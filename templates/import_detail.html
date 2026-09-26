@@ -95,7 +95,7 @@ Fornecedor: <strong>{{ i.supplier_name or 'Não informado' }}</strong> • Incot
         {% endif %}
       </div>
       <p style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ PI: <strong style="color: var(--text);">{{ financials.pi_amount_usd|money_usd }}</strong>
+        Total: <strong style="color: var(--text);">{{ financials.total_disbursed_brl|money }}</strong> ÷ FOB Produtos: <strong style="color: var(--text);">{{ financials.fob_negotiated_usd|money_usd }}</strong>
       </p>
     </div>
 
