@@ -12,7 +12,7 @@ from flask import Blueprint, current_app, flash, jsonify, redirect, request, sen
 from werkzeug.utils import secure_filename
 
 from database import db
-from routes.helpers import audit, current_user, login_required, roles_required, verify_password
+from routes.helpers import UPLOAD_DIR, audit, current_user, login_required, roles_required, verify_password
 from services.import_ai_service import (
     DOC_TYPES_MAP,
     analyze_import_batch,
@@ -152,8 +152,15 @@ def upload_documents_batch(iid: int):
         flash("Nenhum arquivo foi selecionado para envio.", "error")
         return redirect(url_for("imports.import_detail", iid=iid, tab="documents"))
 
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
+    if os.environ.get("VERCEL"):
+        upload_folder = "/tmp/uploads"
+    else:
+        upload_folder = str(current_app.config.get("UPLOAD_FOLDER") or UPLOAD_DIR)
+
+    try:
+        os.makedirs(upload_folder, exist_ok=True)
+    except Exception:
+        upload_folder = "/tmp"
 
     imported_count = 0
     duplicate_count = 0
@@ -239,11 +246,14 @@ def upload_documents_batch(iid: int):
                     import_context=import_ctx,
                 )
 
-                # Salvar arquivo no disco
+                # Salvar arquivo no disco (defensivo contra read-only filesystem na Vercel)
                 unique_filename = f"imp_{iid}_{file_hash[:8]}_{orig_filename}"
-                save_path = os.path.join(upload_folder, unique_filename)
-                with open(save_path, "wb") as out_f:
-                    out_f.write(file_bytes)
+                try:
+                    save_path = os.path.join(upload_folder, unique_filename)
+                    with open(save_path, "wb") as out_f:
+                        out_f.write(file_bytes)
+                except Exception as disk_err:
+                    logger.warning("[upload_documents_batch] Gravação em disco ignorada em ambiente read-only (%s): %s", orig_filename, disk_err)
 
                 doc_type = ai_res.get("doc_type", "OTHER")
                 title = ai_res.get("title", orig_filename)
