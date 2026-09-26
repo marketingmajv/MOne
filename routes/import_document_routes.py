@@ -67,11 +67,13 @@ def clean_float(val: Any) -> float:
 
 def extract_amount_from_doc(extracted_data: dict[str, Any], text_content: str = "", filename: str = "") -> float:
     """Extrai o valor numérico de forma resiliente via IA, dicionário ou regex no texto do arquivo."""
+    # 1. Tentar chaves conhecidas do JSON retornado pela IA
     if isinstance(extracted_data, dict):
         possible_keys = [
             "total_amount", "amount", "valor_total", "valor", "total",
             "amount_brl", "total_brl", "valor_adiantamento", "valor_despesa",
-            "net_amount", "gross_amount", "val_total", "valor_liquido", "value"
+            "net_amount", "gross_amount", "val_total", "valor_liquido", "value",
+            "total_a_depositar", "total_geral"
         ]
         for k in possible_keys:
             if k in extracted_data and extracted_data[k] is not None:
@@ -88,19 +90,29 @@ def extract_amount_from_doc(extracted_data: dict[str, Any], text_content: str = 
                 if v_clean > 0:
                     return v_clean
 
+    # 2. Tentar busca direcionada por padrões de TOTAL no texto do PDF/documento
     if text_content:
-        patterns = [
-            r"(?:TOTAL|VALOR|LIQUIDO|DEBITO|ADIANTAMENTO|SOLICITADO|DEPOSITAR)\s*[:\s]*R?\$\s*([\d\.\,]+)",
-            r"R\$\s*([\d\.\,]+)",
-            r"VALOR\s+TOTAL\s*[:\s]*R?\$\s*([\d\.\,]+)",
-            r"([\d]{1,3}(?:\.[\d]{3})*\,[\d]{2})",
+        total_patterns = [
+            r"(?:TOTAL\s+A\s+DEPOSITAR|TOTAL\s+GERAL(?:\s+DAS\s+DESPESAS)?|TOTAL\s+GERAL|TOTAL\s+A\s+PAGAR|VALOR\s+TOTAL|TOTAL\s+DESPESAS)\s*(?:[A-Z0-9\s]{0,30})?[:\s]*R?\$\s*([\d\.\,]+)",
+            r"(?:TOTAL|VALOR|LIQUIDO|DEBITO|ADIANTAMENTO|SOLICITADO|DEPOSITAR)[^\d\n\r]{0,35}?R?\$\s*([\d\.\,]+)",
         ]
-        for pat in patterns:
+        for pat in total_patterns:
             matches = re.findall(pat, text_content, re.IGNORECASE)
             for m in matches:
                 v = clean_float(m)
                 if v > 0:
                     return v
+
+        # 3. Se nenhuma linha de total específica deu match, pegar todos os números formatados como moeda brasileira (ex: 187.169,74)
+        currency_matches = re.findall(r"(?:^|[^\d])([\d]{1,3}(?:\.[\d]{3})*\,[\d]{2})(?:[^\d]|$)", text_content)
+        valid_amounts = []
+        for m in currency_matches:
+            v = clean_float(m)
+            if 10.0 <= v <= 50_000_000.0:
+                valid_amounts.append(v)
+
+        if valid_amounts:
+            return max(valid_amounts)
 
     return 0.0
 
@@ -120,6 +132,8 @@ def upload_documents_batch(iid: int):
 
     imported_count = 0
     duplicate_count = 0
+
+    target_tab = (request.args.get("tab") or request.form.get("tab") or "documents").strip().lower()
 
     with db() as conn:
         imp = conn.execute("SELECT * FROM imports WHERE id = %s", (iid,)).fetchone()
@@ -141,19 +155,57 @@ def upload_documents_batch(iid: int):
                 continue
 
             file_hash = calculate_file_hash(file_bytes)
+            mime = f.content_type or "application/pdf"
 
-            # Verificar duplicidade pelo hash
+            # Extração prévia do texto em memória se for PDF ou Planilha
+            text_content = ""
+            if mime == "application/pdf" or orig_filename.lower().endswith(".pdf"):
+                text_content = extract_text_from_pdf(file_bytes)
+            elif orig_filename.lower().endswith((".xlsx", ".xls", ".csv")):
+                text_content = extract_text_from_spreadsheet(file_bytes, orig_filename)
+
+            # Verificar se documento já foi gravado no repositório
             existing = conn.execute(
-                "SELECT id, title FROM import_documents WHERE import_id = %s AND file_hash = %s",
+                "SELECT id, doc_type, title, extracted_data FROM import_documents WHERE import_id = %s AND file_hash = %s",
                 (iid, file_hash),
             ).fetchone()
+
             if existing:
+                doc_id = existing["id"]
+                doc_type = existing["doc_type"]
+                title = existing["title"]
+                try:
+                    extracted_data = json.loads(existing["extracted_data"]) if isinstance(existing["extracted_data"], str) else (existing["extracted_data"] or {})
+                except Exception:
+                    extracted_data = {}
+
+                # Se o arquivo já existe no repositório, mas ainda não gerou movimentação financeira no numerário
+                existing_num = conn.execute("SELECT id, amount FROM import_numerario WHERE import_id = %s AND document_id = %s", (iid, doc_id)).fetchone()
+                if not existing_num and (target_tab == "numerario" or doc_type in ["NUMERARIO", "FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"]):
+                    amt_val = extract_amount_from_doc(extracted_data, text_content, orig_filename)
+                    summary_text = str(extracted_data.get("summary") or f"{title} ({orig_filename})")
+                    entry_type = "actual_expense" if (doc_type in ["FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"] or "fechamento" in summary_text.lower()) else "advance"
+                    conn.execute(
+                        """
+                        INSERT INTO import_numerario (import_id, entry_type, amount, entry_date, description, document_id)
+                        VALUES (%s, %s, %s, CURRENT_DATE, %s, %s)
+                        """,
+                        (iid, entry_type, amt_val, summary_text, doc_id),
+                    )
+                    imported_count += 1
+                    continue
+                elif existing_num and existing_num["amount"] == 0:
+                    amt_val = extract_amount_from_doc(extracted_data, text_content, orig_filename)
+                    if amt_val > 0:
+                        conn.execute("UPDATE import_numerario SET amount = %s WHERE id = %s", (amt_val, existing_num["id"]))
+                        imported_count += 1
+                        continue
+
                 duplicate_count += 1
                 logger.info("Arquivo duplicado detectado para import_id=%d: %s", iid, orig_filename)
                 continue
 
-            # Classificação inteligente com IA
-            mime = f.content_type or "application/pdf"
+            # Classificação inteligente com IA se for arquivo novo
             ai_res = classify_and_extract_document(
                 file_bytes=file_bytes,
                 filename=orig_filename,
