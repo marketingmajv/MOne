@@ -84,21 +84,21 @@ def extract_receipt_data(
 
     # Prompt especialista em comprovantes bancários, fotos de celular, recibos manuais e cupons fiscais
     prompt_text = f"""
-Você é um auditor financeiro sênior especialista em leitura e auditoria de comprovantes de pagamento, recibos em papel, fotos de notas, recibos manuscritos e comprovantes de transferências (PIX, TED, Boletos, Cartões).
-Analise com extrema atenção a imagem/documento fornecido: "{filename}".
+Você é um auditor financeiro sênior especialista em leitura e auditoria de comprovantes de pagamento, recibos em papel, fotos de notas, recibos manuscritos, cupons fiscais e comprovantes de transferências (PIX, TED, Boletos, Cartões).
+Analise com EXTREMA ATENÇÃO a foto do recibo/comprovante fornecido: "{filename}".
 
-EXTRAIA OBRIGATORIAMENTE OS CAMPOS EM FORMATO JSON:
-1. "paid_at": Data do pagamento/recibo no formato "YYYY-MM-DD". Procure datas impressas ou manuscritas no recibo (Ex: "26/09/2026", "25/09/26", "25 de Setembro de 2026"). Se encontrar ano com 2 dígitos, converta para 4 dígitos (Ex: 2026). Se NÃO encontrar nenhuma data escrita no documento, retorne exatamente "{today_str}".
-2. "paying_company": Empresa que pagou/emitiu o pagamento se citada ("M-one", "Colvix", "Maj Antiga", "Maj Vitória", "Factor", "Groove"). Se não informada, use exatamente "{default_paying_company}".
-3. "payment_source": Forma de pagamento ("Conta da Empresa" para PIX/TED/banco ou "Dinheiro" para recibos em papel/espécie). Se for recibo em papel/manuscrito ou dinheiro, use "Dinheiro". Senão use "{default_payment_source}".
-4. "beneficiary_name": Nome completo, Razão Social ou Pessoa/Empresa que RECEBEU o dinheiro / Favorecido (Ex: "João da Silva", "Mercado X", "Estacionamento Y", "Fornecedor Z").
+EXTRAIA COM MÁXIMA PRECISÃO TODOS OS DADOS VISÍVEIS EM FORMATO JSON:
+1. "paid_at": Data do pagamento/recibo no formato "YYYY-MM-DD". Procure por datas impressas ou manuscritas no papel (Ex: "26/09/2026", "25/09/26", "25 de Setembro de 2026"). Se encontrar ano com 2 dígitos, converta para 4 dígitos (Ex: 2026). Se NÃO encontrar nenhuma data escrita no documento, retorne exatamente "{today_str}".
+2. "paying_company": Empresa pagadora citada ("M-one", "Colvix", "Maj Antiga", "Maj Vitória", "Factor", "Groove"). Se não informada no papel, use exatamente "{default_paying_company}".
+3. "payment_source": Forma de pagamento ("Conta da Empresa" para PIX/TED/banco ou "Dinheiro" para recibos em papel/espécie). Se for recibo em papel/manuscrito ou em dinheiro, use "Dinheiro". Senão use "{default_payment_source}".
+4. "beneficiary_name": EMPRESA OU PESSOA QUE RECEBEU O DINHEIRO / Favorecido / Razão Social / Nome do Estabelecimento (Ex: "Posto Shell", "Oficina Mecânica Silva", "João da Silva", "Restaurante X", "Fornecedor Z").
 5. "beneficiary_document": CPF, CNPJ ou Chave PIX do favorecido se houver.
-6. "amount": Valor monetário TOTAL efetivamente pago/recebido em número decimal (Ex: 150.00, 48.50, 1250.00). Procure por "Total", "Valor", "R$", "Importância de", "Soma". Não retorne 0.00 a menos que realmente não haja valor visível.
+6. "amount": Valor monetário TOTAL efetivamente pago/recebido em número decimal (Ex: 150.00, 48.50, 1250.00). Procure por "Total", "Valor", "R$", "Importância de R$", "Soma", "Valor Pago". Não retorne 0.00 se houver qualquer valor numérico visível.
 7. "currency": "BRL" para Real.
 8. "bank_origin": Nome do banco de origem (Ex: "Itaú", "Bradesco", "Banco do Brasil", "Nubank", "Banco Inter", etc.). Se for recibo físico em dinheiro, coloque "Dinheiro / Em Espécie".
 9. "payment_method": "PIX", "TED", "BOLETO", "CARTAO", "DINHEIRO" ou "OUTRO".
 10. "category": Categoria da despesa (Ex: "Operacional", "Alimentação", "Transporte / Frete", "Manutenção", "Serviços", "Suprimentos", "Geral").
-11. "notes": DESCRIÇÃO DA DESPESA ou Histórico/Motivo do recibo (Ex: "Referente a compra de material", "Combustível", "Serviço prestado", "Autenticação N° 123456"). Nunca deixe vazio se houver qualquer descrição ou detalhe no recibo!
+11. "notes": DISCRIMINAÇÃO DO TIPO DE PRODUTO OU SERVIÇO PAGO / Motivo do recibo (Ex: "Compra de 2 pneus e alinhamento", "Refeição de trabalho", "Combustível Óleo Diesel", "Serviço de Frete e Entrega", "Material de Escritório", "Autenticação N° 123456"). Descreva o produto ou serviço com o máximo de detalhes possível a partir da foto!
 
 RESPOSTA OBRIGATÓRIA:
 Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes ou depois:
@@ -106,14 +106,14 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
   "paid_at": "{today_str}",
   "paying_company": "{default_paying_company}",
   "payment_source": "{default_payment_source}",
-  "beneficiary_name": "Nome do Favorecido",
+  "beneficiary_name": "Nome da Empresa que Recebeu",
   "beneficiary_document": "CPF/CNPJ/Pix",
   "amount": 0.00,
   "currency": "BRL",
-  "bank_origin": "Banco de Origem",
-  "payment_method": "PIX",
+  "bank_origin": "Banco de Origem / Dinheiro",
+  "payment_method": "DINHEIRO",
   "category": "Geral",
-  "notes": "Descrição da despesa ou motivo"
+  "notes": "Discriminação detalhada do produto ou serviço pago"
 }}
 """
 

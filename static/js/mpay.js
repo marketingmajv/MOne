@@ -11,10 +11,30 @@ function handleDrop(e) {
   }
 }
 
+let pendingFileList = null;
+
 function handleFileInput(input) {
   if (input.files && input.files.length > 0) {
+    pendingFileList = input.files;
+    const badge = document.getElementById('pendingPhotoBadge');
+    const badgeText = document.getElementById('pendingPhotoText');
+    if (badge && badgeText) {
+      badgeText.textContent = `📷 ${input.files.length} foto(s)/recibo(s) capturado(s)! Analisando preferencialmente por IA...`;
+      badge.style.display = 'flex';
+    }
+    // Preenchimento preferencial e automático via IA Gemini
     uploadFiles(input.files);
-    input.value = '';
+  }
+}
+
+function processCapturedPhoto() {
+  if (pendingFileList && pendingFileList.length > 0) {
+    uploadFiles(pendingFileList);
+  } else {
+    const cameraInput = document.getElementById('cameraInput');
+    if (cameraInput) {
+      cameraInput.click();
+    }
   }
 }
 

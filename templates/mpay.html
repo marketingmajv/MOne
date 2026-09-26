@@ -89,14 +89,28 @@
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileInput(this)">
       <button type="button" class="btn-hero-camera" onclick="document.getElementById('cameraInput').click()">
         <span style="font-size: 22px;">📸</span>
-        <span>Fotografar com Câmera do Celular</span>
+        <span>1. Fotografar com Câmera</span>
+      </button>
+
+      <!-- Botão Registrar Foto com IA na Planilha -->
+      <button type="button" class="btn-hero-process" onclick="processCapturedPhoto()">
+        <span style="font-size: 22px;">⚡</span>
+        <span>2. Registrar Foto na Planilha (IA & Drive)</span>
       </button>
 
       <!-- Input Múltiplos Arquivos -->
       <input type="file" id="batchFileInput" multiple accept=".pdf,image/*" style="display: none;" onchange="handleFileInput(this)">
       <button type="button" class="btn-hero-files" onclick="document.getElementById('batchFileInput').click()">
-        <span style="font-size: 20px;">📁</span>
-        <span>Selecionar Arquivos (PDF / Fotos)</span>
+        <span style="font-size: 18px;">📁</span>
+        <span>Anexar Arquivos (PDF / Fotos)</span>
+      </button>
+    </div>
+
+    <!-- Badge de Foto Capturada Pronta -->
+    <div id="pendingPhotoBadge" style="display: none; background: rgba(5,150,105,0.15); border: 1px solid #059669; border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #34d399; font-weight: 700; align-items: center; justify-content: space-between;">
+      <span id="pendingPhotoText">📷 Foto capturada pronta para análise pela IA!</span>
+      <button type="button" class="btn primary sm" onclick="processCapturedPhoto()" style="background: #059669; border-color: #059669; font-size: 12px; padding: 6px 12px; font-weight: 700;">
+        ⚡ Registrar Agora na Planilha
       </button>
     </div>
 
