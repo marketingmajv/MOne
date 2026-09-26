@@ -65,6 +65,46 @@ def clean_float(val: Any) -> float:
         return 0.0
 
 
+def extract_amount_from_doc(extracted_data: dict[str, Any], text_content: str = "", filename: str = "") -> float:
+    """Extrai o valor numérico de forma resiliente via IA, dicionário ou regex no texto do arquivo."""
+    if isinstance(extracted_data, dict):
+        possible_keys = [
+            "total_amount", "amount", "valor_total", "valor", "total",
+            "amount_brl", "total_brl", "valor_adiantamento", "valor_despesa",
+            "net_amount", "gross_amount", "val_total", "valor_liquido", "value"
+        ]
+        for k in possible_keys:
+            if k in extracted_data and extracted_data[k] is not None:
+                v = clean_float(extracted_data[k])
+                if v > 0:
+                    return v
+
+        for k, v in extracted_data.items():
+            k_lower = str(k).lower()
+            if isinstance(v, (int, float)) and v > 0 and not any(sub in k_lower for sub in ["date", "rate", "number", "hash", "id", "year", "sku", "qty", "quantity"]):
+                return float(v)
+            elif isinstance(v, str) and any(sub in k_lower for sub in ["valor", "amount", "total", "preco", "custo"]):
+                v_clean = clean_float(v)
+                if v_clean > 0:
+                    return v_clean
+
+    if text_content:
+        patterns = [
+            r"(?:TOTAL|VALOR|LIQUIDO|DEBITO|ADIANTAMENTO|SOLICITADO|DEPOSITAR)\s*[:\s]*R?\$\s*([\d\.\,]+)",
+            r"R\$\s*([\d\.\,]+)",
+            r"VALOR\s+TOTAL\s*[:\s]*R?\$\s*([\d\.\,]+)",
+            r"([\d]{1,3}(?:\.[\d]{3})*\,[\d]{2})",
+        ]
+        for pat in patterns:
+            matches = re.findall(pat, text_content, re.IGNORECASE)
+            for m in matches:
+                v = clean_float(m)
+                if v > 0:
+                    return v
+
+    return 0.0
+
+
 @import_document_bp.route("/api/imports/<int:iid>/documents/upload-batch", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
@@ -159,15 +199,29 @@ def upload_documents_batch(iid: int):
 
             # Inclusão e vinculação automática de lançamentos no financeiro via IA
             try:
-                amt_val = clean_float(extracted_data.get("total_amount"))
+                # Extração de texto bruto do arquivo em memória se for PDF ou Planilha
+                text_content = ""
+                if mime == "application/pdf" or orig_filename.lower().endswith(".pdf"):
+                    text_content = extract_text_from_pdf(file_bytes)
+                elif orig_filename.lower().endswith((".xlsx", ".xls", ".csv")):
+                    text_content = extract_text_from_spreadsheet(file_bytes, orig_filename)
+
+                amt_val = extract_amount_from_doc(extracted_data, text_content, orig_filename)
                 issue_date = extracted_data.get("issue_date") or None
                 if issue_date and len(str(issue_date)) < 8:
                     issue_date = None
                 summary_text = str(extracted_data.get("summary") or f"{title} ({orig_filename})")
 
+                target_tab = (request.args.get("tab") or request.form.get("tab") or "documents").strip().lower()
+
                 # 1. Numerário Aduaneiro
-                if doc_type in ["NUMERARIO", "FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"]:
-                    entry_type = "actual_expense" if doc_type in ["FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"] else "advance"
+                is_numerario_doc = doc_type in ["NUMERARIO", "FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"]
+                if not is_numerario_doc and target_tab == "numerario" and doc_type not in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT", "CHASSIS_LIST"]:
+                    is_numerario_doc = True
+                    doc_type = "NUMERARIO"
+
+                if is_numerario_doc:
+                    entry_type = "actual_expense" if (doc_type in ["FECHAMENTO_DESPACHANTE", "BROKER_SETTLEMENT"] or "fechamento" in summary_text.lower()) else "advance"
                     conn.execute(
                         """
                         INSERT INTO import_numerario (import_id, entry_type, amount, entry_date, description, document_id)
@@ -177,7 +231,7 @@ def upload_documents_batch(iid: int):
                     )
 
                 # 2. Despesas e Tributos no Brasil
-                elif doc_type in ["ICMS_GUIDE", "TAX_GUIDE", "NF_FRETE_CARRETA", "AGENTE_CARGA_BR", "AJUDANTES_PAGTO", "ENTRY_NF"]:
+                elif doc_type in ["ICMS_GUIDE", "TAX_GUIDE", "NF_FRETE_CARRETA", "AGENTE_CARGA_BR", "AJUDANTES_PAGTO", "ENTRY_NF"] or (target_tab == "expenses_brazil" and doc_type not in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT", "CHASSIS_LIST", "NUMERARIO"]):
                     cat_map = {
                         "ICMS_GUIDE": "impostos",
                         "TAX_GUIDE": "impostos",
@@ -199,7 +253,7 @@ def upload_documents_batch(iid: int):
                     )
 
                 # 3. Pagamentos na China / Remessas / Câmbio
-                elif doc_type in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT"]:
+                elif doc_type in ["EXCHANGE_CONTRACT", "SUPPLIER_PAYMENT"] or (target_tab == "payments_china" and doc_type not in ["CHASSIS_LIST", "NUMERARIO", "ICMS_GUIDE"]):
                     curr = str(extracted_data.get("currency") or "USD").upper()
                     exch_rate = clean_float(extracted_data.get("exchange_rate")) or None
                     if "BRL" in curr:

@@ -351,8 +351,9 @@ def calculate_import_financials(import_id: int, conn) -> dict[str, Any]:
     numerario_balance_brl = advances_brl - effective_proven_broker_expenses - refunds_brl
 
     # 5. Total Líquido Desembolsado em Reais
-    # Regra: Desembolso = Pagamentos Fornecedor + Tarifas + Despesas Diretas + Adiantamentos Líquidos ao Despachante
-    net_broker_disbursement = advances_brl - refunds_brl
+    # Regra: Desembolso = Pagamentos Fornecedor + Tarifas + Despesas Diretas + Desembolso Efetivo ao Despachante (Maior entre Adiantamentos e Despesas Comprovadas, deduzidas as devoluções)
+    effective_broker_disbursement = max(advances_brl, effective_proven_broker_expenses)
+    net_broker_disbursement = effective_broker_disbursement - refunds_brl
     if net_broker_disbursement < Decimal("0.00"):
         net_broker_disbursement = Decimal("0.00")
 
