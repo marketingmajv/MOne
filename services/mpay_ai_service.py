@@ -140,21 +140,39 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
     }
 
     try:
-        response_json = execute_gemini_payload(payload, timeout=40)
-        candidates = response_json.get("candidates", [])
-        if not candidates:
-            return fallback_receipt(filename, default_paying_company, default_payment_source)
+        response_json = execute_gemini_payload(payload, timeout=35)
+        if not response_json or not response_json.get("success"):
+            err_msg = response_json.get("message") if response_json else "IA indisponível"
+            return fallback_receipt(
+                filename,
+                default_paying_company,
+                default_payment_source,
+                error_reason=err_msg,
+                raw_text=extracted_text,
+            )
 
-        raw_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "{}")
-        raw_text = raw_text.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.startswith("```"):
-            raw_text = raw_text[3:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
+        data = response_json.get("data")
+        if not data and response_json.get("text"):
+            raw_text = response_json["text"].strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            if raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+            try:
+                data = json.loads(raw_text.strip())
+            except Exception:
+                data = None
 
-        data = json.loads(raw_text.strip())
+        if not data:
+            return fallback_receipt(
+                filename,
+                default_paying_company,
+                default_payment_source,
+                error_reason="Formato de resposta inválido da IA",
+                raw_text=extracted_text,
+            )
 
         # Garantir preenchimento dos campos essenciais se nulos/vazios
         if not data.get("paid_at") or str(data.get("paid_at")).strip() in ["null", "", "None"]:
@@ -186,18 +204,34 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato, sem texto antes
         return data
 
     except Exception as err:
-        logger.error("[M-Pay AI] Erro ao interpretar comprovante %s com Gemini: %s", filename, err)
-        return fallback_receipt(filename, default_paying_company, default_payment_source)
+        err_msg = str(err)
+        logger.error("[M-Pay AI] Erro ao interpretar comprovante %s com Gemini: %s", filename, err_msg)
+        reason = "IA indisponível no momento"
+        if "429" in err_msg or "ResourceExhausted" in err_msg:
+            reason = "Limite de requisições temporário da IA"
+        elif "timeout" in err_msg.lower():
+            reason = "Tempo limite da IA excedido"
+        elif "API_KEY" in err_msg or "api key" in err_msg.lower():
+            reason = "Chave da API da IA não configurada"
+        return fallback_receipt(filename, default_paying_company, default_payment_source, error_reason=reason, raw_text=extracted_text)
 
 
 def fallback_receipt(
     filename: str,
     default_paying_company: str = "M-one",
     default_payment_source: str = "Conta da Empresa",
+    error_reason: str | None = None,
+    raw_text: str = "",
 ) -> dict[str, Any]:
-    """Retorno padrão garantindo data de hoje e observações legíveis para edição rápida."""
+    """Retorno de contingência com extração local por padrões caso a IA esteja temporariamente sobrecarregada."""
+    import re
+
     today_str = date.today().isoformat()
-    return {
+    note_txt = f"Recibo: {filename}"
+    if error_reason:
+        note_txt += f" ({error_reason} - preencher dados)"
+
+    res = {
         "paid_at": today_str,
         "paying_company": default_paying_company,
         "payment_source": default_payment_source,
@@ -208,6 +242,87 @@ def fallback_receipt(
         "bank_origin": "Dinheiro / Banco",
         "payment_method": "OUTRO",
         "category": "Geral",
-        "notes": f"Recibo capturado: {filename}",
+        "notes": note_txt,
         "confidence_status": "manual",
+        "ai_error": bool(error_reason),
     }
+
+    # Se houver texto extraído do documento, aplica regex local de alta precisão
+    if raw_text and len(raw_text.strip()) > 10:
+        # 1. Valor monetário
+        amt_match = re.search(r"R\$\s*([0-9\.,]+)", raw_text)
+        if amt_match:
+            res["amount"] = clean_amount(amt_match.group(1))
+
+        # 2. Data
+        date_match = re.search(r"(\d{2})[/-](\d{2})[/-](\d{4})", raw_text)
+        if date_match:
+            res["paid_at"] = f"{date_match.group(3)}-{date_match.group(2)}-{date_match.group(1)}"
+
+        # 3. Documento CPF/CNPJ
+        doc_match = re.search(r"(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})", raw_text)
+        if doc_match:
+            res["beneficiary_document"] = doc_match.group(1)
+
+        # 4. Favorecido / Destino
+        ben_match = re.search(r"(?:Favorecido|Destino|Recebedor)[\s/:]*\n\s*([^\n\r]+)", raw_text, re.IGNORECASE)
+        if ben_match:
+            candidate = ben_match.group(1).strip()
+            if len(candidate) > 2 and not candidate.startswith("R$"):
+                res["beneficiary_name"] = candidate
+
+        # 5. Banco de Origem
+        for b_name in ["Banco Inter", "Inter", "Itaú", "Bradesco", "Nubank", "Banco do Brasil", "Santander", "Caixa"]:
+            if b_name.lower() in raw_text.lower():
+                res["bank_origin"] = b_name
+                break
+
+        # 6. Método
+        if "pix" in raw_text.lower():
+            res["payment_method"] = "PIX"
+
+        # 7. Descrição / Observações
+        notes_match = re.search(r"(?:Observações|Descrição|Histórico)[\s/:]*\n\s*([^\n\r]+)", raw_text, re.IGNORECASE)
+        if notes_match:
+            res["notes"] = notes_match.group(1).strip()
+
+        if res["amount"] > 0:
+            res["confidence_status"] = "partial" if res["beneficiary_name"] == "Novo Favorecido" else "verified"
+            res["ai_error"] = False
+
+    return res
+
+
+def clean_amount(val: Any) -> float:
+    """
+    Converte com segurança valores monetários (BRL ou US) para float.
+    Trata separadores de milhar e vírgula decimal (ex: '1.250,50' -> 1250.50).
+    """
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+
+    s = str(val).replace("R$", "").replace("$", "").replace(" ", "").strip()
+    if not s:
+        return 0.0
+
+    if "." in s and "," in s:
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "," in s:
+        s = s.replace(",", ".")
+    elif "." in s:
+        parts = s.split(".")
+        if len(parts) > 2:
+            s = s.replace(".", "")
+        elif len(parts) == 2 and len(parts[1]) == 3 and parts[0].isdigit():
+            s = s.replace(".", "")
+
+    try:
+        return float(s)
+    except Exception:
+        return 0.0
+

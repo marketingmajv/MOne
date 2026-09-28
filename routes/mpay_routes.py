@@ -6,6 +6,7 @@ leitura com IA Gemini, preenchimento de grade interativa em tempo real e exporta
 
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import json
@@ -20,13 +21,15 @@ from werkzeug.utils import secure_filename
 
 from database import db
 from routes.helpers import audit, current_user, login_required
-from services.mpay_ai_service import calculate_file_hash, extract_receipt_data
+from services.mpay_ai_service import calculate_file_hash, clean_amount, extract_receipt_data
 from services.mpay_export_service import export_mpay_dataset
+from services.mpay_service import analyze_receipt_for_modal, confirm_and_save_transaction
 from services.mpay_sheets_service import (
     apply_google_sheets_update,
     archive_receipt_to_local_gdrive,
     get_mpay_setting,
     log_mpay_audit,
+    serve_mpay_receipt,
     set_mpay_setting,
     sync_transaction_to_google_sheet,
 )
@@ -118,6 +121,7 @@ def index():
         ).fetchall()
 
     sheets_webhook_url = get_mpay_setting("google_sheets_webhook_url")
+    google_sheets_url = get_mpay_setting("google_sheets_url")
 
     return render_template(
         "mpay.html",
@@ -128,14 +132,58 @@ def index():
         current_month_filter=month_filter,
         search_q=search_q,
         sheets_webhook_url=sheets_webhook_url,
+        google_sheets_url=google_sheets_url,
         hide_sidebar=True,
     )
+
+
+@mpay_bp.route("/api/analyze-receipt", methods=["POST"])
+@login_required
+def analyze_receipt_endpoint():
+    """Recebe um comprovante e retorna a extração IA e sugestões para o modal de confirmação."""
+    me = current_user()
+    if not check_mpay_access(me):
+        return jsonify({"success": False, "message": "Acesso não autorizado."}), 403
+
+    f = request.files.get("receipt")
+    if not f or not f.filename:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado para análise."}), 400
+
+    orig_filename = secure_filename(f.filename)
+    file_bytes = f.read()
+    if not file_bytes:
+        return jsonify({"success": False, "message": "Arquivo vazio."}), 400
+
+    mime = f.content_type or "application/pdf"
+    result = analyze_receipt_for_modal(file_bytes, orig_filename, mime)
+    return jsonify(result)
+
+
+@mpay_bp.route("/api/confirm-receipt", methods=["POST"])
+@login_required
+def confirm_receipt_endpoint():
+    """Confirma o extrato revisado pelo usuário no modal, grava no banco e sincroniza com a planilha."""
+    me = current_user()
+    if not check_mpay_access(me):
+        return jsonify({"success": False, "message": "Acesso não autorizado."}), 403
+
+    payload = request.get_json() or {}
+    user_id = me.get("id") if me else None
+    actor_name = me.get("name") if me else "Usuário"
+
+    try:
+        saved_row = confirm_and_save_transaction(payload, user_id=user_id, actor_name=actor_name)
+        audit("mpay.receipt_confirmed", f"user={user_id}, id={saved_row.get('id')}")
+        return jsonify({"success": True, "transaction": saved_row})
+    except Exception as err:
+        logger.error("[M-Pay] Erro ao confirmar transação: %s", err)
+        return jsonify({"success": False, "message": f"Erro ao salvar: {err}"}), 500
 
 
 @mpay_bp.route("/upload", methods=["POST"])
 @login_required
 def upload_receipts():
-    """Recebe arquivos múltiplos ou fotos diretas de comprovantes e os processa com IA."""
+    """Endpoint legado de compatibilidade para upload direto."""
     me = current_user()
     if not check_mpay_access(me):
         return jsonify({"success": False, "message": "Acesso não autorizado."}), 403
@@ -147,112 +195,38 @@ def upload_receipts():
         flash("Nenhum arquivo foi selecionado.", "error")
         return redirect(url_for("mpay.index"))
 
-    # Empresa pagadora e origem de pagamento selecionadas na UI
-    default_company = (request.form.get("paying_company") or request.args.get("paying_company") or "M-one").strip()
-    default_source = (request.form.get("payment_source") or request.args.get("payment_source") or "Conta da Empresa").strip()
-
+    default_company = (request.form.get("paying_company") or "M-one").strip()
+    default_source = (request.form.get("payment_source") or "Conta da Empresa").strip()
     user_id = me.get("id") if me else None
-    imported_items = []
+    actor = me.get("name") if me else "Sistema IA"
+    imported = []
 
-    with db() as conn:
-        for f in files:
-            if not f or not f.filename:
-                continue
-
-            orig_filename = secure_filename(f.filename)
-            file_bytes = f.read()
-            if not file_bytes:
-                continue
-
-            file_hash = calculate_file_hash(file_bytes)
-            unique_filename = f"mpay_{file_hash[:10]}_{orig_filename}"
-            save_path = MPAY_UPLOAD_DIR / unique_filename
-            save_path.write_bytes(file_bytes)
-
-            mime = f.content_type or "application/pdf"
-            extracted = extract_receipt_data(
-                file_bytes=file_bytes,
-                filename=orig_filename,
-                mime_type=mime,
-                default_paying_company=default_company,
-                default_payment_source=default_source,
-            )
-
-            paid_at = extracted.get("paid_at") or None
-            paying_company = (extracted.get("paying_company") or default_company).strip()
-            payment_source = (extracted.get("payment_source") or default_source).strip()
-            beneficiary = (extracted.get("beneficiary_name") or "").strip()
-            doc_num = (extracted.get("beneficiary_document") or "").strip()
-            amt = float(extracted.get("amount") or 0.0)
-            bank = (extracted.get("bank_origin") or "").strip()
-            method = (extracted.get("payment_method") or "PIX").strip().upper()
-            category = (extracted.get("category") or "Geral").strip()
-            notes = (extracted.get("notes") or "").strip()
-            conf_status = extracted.get("confidence_status", "manual")
-
-            file_url_rel = f"mpay/{unique_filename}"
-
-            row = conn.execute(
-                """
-                INSERT INTO mpay_transactions (
-                    paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount,
-                    bank_origin, payment_method, category, notes,
-                    file_url, orig_filename, file_hash, confidence_status,
-                    raw_extracted_data, created_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
-                """,
-                (
-                    paid_at,
-                    paying_company,
-                    payment_source,
-                    beneficiary,
-                    doc_num,
-                    amt,
-                    bank,
-                    method,
-                    category,
-                    notes,
-                    file_url_rel,
-                    orig_filename,
-                    file_hash,
-                    conf_status,
-                    json.dumps(extracted),
-                    user_id,
-                ),
-            ).fetchone()
-
-            if row:
-                r_dict = dict(row)
-                actor = me.get("name") if me else "Sistema IA"
-                log_mpay_audit(row["id"], "created", "mpay_ai", actor_name=actor)
-                
-                # Arquivar no Google Drive local se disponível
-                archive_receipt_to_local_gdrive(file_bytes, orig_filename, company=paying_company)
-                
-                # Sincronizar com Google Sheets e Google Drive Cloud via Webhook
-                sync_transaction_to_google_sheet("create", r_dict, actor_name=actor, file_bytes=file_bytes, filename=orig_filename, mime_type=mime)
-                
-                imported_items.append({
-                    "id": row["id"],
-                    "filename": orig_filename,
-                    "paying_company": paying_company,
-                    "payment_source": payment_source,
-                    "beneficiary_name": beneficiary,
-                    "amount": amt,
-                    "status": conf_status,
-                })
-
-        audit("mpay.receipts_uploaded", f"user={user_id}, count={len(imported_items)}")
+    for f in files:
+        if not f or not f.filename:
+            continue
+        orig_filename = secure_filename(f.filename)
+        file_bytes = f.read()
+        if not file_bytes:
+            continue
+        mime = f.content_type or "application/pdf"
+        analysis = analyze_receipt_for_modal(file_bytes, orig_filename, mime)
+        extracted = analysis.get("extracted", {})
+        payload = {
+            **extracted,
+            "orig_filename": orig_filename,
+            "file_base64": analysis.get("file_base64"),
+            "file_hash": analysis.get("file_hash"),
+            "mime_type": mime,
+            "paying_company": default_company or extracted.get("paying_company"),
+            "payment_source": default_source or extracted.get("payment_source"),
+        }
+        row = confirm_and_save_transaction(payload, user_id=user_id, actor_name=actor)
+        imported.append(row)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.is_json:
-        return jsonify({
-            "success": True,
-            "message": f"{len(imported_items)} comprovante(s) processado(s) com sucesso!",
-            "items": imported_items,
-        })
+        return jsonify({"success": True, "message": f"{len(imported)} comprovante(s) processado(s)!", "items": imported})
 
-    flash(f"{len(imported_items)} comprovante(s) lido(s) com sucesso pela IA!", "success")
+    flash(f"{len(imported)} comprovante(s) lido(s) com sucesso!", "success")
     return redirect(url_for("mpay.index"))
 
 
@@ -274,14 +248,11 @@ def create_manual_row():
 
     with db() as conn:
         row = conn.execute(
-            """
-            INSERT INTO mpay_transactions (
+            """INSERT INTO mpay_transactions (
                 paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount,
-                bank_origin, payment_method, category, notes,
-                confidence_status, created_by
+                bank_origin, payment_method, category, notes, confidence_status, created_by
             ) VALUES (%s, %s, %s, 'Novo Favorecido', '', 0.00, '', 'PIX', 'Geral', '', 'manual', %s)
-            RETURNING id, paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status
-            """,
+            RETURNING id, paid_at, paying_company, payment_source, beneficiary_name, beneficiary_document, amount, bank_origin, payment_method, category, notes, confidence_status""",
             (today_str, company, source, user_id),
         ).fetchone()
 
@@ -322,10 +293,7 @@ def update_transaction(tid: int):
         if f in data:
             val = data[f]
             if f == "amount":
-                try:
-                    val = float(str(val).replace(",", ".").replace("R$", "").strip() or 0)
-                except Exception:
-                    val = 0.0
+                val = clean_amount(val)
             elif f == "paid_at" and not val:
                 val = None
             updates.append(f"{f} = %s")
@@ -397,16 +365,26 @@ def sheets_config():
     if request.method == "POST":
         data = request.get_json() or {}
         webhook_url = data.get("webhook_url", "").strip()
+        sheets_url = data.get("sheets_url", "").strip()
         set_mpay_setting("google_sheets_webhook_url", webhook_url)
-        return jsonify({"success": True, "message": "Webhook do Google Sheets configurado com sucesso!"})
+        if "sheets_url" in data:
+            set_mpay_setting("google_sheets_url", sheets_url)
+        return jsonify({"success": True, "message": "Configurações do Google Sheets salvas com sucesso!"})
 
     current_url = get_mpay_setting("google_sheets_webhook_url")
-    return jsonify({"success": True, "webhook_url": current_url})
+    current_sheets_url = get_mpay_setting("google_sheets_url")
+    return jsonify({"success": True, "webhook_url": current_url, "sheets_url": current_sheets_url})
 
 
 @mpay_bp.route("/api/sheets/webhook-sync", methods=["POST"])
 def sheets_incoming_webhook():
     """Webhook público chamado pelo Google Apps Script para sincronizar edições do Google Sheets."""
+    expected_secret = get_mpay_setting("sheets_webhook_secret")
+    if expected_secret:
+        auth_token = request.headers.get("X-Webhook-Secret") or request.args.get("secret")
+        if auth_token != expected_secret:
+            return jsonify({"success": False, "message": "Acesso negado: Secret inválido."}), 403
+
     payload = request.get_json(force=True, silent=True) or {}
     success, msg = apply_google_sheets_update(payload)
     status_code = 200 if success else 400
@@ -489,3 +467,12 @@ def export_csv():
     if not check_mpay_access(current_user()):
         return "Acesso negado", 403
     return export_mpay_dataset("csv", request.args.get("month", "").strip(), request.args.get("q", "").strip())
+
+
+@mpay_bp.route("/receipt/<int:tid>", methods=["GET"])
+@login_required
+def view_receipt(tid: int):
+    """Serve o comprovante do disco ou decodifica do banco (Base64) se o arquivo físico não existir."""
+    if not check_mpay_access(current_user()):
+        return jsonify({"error": "Acesso negado"}), 403
+    return serve_mpay_receipt(tid)

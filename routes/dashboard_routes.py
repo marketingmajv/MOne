@@ -190,12 +190,73 @@ def audit_logs():
 @dashboard_bp.route("/uploads/<path:filename>")
 @login_required
 def uploads(filename: str):
-    # 1. Defesa contra Path Traversal: utiliza estritamente o basename do arquivo
-    safe_name = Path(filename).name
-    target_path = UPLOAD_DIR / safe_name
-    if not target_path.exists() or not target_path.is_file():
-        abort(404)
+    # 1. Defesa contra Path Traversal: validação canônica segura dentro de UPLOAD_DIR
+    clean_rel = Path(filename.lstrip("/\\"))
+    if any(part in ("..", "") for part in clean_rel.parts):
+        abort(403)
 
+    target_path = (UPLOAD_DIR / clean_rel).resolve()
+    upload_root = UPLOAD_DIR.resolve()
+
+    try:
+        target_path.relative_to(upload_root)
+    except ValueError:
+        abort(403)
+
+    # Se não encontrado diretamente no caminho relativo, busca fallbacks seguros
+    if not target_path.exists() or not target_path.is_file():
+        safe_name = Path(filename).name
+        # Fallback 1: subpasta mpay/
+        mpay_candidate = UPLOAD_DIR / "mpay" / safe_name
+        if mpay_candidate.exists() and mpay_candidate.is_file():
+            target_path = mpay_candidate
+        else:
+            # Fallback 2: raiz de UPLOAD_DIR
+            root_candidate = UPLOAD_DIR / safe_name
+            if root_candidate.exists() and root_candidate.is_file():
+                target_path = root_candidate
+            else:
+                # Fallback 3: Google Drive local (se sincronizado)
+                gdrive_found = None
+                try:
+                    cloud_storage = Path.home() / "Library" / "CloudStorage"
+                    if cloud_storage.exists():
+                        for match in cloud_storage.glob(f"**/Comprovantes M-Pay/**/{safe_name}"):
+                            if match.is_file():
+                                gdrive_found = match
+                                break
+                except Exception:
+                    gdrive_found = None
+
+                if gdrive_found:
+                    target_path = gdrive_found
+                elif safe_name.startswith("mpay_") or "mpay" in str(clean_rel).lower():
+                    # Fallback 4: Recuperação resiliente do Supabase PostgreSQL (Base64)
+                    try:
+                        import base64
+                        import json
+                        from flask import Response
+                        with db() as conn:
+                            db_row = conn.execute(
+                                "SELECT orig_filename, raw_extracted_data FROM mpay_transactions WHERE file_url LIKE %s LIMIT 1",
+                                (f"%{safe_name}%",),
+                            ).fetchone()
+                        if db_row and db_row.get("raw_extracted_data"):
+                            r_json = db_row["raw_extracted_data"]
+                            if isinstance(r_json, str):
+                                r_json = json.loads(r_json)
+                            b64 = r_json.get("file_base64")
+                            if b64:
+                                file_bytes = base64.b64decode(b64)
+                                mime = r_json.get("mime_type") or "image/jpeg"
+                                return Response(file_bytes, mimetype=mime, headers={"Content-Disposition": f"inline; filename=\"{safe_name}\""})
+                    except Exception:
+                        pass
+                    abort(404)
+                else:
+                    abort(404)
+
+    safe_name = target_path.name
     me = current_user()
     if not me:
         abort(401)
@@ -203,10 +264,10 @@ def uploads(filename: str):
     role = me.get("role")
     # Diretoria, Suporte e Financeiro têm acesso irrestrito
     if role in ["admin", "support", "finance"] or user_has_permission(me, "all_sales", default_for_sales=False):
-        return send_from_directory(UPLOAD_DIR, safe_name, as_attachment=False)
+        return send_from_directory(target_path.parent, target_path.name, as_attachment=False)
 
-    # Bloqueio de sigilo: Vendedores não podem acessar documentos de custos/importações (AGENTS.md)
-    confidential_prefixes = ("bl_", "di_", "ci_", "packing_list_", "container_", "fornecedor_")
+    # Bloqueio de sigilo: Vendedores não podem acessar documentos de custos/importações/mpay (AGENTS.md)
+    confidential_prefixes = ("bl_", "di_", "ci_", "packing_list_", "container_", "fornecedor_", "mpay_")
     if safe_name.lower().startswith(confidential_prefixes):
         abort(403)
 
@@ -234,7 +295,7 @@ def uploads(filename: str):
                 if not owns_receipt:
                     abort(403)
 
-    return send_from_directory(UPLOAD_DIR, safe_name, as_attachment=False)
+    return send_from_directory(target_path.parent, target_path.name, as_attachment=False)
 
 
 @dashboard_bp.route("/api/dashboard/chart-data")

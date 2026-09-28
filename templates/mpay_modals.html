@@ -1,41 +1,80 @@
 <!-- M-Pay Modals (templates/mpay_modals.html) -->
 
+<!-- Modal Planilha Não Conectada (Aviso Amigável para Usuário Final) -->
+<div id="sheetsNotConnectedModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+  <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; width: 90%; max-width: 460px; padding: 26px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); text-align: center;">
+    <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(15, 157, 88, 0.12); color: #0f9d58; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 14px;">
+      📊
+    </div>
+    
+    <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: var(--text);">
+      Planilha Online Não Conectada
+    </h3>
+    
+    <p style="font-size: 13.5px; color: var(--muted); margin: 0 0 22px 0; line-height: 1.5;">
+      Ainda não há um link de planilha do Google Sheets vinculado para acesso direto. Você pode vincular a URL da sua planilha agora no painel de configurações.
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 10px;">
+      <button type="button" class="btn outline sm" onclick="closeSheetsNotConnectedModal()" style="font-weight: 600; padding: 8px 16px;">
+        Fechar
+      </button>
+      <button type="button" class="btn primary sm" onclick="goToSheetsConfig()" style="background: #0f9d58; border-color: #0b8043; font-weight: 700; padding: 8px 18px;">
+        ⚙️ Ir para Configurações
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Configuração Google Sheets -->
 <div id="sheetsModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-  <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; width: 90%; max-width: 600px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+  <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; width: 90%; max-width: 580px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
       <h3 style="margin: 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-        📊 Conectar Google Planilhas (Bidirecional)
+        📊 Conectar Google Planilhas
       </h3>
       <button type="button" onclick="closeSheetsModal()" style="background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer;">✕</button>
     </div>
 
     <p style="font-size: 13px; color: var(--muted); margin: 0 0 16px 0; line-height: 1.5;">
-      Sincronize automaticamente comprovantes com o Google Sheets e receba alterações de volta no M-One com histórico completo.
+      Vincule o link da sua planilha online para acesso rápido com 1 clique e habilite a sincronização automática.
     </p>
 
-    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 18px; font-size: 12.5px;">
-      <b style="color: var(--text);">Passo a Passo Rápido:</b>
-      <ol style="margin: 8px 0 0 16px; padding: 0; color: var(--muted); line-height: 1.6;">
-        <li>Crie uma nova planilha no seu Google Drive.</li>
-        <li>Vá no menu <b>Extensões > Apps Script</b>, apague o código padrão e cole o script abaixo.</li>
-        <li>Clique em <b>Implantar > Nova Implantação > App da Web</b> (Acesso: <i>Qualquer pessoa</i>).</li>
-        <li>Copie a URL gerada e cole no campo abaixo.</li>
-      </ol>
-      <div style="margin-top: 10px;">
-        <button type="button" class="btn outline sm" onclick="copyAppsScriptCode()" style="font-size: 11.5px; font-weight: 700;">
-          📋 Copiar Código Apps Script
-        </button>
-        <span id="copyFeedback" style="font-size: 11px; color: #047857; margin-left: 8px; display: none;">Copiado!</span>
-      </div>
+    <!-- Campo Principal: Link da Planilha -->
+    <div style="background: rgba(15, 157, 88, 0.05); border: 1px solid rgba(15, 157, 88, 0.25); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+      <label style="display: block; font-size: 12.5px; font-weight: 800; color: #047857; margin-bottom: 6px;">
+        🔗 Link da Planilha Google Sheets (Acesso Online Direto):
+      </label>
+      <input type="url" id="sheetsSpreadsheetInput" placeholder="https://docs.google.com/spreadsheets/d/.../edit" value="{{ google_sheets_url or '' }}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 13px; outline: none; box-sizing: border-box;">
+      <span style="font-size: 11.5px; color: var(--muted); display: block; margin-top: 5px;">Cole a URL da planilha para abri-la diretamente pelo botão verde da barra de ferramentas.</span>
     </div>
 
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px;">
-        URL do Webhook do Google Apps Script:
-      </label>
-      <input type="url" id="sheetsWebhookInput" placeholder="https://script.google.com/macros/s/.../exec" value="{{ sheets_webhook_url or '' }}" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); font-size: 13px; outline: none; box-sizing: border-box;">
-    </div>
+    <!-- Detalhes Técnicos: Apps Script Webhook (Recolhido para não poluir) -->
+    <details style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 20px;">
+      <summary style="font-size: 12.5px; font-weight: 700; color: var(--text); cursor: pointer; user-select: none;">
+        ⚡ Configuração Técnica de Sincronização Automática (Apps Script / Webhook)
+      </summary>
+      <div style="margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.5;">
+        <p style="margin: 0 0 10px 0;">Necessário apenas se desejar sincronização bidirecional em tempo real entre o M-One e o Google Sheets.</p>
+        <ol style="margin: 0 0 10px 16px; padding: 0;">
+          <li>Na sua planilha Google, vá em <b>Extensões > Apps Script</b> e cole o script abaixo.</li>
+          <li>Clique em <b>Implantar > Nova Implantação > App da Web</b> (Acesso: <i>Qualquer pessoa</i>).</li>
+          <li>Copie a URL gerada e cole no campo de Webhook abaixo.</li>
+        </ol>
+        <div style="margin-bottom: 12px;">
+          <button type="button" class="btn outline sm" onclick="copyAppsScriptCode()" style="font-size: 11px; font-weight: 700;">
+            📋 Copiar Código Apps Script
+          </button>
+          <span id="copyFeedback" style="font-size: 11px; color: #047857; margin-left: 8px; display: none;">Copiado!</span>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
+            URL do Webhook do Google Apps Script:
+          </label>
+          <input type="url" id="sheetsWebhookInput" placeholder="https://script.google.com/macros/s/.../exec" value="{{ sheets_webhook_url or '' }}" style="width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); font-size: 12px; outline: none; box-sizing: border-box;">
+        </div>
+      </div>
+    </details>
 
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <button type="button" class="btn outline sm" onclick="syncAllToSheets()" style="font-weight: 700;" title="Envia todos os comprovantes para a planilha">
@@ -68,3 +107,190 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Inteligente: Revisão & Confirmação do Comprovante (M-Pay) -->
+<div id="mpayConfirmModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(5, 10, 25, 0.75); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 16px;">
+  <div class="mpay-confirm-card" style="background: var(--panel, #1e293b); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.5); overflow: hidden; animation: mpayModalFadeIn 0.25s ease-out;">
+    
+    <!-- Topo do Modal -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.1)); background: var(--panel2, #0f172a);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 24px;">✨</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text, #ffffff); letter-spacing: -0.2px;">
+              Revisão & Confirmação de Pagamento
+            </h3>
+            <span id="modalQueueBadge" style="display: none; background: #2563EB; color: #ffffff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 12px;">
+              1 de 1
+            </span>
+          </div>
+          <span style="font-size: 12.5px; color: var(--muted, #94a3b8);">
+            A IA analisou os dados. Escolha a empresa, forma de pagamento e confirme o extrato abaixo.
+          </span>
+        </div>
+      </div>
+      <button type="button" onclick="discardCurrentReceipt()" title="Descartar e Fechar" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--muted, #94a3b8); cursor: pointer; transition: all 0.2s;">✕</button>
+    </div>
+
+    <!-- Corpo Scrollável -->
+    <div style="overflow-y: auto; padding: 22px 24px; flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- PERGUNTAS EM DESTAQUE (CHIPS MODERNOS) -->
+      <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+        
+        <!-- Pergunta 1: Empresa Pagadora -->
+        <div>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #60a5fa; margin-bottom: 8px;">
+            🏢 Qual a Empresa Pagadora?
+            <span style="font-size: 11px; font-weight: normal; color: var(--muted, #94a3b8);">(Sugerida pela IA)</span>
+          </label>
+          <div class="mpay-chips-group" id="companyChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button type="button" class="mpay-chip active" data-company="M-one" onclick="selectCompanyChip(this)">M-one</button>
+            <button type="button" class="mpay-chip" data-company="Colvix" onclick="selectCompanyChip(this)">Colvix</button>
+            <button type="button" class="mpay-chip" data-company="Maj Antiga" onclick="selectCompanyChip(this)">Maj Antiga</button>
+            <button type="button" class="mpay-chip" data-company="Maj Vitória" onclick="selectCompanyChip(this)">Maj Vitória</button>
+            <button type="button" class="mpay-chip" data-company="Factor" onclick="selectCompanyChip(this)">Factor</button>
+            <button type="button" class="mpay-chip" data-company="Groove" onclick="selectCompanyChip(this)">Groove</button>
+          </div>
+          <input type="hidden" id="modalInputCompany" value="M-one">
+        </div>
+
+        <!-- Pergunta 2: Forma de Pagamento -->
+        <div>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #34d399; margin-bottom: 8px;">
+            💳 Qual a Forma de Pagamento?
+            <span style="font-size: 11px; font-weight: normal; color: var(--muted, #94a3b8);">(Identificada no comprovante)</span>
+          </label>
+          <div class="mpay-chips-group" id="sourceChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button type="button" class="mpay-chip active" data-source="Conta da Empresa" onclick="selectSourceChip(this)">🏦 Conta da Empresa</button>
+            <button type="button" class="mpay-chip" data-source="Dinheiro" onclick="selectSourceChip(this)">💵 Dinheiro (Em Espécie)</button>
+          </div>
+          <input type="hidden" id="modalInputSource" value="Conta da Empresa">
+        </div>
+
+      </div>
+
+      <!-- EXTRATO EDITÁVEL + PREVIEW DO ARQUIVO -->
+      <div class="mpay-modal-grid" style="display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: stretch;">
+        
+        <!-- Preview do Comprovante -->
+        <div style="background: var(--panel2, #0f172a); border: 1px solid var(--line, rgba(255,255,255,0.1)); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 240px;">
+          <div id="modalPreviewContainer" style="width: 100%; height: 210px; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 10px; background: rgba(0,0,0,0.2);">
+            <img id="modalPreviewImg" src="" alt="Comprovante" style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+            <div id="modalPreviewPdf" style="display: none; flex-direction: column; align-items: center; gap: 8px; color: var(--muted, #94a3b8); text-align: center; padding: 10px;">
+              <span style="font-size: 40px;">📄</span>
+              <span id="modalPdfName" style="font-size: 11.5px; font-weight: 700; word-break: break-all; color: var(--text, #ffffff);">comprovante.pdf</span>
+              <span style="font-size: 10.5px; color: #60a5fa;">Documento PDF Lido</span>
+            </div>
+          </div>
+          <div style="margin-top: 10px; font-size: 11px; color: var(--muted, #94a3b8); text-align: center;" id="modalFileMeta">
+            Arquivo analisado pela IA
+          </div>
+        </div>
+
+        <!-- Extrato Resumido Editável -->
+        <div style="background: var(--panel2, #0f172a); border: 1px solid var(--line, rgba(255,255,255,0.1)); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line, rgba(255,255,255,0.08)); padding-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 800; color: var(--text, #ffffff); display: flex; align-items: center; gap: 6px;">
+              📋 Extrato dos Dados Lidos
+            </span>
+            <span id="modalConfidenceTag" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
+              ✓ Alta Precisão IA
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <!-- Valor -->
+            <div style="grid-column: span 2; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 10px; padding: 8px 12px;">
+              <label style="display: block; font-size: 11px; font-weight: 800; color: #60a5fa; margin-bottom: 2px;">
+                VALOR DO PAGAMENTO (R$) *
+              </label>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 18px; font-weight: 800; color: #34d399;">R$</span>
+                <input type="number" step="0.01" id="modalInputAmount" style="font-size: 22px; font-weight: 900; color: #ffffff; background: transparent; border: none; outline: none; width: 100%;" placeholder="0,00" required>
+              </div>
+            </div>
+
+            <!-- Favorecido -->
+            <div style="grid-column: span 2;">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                Favorecido / Estabelecimento
+              </label>
+              <input type="text" id="modalInputBeneficiary" class="modal-form-input" placeholder="Nome de quem recebeu o pagamento">
+            </div>
+
+            <!-- Documento (CPF/CNPJ) -->
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                CPF / CNPJ / Chave Pix
+              </label>
+              <input type="text" id="modalInputDoc" class="modal-form-input" placeholder="Documento se houver">
+            </div>
+
+            <!-- Data do Pagamento -->
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                Data do Pagamento
+              </label>
+              <input type="date" id="modalInputDate" class="modal-form-input">
+            </div>
+
+            <!-- Banco de Origem -->
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                Banco de Origem
+              </label>
+              <input type="text" id="modalInputBank" class="modal-form-input" placeholder="Ex: Itaú, Nubank, Bradesco">
+            </div>
+
+            <!-- Categoria -->
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                Categoria
+              </label>
+              <select id="modalInputCategory" class="modal-form-input">
+                <option value="Operacional">Operacional</option>
+                <option value="Combustível">Combustível</option>
+                <option value="Manutenção">Manutenção</option>
+                <option value="Alimentação">Alimentação</option>
+                <option value="Frete e Transporte">Frete e Transporte</option>
+                <option value="Serviços">Serviços</option>
+                <option value="Suprimentos">Suprimentos</option>
+                <option value="Geral" selected>Geral</option>
+              </select>
+            </div>
+
+            <!-- Observações / Descrição -->
+            <div style="grid-column: span 2;">
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted, #94a3b8); margin-bottom: 4px;">
+                Observações / Descrição do Gasto
+              </label>
+              <input type="text" id="modalInputNotes" class="modal-form-input" placeholder="Ex: Compra de peças ou combustível">
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Rodapé de Ações com Destaque -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid var(--line, rgba(255,255,255,0.1)); background: var(--panel2, #0f172a);">
+      <button type="button" class="btn outline sm" onclick="discardCurrentReceipt()" style="font-weight: 700; color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+        🗑️ Descartar Comprovante
+      </button>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span id="modalSaveStatus" style="font-size: 12px; color: var(--muted, #94a3b8); display: none;">Salvando...</span>
+        <button type="button" id="btnModalConfirm" class="btn primary" onclick="confirmCurrentReceipt()" style="background: linear-gradient(135deg, #2563EB, #1D4ED8); border: none; padding: 10px 22px; font-size: 14px; font-weight: 800; border-radius: 10px; box-shadow: 0 4px 15px rgba(37,99,235,0.4); display: flex; align-items: center; gap: 8px;">
+          <span>✅ Confirmar e Enviar para Planilha</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+

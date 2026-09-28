@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/mpay.css', v='20260926_redesign_v1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mpay.css', v='20260928_contrast_v1') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <script>
     (function() {
@@ -33,7 +33,7 @@
             Leitor Inteligente de Comprovantes
           </span>
         </div>
-        <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--muted, #64748b);">
+        <p style="margin: 4px 0 0 0; font-size: 13.5px; color: #334155; font-weight: 500;">
           Fotografe recibos ou envie PDFs. A IA identifica a empresa pagadora, favorecido e dados automaticamente.
         </p>
       </div>
@@ -46,71 +46,32 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <span class="hero-icon-pulse">📸</span>
         <div>
-          <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #ffffff;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #ffffff; letter-spacing: -0.2px;">
             Capturar & Fotografar Comprovantes
           </h3>
-          <span style="font-size: 12.5px; color: rgba(255,255,255,0.85);">
+          <span style="font-size: 13px; color: #e2e8f0; font-weight: 500;">
             Fotografe direto do celular ou selecione múltiplos arquivos da galeria/PDF
           </span>
         </div>
       </div>
     </div>
 
-    <!-- Barra de Configuração: Empresa Pagadora e Origem do Pagamento -->
-    <div class="mpay-config-bar">
-      <div class="config-field">
-        <label for="activeCompanySelect">🏢 Empresa Pagadora:</label>
-        <select id="activeCompanySelect" class="config-select">
-          <option value="M-one" selected>M-one</option>
-          <option value="Colvix">Colvix</option>
-          <option value="Maj Antiga">Maj Antiga</option>
-          <option value="Maj Vitória">Maj Vitória</option>
-          <option value="Factor">Factor</option>
-          <option value="Groove">Groove</option>
-        </select>
-      </div>
 
-      <div class="config-field">
-        <label for="activePaymentSourceSelect">💳 Forma de Pagamento:</label>
-        <select id="activePaymentSourceSelect" class="config-select">
-          <option value="Conta da Empresa" selected>Conta da Empresa</option>
-          <option value="Dinheiro">Dinheiro (Em Espécie)</option>
-        </select>
-      </div>
-
-      <div class="config-hint">
-        💡 Selecione a empresa e forma de pagamento que serão atribuídas aos comprovantes abaixo.
-      </div>
-    </div>
 
     <!-- Botões de Ação de Captura Prominentes -->
     <div class="mpay-hero-actions">
       <!-- Input Câmera Nativa -->
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleFileInput(this)">
-      <button type="button" class="btn-hero-camera" onclick="document.getElementById('cameraInput').click()">
+      <button type="button" class="btn-hero-camera" id="btnCamera" onclick="document.getElementById('cameraInput').click()">
         <span style="font-size: 22px;">📸</span>
-        <span>1. Fotografar com Câmera</span>
-      </button>
-
-      <!-- Botão Registrar Foto com IA na Planilha -->
-      <button type="button" class="btn-hero-process" onclick="processCapturedPhoto()">
-        <span style="font-size: 22px;">⚡</span>
-        <span>2. Registrar Foto na Planilha (IA & Drive)</span>
+        <span>Fotografar com Câmera (Leitura Automática por IA)</span>
       </button>
 
       <!-- Input Múltiplos Arquivos -->
       <input type="file" id="batchFileInput" multiple accept=".pdf,image/*" style="display: none;" onchange="handleFileInput(this)">
-      <button type="button" class="btn-hero-files" onclick="document.getElementById('batchFileInput').click()">
+      <button type="button" class="btn-hero-files" id="btnFiles" onclick="document.getElementById('batchFileInput').click()">
         <span style="font-size: 18px;">📁</span>
         <span>Anexar Arquivos (PDF / Fotos)</span>
-      </button>
-    </div>
-
-    <!-- Badge de Foto Capturada Pronta -->
-    <div id="pendingPhotoBadge" style="display: none; background: rgba(5,150,105,0.15); border: 1px solid #059669; border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #34d399; font-weight: 700; align-items: center; justify-content: space-between;">
-      <span id="pendingPhotoText">📷 Foto capturada pronta para análise pela IA!</span>
-      <button type="button" class="btn primary sm" onclick="processCapturedPhoto()" style="background: #059669; border-color: #059669; font-size: 12px; padding: 6px 12px; font-weight: 700;">
-        ⚡ Registrar Agora na Planilha
       </button>
     </div>
 
@@ -120,17 +81,17 @@
          ondragover="event.preventDefault(); this.classList.add('dragover');"
          ondragleave="this.classList.remove('dragover');"
          ondrop="handleDrop(event)">
-      <div style="font-size: 44px; margin-bottom: 8px;">☁️</div>
-      <strong style="display: block; font-size: 16px; color: var(--text, #0f172a); margin-bottom: 4px;">
+      <div style="font-size: 46px; margin-bottom: 8px;">☁️</div>
+      <strong style="display: block; font-size: 16.5px; color: #ffffff !important; margin-bottom: 6px; font-weight: 800; letter-spacing: -0.2px;">
         Arraste e solte seus comprovantes aqui ou toque nos botões acima
       </strong>
-      <p style="margin: 0; font-size: 13px; color: var(--muted, #64748b); max-width: 650px; margin: 0 auto;">
+      <p style="margin: 0; font-size: 13.5px; color: #cbd5e1 !important; max-width: 650px; margin: 0 auto; font-weight: 500; line-height: 1.5;">
         Suporta fotos da câmera, capturas de tela e múltiplos PDFs bancários (PIX, TED, Boletos, Recibos em Dinheiro).
       </p>
 
       <!-- Indicador de Carregamento com IA -->
-      <div id="uploadLoader" style="display: none; margin-top: 18px; color: #2563EB; font-weight: 700; font-size: 14px;">
-        <span class="spinner" style="display: inline-block; width: 18px; height: 18px; border: 3px solid #2563EB; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span>
+      <div id="uploadLoader" style="display: none; margin-top: 18px; color: #60a5fa; font-weight: 800; font-size: 14.5px;">
+        <span class="spinner" style="display: inline-block; width: 18px; height: 18px; border: 3px solid #60a5fa; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px;"></span>
         <span id="uploadLoaderText">Processando comprovante(s) com IA Gemini...</span>
       </div>
     </div>
@@ -151,7 +112,7 @@
         <span style="background: rgba(37,99,235,0.1); color: #2563EB; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px;">
           Total: R$ {{ "%.2f"|format(stats.total_amount or 0) }}
         </span>
-        <span style="background: var(--panel2, #f8fafc); border: 1px solid var(--line, #e2e8f0); color: var(--muted, #64748b); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px;">
+        <span style="background: var(--panel2, #f8fafc); border: 1px solid var(--line, #cbd5e1); color: #334155; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px;">
           {{ stats.total_count or 0 }} comprovante(s)
         </span>
       </div>
@@ -179,6 +140,20 @@
           <input type="text" name="q" value="{{ search_q }}" placeholder="Buscar empresa, favorecido, obs..." style="padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line, #e2e8f0); background: var(--panel2, #f8fafc); color: var(--text, #0f172a); font-size: 12.5px; width: 220px;">
           <button type="submit" class="btn outline sm" style="padding: 7px 12px;">🔍</button>
         </form>
+
+        <!-- Botão Acessar Planilha Google Sheets Online -->
+        <a id="btnOpenGoogleSheets"
+           href="{{ google_sheets_url if google_sheets_url else 'javascript:void(0)' }}"
+           {% if google_sheets_url %}target="_blank" rel="noopener noreferrer"{% endif %}
+           onclick="{% if not google_sheets_url %}openSheetsNotConnectedModal(); return false;{% endif %}"
+           class="btn sm"
+           style="background: #0f9d58; color: #ffffff; border: 1px solid #0b8043; font-weight: 700; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; padding: 7px 13px; border-radius: 8px; box-shadow: 0 1px 3px rgba(15,157,88,0.25); transition: all 0.2s ease;"
+           title="{% if google_sheets_url %}Abrir Planilha do Google Sheets em nova aba{% else %}Planilha online não conectada - Clique para ver detalhes{% endif %}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink: 0;">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H6v-2h6v2zm4-4H6v-2h10v2zm0-4H6V7h10v2z"/>
+          </svg>
+          <span>Abrir Planilha Online</span>
+        </a>
 
         <!-- Botão Nova Linha Manual -->
         <button type="button" class="btn primary sm" onclick="addNewManualRow()" style="font-weight: 700;">
@@ -292,8 +267,8 @@
 
               <!-- Comprovante -->
               <td style="text-align: center;">
-                {% if t.file_url %}
-                  <a href="{{ url_for('uploads', filename=t.file_url) }}" target="_blank" class="badge" style="text-decoration: none;" title="Abrir Comprovante">
+                {% if t.file_url or (t.raw_extracted_data and t.raw_extracted_data.get('file_base64')) %}
+                  <a href="{{ url_for('mpay.view_receipt', tid=t.id) }}" target="_blank" class="badge" style="text-decoration: none;" title="Abrir Comprovante">
                     📄 Ver
                   </a>
                 {% else %}
@@ -331,7 +306,7 @@
         <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text, #0f172a);">
           Exportação & Conexão M-One
         </h4>
-        <span style="font-size: 12px; color: var(--muted, #64748b);">
+        <span style="font-size: 12.5px; color: #334155; font-weight: 500;">
           Baixe a planilha em Excel/CSV ou sincronize com o Google Sheets
         </span>
       </div>
@@ -360,6 +335,7 @@
 
 {% include "mpay_modals.html" %}
 
-<script src="{{ url_for('static', filename='js/mpay.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mpay_modal.js', v='20260928_v1') }}"></script>
+<script src="{{ url_for('static', filename='js/mpay.js', v='20260928_v3') }}"></script>
 </body>
 </html>

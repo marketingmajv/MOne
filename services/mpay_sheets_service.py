@@ -239,11 +239,8 @@ def apply_google_sheets_update(payload: dict[str, Any]) -> tuple[bool, str]:
             old_val = current.get(k)
             # Normalização de tipos
             if k == "amount":
-                try:
-                    cleaned = str(new_val).replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
-                    new_val = float(cleaned)
-                except Exception:
-                    continue
+                from services.mpay_ai_service import clean_amount
+                new_val = clean_amount(new_val)
             elif k == "paid_at" and isinstance(new_val, str) and "/" in new_val:
                 try:
                     parts = new_val.strip().split("/")
@@ -278,3 +275,78 @@ def apply_google_sheets_update(payload: dict[str, Any]) -> tuple[bool, str]:
             )
 
     return True, "Atualização aplicada com sucesso."
+
+
+def serve_mpay_receipt(tid: int):
+    """
+    Serve o arquivo de comprovante com tolerância total a ambientes serverless (Vercel):
+    1. Tenta carregar do disco local (uploads/mpay).
+    2. Se não existir no disco, decodifica do banco Supabase PostgreSQL (Base64).
+    3. Tenta carregar da pasta Google Drive local.
+    """
+    from flask import Response, abort, send_from_directory
+
+    with db() as conn:
+        row = conn.execute(
+            "SELECT id, file_url, orig_filename, raw_extracted_data FROM mpay_transactions WHERE id = %s",
+            [tid],
+        ).fetchone()
+
+    if not row:
+        abort(404)
+
+    raw_data = row.get("raw_extracted_data") or {}
+    if isinstance(raw_data, str):
+        try:
+            raw_data = json.loads(raw_data)
+        except Exception:
+            raw_data = {}
+    elif not isinstance(raw_data, dict):
+        raw_data = {}
+
+    orig_filename = row.get("orig_filename") or raw_data.get("orig_filename") or f"comprovante_{tid}.pdf"
+    file_url = row.get("file_url") or ""
+
+    # 1. Tentar disco local
+    base_dir = Path(__file__).resolve().parent.parent
+    safe_name = Path(file_url).name if file_url else ""
+    if safe_name:
+        candidates = [
+            base_dir / "uploads" / "mpay" / safe_name,
+            Path("/tmp/uploads/mpay") / safe_name,
+            base_dir / "uploads" / safe_name,
+            Path("/tmp/uploads") / safe_name,
+        ]
+        for c in candidates:
+            if c.exists() and c.is_file():
+                return send_from_directory(c.parent, c.name, as_attachment=False)
+
+    # 2. Tentar recuperar do Banco de Dados (Base64 persistente)
+    b64_data = raw_data.get("file_base64")
+    if b64_data:
+        try:
+            file_bytes = base64.b64decode(b64_data)
+            mime = raw_data.get("mime_type") or "application/pdf"
+            if not mime or mime == "application/octet-stream":
+                from services.mpay_ai_service import detect_file_mime
+                mime, _ = detect_file_mime(file_bytes, orig_filename)
+            return Response(
+                file_bytes,
+                mimetype=mime,
+                headers={"Content-Disposition": f"inline; filename=\"{orig_filename}\""},
+            )
+        except Exception as e:
+            logger.error("[M-Pay Receipt] Erro ao decodificar Base64: %s", e)
+
+    # 3. Tentar Google Drive local
+    try:
+        cloud_storage = Path.home() / "Library" / "CloudStorage"
+        if cloud_storage.exists():
+            for match in cloud_storage.glob(f"**/Comprovantes M-Pay/**/{orig_filename}"):
+                if match.is_file():
+                    return send_from_directory(match.parent, match.name, as_attachment=False)
+    except Exception:
+        pass
+
+    abort(404)
+

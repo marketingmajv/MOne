@@ -14,6 +14,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from dotenv import load_dotenv
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
@@ -21,6 +23,7 @@ DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 def get_gemini_api_key() -> str:
     """Obtém a chave da API do Gemini do ambiente ou da tabela integrations no Supabase."""
+    load_dotenv(override=True)
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         try:
@@ -31,17 +34,13 @@ def get_gemini_api_key() -> str:
                     key = row["access_token"].strip()
         except Exception:
             pass
-    return key or DEFAULT_GEMINI_KEY
+    return key
 
 
 def get_candidate_models() -> list[str]:
     """Retorna a lista ordenada de modelos candidatos para failover automático."""
-    primary = os.environ.get("GEMINI_MODEL", "gemini-flash-latest").strip() or "gemini-flash-latest"
-    # Ordem prioritária de resiliência:
-    # 1. Flash-Lite (altíssima disponibilidade e baixa latência contra picos de 503)
-    # 2. Modelo principal configurado
-    # 3. Gemini 3 Flash Preview (segundo nó de redundância)
-    preferred = ["gemini-flash-lite-latest", primary, "gemini-3-flash-preview"]
+    primary = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest").strip() or "gemini-flash-lite-latest"
+    preferred = [primary, "gemini-flash-lite-latest", "gemini-flash-latest"]
     seen = set()
     result = []
     for m in preferred:
@@ -54,8 +53,8 @@ def get_candidate_models() -> list[str]:
 def execute_gemini_payload(
     payload: dict[str, Any],
     api_key: str | None = None,
-    timeout: int = 35,
-    max_retries_per_model: int = 2,
+    timeout: int = 30,
+    max_retries_per_model: int = 1,
     custom_models: list[str] | None = None,
 ) -> dict[str, Any]:
     """Envia requisição para a API do Gemini com cascata de modelos e retentativas automáticas.
