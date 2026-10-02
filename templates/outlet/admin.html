@@ -249,12 +249,24 @@
           <input type="text" name="color" id="outlet_form_color" style="width: 100%;">
         </div>
 
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Foto Principal do Produto</label>
-          <input type="text" name="image_main" id="outlet_form_image_main" placeholder="Cole a URL ou selecione o arquivo abaixo..." style="width: 100%; margin-bottom: 6px;">
-          <small class="muted" style="display: block; margin-bottom: 4px;">Ou selecione uma foto do computador (otimização e compressão automática):</small>
-          <input type="file" id="outlet_file_input" accept="image/*" style="width: 100%;" onchange="handleOutletImageUpload(this)">
+        <!-- Galeria de Fotos e Foto Capa -->
+        <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
+          <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Produto</label>
+          <small class="muted" style="display: block; margin-bottom: 10px; font-size: 0.75rem;">
+            Envie uma ou mais fotos do computador/celular. Defina qual será a <strong>Foto Capa (Principal)</strong>.
+          </small>
+
+          <input type="hidden" name="image_main" id="outlet_form_image_main">
+          <input type="hidden" name="images_gallery" id="outlet_form_images_gallery">
+
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+            <input type="file" id="outlet_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleOutletGalleryUpload(this)">
+          </div>
+
           <div id="upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
+
+          <!-- Preview da Galeria e Foto Capa -->
+          <div id="outlet_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px;"></div>
         </div>
 
         <div style="margin-bottom: 16px;">
@@ -274,6 +286,8 @@
 
 <script>
   const OUTLET_ITEMS_LIST = {{ items|tojson }};
+  let CURRENT_GALLERY = [];
+  let CURRENT_IMAGE_MAIN = '';
 
   function openOutletNewModal() {
     document.getElementById('outlet_form_id').value = '';
@@ -285,8 +299,10 @@
     document.getElementById('outlet_form_installment_18').value = '';
     document.getElementById('outlet_form_stock_qty').value = '1';
     document.getElementById('outlet_form_color').value = '';
-    document.getElementById('outlet_form_image_main').value = '';
     document.getElementById('outlet_form_description').value = '';
+    CURRENT_GALLERY = [];
+    CURRENT_IMAGE_MAIN = '';
+    renderGalleryPreview();
     const title = document.getElementById('outlet_modal_title');
     if (title) title.textContent = 'Novo Produto do Outlet';
     openModal('outletModal');
@@ -307,16 +323,158 @@
     document.getElementById('outlet_form_installment_18').value = (item.installment_18 !== null && item.installment_18 !== undefined) ? item.installment_18 : '';
     document.getElementById('outlet_form_stock_qty').value = (item.stock_qty !== null && item.stock_qty !== undefined) ? item.stock_qty : 1;
     document.getElementById('outlet_form_color').value = item.color || '';
-    document.getElementById('outlet_form_image_main').value = item.image_main || '';
     document.getElementById('outlet_form_description').value = item.description || '';
+
+    CURRENT_IMAGE_MAIN = item.image_main || '';
+    let gal = item.images_gallery || [];
+    if (typeof gal === 'string') {
+      try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+    }
+    CURRENT_GALLERY = Array.isArray(gal) ? [...gal] : [];
+    if (CURRENT_IMAGE_MAIN && !CURRENT_GALLERY.includes(CURRENT_IMAGE_MAIN)) {
+      CURRENT_GALLERY.unshift(CURRENT_IMAGE_MAIN);
+    }
+    renderGalleryPreview();
+
     const title = document.getElementById('outlet_modal_title');
     if (title) title.textContent = 'Editar Produto: ' + (item.name || '');
     openModal('outletModal');
   }
 
+  function renderGalleryPreview() {
+    const container = document.getElementById('outlet_gallery_preview_container');
+    const mainInput = document.getElementById('outlet_form_image_main');
+    const galleryInput = document.getElementById('outlet_form_images_gallery');
+
+    if (mainInput) mainInput.value = CURRENT_IMAGE_MAIN;
+    if (galleryInput) galleryInput.value = JSON.stringify(CURRENT_GALLERY);
+
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (CURRENT_GALLERY.length === 0) {
+      container.innerHTML = '<small class="muted" style="grid-column: 1 / -1; font-style: italic;">Nenhuma foto adicionada ainda.</small>';
+      return;
+    }
+
+    CURRENT_GALLERY.forEach((imgUrl, index) => {
+      const isMain = (imgUrl === CURRENT_IMAGE_MAIN) || (index === 0 && !CURRENT_IMAGE_MAIN);
+      if (isMain && !CURRENT_IMAGE_MAIN) {
+        CURRENT_IMAGE_MAIN = imgUrl;
+        if (mainInput) mainInput.value = CURRENT_IMAGE_MAIN;
+      }
+
+      const card = document.createElement('div');
+      card.style.cssText = `
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid ${isMain ? '#00cc88' : 'var(--line, #334155)'};
+        background: rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px;
+      `;
+
+      card.innerHTML = `
+        <img src="${imgUrl}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px;" onerror="this.src='/static/logo.png'">
+        ${isMain ? '<span style="position: absolute; top: 6px; left: 6px; background: #00cc88; color: #000; font-weight: 800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">⭐ CAPA</span>' : ''}
+        <div style="display: flex; gap: 4px; width: 100%; margin-top: 4px;">
+          ${!isMain ? `<button type="button" class="btn sm" onclick="setAsCoverPhoto(${index})" style="flex: 1; padding: 2px; font-size: 0.65rem; background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0,204,136,0.3);">Capa</button>` : ''}
+          <button type="button" class="btn sm" onclick="removePhotoFromGallery(${index})" style="padding: 2px 6px; font-size: 0.65rem; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);">✕</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function setAsCoverPhoto(index) {
+    if (CURRENT_GALLERY[index]) {
+      CURRENT_IMAGE_MAIN = CURRENT_GALLERY[index];
+      renderGalleryPreview();
+    }
+  }
+
+  function removePhotoFromGallery(index) {
+    const removed = CURRENT_GALLERY.splice(index, 1)[0];
+    if (CURRENT_IMAGE_MAIN === removed) {
+      CURRENT_IMAGE_MAIN = CURRENT_GALLERY.length > 0 ? CURRENT_GALLERY[0] : '';
+    }
+    renderGalleryPreview();
+  }
+
+  function handleOutletGalleryUpload(input) {
+    const files = input.files;
+    const statusDiv = document.getElementById('upload_status_badge');
+    if (!files || files.length === 0) return;
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.style.color = '#e5a93b';
+      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)...`;
+    }
+
+    let processedCount = 0;
+    const totalFiles = files.length;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          
+          CURRENT_GALLERY.push(compressedDataUrl);
+          if (!CURRENT_IMAGE_MAIN) {
+            CURRENT_IMAGE_MAIN = compressedDataUrl;
+          }
+
+          processedCount++;
+          if (processedCount === totalFiles) {
+            renderGalleryPreview();
+            if (statusDiv) {
+              statusDiv.style.color = '#00cc88';
+              statusDiv.textContent = `✓ ${totalFiles} foto(s) adicionada(s) à galeria com sucesso!`;
+            }
+            input.value = '';
+          }
+        };
+        img.onerror = function() {
+          processedCount++;
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   // Aliases para compatibilidade
   window.openNewOutletModal = openOutletNewModal;
   window.editOutletItem = openOutletEditModal;
+  window.setAsCoverPhoto = setAsCoverPhoto;
+  window.removePhotoFromGallery = removePhotoFromGallery;
+  window.handleOutletGalleryUpload = handleOutletGalleryUpload;
 
   function outletAdmin() {
     return {
@@ -328,66 +486,5 @@
       }
     };
   }
-
-  function handleOutletImageUpload(input) {
-    const file = input.files && input.files[0];
-    const statusDiv = document.getElementById('upload_status_badge');
-    if (!file) return;
-
-    if (statusDiv) {
-      statusDiv.style.display = 'block';
-      statusDiv.style.color = '#e5a93b';
-      statusDiv.textContent = 'Otimizando e comprimindo imagem...';
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1200;
-
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-        
-        const imageMainInput = document.getElementById('outlet_form_image_main');
-        if (imageMainInput) {
-          imageMainInput.value = compressedDataUrl;
-        }
-
-        const sizeKb = Math.round((compressedDataUrl.length * 3 / 4) / 1024);
-        if (statusDiv) {
-          statusDiv.style.color = '#00cc88';
-          statusDiv.textContent = '✓ Imagem comprimida com sucesso (' + width + 'x' + height + 'px, ~' + sizeKb + ' KB)';
-        }
-      };
-      img.onerror = function() {
-        if (statusDiv) {
-          statusDiv.style.color = '#ef4444';
-          statusDiv.textContent = 'Erro ao ler arquivo de imagem.';
-        }
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  window.handleOutletImageUpload = handleOutletImageUpload;
 </script>
 {% endblock %}

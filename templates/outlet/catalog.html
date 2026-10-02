@@ -273,13 +273,8 @@
             <div class="modal-main-image">
               <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name">
             </div>
-            <div class="modal-thumbs" x-show="selectedItem.images_gallery && selectedItem.images_gallery.length > 0">
-              <div class="thumb-item" 
-                   :class="{'active': activeImage === selectedItem.image_main}"
-                   @click="activeImage = selectedItem.image_main">
-                <img :src="selectedItem.image_main" alt="Principal">
-              </div>
-              <template x-for="img in selectedItem.images_gallery" :key="img">
+            <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
+              <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
                 <div class="thumb-item" 
                      :class="{'active': activeImage === img}"
                      @click="activeImage = img">
@@ -444,6 +439,17 @@
             this.selectedInstallment = 12;
             this.modalOpen = true;
           }
+        },
+
+        getItemGallery(item) {
+          if (!item) return [];
+          let gal = item.images_gallery || [];
+          if (typeof gal === 'string') {
+            try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+          }
+          if (!Array.isArray(gal)) gal = [];
+          const all = [item.image_main, ...gal].filter(Boolean);
+          return [...new Set(all)];
         },
 
         formatPrice(val) {
