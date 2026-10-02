@@ -161,8 +161,8 @@
           
           <!-- Badges -->
           <div class="card-badges">
-            <template x-if="item.discount_percent && item.discount_percent > 0">
-              <span class="badge-discount" x-text="'-' + item.discount_percent + '% OFF'"></span>
+            <template x-if="getDiscountPercent(item) > 0">
+              <span class="badge-discount" x-text="'-' + getDiscountPercent(item) + '% OFF'"></span>
             </template>
             <template x-if="item.badge">
               <span class="badge-custom" x-text="item.badge"></span>
@@ -460,6 +460,16 @@
         formatPrice(val) {
           if (!val) return '0,00';
           return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        getDiscountPercent(item) {
+          if (!item) return 0;
+          const pOrig = parseFloat(item.price_original) || 0;
+          const pOut = parseFloat(item.price_outlet) || 0;
+          if (pOrig > pOut && pOrig > 0) {
+            return Math.round(((pOrig - pOut) / pOrig) * 100);
+          }
+          return item.discount_percent || 0;
         },
 
         getWhatsAppUrl(model, price) {
