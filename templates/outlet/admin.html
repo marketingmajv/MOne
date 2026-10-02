@@ -203,7 +203,7 @@
         <button type="button" class="btn sm" onclick="closeOutletModal()">&times;</button>
       </div>
 
-      <form action="{{ url_for('outlet.save_item') }}" method="POST" enctype="multipart/form-data">
+      <form action="{{ url_for('outlet.save_item') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateOutletFormPayload(this)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="item_id" id="outlet_form_id">
 
@@ -404,10 +404,39 @@
     renderGalleryPreview();
   }
 
+  function validateOutletFormPayload(form) {
+    const statusDiv = document.getElementById('upload_status_badge');
+    const mainImg = document.getElementById('outlet_form_image_main')?.value || '';
+    const galleryJson = document.getElementById('outlet_form_images_gallery')?.value || '';
+    const totalChars = mainImg.length + galleryJson.length;
+    const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
+
+    if (sizeMb > 3.0) {
+      alert(`⚠️ O tamanho total da galeria (${sizeMb.toFixed(1)} MB) é muito grande para o limite da Vercel (4.5 MB). Por favor, remova algumas fotos antes de salvar.`);
+      if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.textContent = `⚠️ Tamanho excedido (${sizeMb.toFixed(1)} MB). Remova algumas fotos para salvar.`;
+      }
+      return false;
+    }
+    return true;
+  }
+
   function handleOutletGalleryUpload(input) {
     const files = input.files;
     const statusDiv = document.getElementById('upload_status_badge');
     if (!files || files.length === 0) return;
+
+    if (CURRENT_GALLERY.length >= 12) {
+      if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.textContent = '⚠️ Limite máximo de 12 fotos por produto atingido.';
+      }
+      input.value = '';
+      return;
+    }
 
     if (statusDiv) {
       statusDiv.style.display = 'block';
@@ -416,9 +445,10 @@
     }
 
     let processedCount = 0;
-    const totalFiles = files.length;
+    const availableSlots = 12 - CURRENT_GALLERY.length;
+    const totalFiles = Math.min(files.length, availableSlots);
 
-    Array.from(files).forEach(file => {
+    Array.from(files).slice(0, totalFiles).forEach(file => {
       const reader = new FileReader();
       reader.onload = function(e) {
         const img = new Image();
@@ -426,7 +456,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1200;
+          const maxDim = 900; // 900px otimizado para não estourar o limite da Vercel
 
           if (width > maxDim || height > maxDim) {
             if (width > height) {
@@ -443,7 +473,8 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          // Qualidade 0.72 gera ~35-50KB por foto no Data URL
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
           
           CURRENT_GALLERY.push(compressedDataUrl);
           if (!CURRENT_IMAGE_MAIN) {
@@ -453,9 +484,10 @@
           processedCount++;
           if (processedCount === totalFiles) {
             renderGalleryPreview();
+            const totalKb = Math.round(JSON.stringify(CURRENT_GALLERY).length / 1024);
             if (statusDiv) {
               statusDiv.style.color = '#00cc88';
-              statusDiv.textContent = `✓ ${totalFiles} foto(s) adicionada(s) à galeria com sucesso!`;
+              statusDiv.textContent = `✓ ${CURRENT_GALLERY.length} foto(s) na galeria (Tamanho total: ~${totalKb} KB - Otimizado para Vercel)`;
             }
             input.value = '';
           }
@@ -475,6 +507,7 @@
   window.setAsCoverPhoto = setAsCoverPhoto;
   window.removePhotoFromGallery = removePhotoFromGallery;
   window.handleOutletGalleryUpload = handleOutletGalleryUpload;
+  window.validateOutletFormPayload = validateOutletFormPayload;
 
   function outletAdmin() {
     return {
