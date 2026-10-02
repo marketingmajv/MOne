@@ -21,7 +21,7 @@ stock_bp = Blueprint("stock", __name__)
 @login_required
 def stock():
     q = request.args.get("q", "").strip()
-    status = request.args.get("status", "available")
+    status = request.args.get("status", "all")
     params = []
     where = ["1=1"]
     if q:
@@ -46,7 +46,27 @@ def stock():
             params
         ).fetchall()
         products_list = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
-    return render_template("stock.html", units=rows, q=q, status=status, products=products_list)
+
+        # Contagens de estoque para badges de navegação
+        status_counts_raw = conn.execute(
+            "SELECT status, count(*) as count FROM stock_units GROUP BY status"
+        ).fetchall()
+        status_counts = {"all": 0, "available": 0, "unreleased": 0, "sold": 0}
+        for sc in status_counts_raw:
+            st_key = sc.get("status")
+            cnt = sc.get("count", 0)
+            if st_key in status_counts:
+                status_counts[st_key] = cnt
+            status_counts["all"] += cnt
+
+    return render_template(
+        "stock.html",
+        units=rows,
+        q=q,
+        status=status,
+        products=products_list,
+        status_counts=status_counts,
+    )
 
 
 @stock_bp.route("/api/chassis/<path:chassis>")

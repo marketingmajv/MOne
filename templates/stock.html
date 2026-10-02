@@ -12,6 +12,26 @@
   {% endif %}
 {% endblock %}
 {% block content %}
+<!-- Pílulas de Navegação Rápida por Status com Contagens -->
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+  <a href="{{ url_for('stock', status='all', q=q) }}" class="btn sm {{ 'primary' if status=='all' else 'outline' }}" style="height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    <span>📦 Todos</span>
+    <span class="badge" style="{% if status=='all' %}background: rgba(255,255,255,0.25); color: #fff;{% else %}background: rgba(0,0,0,0.06); color: var(--text);{% endif %} font-size: 11px;">{{ status_counts.all or 0 }}</span>
+  </a>
+  <a href="{{ url_for('stock', status='unreleased', q=q) }}" class="btn sm {{ 'primary' if status=='unreleased' else 'outline' }}" style="height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    <span>⏳ Em conferência</span>
+    <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-size: 11px;">{{ status_counts.unreleased or 0 }}</span>
+  </a>
+  <a href="{{ url_for('stock', status='available', q=q) }}" class="btn sm {{ 'primary' if status=='available' else 'outline' }}" style="height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    <span>🟢 Disponíveis</span>
+    <span class="badge" style="background: rgba(5, 150, 105, 0.15); color: #059669; font-size: 11px;">{{ status_counts.available or 0 }}</span>
+  </a>
+  <a href="{{ url_for('stock', status='sold', q=q) }}" class="btn sm {{ 'primary' if status=='sold' else 'outline' }}" style="height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    <span>🤝 Vendidos</span>
+    <span class="badge" style="background: rgba(100, 116, 139, 0.15); color: #64748B; font-size: 11px;">{{ status_counts.sold or 0 }}</span>
+  </a>
+</div>
+
 <form class="filter-bar" method="get"
       hx-get="{{ url_for('stock') }}"
       hx-target="#stockTableWrap"
@@ -22,10 +42,10 @@
          hx-trigger="keyup changed delay:300ms, search"
          autocomplete="off">
   <select name="status" hx-trigger="change">
-    <option value="available" {{ 'selected' if status=='available' }}>Disponíveis</option>
-    <option value="unreleased" {{ 'selected' if status=='unreleased' }}>Em conferência (não liberados)</option>
-    <option value="sold" {{ 'selected' if status=='sold' }}>Vendidos</option>
-    <option value="all" {{ 'selected' if status=='all' }}>Todos</option>
+    <option value="all" {{ 'selected' if status=='all' }}>Todos os status ({{ status_counts.all or 0 }})</option>
+    <option value="unreleased" {{ 'selected' if status=='unreleased' }}>Em conferência ({{ status_counts.unreleased or 0 }})</option>
+    <option value="available" {{ 'selected' if status=='available' }}>Disponíveis ({{ status_counts.available or 0 }})</option>
+    <option value="sold" {{ 'selected' if status=='sold' }}>Vendidos ({{ status_counts.sold or 0 }})</option>
   </select>
   <button class="btn primary">Filtrar</button>
   <span class="htmx-indicator" style="font-size: 0.85rem; color: #38bdf8; align-self: center;">⏳ Buscando...</span>
