@@ -123,19 +123,8 @@
           </div>
         </div>
 
-        <div class="category-pills-bar">
-          <div class="category-pills">
-            <button type="button" :class="{'active': activeCategory === 'all'}" @click="activeCategory = 'all'">
-              Todos ({{ items|length }})
-            </button>
-            {% for cat in categories %}
-            <button type="button" :class="{'active': activeCategory === '{{ cat }}'}" @click="activeCategory = '{{ cat }}'">
-              {{ cat }}
-            </button>
-            {% endfor %}
-          </div>
-
-          <div class="filter-counter-badge" x-show="hasActiveFilters()">
+        <div class="category-pills-bar" x-show="hasActiveFilters()">
+          <div class="filter-counter-badge">
             <span x-text="filteredItems().length + ' produtos encontrados'"></span>
             <button type="button" class="btn-reset-filters" @click="clearFilters()">Limpar Filtros</button>
           </div>
