@@ -218,6 +218,25 @@ def ensure_freight_tables(conn):
                     pass
 
     # Colunas dinâmicas para bases de dados pré-existentes
+    existing_cols = set()
+    try:
+        if is_pg:
+            cur_cols = conn.execute(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'freight_tables'"
+            )
+            existing_cols = {r["column_name"].lower() for r in cur_cols.fetchall()}
+        else:
+            cur_cols = conn.execute("PRAGMA table_info(freight_tables)")
+            existing_cols = {r["name"].lower() for r in cur_cols.fetchall()}
+    except Exception:
+        if hasattr(conn, "rollback"):
+            conn.rollback()
+        elif hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+            try:
+                conn.conn.rollback()
+            except Exception:
+                pass
+
     for col, col_def in [
         ("origin_city", "TEXT DEFAULT 'Cariacica/ES'"),
         ("cubing_factor", "REAL DEFAULT 300.0"),
@@ -226,12 +245,23 @@ def ensure_freight_tables(conn):
         ("pos_percent", "REAL DEFAULT 0.0"),
         ("gris_min", "REAL DEFAULT 0.0"),
     ]:
+        if col.lower() in existing_cols:
+            continue
         try:
-            conn.execute(f"ALTER TABLE freight_tables ADD COLUMN {col} {col_def}")
+            if is_pg:
+                conn.execute(f"ALTER TABLE freight_tables ADD COLUMN IF NOT EXISTS {col} {col_def}")
+            else:
+                conn.execute(f"ALTER TABLE freight_tables ADD COLUMN {col} {col_def}")
             if hasattr(conn, "commit"):
                 conn.commit()
         except Exception:
-            pass
+            if hasattr(conn, "rollback"):
+                conn.rollback()
+            elif hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+                try:
+                    conn.conn.rollback()
+                except Exception:
+                    pass
 
     # Se não existirem tabelas ou se Vinislog/Generoso estiverem ausentes, semear automaticamente
     try:
@@ -252,6 +282,13 @@ def ensure_freight_tables(conn):
                 seed_generoso_rate_table(conn)
     except Exception as e:
         print("[Freight Auto-Seed Check Error]:", e)
+        if hasattr(conn, "rollback"):
+            conn.rollback()
+        elif hasattr(conn, "conn") and hasattr(conn.conn, "rollback"):
+            try:
+                conn.conn.rollback()
+            except Exception:
+                pass
     _freight_tables_ensured = True
 
 

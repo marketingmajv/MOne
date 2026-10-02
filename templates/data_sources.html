@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Fontes de Dados (Google Sheets){% endblock %}
+{% block page_title %}Central de Fontes de Dados{% endblock %}
+{% block page_subtitle %}Gestão e sincronização em tempo real das planilhas Google Sheets que alimentam o M-One.{% endblock %}
+
+{% block top_actions %}
+  <div style="display:flex;gap:10px;align-items:center;">
+    <a href="{{ url_for('connections.connections_hub') }}" class="btn secondary sm">🔗 Conexões & APIs</a>
+    <button type="button" class="btn primary sm" onclick="syncAllSources()">⚡ Sincronizar Todas</button>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="data-sources-container">
+
+  <!-- KPI SUMMARY CARDS -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:24px;">
+    
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--card);display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+        📊
+      </div>
+      <div>
+        <small style="color:var(--text-muted);display:block;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Fontes Oficiais</small>
+        <strong style="font-size:1.45rem;color:var(--text);line-height:1.2;">{{ total_sources }}</strong>
+      </div>
+    </div>
+
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--card);display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+        🔗
+      </div>
+      <div>
+        <small style="color:var(--text-muted);display:block;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Conexões Ativas</small>
+        <strong style="font-size:1.45rem;color:var(--text);line-height:1.2;">{{ active_sources }} / {{ total_sources }}</strong>
+      </div>
+    </div>
+
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--card);display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+        🗄️
+      </div>
+      <div>
+        <small style="color:var(--text-muted);display:block;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Registros no Banco</small>
+        <strong style="font-size:1.45rem;color:var(--text);line-height:1.2;">{{ total_records }}</strong>
+      </div>
+    </div>
+
+    <div class="panel" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--card);display:flex;align-items:center;gap:14px;">
+      <div style="width:44px;height:44px;background:rgba(0,229,153,0.12);border:1px solid rgba(0,229,153,0.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+        ⚡
+      </div>
+      <div>
+        <small style="color:var(--text-muted);display:block;font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Status do Ecossistema</small>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#00E599;box-shadow:0 0 8px #00E599;"></span>
+          <strong style="font-size:1.05rem;color:#00E599;">Sincronizado</strong>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION TITLE -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div>
+      <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;">
+        <span>📑</span> Planilhas Google Sheets Vinculadas
+      </h3>
+      <p style="margin:3px 0 0 0;font-size:0.85rem;color:var(--text-muted);">
+        Cada fonte abaixo reflete dados mantidos e alimentados externamente por equipes no Google Sheets.
+      </p>
+    </div>
+  </div>
+
+  <!-- DATA SOURCES CARDS GRID -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px;margin-bottom:30px;">
+    {% for s in sources %}
+    <div class="panel data-source-card" id="card-{{ s.key }}" style="padding:22px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.15);">
+      
+      <!-- Top Decorator Bar -->
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg, #10b981, #0ea5e9);"></div>
+
+      <div>
+        <!-- Header: Icon, Name & Status Badge -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">
+              {% if s.key == 'products_catalog' %}🛍️
+              {% elif s.key == 'freight_tariffs' %}🚚
+              {% elif s.key == 'mpay_receipts' %}💳
+              {% else %}📋{% endif %}
+            </div>
+            <div>
+              <h4 style="margin:0;font-size:1.02rem;color:var(--text);font-weight:600;">{{ s.name }}</h4>
+              <span style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-top:2px;">
+                <span>🎯 Tabela Supabase:</span>
+                <code class="mono" style="background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:4px;color:var(--primary);">{{ s.target_table }}</code>
+              </span>
+            </div>
+          </div>
+
+          <!-- Status Badge -->
+          <div>
+            {% if s.last_sync_status == 'success' %}
+              <span class="badge available" style="font-size:0.72rem;padding:3px 8px;">🟢 Conectado</span>
+            {% elif s.last_sync_status == 'error' %}
+              <span class="badge danger" style="font-size:0.72rem;padding:3px 8px;">🔴 Erro</span>
+            {% else %}
+              <span class="badge warning" style="font-size:0.72rem;padding:3px 8px;">🟡 Pronto</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Description -->
+        <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.45;margin:0 0 16px 0;">
+          {{ s.description }}
+        </p>
+
+        <!-- Stats & Sync Info Box -->
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:0.82rem;">
+            <span style="color:var(--text-muted);">Registros Atuais:</span>
+            <strong style="color:var(--text);font-family:monospace;font-size:0.9rem;">{{ s.records_count }} itens</strong>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.82rem;">
+            <span style="color:var(--text-muted);">Última Sincronização:</span>
+            <span style="color:var(--text);font-size:0.8rem;">
+              {% if s.last_sync_at %}
+                {{ s.last_sync_at.strftime('%d/%m/%Y %H:%M') if s.last_sync_at.strftime is defined else s.last_sync_at }}
+              {% else %}
+                <em style="color:var(--text-muted);">Aguardando sincronização</em>
+              {% endif %}
+            </span>
+          </div>
+          {% if s.last_sync_message %}
+          <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:0.75rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ s.last_sync_message }}">
+            ℹ️ {{ s.last_sync_message }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sheets URL Preview -->
+        <div style="margin-bottom:20px;font-size:0.78rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="color:var(--text-muted);font-weight:600;">URL Google Sheets:</span>
+            <button type="button" class="link-btn" onclick="openEditUrlModal('{{ s.key }}', '{{ s.name }}', '{{ s.sheets_url or '' }}')" style="font-size:0.75rem;color:var(--primary);cursor:pointer;background:none;border:none;padding:0;">
+              ✏️ Editar Link
+            </button>
+          </div>
+          <div style="background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:6px;padding:6px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;color:var(--text-muted);" title="{{ s.sheets_url or 'Nenhuma URL configurada' }}">
+            {{ s.sheets_url or '⚠️ Nenhuma URL do Google Sheets vinculada' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Buttons Row -->
+      <div style="display:flex;gap:10px;align-items:center;padding-top:14px;border-top:1px solid var(--line);">
+        <form method="post" action="{{ url_for('data_sources.sync_source', key=s.key) }}" style="flex:1;margin:0;" onsubmit="handleSyncSubmit(this, '{{ s.key }}')">
+          <button type="submit" class="btn primary sm" id="btn-sync-{{ s.key }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <span class="sync-icon">⚡</span>
+            <span class="btn-text">Sincronizar Agora</span>
+          </button>
+        </form>
+
+        {% if s.sheets_url %}
+        <a href="{{ s.sheets_url }}" target="_blank" rel="noopener noreferrer" class="btn secondary sm" style="display:flex;align-items:center;gap:4px;" title="Abrir planilha no Google Sheets em nova aba">
+          <span>Abrir Planilha</span>
+          <span style="font-size:0.8rem;">↗</span>
+        </a>
+        {% else %}
+        <button type="button" class="btn secondary sm" onclick="openEditUrlModal('{{ s.key }}', '{{ s.name }}', '')" title="Configurar URL do Google Sheets">
+          <span>Configurar</span>
+        </button>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- HOW IT WORKS INFO PANEL -->
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,0.015);">
+    <h4 style="margin:0 0 10px 0;font-size:0.95rem;display:flex;align-items:center;gap:8px;color:var(--text);">
+      <span>💡</span> Como funcionam as Fontes de Dados Externas no M-One?
+    </h4>
+    <ul style="margin:0;padding-left:20px;font-size:0.85rem;color:var(--text-muted);line-height:1.6;">
+      <li><strong>Catálogo de Produtos & Vendas:</strong> Atualiza os modelos de scooters/motos elétricas, baterias, cores e preços de venda usados em todo o M-One.</li>
+      <li><strong>Tarifário de Fretes:</strong> Alimenta a matriz comparativa de cotações das transportadoras parceiras (Generoso, Vinislog, TJB).</li>
+      <li><strong>M-Pay (Extrato & Comprovantes):</strong> Lê a aba oficial de pagamentos/recebimentos externos cadastrada no Google Sheets para conciliação bancária instantânea.</li>
+      <li><strong>Proteção dos Dados:</strong> As planilhas externas devem estar publicadas como CSV ou compartilhadas com permissão de leitura para sincronização automática.</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- EDIT URL MODAL -->
+<div id="editUrlModal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;">
+  <div class="modal-box" style="background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:540px;width:90%;padding:24px;box-shadow:0 12px 36px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;display:flex;align-items:center;gap:8px;" id="modalTitle">
+        <span>🔗</span> Editar URL da Planilha
+      </h3>
+      <button type="button" onclick="closeEditUrlModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+    </div>
+
+    <form id="editUrlForm" method="post" action="">
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 14px 0;">
+        Insira a URL completa do Google Sheets (ex: <code>https://docs.google.com/spreadsheets/d/...</code>) ou o link direto de exportação CSV.
+      </p>
+
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Link do Google Sheets</label>
+        <input type="url" name="sheets_url" id="modalSheetsUrl" required placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-family:monospace;font-size:0.85rem;box-sizing:border-box;">
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" class="btn secondary" onclick="closeEditUrlModal()">Cancelar</button>
+        <button type="submit" class="btn primary">Salvar URL</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditUrlModal(key, name, currentUrl) {
+  document.getElementById('modalTitle').innerHTML = '<span>🔗</span> Configurar ' + name;
+  document.getElementById('modalSheetsUrl').value = currentUrl;
+  document.getElementById('editUrlForm').action = '/data-sources/' + key + '/update-url';
+  var modal = document.getElementById('editUrlModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditUrlModal() {
+  document.getElementById('editUrlModal').style.display = 'none';
+}
+
+function handleSyncSubmit(form, key) {
+  var btn = document.getElementById('btn-sync-' + key);
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    var textEl = btn.querySelector('.btn-text');
+    if (textEl) textEl.textContent = 'Sincronizando...';
+    var iconEl = btn.querySelector('.sync-icon');
+    if (iconEl) iconEl.style.display = 'inline-block';
+  }
+}
+
+function syncAllSources() {
+  var forms = document.querySelectorAll('form[action*="/data-sources/"][action*="/sync"]');
+  if (!forms || forms.length === 0) return;
+  
+  if (confirm('Deseja iniciar a sincronização de todas as fontes de dados agora?')) {
+    // Dispara a sincronização sequencialmente submetendo o primeiro form
+    forms[0].submit();
+  }
+}
+</script>
+{% endblock %}
