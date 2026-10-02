@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
+  <!-- Alpine.js para interatividade ultrarrápida -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+</head>
+<body x-data="outletApp()">
+
+  <!-- Top Urgency Ribbon -->
+  <div class="outlet-ribbon">
+    <div class="ribbon-track">
+      <span>⚡ {{ urgency_text }} ⚡</span>
+      <span class="ribbon-dot">•</span>
+      <span>GARANTIA DE FÁBRICA MAJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>ENVIO PARA TODO O BRASIL</span>
+      <span class="ribbon-dot">•</span>
+      <span>PARCELAMENTO EM ATÉ 18X</span>
+      <span class="ribbon-dot">•</span>
+      <span>⚡ {{ urgency_text }} ⚡</span>
+    </div>
+  </div>
+
+  <!-- Header Institucional -->
+  <header class="outlet-header">
+    <div class="outlet-container header-inner">
+      <div class="logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo">
+        <div class="logo-text">
+          <span class="brand-title">MAJ MOBILIDADE</span>
+          <span class="brand-badge">CATÁLOGO OFICIAL</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="#catalogo" class="btn-scroll-catalog">Ver Catálogo</a>
+        <a :href="getWhatsAppUrl('Geral', '0')" target="_blank" class="btn-whatsapp-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+          <span>Falar com Consultor</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="outlet-hero">
+    <div class="outlet-container hero-inner">
+      <div class="hero-badge">
+        <span class="hero-pulse"></span>
+        <span>QUEIMA DE ESTOQUE EXCLUSIVA</span>
+      </div>
+      <h1 class="hero-title">{{ title }}</h1>
+      <p class="hero-subtitle">{{ subtitle }}</p>
+
+      <div class="hero-stats-bar">
+        <div class="stat-card">
+          <strong class="stat-number">{{ total_vehicles }}+</strong>
+          <span class="stat-label">Veículos Disponíveis</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">18X</strong>
+          <span class="stat-label">Parcelamento Facilitado</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">Até 30%</strong>
+          <span class="stat-label">Abaixo da Tabela</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">100%</strong>
+          <span class="stat-label">Revisados e com Garantia</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros e Busca -->
+  <section class="outlet-filters-section" id="catalogo">
+    <div class="outlet-container">
+      <div class="filters-wrapper">
+        <div class="search-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" x-model="searchQuery" placeholder="Buscar por modelo (ex: MAX 12, V20, Ride On)...">
+        </div>
+
+        <div class="category-pills">
+          <button type="button" :class="{'active': activeCategory === 'all'}" @click="activeCategory = 'all'">Todos ({{ items|length }})</button>
+          {% for cat in categories %}
+          <button type="button" :class="{'active': activeCategory === '{{ cat }}'}" @click="activeCategory = '{{ cat }}'">{{ cat }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid de Produtos -->
+  <main class="outlet-container catalog-grid-section">
+    <div class="products-grid">
+      {% for item in items %}
+      <div class="product-card" 
+           x-show="matchesFilter('{{ item.name }}', '{{ item.category }}', '{{ item.color }}')"
+           x-transition:enter="fade-in">
+        
+        <!-- Badges -->
+        <div class="card-badges">
+          {% if item.discount_percent and item.discount_percent > 0 %}
+          <span class="badge-discount">-{{ item.discount_percent }}% OFF</span>
+          {% endif %}
+          {% if item.badge %}
+          <span class="badge-custom">{{ item.badge }}</span>
+          {% endif %}
+          <span class="badge-stock">{{ item.stock_qty }} em estoque</span>
+        </div>
+
+        <!-- Imagem -->
+        <div class="card-image-box" @click="openModal({{ item.id }})">
+          <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" 
+               alt="{{ item.name }}" 
+               loading="lazy"
+               class="card-img"
+               onerror="this.src='/static/logo.png'">
+          <div class="image-overlay-hover">
+            <span>🔍 Ver Fotos e Ficha Técnica</span>
+          </div>
+        </div>
+
+        <!-- Conteúdo do Card -->
+        <div class="card-body">
+          <div class="card-category">{{ item.category }}</div>
+          <h2 class="card-title">{{ item.name }}</h2>
+
+          <div class="card-specs-mini">
+            {% if item.specs_json.get('Autonomia') %}
+            <span class="spec-mini">🔋 {{ item.specs_json.get('Autonomia') }}</span>
+            {% endif %}
+            {% if item.specs_json.get('Velocidade Máxima') %}
+            <span class="spec-mini">⚡ {{ item.specs_json.get('Velocidade Máxima') }}</span>
+            {% endif %}
+            {% if item.color %}
+            <span class="spec-mini">🎨 {{ item.color }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Preços -->
+          <div class="card-pricing">
+            {% if item.price_original and item.price_original > item.price_outlet %}
+            <div class="price-from">De R$ {{ "{:,.2f}".format(item.price_original).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
+            {% endif %}
+            <div class="price-to">
+              <span class="currency">R$</span>
+              <span class="amount">{{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+              <span class="payment-method">à vista</span>
+            </div>
+            {% if item.installment_12 and item.installment_12 > 0 %}
+            <div class="price-installments">
+              ou em <strong>12x de R$ {{ "{:,.2f}".format(item.installment_12).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
+            </div>
+            {% endif %}
+            {% if item.installment_18 and item.installment_18 > 0 %}
+            <div class="price-installments-sub">
+              ou 18x de R$ {{ "{:,.2f}".format(item.installment_18).replace(",", "X").replace(".", ",").replace("X", ".") }}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Ações do Card -->
+          <div class="card-actions">
+            <a :href="getWhatsAppUrl('{{ item.name }}', '{{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}')" 
+               target="_blank" 
+               class="btn-buy-whatsapp">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+              <span>Quero no WhatsApp</span>
+            </a>
+            <button type="button" class="btn-details" @click="openModal({{ item.id }})">
+              Ver Detalhes
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- Modal Interativo de Ficha Técnica e Galeria -->
+  <div class="outlet-modal-backdrop" 
+       x-show="modalOpen" 
+       x-cloak 
+       @click.self="modalOpen = false"
+       @keydown.escape.window="modalOpen = false">
+    
+    <div class="outlet-modal-box">
+      <button type="button" class="modal-close-btn" @click="modalOpen = false">&times;</button>
+
+      <template x-if="selectedItem">
+        <div class="modal-content-grid">
+          <!-- Coluna Visual / Galeria -->
+          <div class="modal-gallery-col">
+            <div class="modal-main-image">
+              <img :src="activeImage || selectedItem.image_main" :alt="selectedItem.name">
+            </div>
+            <div class="modal-thumbs" x-show="selectedItem.images_gallery && selectedItem.images_gallery.length > 0">
+              <div class="thumb-item" 
+                   :class="{'active': activeImage === selectedItem.image_main}"
+                   @click="activeImage = selectedItem.image_main">
+                <img :src="selectedItem.image_main" alt="Principal">
+              </div>
+              <template x-for="img in selectedItem.images_gallery" :key="img">
+                <div class="thumb-item" 
+                     :class="{'active': activeImage === img}"
+                     @click="activeImage = img">
+                  <img :src="img" alt="Foto">
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Coluna Detalhes -->
+          <div class="modal-info-col">
+            <span class="modal-category" x-text="selectedItem.category"></span>
+            <h2 class="modal-title" x-text="selectedItem.name"></h2>
+            
+            <div class="modal-pricing-box">
+              <div class="price-to">
+                <span class="currency">R$</span>
+                <span class="amount" x-text="formatPrice(selectedItem.price_outlet)"></span>
+                <span class="payment-method">à vista no Outlet</span>
+              </div>
+              <div class="modal-installments" x-text="'Ou em ' + selectedItem.installments_text"></div>
+              <div class="modal-stock-badge" x-text="'Disponível: ' + selectedItem.stock_qty + ' unidades (' + (selectedItem.condition || 'Na caixa') + ')'"></div>
+            </div>
+
+            <p class="modal-desc" x-text="selectedItem.description"></p>
+
+            <!-- Tabela de Ficha Técnica -->
+            <div class="modal-specs-section">
+              <h3>Ficha Técnica Oficial</h3>
+              <div class="specs-table">
+                <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                  <div class="spec-row">
+                    <span class="spec-k" x-text="key"></span>
+                    <span class="spec-v" x-text="val"></span>
+                  </div>
+                </template>
+                <div class="spec-row" x-show="selectedItem.color">
+                  <span class="spec-k">Cores disponíveis</span>
+                  <span class="spec-v" x-text="selectedItem.color"></span>
+                </div>
+                <div class="spec-row" x-show="selectedItem.location">
+                  <span class="spec-k">Localização</span>
+                  <span class="spec-v" x-text="selectedItem.location"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botão de Ação no Modal -->
+            <div class="modal-cta-box">
+              <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
+                 target="_blank" 
+                 class="btn-modal-whatsapp">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+                <span>Garantir esta Oferta pelo WhatsApp</span>
+              </a>
+              <span class="modal-secure-note">🔒 Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Footer Institucional -->
+  <footer class="outlet-footer">
+    <div class="outlet-container footer-inner">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo">
+        <p>MAJ Mobilidade Elétrica • O Futuro em Movimento. Todos os direitos reservados.</p>
+      </div>
+      <div class="footer-links">
+        <span>Garantia de 1 ano contra defeitos de fabricação</span>
+        <span>Assistência Técnica e Peças de Reposição Originais</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Alpine.js para o Catálogo -->
+  <script>
+    const OUTLET_ITEMS_DATA = {{ items|tojson }};
+    const WA_NUMBER = "{{ whatsapp_number }}";
+    const WA_TEMPLATE = {{ whatsapp_message|tojson }};
+
+    function outletApp() {
+      return {
+        searchQuery: '',
+        activeCategory: 'all',
+        items: OUTLET_ITEMS_DATA,
+        modalOpen: false,
+        selectedItem: null,
+        activeImage: '',
+
+        matchesFilter(name, category, color) {
+          const q = this.searchQuery.toLowerCase().trim();
+          const matchesQuery = !q || 
+            name.toLowerCase().includes(q) || 
+            category.toLowerCase().includes(q) || 
+            (color && color.toLowerCase().includes(q));
+          
+          const matchesCat = this.activeCategory === 'all' || category.toLowerCase().includes(this.activeCategory.toLowerCase());
+          return matchesQuery && matchesCat;
+        },
+
+        openModal(id) {
+          const item = this.items.find(i => i.id === id);
+          if (item) {
+            this.selectedItem = item;
+            this.activeImage = item.image_main;
+            this.modalOpen = true;
+          }
+        },
+
+        formatPrice(val) {
+          if (!val) return '0,00';
+          return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        getWhatsAppUrl(model, price) {
+          const msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+        }
+      };
+    }
+  </script>
+</body>
+</html>

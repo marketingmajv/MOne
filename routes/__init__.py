@@ -26,6 +26,7 @@ from routes.mpay_routes import mpay_bp
 from routes.import_lifecycle_routes import import_lifecycle_bp
 from routes.document_center_routes import document_center_bp
 from routes.data_sources_routes import data_sources_bp
+from routes.outlet_routes import outlet_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -51,6 +52,7 @@ ALL_BLUEPRINTS = [
     connections_bp,
     backup_bp,
     mpay_bp,
+    outlet_bp,
 ]
 
 
