@@ -11,7 +11,7 @@ import logging
 from datetime import date
 from decimal import Decimal
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 from database import db
@@ -58,25 +58,31 @@ def imports():
             """
         ).fetchall()
 
-        import_list = []
+        active_list, archived_list = [], []
         tot_usd = Decimal("0.00")
         tot_chassis = 0
 
         for r in rows:
             item = dict(r)
-            # Calcular indicadores financeiros rápidos
-            fin = calculate_import_financials(item["id"], conn)
-            item["financials"] = fin
-            tot_usd += to_dec(item.get("pi_amount_usd") or item.get("ci_amount_usd"))
-            tot_chassis += int(item.get("chassis_count") or 0)
-            import_list.append(item)
+            item["financials"] = calculate_import_financials(item["id"], conn)
+            if item.get("is_archived"):
+                archived_list.append(item)
+            else:
+                active_list.append(item)
+                tot_usd += to_dec(item.get("pi_amount_usd") or item.get("ci_amount_usd"))
+                tot_chassis += int(item.get("chassis_count") or 0)
 
+        current_tab = request.args.get("tab", "active").strip().lower()
+        displayed_imports = archived_list if current_tab == "archived" else active_list
         products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
 
     return render_template(
         "imports.html",
         me=me,
-        imports=import_list,
+        imports=displayed_imports,
+        current_tab=current_tab,
+        active_count=len(active_list),
+        archived_count=len(archived_list),
         products=products,
         steps_order=STEPS_ORDER,
         total_usd=float(tot_usd),
@@ -123,27 +129,10 @@ def create_import():
             ) RETURNING id
             """,
             (
-                ref,
-                importer,
-                supplier,
-                contact,
-                currency,
-                incoterm,
-                forwarder,
-                broker,
-                pi_usd,
-                ci_usd,
-                ocean_freight,
-                bl_no,
-                invoice_no,
-                freight_ci,
-                freight_pi,
-                insurance_inc,
-                arr_est,
-                arr_est,
-                dep_est,
-                notes,
-                me.get("id"),
+                ref, importer, supplier, contact, currency, incoterm,
+                forwarder, broker, pi_usd, ci_usd, ocean_freight, bl_no, invoice_no,
+                freight_ci, freight_pi, insurance_inc, arr_est, arr_est, dep_est,
+                notes, me.get("id"),
             ),
         ).fetchone()
         new_id = new_row["id"]
@@ -214,7 +203,6 @@ def create_demo():
     return redirect(url_for("imports.import_detail", iid=new_id))
 
 
-
 @import_bp.route("/imports/<int:iid>", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
@@ -256,49 +244,25 @@ def import_detail(iid: int):
         ).fetchall()
 
         china_payments = conn.execute(
-            """
-            SELECT p.*, d.title as doc_title, d.file_url as doc_url
-            FROM import_payments_china p
-            LEFT JOIN import_documents d ON d.id = p.document_id
-            WHERE p.import_id = %s
-            ORDER BY p.paid_at ASC, p.id ASC
-            """,
+            "SELECT p.*, d.title as doc_title, d.file_url as doc_url FROM import_payments_china p "
+            "LEFT JOIN import_documents d ON d.id = p.document_id WHERE p.import_id = %s ORDER BY p.paid_at ASC, p.id ASC",
             (iid,),
         ).fetchall()
-
         brazil_expenses = conn.execute(
-            """
-            SELECT e.*, d.title as doc_title, d.file_url as doc_url
-            FROM import_brazil_expenses e
-            LEFT JOIN import_documents d ON d.id = e.document_id
-            WHERE e.import_id = %s
-            ORDER BY e.category ASC, e.due_date ASC
-            """,
+            "SELECT e.*, d.title as doc_title, d.file_url as doc_url FROM import_brazil_expenses e "
+            "LEFT JOIN import_documents d ON d.id = e.document_id WHERE e.import_id = %s ORDER BY e.category ASC, e.due_date ASC",
             (iid,),
         ).fetchall()
-
         numerario_entries = conn.execute(
-            """
-            SELECT n.*, d.title as doc_title, d.file_url as doc_url
-            FROM import_numerario n
-            LEFT JOIN import_documents d ON d.id = n.document_id
-            WHERE n.import_id = %s
-            ORDER BY n.entry_date ASC, n.id ASC
-            """,
+            "SELECT n.*, d.title as doc_title, d.file_url as doc_url FROM import_numerario n "
+            "LEFT JOIN import_documents d ON d.id = n.document_id WHERE n.import_id = %s ORDER BY n.entry_date ASC, n.id ASC",
             (iid,),
         ).fetchall()
-
         documents = conn.execute(
-            """
-            SELECT d.*, u.name as uploader_name
-            FROM import_documents d
-            LEFT JOIN users u ON u.id = d.uploaded_by
-            WHERE d.import_id = %s
-            ORDER BY d.doc_type ASC, d.id DESC
-            """,
+            "SELECT d.*, u.name as uploader_name FROM import_documents d "
+            "LEFT JOIN users u ON u.id = d.uploaded_by WHERE d.import_id = %s ORDER BY d.doc_type ASC, d.id DESC",
             (iid,),
         ).fetchall()
-
         products = conn.execute("SELECT id, name FROM products ORDER BY name").fetchall()
         unique_chassis_count = len({u["chassis"].strip().upper() for u in chassis_units if u.get("chassis") and u["chassis"].strip()})
         imp_dict = dict(imp)
@@ -306,22 +270,10 @@ def import_detail(iid: int):
 
     return render_template(
         "import_detail.html",
-        me=me,
-        i=imp_dict,
-        unique_chassis_count=unique_chassis_count,
-        financials=financials,
-        checks=checks,
-        items=items,
-        chassis_units=chassis_units,
-        china_payments=china_payments,
-        brazil_expenses=brazil_expenses,
-        numerario_entries=numerario_entries,
-        documents=documents,
-        products=products,
-        doc_types=DOC_TYPES_MAP,
-        steps_order=STEPS_ORDER,
-        active_tab=active_tab,
-        today=date.today().isoformat(),
+        me=me, i=imp_dict, unique_chassis_count=unique_chassis_count, financials=financials, checks=checks,
+        items=items, chassis_units=chassis_units, china_payments=china_payments, brazil_expenses=brazil_expenses,
+        numerario_entries=numerario_entries, documents=documents, products=products, doc_types=DOC_TYPES_MAP,
+        steps_order=STEPS_ORDER, active_tab=active_tab, today=date.today().isoformat(),
     )
 
 
@@ -360,7 +312,33 @@ def edit_import(iid: int):
         audit("import.updated", f"import_id={iid}")
 
     flash("Dados da importação atualizados com sucesso!", "success")
-    return redirect(url_for("imports.import_detail", iid=iid))
+    return redirect(request.form.get("return_to") or url_for("imports.import_detail", iid=iid))
+
+
+@import_bp.route("/imports/<int:iid>/rename", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def rename_import(iid: int):
+    """Atualiza o nome da importação, mantendo o código oficial protegido em Sticker."""
+    new_name = (request.form.get("name") or request.form.get("reference") or (request.json or {}).get("name", "")).strip()
+    return_to = request.form.get("return_to", "").strip()
+
+    if not new_name:
+        if request.is_json:
+            return jsonify({"success": False, "error": "O nome da importação não pode ficar em branco."}), 400
+        flash("O nome da importação não pode ficar em branco.", "error")
+        return redirect(return_to or url_for("imports.imports"))
+
+    with db() as conn:
+        conn.execute("UPDATE imports SET name = %s WHERE id = %s", (new_name, iid))
+        conn.commit()
+        audit("import.renamed", f"import_id={iid}, new_name={new_name}")
+
+    if request.is_json:
+        return jsonify({"success": True, "name": new_name})
+
+    flash(f"Nome da importação atualizado para '{new_name}' com sucesso!", "success")
+    return redirect(return_to or url_for("imports.imports"))
 
 
 @import_bp.route("/imports/<int:iid>/step", methods=["POST"])

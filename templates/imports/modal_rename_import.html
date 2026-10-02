@@ -1,0 +1,85 @@
+<!-- Modal: Editar Nome da Importação (com Código Oficial Protegido) -->
+<div class="modal" id="renameImportModal">
+  <div class="modal-card" style="max-width: 520px; border-radius: 16px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); border: 1px solid var(--line);">
+    <div class="modal-head" style="padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(2, 132, 199, 0.12); color: #0284C7; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          ✏️
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">Editar Nome da Importação</h3>
+          <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">O código de registro permanece protegido e imutável</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeModal('renameImportModal')" style="background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); padding: 4px 8px; border-radius: 6px;">×</button>
+    </div>
+
+    <form id="renameImportForm" method="post" action="" class="space-y-4" style="padding: 20px 22px;">
+      <input type="hidden" name="return_to" id="renameImportReturnTo" value="">
+      
+      <!-- Sticker Protegido Não Editável -->
+      <div style="background: rgba(15, 23, 42, 0.04); border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="font-size: 10.5px; text-transform: uppercase; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; display: block; margin-bottom: 3px;">Código Oficial Protegido (Imutável)</span>
+          <span style="font-size: 11.5px; color: var(--muted);">Identificador fiscal e alfandegário permanente</span>
+        </div>
+        <span class="sticker-code" style="display: inline-flex; align-items: center; gap: 5px; background: #0F172A; color: #38BDF8; border-radius: 6px; padding: 4px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; font-weight: 800; letter-spacing: 0.04em;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #38BDF8;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span id="renameModalProtectedCode">DWSE26070035</span>
+        </span>
+      </div>
+
+      <!-- Nome da Importação Editável -->
+      <div>
+        <label for="renameImportInput" style="display: block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px;">
+          Nome da Importação (Editável) <span style="color: #EF4444;">*</span>
+        </label>
+        <input type="text" id="renameImportInput" name="name" required 
+               placeholder="Ex.: Lote Especial Smarda 197 un" 
+               style="width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); padding: 0 14px; font-size: 14px; font-weight: 600; color: var(--text); box-sizing: border-box; outline: none; transition: border-color 0.15s ease;">
+        <small style="display: block; font-size: 11.5px; color: var(--muted); margin-top: 5px;">
+          Este nome será o título principal do processo nas listagens e relatórios executivos.
+        </small>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3" style="border-top: 1px solid var(--line); margin-top: 18px;">
+        <button type="button" class="btn outline" onclick="closeModal('renameImportModal')" style="height: 38px; padding: 0 16px; font-size: 13px;">Cancelar</button>
+        <button type="submit" class="btn primary" style="font-weight: 700; padding: 0 20px; height: 38px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Salvar Nome</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRenameImportModal(importId, currentName, officialReference) {
+  const modal = document.getElementById('renameImportModal');
+  if (!modal) return;
+  
+  const form = document.getElementById('renameImportForm');
+  form.action = '/imports/' + importId + '/rename';
+  
+  const codeEl = document.getElementById('renameModalProtectedCode');
+  if (codeEl) codeEl.textContent = officialReference || '—';
+  
+  const inputEl = document.getElementById('renameImportInput');
+  if (inputEl) {
+    inputEl.value = currentName || officialReference || '';
+    setTimeout(() => { 
+      inputEl.focus(); 
+      inputEl.select(); 
+    }, 120);
+  }
+
+  const returnToEl = document.getElementById('renameImportReturnTo');
+  if (returnToEl) returnToEl.value = window.location.pathname + window.location.search;
+
+  if (typeof openModal === 'function') {
+    openModal('renameImportModal');
+  } else {
+    modal.classList.add('active');
+  }
+}
+</script>

@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Central de Documentos{% endblock %}
+
+{% block page_title %}
+<div style="display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+  <span>Central Global de Documentos</span>
+  <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(37, 99, 235, 0.12); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 99px; padding: 2px 10px; letter-spacing: 0.03em;">
+    Dossiê Comex Unificado
+  </span>
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Repositório central de arquivos aduaneiros, faturas comerciais, BLs, contratos de câmbio e comprovantes, organizados por lote de importação.
+{% endblock %}
+
+{% block top_actions %}
+  <a href="{{ url_for('imports.imports') }}" class="btn secondary" style="height: 38px; padding: 0 14px; font-size: 12.5px; text-decoration: none;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    <span>Voltar às Importações</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- KPIs de Métricas da Central -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+    <div class="comex-card" style="padding: 16px 20px; border-radius: 12px; border-left: 4px solid #2563EB;">
+      <span class="comex-label" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Total de Documentos</span>
+      <div style="font-size: 26px; font-weight: 800; color: #2563EB; margin-top: 4px;">{{ total_docs }}</div>
+      <small style="color: var(--muted); font-size: 11px;">Arquivos catalogados no repositório</small>
+    </div>
+
+    <div class="comex-card" style="padding: 16px 20px; border-radius: 12px; border-left: 4px solid #0284C7;">
+      <span class="comex-label" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Lotes com Documentos</span>
+      <div style="font-size: 26px; font-weight: 800; color: #0284C7; margin-top: 4px;">{{ total_batches }}</div>
+      <small style="color: var(--muted); font-size: 11px;">Processos ativos, arquivados e históricos</small>
+    </div>
+
+    <div class="comex-card" style="padding: 16px 20px; border-radius: 12px; border-left: 4px solid #059669;">
+      <span class="comex-label" style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--muted);">Espaço em Disco</span>
+      <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 4px;">
+        {% if total_size > 1048576 %}
+          {{ "%.2f"|format(total_size / 1048576) }} MB
+        {% else %}
+          {{ "%.1f"|format(total_size / 1024) }} KB
+        {% endif %}
+      </div>
+      <small style="color: var(--muted); font-size: 11px;">Armazenamento seguro auditado</small>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros e Busca Rápida -->
+  <div class="comex-card" style="padding: 16px 20px; border-radius: 14px;">
+    <form method="get" action="{{ url_for('document_center.document_center') }}" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+      <div style="flex: 2; min-width: 220px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 5px;">Buscar Documento</label>
+        <div style="position: relative;">
+          <input type="text" name="q" value="{{ q or '' }}" placeholder="Buscar por título, nome do arquivo ou lote..." style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); padding: 0 12px 0 34px; font-size: 13px; color: var(--text); box-sizing: border-box;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 10px; top: 12px; color: var(--muted);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 180px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 5px;">Filtrar por Lote / Importação</label>
+        <select name="batch" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); padding: 0 10px; font-size: 13px; color: var(--text);">
+          <option value="">Todos os Lotes</option>
+          {% for b in batches %}
+            <option value="{{ b }}" {{ 'selected' if selected_batch == b else '' }}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 160px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 5px;">Tipo de Documento</label>
+        <select name="doc_type" style="width: 100%; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); padding: 0 10px; font-size: 13px; color: var(--text);">
+          <option value="">Todos os Tipos</option>
+          {% for dt in doc_types %}
+            <option value="{{ dt }}" {{ 'selected' if selected_type == dt else '' }}>{{ doc_types_map.get(dt, dt) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="submit" class="btn primary" style="height: 38px; padding: 0 16px; font-size: 13px; font-weight: 700;">
+          Filtrar
+        </button>
+        {% if q or selected_batch or selected_type %}
+          <a href="{{ url_for('document_center.document_center') }}" class="btn outline" style="height: 38px; padding: 0 14px; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center;">
+            Limpar
+          </a>
+        {% endif %}
+      </div>
+      <!-- Barra de Controle das Gavetas Expansíveis -->
+  {% if grouped_docs and grouped_docs|length > 0 %}
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; margin-bottom: 4px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 13px; font-weight: 700; color: var(--text);">Gavetas de Documentos por Lote</span>
+        <span class="badge" style="font-size: 11px; background: rgba(37, 99, 235, 0.1); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 99px; padding: 1px 8px;">
+          {{ grouped_docs|length }} lote(s)
+        </span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn outline sm" onclick="expandAllDrawers()" style="height: 30px; font-size: 12px; font-weight: 600; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline></svg>
+          <span>Expandir Todas</span>
+        </button>
+        <button type="button" class="btn outline sm" onclick="collapseAllDrawers()" style="height: 30px; font-size: 12px; font-weight: 600; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></svg>
+          <span>Recolher Todas</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de Gavetas Expansíveis -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for batch_name, group in grouped_docs.items() %}
+      <details class="comex-doc-drawer" {{ 'open' if loop.first else '' }} style="border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: border-color 0.2s ease;">
+        <!-- Cabeçalho Interativo da Gaveta (Summary) -->
+        <summary style="padding: 14px 18px; background: var(--panel2); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; cursor: pointer; user-select: none;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(37, 99, 235, 0.12); color: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;">
+              🗄️
+            </div>
+
+            <!-- Título / Nome Editável da Importação -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 15.5px; font-weight: 800; color: var(--text); letter-spacing: -0.01em;">
+                  {{ group.import_name or batch_name }}
+                </span>
+
+                <!-- Sticker Oficial Imutável e Protegido com Cadeado -->
+                <span class="badge" style="background: rgba(15, 23, 42, 0.06); color: var(--text); border: 1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Código Alfandegário Oficial do Lote (Não Editável)">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <span>[{{ batch_name }}]</span>
+                </span>
+
+                {% if group.is_archived %}
+                  <span class="badge" style="font-size: 10.5px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">
+                    📦 Arquivado
+                  </span>
+                {% elif not group.import_id %}
+                  <span class="badge" style="font-size: 10.5px; background: rgba(245, 158, 11, 0.12); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.25);">
+                    🏷️ Lote Histórico
+                  </span>
+                {% else %}
+                  <span class="badge" style="font-size: 10.5px; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25);">
+                    ✓ Ativo
+                  </span>
+                {% endif %}
+              </div>
+              <small style="color: var(--muted); font-size: 12px;">
+                {{ group.documents|length }} arquivo(s) neste lote
+              </small>
+            </div>
+          </div>
+
+          <!-- Ações e Chevron Indicador -->
+          <div style="display: flex; gap: 8px; align-items: center;" onclick="event.stopPropagation();">
+            {% if group.import_id %}
+              <a href="{{ url_for('import_repository.download_documents_zip', iid=group.import_id) }}" class="btn secondary sm" style="height: 30px; padding: 0 10px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; text-decoration: none;" title="Baixar todos os documentos deste lote em arquivo ZIP">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Baixar ZIP</span>
+              </a>
+              <a href="{{ url_for('imports.import_detail', iid=group.import_id, tab='documents') }}" class="btn outline sm" style="height: 30px; padding: 0 10px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
+                <span>Ver Importação ➔</span>
+              </a>
+            {% endif %}
+
+            <!-- Seta Indicadora de Abertura/Fechamento -->
+            <div class="drawer-arrow" style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.04); margin-left: 4px; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+        </summary>
+
+        <!-- Conteúdo Interno da Gaveta: Tabela de Documentos -->
+        <div style="overflow-x: auto;">
+          <table class="table" style="margin: 0; width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--line); font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; background: var(--bg);">
+                <th style="padding: 10px 18px; text-align: left;">Tipo</th>
+                <th style="padding: 10px 18px; text-align: left;">Título / Arquivo</th>
+                <th style="padding: 10px 18px; text-align: left;">Tamanho</th>
+                <th style="padding: 10px 18px; text-align: left;">Enviado Em</th>
+                <th style="padding: 10px 18px; text-align: left;">Usuário</th>
+                <th style="padding: 10px 18px; text-align: right;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in group.documents %}
+              <tr style="border-bottom: 1px solid var(--line); font-size: 12.5px; transition: background 0.15s ease;">
+                <!-- Tipo -->
+                <td style="padding: 11px 18px;">
+                  <span class="badge" style="font-size: 10.5px; font-weight: 700;
+                    {% if d.doc_type in ['BL', 'DI'] %}background: rgba(37, 99, 235, 0.12); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.25);
+                    {% elif d.doc_type in ['CI', 'PI'] %}background: rgba(5, 150, 105, 0.12); color: #059669; border: 1px solid rgba(5, 150, 105, 0.25);
+                    {% elif d.doc_type in ['CAMBIO', 'SWIFT'] %}background: rgba(217, 119, 6, 0.12); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.25);
+                    {% else %}background: var(--panel2); color: var(--text); border: 1px solid var(--line);{% endif %}">
+                    {{ doc_types_map.get(d.doc_type, d.doc_type or 'DOC') }}
+                  </span>
+                </td>
+
+                <!-- Título e Arquivo -->
+                <td style="padding: 11px 18px;">
+                  <div style="font-weight: 700; color: var(--text);">{{ d.title or d.filename }}</div>
+                  {% if d.filename and d.filename != d.title %}
+                    <small style="color: var(--muted); font-size: 11px; font-family: monospace;">{{ d.filename }}</small>
+                  {% endif %}
+                </td>
+
+                <!-- Tamanho -->
+                <td style="padding: 11px 18px; color: var(--muted); font-size: 12px;">
+                  {% if d.file_size and d.file_size > 1048576 %}
+                    {{ "%.2f"|format(d.file_size / 1048576) }} MB
+                  {% elif d.file_size and d.file_size > 0 %}
+                    {{ "%.1f"|format(d.file_size / 1024) }} KB
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <!-- Data -->
+                <td style="padding: 11px 18px; color: var(--muted); font-size: 12px;">
+                  {{ d.created_at|string|truncate(16, True, '') if d.created_at else '—' }}
+                </td>
+
+                <!-- Usuário -->
+                <td style="padding: 11px 18px; color: var(--muted); font-size: 12px;">
+                  {{ d.uploader_name or 'Sistema' }}
+                </td>
+
+                <!-- Ações -->
+                <td style="padding: 11px 18px; text-align: right;">
+                  <div style="display: inline-flex; gap: 6px;">
+                    <a href="/uploads/{{ d.file_url }}" target="_blank" rel="noopener" class="btn secondary sm" style="height: 28px; padding: 0 9px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;" title="Abrir arquivo para visualização">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      <span>Visualizar</span>
+                    </a>
+                    <a href="/uploads/{{ d.file_url }}" download="{{ d.filename or d.title }}" class="btn outline sm" style="height: 28px; padding: 0 9px; font-size: 11.5px; display: inline-flex; align-items: center;" title="Baixar cópia do arquivo">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="comex-card" style="padding: 48px 24px; text-align: center; border-radius: 16px;">
+      <div style="font-size: 40px; margin-bottom: 12px;">📁</div>
+      <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: var(--text);">
+        Nenhum documento encontrado
+      </h3>
+      <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--muted); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+        Não foram localizados documentos correspondentes aos filtros selecionados. Tente ajustar os parâmetros de busca ou navegue pelas importações.
+      </p>
+      <a href="{{ url_for('document_center.document_center') }}" class="btn primary" style="font-weight: 700; padding: 10px 20px; text-decoration: none;">
+        Ver Todos os Documentos
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+/* Estilos das Gavetas Expansíveis (Accordion) */
+.comex-doc-drawer summary::-webkit-details-marker {
+  display: none !important;
+}
+.comex-doc-drawer summary {
+  list-style: none !important;
+}
+.comex-doc-drawer summary:hover {
+  background: rgba(37, 99, 235, 0.04) !important;
+}
+.comex-doc-drawer[open] {
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
+}
+.comex-doc-drawer[open] .drawer-arrow {
+  transform: rotate(180deg);
+  background: rgba(37, 99, 235, 0.15) !important;
+}
+.comex-doc-drawer[open] .drawer-arrow svg {
+  color: #2563EB !important;
+}
+</style>
+
+<script>
+function expandAllDrawers() {
+  document.querySelectorAll('.comex-doc-drawer').forEach(d => d.open = true);
+}
+function collapseAllDrawers() {
+  document.querySelectorAll('.comex-doc-drawer').forEach(d => d.open = false);
+}
+</script>
+{% endblock %}

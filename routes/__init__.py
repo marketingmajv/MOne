@@ -23,6 +23,8 @@ from routes.backup_routes import backup_bp
 from routes.import_settlement_routes import import_settlement_bp
 from routes.import_repository_routes import import_repository_bp
 from routes.mpay_routes import mpay_bp
+from routes.import_lifecycle_routes import import_lifecycle_bp
+from routes.document_center_routes import document_center_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -34,10 +36,12 @@ ALL_BLUEPRINTS = [
     webhook_bp,
     product_bp,
     import_bp,
+    import_lifecycle_bp,
     import_financial_bp,
     import_document_bp,
     import_settlement_bp,
     import_repository_bp,
+    document_center_bp,
     bling_bp,
     copilot_bp,
     user_bp,

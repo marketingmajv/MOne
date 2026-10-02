@@ -38,8 +38,34 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
 {% block content %}
 <div class="space-y-6">
 
+  <!-- Abas de Navegação: Ativas vs Arquivadas -->
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('imports.imports', tab='active') }}" class="btn {{ 'primary' if current_tab != 'archived' else 'secondary' }} sm" style="font-weight: 700; border-radius: 8px; text-decoration: none; height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Importações Ativas</span>
+        <span class="badge" style="font-size: 11px; font-weight: 800; background: {{ 'rgba(255,255,255,0.25)' if current_tab != 'archived' else 'var(--panel2)' }}; color: {{ '#FFFFFF' if current_tab != 'archived' else 'var(--text)' }}; padding: 1px 8px; border-radius: 99px;">
+          {{ active_count }}
+        </span>
+      </a>
+      <a href="{{ url_for('imports.imports', tab='archived') }}" class="btn {{ 'primary' if current_tab == 'archived' else 'secondary' }} sm" style="font-weight: 700; border-radius: 8px; text-decoration: none; height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        <span>Arquivadas</span>
+        <span class="badge" style="font-size: 11px; font-weight: 800; background: {{ 'rgba(255,255,255,0.25)' if current_tab == 'archived' else 'var(--panel2)' }}; color: {{ '#FFFFFF' if current_tab == 'archived' else 'var(--text)' }}; padding: 1px 8px; border-radius: 99px;">
+          {{ archived_count }}
+        </span>
+      </a>
+    </div>
+
+    {% if current_tab == 'archived' %}
+      <span style="font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px;">
+        <span>ℹ️</span> Processos arquivados preservam histórico e podem ser restaurados ou excluídos com segurança.
+      </span>
+    {% endif %}
+  </div>
+
   <!-- Gaveta de Demonstração e Testes (Recolhível) -->
-  {% if me.role in ['admin', 'support'] %}
+  {% if me.role in ['admin', 'support'] and current_tab != 'archived' %}
   <details class="comex-card" style="margin-bottom: 24px; border: 1px dashed var(--line); padding: 0; overflow: hidden; border-radius: 12px;">
     <summary style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; background: var(--panel2); list-style: none;">
       <span style="display: flex; align-items: center; gap: 8px;">
@@ -73,10 +99,24 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
         <!-- Cabeçalho do Card -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <!-- Nome da Importação Editável -->
               <a href="{{ url_for('imports.import_detail', iid=i.id) }}" style="font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.02em;">
-                {{ i.reference }}
+                {{ i.name or i.reference }}
               </a>
+
+              <!-- Sticker Protegido Não Editável com Código Oficial -->
+              <span class="sticker-code" style="display: inline-flex; align-items: center; gap: 5px; background: rgba(15, 23, 42, 0.05); color: #1E293B; border: 1px solid rgba(15, 23, 42, 0.16); border-radius: 6px; padding: 2px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; user-select: all;" title="Código identificador protegido e imutável (BL / Lote oficial)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <span>{{ i.reference }}</span>
+              </span>
+
+              {% if me.role in ['admin', 'support'] %}
+              <button type="button" onclick="openRenameImportModal({{ i.id }}, '{{ (i.name or i.reference)|escape }}', '{{ i.reference|escape }}')" title="Editar nome desta importação" style="background: none; border: none; padding: 2px 5px; cursor: pointer; color: var(--muted); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;" onmouseover="this.style.color='#0284C7'; this.style.background='rgba(2,132,199,0.08)';" onmouseout="this.style.color='var(--muted)'; this.style.background='none';">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              {% endif %}
+
               <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25);">
                 Etapa: {{ (i.step or 'compra')|capitalize }}
               </span>
@@ -102,7 +142,36 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
             </p>
           </div>
 
-          <div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            {% if me.role in ['admin', 'support'] %}
+              {% if i.is_archived or current_tab == 'archived' %}
+                <!-- Ações para Arquivadas -->
+                <form method="post" action="{{ url_for('import_lifecycle.unarchive_import', iid=i.id) }}" onsubmit="return confirm('Deseja restaurar a importação {{ i.reference }} para a lista de ativas?');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: #0284C7; border-color: rgba(2, 132, 199, 0.4); display: inline-flex; align-items: center; gap: 5px;" title="Restaurar para a lista de ativas">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <span>Desarquivar</span>
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('import_lifecycle.delete_import', iid=i.id) }}" onsubmit="return confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta importação permanentemente?\n\n- Os chassis permanecerão no estoque com a anotação [Lote Original: {{ i.reference }}].\n- Todos os documentos permanecerão preservados na Central de Documentos.\n- Esta ação remove a importação de comex.');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: #DC2626; border-color: rgba(220, 38, 38, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Excluir importação permanentemente (preserva chassis e documentos)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    <span>Deletar</span>
+                  </button>
+                </form>
+              {% else %}
+                <!-- Ações para Ativas -->
+                <button type="button" class="btn secondary sm" onclick="openRenameImportModal({{ i.id }}, '{{ (i.name or i.reference)|escape }}', '{{ i.reference|escape }}')" style="font-weight: 600; padding: 7px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;" title="Editar o nome desta importação">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Editar Nome</span>
+                </button>
+                <form method="post" action="{{ url_for('import_lifecycle.archive_import', iid=i.id) }}" onsubmit="return confirm('Deseja arquivar a importação {{ i.reference }}? Ela será movida para a aba de Arquivadas.');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;" title="Arquivar processo">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                    <span>Arquivar</span>
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
             <a href="{{ url_for('imports.import_detail', iid=i.id) }}" class="btn primary sm" style="font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               <span>Visualizar</span>
@@ -193,16 +262,22 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
   {% else %}
     <!-- Empty State Minimalista e Limpo -->
     <div class="comex-card" style="padding: 48px 24px; text-align: center; border-radius: 16px;">
-      <div style="font-size: 40px; margin-bottom: 12px;">🚢</div>
+      <div style="font-size: 40px; margin-bottom: 12px;">{{ '📦' if current_tab == 'archived' else '🚢' }}</div>
       <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: var(--text);">
-        Nenhuma importação cadastrada até o momento
+        {{ 'Nenhuma importação arquivada' if current_tab == 'archived' else 'Nenhuma importação ativa cadastrada' }}
       </h3>
       <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--muted); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
-        Clique abaixo para cadastrar seu primeiro lote com preenchimento guiado por IA ou abra a gaveta acima para testar um lote demo.
+        {% if current_tab == 'archived' %}
+          Quando você arquivar lotes encerrados ou concluídos, eles ficarão armazenados nesta aba com opções de restauração ou exclusão segura.
+        {% else %}
+          Clique abaixo para cadastrar seu primeiro lote com preenchimento guiado por IA ou abra a gaveta acima para testar um lote demo.
+        {% endif %}
       </p>
+      {% if current_tab != 'archived' %}
       <button class="btn primary" onclick="openModal('newImport')" style="font-weight: 700; padding: 12px 24px;">
         + Cadastrar Nova Importação
       </button>
+      {% endif %}
     </div>
   {% endif %}
 
@@ -210,6 +285,7 @@ Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduanei
 
 <!-- Modais do Módulo Comex -->
 {% include 'imports/modal_new_import.html' %}
+{% include 'imports/modal_rename_import.html' %}
 {% include 'imports/modal_doc_rules.html' %}
 {% include 'imports/modal_settlement_reconciliation.html' %}
 {% include 'imports/modal_doc_repository.html' %}
