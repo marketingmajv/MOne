@@ -5,13 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} | MAJ Mobilidade Elétrica</title>
   <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
-  <!-- Alpine.js para interatividade ultrarrápida -->
+  <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <!-- Schema.org Product List Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    "name": "{{ title }}",
+    "description": "{{ subtitle }}",
+    "numberOfItems": {{ items|length }}
+  }
+  </script>
 </head>
 <body x-data="outletApp()">
 
@@ -20,7 +39,7 @@
     <div class="ribbon-track">
       <span>⚡ {{ urgency_text }} ⚡</span>
       <span class="ribbon-dot">•</span>
-      <span>GARANTIA DE FÁBRICA MAJ</span>
+      <span>GARANTIA OFICIAL DE FÁBRICA MAJ</span>
       <span class="ribbon-dot">•</span>
       <span>ENVIO PARA TODO O BRASIL</span>
       <span class="ribbon-dot">•</span>
@@ -37,13 +56,13 @@
         <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo">
         <div class="logo-text">
           <span class="brand-title">MAJ MOBILIDADE</span>
-          <span class="brand-badge">CATÁLOGO OFICIAL</span>
+          <span class="brand-badge">CATÁLOGO OFICIAL DE OUTLET</span>
         </div>
       </div>
 
       <div class="header-actions">
         <a href="#catalogo" class="btn-scroll-catalog">Ver Catálogo</a>
-        <a :href="getWhatsAppUrl('Geral', '0')" target="_blank" class="btn-whatsapp-header">
+        <a :href="getWhatsAppUrl('Geral - Catálogo Outlet', '0')" target="_blank" class="btn-whatsapp-header">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
           <span>Falar com Consultor</span>
         </a>
@@ -56,7 +75,7 @@
     <div class="outlet-container hero-inner">
       <div class="hero-badge">
         <span class="hero-pulse"></span>
-        <span>QUEIMA DE ESTOQUE EXCLUSIVA</span>
+        <span>QUEIMA DE ESTOQUE OFICIAL MAJ</span>
       </div>
       <h1 class="hero-title">{{ title }}</h1>
       <p class="hero-subtitle">{{ subtitle }}</p>
@@ -71,7 +90,7 @@
           <span class="stat-label">Parcelamento Facilitado</span>
         </div>
         <div class="stat-card">
-          <strong class="stat-number">Até 30%</strong>
+          <strong class="stat-number">50%</strong>
           <span class="stat-label">Abaixo da Tabela</span>
         </div>
         <div class="stat-card">
@@ -82,20 +101,44 @@
     </div>
   </section>
 
-  <!-- Barra de Filtros e Busca -->
+  <!-- Barra de Filtros, Ordenação e Busca -->
   <section class="outlet-filters-section" id="catalogo">
     <div class="outlet-container">
       <div class="filters-wrapper">
-        <div class="search-box">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" x-model="searchQuery" placeholder="Buscar por modelo (ex: MAX 12, V20, Ride On)...">
+        <div class="filters-top-bar">
+          <div class="search-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" x-model="searchQuery" placeholder="Buscar por modelo (ex: MAX 12, V20, Ride On)...">
+            <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
+          </div>
+
+          <div class="sort-select-box">
+            <label for="sortBySelect" class="sr-only">Ordenação</label>
+            <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="price_asc">💰 Menor Preço</option>
+              <option value="price_desc">💎 Maior Preço</option>
+              <option value="discount_desc">🔥 Maior Desconto %</option>
+              <option value="name_asc">🔤 Nome (A-Z)</option>
+            </select>
+          </div>
         </div>
 
-        <div class="category-pills">
-          <button type="button" :class="{'active': activeCategory === 'all'}" @click="activeCategory = 'all'">Todos ({{ items|length }})</button>
-          {% for cat in categories %}
-          <button type="button" :class="{'active': activeCategory === '{{ cat }}'}" @click="activeCategory = '{{ cat }}'">{{ cat }}</button>
-          {% endfor %}
+        <div class="category-pills-bar">
+          <div class="category-pills">
+            <button type="button" :class="{'active': activeCategory === 'all'}" @click="activeCategory = 'all'">
+              Todos ({{ items|length }})
+            </button>
+            {% for cat in categories %}
+            <button type="button" :class="{'active': activeCategory === '{{ cat }}'}" @click="activeCategory = '{{ cat }}'">
+              {{ cat }}
+            </button>
+            {% endfor %}
+          </div>
+
+          <div class="filter-counter-badge" x-show="hasActiveFilters()">
+            <span x-text="filteredItems().length + ' produtos encontrados'"></span>
+            <button type="button" class="btn-reset-filters" @click="clearFilters()">Limpar Filtros</button>
+          </div>
         </div>
       </div>
     </div>
@@ -103,91 +146,126 @@
 
   <!-- Grid de Produtos -->
   <main class="outlet-container catalog-grid-section">
-    <div class="products-grid">
-      {% for item in items %}
-      <div class="product-card" 
-           x-show="matchesFilter('{{ item.name }}', '{{ item.category }}', '{{ item.color }}')"
-           x-transition:enter="fade-in">
-        
-        <!-- Badges -->
-        <div class="card-badges">
-          {% if item.discount_percent and item.discount_percent > 0 %}
-          <span class="badge-discount">-{{ item.discount_percent }}% OFF</span>
-          {% endif %}
-          {% if item.badge %}
-          <span class="badge-custom">{{ item.badge }}</span>
-          {% endif %}
-          <span class="badge-stock">{{ item.stock_qty }} em estoque</span>
-        </div>
+    <!-- Estado Vazio / Sem Resultados -->
+    <div class="empty-results-box" x-show="filteredItems().length === 0" x-cloak>
+      <div class="empty-icon">🔍</div>
+      <h3>Nenhum modelo encontrado com estes filtros</h3>
+      <p>Tente ajustar sua busca ou limpar os filtros para visualizar todas as opções do catálogo.</p>
+      <button type="button" class="btn-reset-filters-hero" @click="clearFilters()">Ver Todos os Veículos</button>
+    </div>
 
-        <!-- Imagem -->
-        <div class="card-image-box" @click="openModal({{ item.id }})">
-          <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" 
-               alt="{{ item.name }}" 
-               loading="lazy"
-               class="card-img"
-               onerror="this.src='/static/logo.png'">
-          <div class="image-overlay-hover">
-            <span>🔍 Ver Fotos e Ficha Técnica</span>
-          </div>
-        </div>
-
-        <!-- Conteúdo do Card -->
-        <div class="card-body">
-          <div class="card-category">{{ item.category }}</div>
-          <h2 class="card-title">{{ item.name }}</h2>
-
-          <div class="card-specs-mini">
-            {% if item.specs_json.get('Autonomia') %}
-            <span class="spec-mini">🔋 {{ item.specs_json.get('Autonomia') }}</span>
-            {% endif %}
-            {% if item.specs_json.get('Velocidade Máxima') %}
-            <span class="spec-mini">⚡ {{ item.specs_json.get('Velocidade Máxima') }}</span>
-            {% endif %}
-            {% if item.color %}
-            <span class="spec-mini">🎨 {{ item.color }}</span>
-            {% endif %}
+    <!-- Lista Dinâmica de Cards de Produtos -->
+    <div class="products-grid" x-show="filteredItems().length > 0">
+      <template x-for="item in filteredItems()" :key="item.id">
+        <div class="product-card" x-transition:enter="fade-in">
+          
+          <!-- Badges -->
+          <div class="card-badges">
+            <template x-if="item.discount_percent && item.discount_percent > 0">
+              <span class="badge-discount" x-text="'-' + item.discount_percent + '% OFF'"></span>
+            </template>
+            <template x-if="item.badge">
+              <span class="badge-custom" x-text="item.badge"></span>
+            </template>
+            <span class="badge-stock" x-text="item.stock_qty + ' em estoque'"></span>
           </div>
 
-          <!-- Preços -->
-          <div class="card-pricing">
-            {% if item.price_original and item.price_original > item.price_outlet %}
-            <div class="price-from">De R$ {{ "{:,.2f}".format(item.price_original).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
-            {% endif %}
-            <div class="price-to">
-              <span class="currency">R$</span>
-              <span class="amount">{{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
-              <span class="payment-method">à vista</span>
+          <!-- Imagem Principal -->
+          <div class="card-image-box" @click="openModal(item.id)">
+            <img :src="item.image_main || '/static/logo.png'" 
+                 :alt="item.name" 
+                 loading="lazy"
+                 class="card-img"
+                 @error="$event.target.src='/static/logo.png'">
+            <div class="image-overlay-hover">
+              <span>🔍 Ver Fotos e Ficha Técnica</span>
             </div>
-            {% if item.installment_12 and item.installment_12 > 0 %}
-            <div class="price-installments">
-              ou em <strong>12x de R$ {{ "{:,.2f}".format(item.installment_12).replace(",", "X").replace(".", ",").replace("X", ".") }}</strong>
-            </div>
-            {% endif %}
-            {% if item.installment_18 and item.installment_18 > 0 %}
-            <div class="price-installments-sub">
-              ou 18x de R$ {{ "{:,.2f}".format(item.installment_18).replace(",", "X").replace(".", ",").replace("X", ".") }}
-            </div>
-            {% endif %}
           </div>
 
-          <!-- Ações do Card -->
-          <div class="card-actions">
-            <a :href="getWhatsAppUrl('{{ item.name }}', '{{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}')" 
-               target="_blank" 
-               class="btn-buy-whatsapp">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
-              <span>Quero no WhatsApp</span>
-            </a>
-            <button type="button" class="btn-details" @click="openModal({{ item.id }})">
-              Ver Detalhes
-            </button>
+          <!-- Conteúdo do Card -->
+          <div class="card-body">
+            <div class="card-category" x-text="item.category"></div>
+            <h2 class="card-title" x-text="item.name"></h2>
+
+            <!-- Chips de Ficha Técnica Rápida -->
+            <div class="card-specs-mini">
+              <template x-if="item.specs_json && item.specs_json['Autonomia']">
+                <span class="spec-mini">🔋 <span x-text="item.specs_json['Autonomia']"></span></span>
+              </template>
+              <template x-if="item.specs_json && item.specs_json['Velocidade Máxima']">
+                <span class="spec-mini">⚡ <span x-text="item.specs_json['Velocidade Máxima']"></span></span>
+              </template>
+              <template x-if="item.color">
+                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+              </template>
+            </div>
+
+            <!-- Preços e Parcelamento -->
+            <div class="card-pricing">
+              <template x-if="item.price_original && Number(item.price_original) > Number(item.price_outlet)">
+                <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
+              </template>
+              <div class="price-to">
+                <span class="currency">R$</span>
+                <span class="amount" x-text="formatPrice(item.price_outlet)"></span>
+                <span class="payment-method">à vista</span>
+              </div>
+              <template x-if="item.installment_12 && Number(item.installment_12) > 0">
+                <div class="price-installments">
+                  ou em <strong x-text="'12x de R$ ' + formatPrice(item.installment_12)"></strong>
+                </div>
+              </template>
+              <template x-if="item.installment_18 && Number(item.installment_18) > 0">
+                <div class="price-installments-sub" x-text="'ou 18x de R$ ' + formatPrice(item.installment_18)"></div>
+              </template>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card-actions">
+              <a :href="getWhatsAppUrl(item.name, formatPrice(item.price_outlet))" 
+                 target="_blank" 
+                 class="btn-buy-whatsapp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+                <span>Quero no WhatsApp</span>
+              </a>
+              <button type="button" class="btn-details" @click="openModal(item.id)">
+                Ver Ficha Completa
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      {% endfor %}
+      </template>
     </div>
   </main>
+
+  <!-- Seção de Garantias & Diferenciais (Trust Badges) -->
+  <section class="outlet-trust-section">
+    <div class="outlet-container">
+      <h2 class="trust-title">Por Que Garantir Seu Veículo no Outlet MAJ?</h2>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-icon">🛡️</div>
+          <h3>1 Ano de Garantia</h3>
+          <p>Veículos 100% testados e revisados por nossa equipe técnica com garantia oficial de fábrica.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🚚</div>
+          <h3>Envio para Todo o Brasil</h3>
+          <p>Transportadoras parceiras com seguro total de carga e rastreamento em tempo real até sua porta.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">💳</div>
+          <h3>Em até 18x no Cartão</h3>
+          <p>Flexibilidade de pagamento no cartão de crédito, PIX com desconto extra ou financiamento.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🔧</div>
+          <h3>Peças & Assistência</h3>
+          <p>Estoque completo de peças de reposição originais e rede autorizada de manutenção.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- Modal Interativo de Ficha Técnica e Galeria -->
   <div class="outlet-modal-backdrop" 
@@ -197,14 +275,14 @@
        @keydown.escape.window="modalOpen = false">
     
     <div class="outlet-modal-box">
-      <button type="button" class="modal-close-btn" @click="modalOpen = false">&times;</button>
+      <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
 
       <template x-if="selectedItem">
         <div class="modal-content-grid">
           <!-- Coluna Visual / Galeria -->
           <div class="modal-gallery-col">
             <div class="modal-main-image">
-              <img :src="activeImage || selectedItem.image_main" :alt="selectedItem.name">
+              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name">
             </div>
             <div class="modal-thumbs" x-show="selectedItem.images_gallery && selectedItem.images_gallery.length > 0">
               <div class="thumb-item" 
@@ -224,24 +302,46 @@
 
           <!-- Coluna Detalhes -->
           <div class="modal-info-col">
-            <span class="modal-category" x-text="selectedItem.category"></span>
+            <div class="modal-header-tag">
+              <span class="modal-category" x-text="selectedItem.category"></span>
+              <template x-if="selectedItem.condition">
+                <span class="modal-condition-tag" x-text="selectedItem.condition"></span>
+              </template>
+            </div>
             <h2 class="modal-title" x-text="selectedItem.name"></h2>
             
+            <!-- Box de Preço e Simulador de Parcelas -->
             <div class="modal-pricing-box">
               <div class="price-to">
                 <span class="currency">R$</span>
                 <span class="amount" x-text="formatPrice(selectedItem.price_outlet)"></span>
-                <span class="payment-method">à vista no Outlet</span>
+                <span class="payment-method">à vista no PIX</span>
               </div>
-              <div class="modal-installments" x-text="'Ou em ' + selectedItem.installments_text"></div>
-              <div class="modal-stock-badge" x-text="'Disponível: ' + selectedItem.stock_qty + ' unidades (' + (selectedItem.condition || 'Na caixa') + ')'"></div>
+              
+              <!-- Seletor de Opções de Pagamento -->
+              <div class="payment-calculator-tabs">
+                <span class="calc-label">Simular Pagamento:</span>
+                <div class="calc-options">
+                  <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
+                  <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
+                </div>
+              </div>
+
+              <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
+                12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> sem burocracia
+              </div>
+              <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
+                18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
+              </div>
+
+              <div class="modal-stock-badge" x-text="'Disponibilidade: ' + selectedItem.stock_qty + ' unidades em estoque à pronta entrega'"></div>
             </div>
 
             <p class="modal-desc" x-text="selectedItem.description"></p>
 
             <!-- Tabela de Ficha Técnica -->
             <div class="modal-specs-section">
-              <h3>Ficha Técnica Oficial</h3>
+              <h3>Ficha Técnica & Especificações</h3>
               <div class="specs-table">
                 <template x-for="(val, key) in selectedItem.specs_json" :key="key">
                   <div class="spec-row">
@@ -253,14 +353,10 @@
                   <span class="spec-k">Cores disponíveis</span>
                   <span class="spec-v" x-text="selectedItem.color"></span>
                 </div>
-                <div class="spec-row" x-show="selectedItem.location">
-                  <span class="spec-k">Localização</span>
-                  <span class="spec-v" x-text="selectedItem.location"></span>
-                </div>
               </div>
             </div>
 
-            <!-- Botão de Ação no Modal -->
+            <!-- Botões de Ação no Modal -->
             <div class="modal-cta-box">
               <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
                  target="_blank" 
@@ -276,6 +372,13 @@
     </div>
   </div>
 
+  <!-- Widget Flutuante de WhatsApp -->
+  <a :href="getWhatsAppUrl('Geral - Atendimento Flutuante', '0')" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor no WhatsApp">
+    <div class="widget-pulse"></div>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+    <span class="widget-tooltip">Consultor Online • Fale Conosco</span>
+  </a>
+
   <!-- Footer Institucional -->
   <footer class="outlet-footer">
     <div class="outlet-container footer-inner">
@@ -285,7 +388,7 @@
       </div>
       <div class="footer-links">
         <span>Garantia de 1 ano contra defeitos de fabricação</span>
-        <span>Assistência Técnica e Peças de Reposição Originais</span>
+        <span>Assistência Técnica e Peças de Reposição Originais MAJ</span>
       </div>
     </div>
   </footer>
@@ -300,20 +403,48 @@
       return {
         searchQuery: '',
         activeCategory: 'all',
+        sortBy: 'price_asc',
         items: OUTLET_ITEMS_DATA,
         modalOpen: false,
         selectedItem: null,
         activeImage: '',
+        selectedInstallment: 12,
 
-        matchesFilter(name, category, color) {
-          const q = this.searchQuery.toLowerCase().trim();
-          const matchesQuery = !q || 
-            name.toLowerCase().includes(q) || 
-            category.toLowerCase().includes(q) || 
-            (color && color.toLowerCase().includes(q));
-          
-          const matchesCat = this.activeCategory === 'all' || category.toLowerCase().includes(this.activeCategory.toLowerCase());
-          return matchesQuery && matchesCat;
+        filteredItems() {
+          let result = this.items.filter(item => {
+            const q = this.searchQuery.toLowerCase().trim();
+            const matchesQuery = !q || 
+              item.name.toLowerCase().includes(q) || 
+              item.category.toLowerCase().includes(q) || 
+              (item.color && item.color.toLowerCase().includes(q));
+            
+            const matchesCat = this.activeCategory === 'all' || 
+              item.category.toLowerCase().includes(this.activeCategory.toLowerCase());
+            
+            return matchesQuery && matchesCat;
+          });
+
+          if (this.sortBy === 'price_asc') {
+            result.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
+          } else if (this.sortBy === 'price_desc') {
+            result.sort((a, b) => (parseFloat(b.price_outlet) || 0) - (parseFloat(a.price_outlet) || 0));
+          } else if (this.sortBy === 'discount_desc') {
+            result.sort((a, b) => (parseInt(b.discount_percent) || 0) - (parseInt(a.discount_percent) || 0));
+          } else if (this.sortBy === 'name_asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+          }
+
+          return result;
+        },
+
+        clearFilters() {
+          this.searchQuery = '';
+          this.activeCategory = 'all';
+          this.sortBy = 'price_asc';
+        },
+
+        hasActiveFilters() {
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'price_asc';
         },
 
         openModal(id) {
@@ -321,6 +452,7 @@
           if (item) {
             this.selectedItem = item;
             this.activeImage = item.image_main;
+            this.selectedInstallment = 12;
             this.modalOpen = true;
           }
         },
