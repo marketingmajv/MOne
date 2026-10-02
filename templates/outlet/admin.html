@@ -250,10 +250,11 @@
         </div>
 
         <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">URL da Foto Principal</label>
-          <input type="text" name="image_main" id="outlet_form_image_main" style="width: 100%; margin-bottom: 6px;">
-          <small class="muted" style="display: block; margin-bottom: 4px;">Ou selecione uma foto do computador:</small>
-          <input type="file" name="main_image_file" accept="image/*" style="width: 100%;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Foto Principal do Produto</label>
+          <input type="text" name="image_main" id="outlet_form_image_main" placeholder="Cole a URL ou selecione o arquivo abaixo..." style="width: 100%; margin-bottom: 6px;">
+          <small class="muted" style="display: block; margin-bottom: 4px;">Ou selecione uma foto do computador (otimização e compressão automática):</small>
+          <input type="file" id="outlet_file_input" accept="image/*" style="width: 100%;" onchange="handleOutletImageUpload(this)">
+          <div id="upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
         </div>
 
         <div style="margin-bottom: 16px;">
@@ -313,10 +314,6 @@
     openModal('outletModal');
   }
 
-  function closeOutletModal() {
-    closeModal('outletModal');
-  }
-
   // Aliases para compatibilidade
   window.openNewOutletModal = openOutletNewModal;
   window.editOutletItem = openOutletEditModal;
@@ -331,6 +328,66 @@
       }
     };
   }
-</script>
+
+  function handleOutletImageUpload(input) {
+    const file = input.files && input.files[0];
+    const statusDiv = document.getElementById('upload_status_badge');
+    if (!file) return;
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.style.color = '#e5a93b';
+      statusDiv.textContent = 'Otimizando e comprimindo imagem...';
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        
+        const imageMainInput = document.getElementById('outlet_form_image_main');
+        if (imageMainInput) {
+          imageMainInput.value = compressedDataUrl;
+        }
+
+        const sizeKb = Math.round((compressedDataUrl.length * 3 / 4) / 1024);
+        if (statusDiv) {
+          statusDiv.style.color = '#00cc88';
+          statusDiv.textContent = '✓ Imagem comprimida com sucesso (' + width + 'x' + height + 'px, ~' + sizeKb + ' KB)';
+        }
+      };
+      img.onerror = function() {
+        if (statusDiv) {
+          statusDiv.style.color = '#ef4444';
+          statusDiv.textContent = 'Erro ao ler arquivo de imagem.';
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  window.handleOutletImageUpload = handleOutletImageUpload;
 </script>
 {% endblock %}
