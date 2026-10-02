@@ -5,6 +5,7 @@ Rotas do Catálogo Promocional Outlet MAJ Mobilidade e Painel Administrativo.
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import os
@@ -143,63 +144,81 @@ def admin_outlet():
     )
 
 
+
+
 @outlet_bp.route("/admin/outlet/save", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def save_item():
     """Salva ou atualiza um item no catálogo do Outlet."""
-    item_id = request.form.get("item_id")
-    item_id = int(item_id) if item_id and item_id.isdigit() else None
-
-    # Galeria de fotos adicionais
-    gallery_raw = request.form.get("images_gallery", "[]")
     try:
-        gallery = json.loads(gallery_raw) if gallery_raw else []
-    except Exception:
-        gallery = [img.strip() for img in gallery_raw.split("\n") if img.strip()]
+        item_id = request.form.get("item_id")
+        item_id = int(item_id) if item_id and item_id.isdigit() else None
 
-    # Ficha técnica JSON
-    specs_raw = request.form.get("specs_json", "{}")
-    try:
-        specs = json.loads(specs_raw) if specs_raw else {}
-    except Exception:
-        specs = {}
+        # Galeria de fotos adicionais
+        gallery_raw = request.form.get("images_gallery", "[]")
+        try:
+            gallery = json.loads(gallery_raw) if gallery_raw else []
+        except Exception:
+            gallery = [img.strip() for img in gallery_raw.split("\n") if img.strip()]
 
-    data = {
-        "name": request.form.get("name"),
-        "slug": slugify(request.form.get("slug") or request.form.get("name")),
-        "category": request.form.get("category"),
-        "condition": request.form.get("condition"),
-        "color": request.form.get("color"),
-        "price_original": request.form.get("price_original"),
-        "price_outlet": request.form.get("price_outlet"),
-        "installment_12": request.form.get("installment_12"),
-        "installment_18": request.form.get("installment_18"),
-        "installments_text": request.form.get("installments_text"),
-        "stock_qty": request.form.get("stock_qty"),
-        "location": request.form.get("location"),
-        "badge": request.form.get("badge"),
-        "description": request.form.get("description"),
-        "image_main": request.form.get("image_main"),
-        "images_gallery": gallery,
-        "specs_json": specs,
-        "status": request.form.get("status", "active"),
-        "sort_order": request.form.get("sort_order", 0),
-        "notes": request.form.get("notes"),
-    }
+        # Ficha técnica JSON
+        specs_raw = request.form.get("specs_json", "{}")
+        try:
+            specs = json.loads(specs_raw) if specs_raw else {}
+        except Exception:
+            specs = {}
 
-    # Upload de foto principal se enviada via arquivo
-    if "main_image_file" in request.files:
-        f = request.files["main_image_file"]
-        if f and f.filename:
-            UPLOAD_OUTLET_DIR.mkdir(parents=True, exist_ok=True)
-            safe_name = f"main_{slugify(data['name'])}_{secure_filename(f.filename)}"
-            f.save(UPLOAD_OUTLET_DIR / safe_name)
-            data["image_main"] = f"/static/img/outlet/uploads/{safe_name}"
+        data = {
+            "name": request.form.get("name"),
+            "slug": slugify(request.form.get("slug") or request.form.get("name")),
+            "category": request.form.get("category"),
+            "condition": request.form.get("condition"),
+            "color": request.form.get("color"),
+            "price_original": request.form.get("price_original"),
+            "price_outlet": request.form.get("price_outlet"),
+            "installment_12": request.form.get("installment_12"),
+            "installment_18": request.form.get("installment_18"),
+            "installments_text": request.form.get("installments_text"),
+            "stock_qty": request.form.get("stock_qty"),
+            "location": request.form.get("location"),
+            "badge": request.form.get("badge"),
+            "description": request.form.get("description"),
+            "image_main": request.form.get("image_main"),
+            "images_gallery": gallery,
+            "specs_json": specs,
+            "status": request.form.get("status", "active"),
+            "sort_order": request.form.get("sort_order", 0),
+            "notes": request.form.get("notes"),
+        }
 
-    saved_id = save_outlet_item(data, item_id=item_id)
-    audit("save_outlet_item", f"Item Outlet ID={saved_id} ({data['name']}) salvo com sucesso")
-    flash(f"Produto '{data['name']}' salvo com sucesso no Outlet!", "success")
+        # Upload de foto principal se enviada via arquivo
+        if "main_image_file" in request.files:
+            f = request.files["main_image_file"]
+            if f and f.filename:
+                try:
+                    UPLOAD_OUTLET_DIR.mkdir(parents=True, exist_ok=True)
+                    safe_name = f"main_{slugify(data['name'])}_{secure_filename(f.filename)}"
+                    f.save(UPLOAD_OUTLET_DIR / safe_name)
+                    data["image_main"] = f"/static/img/outlet/uploads/{safe_name}"
+                except Exception as upload_err:
+                    logger.warning("Falha ao salvar no disco (%s). Convertendo para Base64 Data URL.", upload_err)
+                    try:
+                        f.seek(0)
+                        raw_bytes = f.read()
+                        mime = f.mimetype or "image/jpeg"
+                        b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+                        data["image_main"] = f"data:{mime};base64,{b64_str}"
+                    except Exception as b64_err:
+                        logger.error("Erro ao converter arquivo para Base64 Data URL: %s", b64_err)
+
+        saved_id = save_outlet_item(data, item_id=item_id)
+        audit("save_outlet_item", f"Item Outlet ID={saved_id} ({data['name']}) salvo com sucesso")
+        flash(f"Produto '{data['name']}' salvo com sucesso no Outlet!", "success")
+    except Exception as e:
+        logger.exception("Erro ao salvar item no Outlet: %s", e)
+        flash(f"Ocorreu um erro ao salvar o produto: {str(e)}", "danger")
+
     return redirect(url_for("outlet.admin_outlet"))
 
 
