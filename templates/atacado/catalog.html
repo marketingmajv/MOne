@@ -47,7 +47,7 @@
   <!-- Top Urgency Ribbon -->
   <div class="outlet-ribbon atacado-hero-ribbon">
     <div class="ribbon-track">
-      <span>🏢 {{ urgency_text }} 🏢</span>
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÃO M-ONE & COLVIX 🏢</span>
       <span class="ribbon-dot">•</span>
       <span>CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES & CNPJ</span>
       <span class="ribbon-dot">•</span>
@@ -55,7 +55,7 @@
       <span class="ribbon-dot">•</span>
       <span>GARANTIA OFICIAL DE FÁBRICA MAJ</span>
       <span class="ribbon-dot">•</span>
-      <span>🏢 {{ urgency_text }} 🏢</span>
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ 🏢</span>
     </div>
   </div>
 
@@ -192,21 +192,13 @@
               </template>
             </div>
 
-            <!-- Preços e Parcelamento Atacado -->
+            <!-- Preço Atacado (Apenas à Vista CNPJ) -->
             <div class="card-pricing">
               <div class="price-to">
                 <span class="currency">R$</span>
                 <span class="amount" x-text="item.price_outlet > 0 ? formatPrice(item.price_outlet) : 'Sob consulta'"></span>
-                <span class="payment-method">à vista CNPJ</span>
+                <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
               </div>
-              <template x-if="item.price_atacado_plus && Number(item.price_atacado_plus) > 0">
-                <div class="price-installments" style="color: #94a3b8;">
-                  Atacado Plus: <strong style="color: #e2e8f0;" x-text="'R$ ' + formatPrice(item.price_atacado_plus)"></strong>
-                </div>
-              </template>
-              <template x-if="item.installment_12 && Number(item.installment_12) > 0">
-                <div class="price-installments-sub" x-text="'ou em 12x de R$ ' + formatPrice(item.installment_12)"></div>
-              </template>
             </div>
 
             <!-- Botões de Ação -->
@@ -264,34 +256,12 @@
             </div>
             <h2 class="modal-title" x-text="selectedItem.name"></h2>
             
-            <!-- Box de Preço e Simulador de Parcelas -->
+            <!-- Box de Preço Atacado (Apenas à Vista CNPJ) -->
             <div class="modal-pricing-box">
               <div class="price-to">
                 <span class="currency">R$</span>
                 <span class="amount" x-text="selectedItem.price_outlet > 0 ? formatPrice(selectedItem.price_outlet) : 'Sob consulta'"></span>
-                <span class="payment-method">à vista no PIX (CNPJ)</span>
-              </div>
-
-              <template x-if="selectedItem.price_atacado_plus && Number(selectedItem.price_atacado_plus) > 0">
-                <div class="modal-installment-result" style="color: #00cc88;">
-                  Tabela Atacado Plus: <strong x-text="'R$ ' + formatPrice(selectedItem.price_atacado_plus)"></strong>
-                </div>
-              </template>
-              
-              <!-- Seletor de Opções de Pagamento -->
-              <div class="payment-calculator-tabs">
-                <span class="calc-label">Simular Parcelamento CNPJ:</span>
-                <div class="calc-options">
-                  <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
-                  <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
-                </div>
-              </div>
-
-              <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
-                12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> no cartão/financiamento
-              </div>
-              <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
-                18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
+                <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
               </div>
 
               <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
