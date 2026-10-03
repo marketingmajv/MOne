@@ -45,10 +45,15 @@ def slugify(text: str) -> str:
 
 
 def normalize_model_name(name: str) -> str:
-    """Normaliza nomes de modelos (ex: X13 é MAX 12)."""
+    """Normaliza nomes de modelos (ex: X13 é MAX 12, FLOW ON é FLOW ONE, V8 MINI é V8 MINI ULTRA)."""
     n = (name or "").strip()
-    if n.upper() in ["X13", "X-13", "X 13"]:
+    u = n.upper()
+    if u in ["X13", "X-13", "X 13"]:
         return "MAX 12"
+    if u in ["FLOW ON", "FLOW-ON"]:
+        return "FLOW ONE"
+    if u in ["V8 MINI", "V8-MINI"]:
+        return "V8 MINI ULTRA"
     return n
 
 
@@ -580,6 +585,14 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 save_atacado_item(item_data)
 
             updated_models.append(model)
+
+        # Limpar registros antigos/obsoletos que não pertencem ao catálogo unificado atual
+        active_slugs = [slugify(m) for m in updated_models]
+        if active_slugs:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            placeholders = ", ".join(["%s" if is_pg else "?"] * len(active_slugs))
+            run_exec(conn, f"DELETE FROM atacado_items WHERE slug NOT IN ({placeholders})", tuple(active_slugs))
+            conn.commit()
 
     return {
         "success": True,
