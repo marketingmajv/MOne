@@ -27,6 +27,7 @@ from routes.import_lifecycle_routes import import_lifecycle_bp
 from routes.document_center_routes import document_center_bp
 from routes.data_sources_routes import data_sources_bp
 from routes.outlet_routes import outlet_bp
+from routes.fiscal_pricing_routes import fiscal_pricing_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -45,6 +46,7 @@ ALL_BLUEPRINTS = [
     import_repository_bp,
     document_center_bp,
     data_sources_bp,
+    fiscal_pricing_bp,
     bling_bp,
     copilot_bp,
     user_bp,

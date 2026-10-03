@@ -490,3 +490,10 @@ def init_db():
             conn.commit()
     except Exception as e:
         logger.warning("[Init DB SQLite fallback warning]: %s", e)
+
+    try:
+        from services.fiscal_db_init import init_fiscal_db
+        init_fiscal_db()
+    except Exception as e:
+        logger.warning("[Init Fiscal DB warning]: %s", e)
+

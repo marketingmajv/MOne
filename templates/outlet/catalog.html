@@ -62,9 +62,10 @@
 
       <div class="header-actions">
         <a href="#catalogo" class="btn-scroll-catalog">Ver Catálogo</a>
-        <a :href="getWhatsAppUrl('Geral - Catálogo Outlet', '0')" target="_blank" class="btn-whatsapp-header">
+        <a :href="getWhatsAppUrl('Geral - Catálogo Outlet', '0')" target="_blank" class="btn-whatsapp-header" aria-label="Falar com Consultor no WhatsApp">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
-          <span>Falar com Consultor</span>
+          <span class="btn-wa-text-full">Falar com Consultor</span>
+          <span class="btn-wa-text-short">Consultor</span>
         </a>
       </div>
     </div>
@@ -265,95 +266,102 @@
        @keydown.escape.window="modalOpen = false">
     
     <div class="outlet-modal-box">
+      <!-- Botão Fechar Fixo na Rolagem -->
       <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
 
-      <template x-if="selectedItem">
-        <div class="modal-content-grid">
-          <!-- Coluna Visual / Galeria -->
-          <div class="modal-gallery-col">
-            <div class="modal-main-image">
-              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
-            </div>
-            <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
-              <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
-                <div class="thumb-item" 
-                     :class="{'active': activeImage === img}"
-                     @click="activeImage = img">
-                  <img :src="img" alt="Foto" decoding="async" loading="lazy">
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <!-- Coluna Detalhes -->
-          <div class="modal-info-col">
-            <div class="modal-header-tag">
-              <span class="modal-category" x-text="selectedItem.category"></span>
-              <template x-if="selectedItem.condition">
-                <span class="modal-condition-tag" x-text="selectedItem.condition"></span>
-              </template>
-            </div>
-            <h2 class="modal-title" x-text="selectedItem.name"></h2>
-            
-            <!-- Box de Preço e Simulador de Parcelas -->
-            <div class="modal-pricing-box">
-              <div class="price-to">
-                <span class="currency">R$</span>
-                <span class="amount" x-text="formatPrice(selectedItem.price_outlet)"></span>
-                <span class="payment-method">à vista no PIX</span>
+      <div class="modal-scroll-body">
+        <template x-if="selectedItem">
+          <div class="modal-content-grid">
+            <!-- Coluna Visual / Galeria -->
+            <div class="modal-gallery-col">
+              <div class="modal-main-image">
+                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
               </div>
-              
-              <!-- Seletor de Opções de Pagamento -->
-              <div class="payment-calculator-tabs">
-                <span class="calc-label">Simular Pagamento:</span>
-                <div class="calc-options">
-                  <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
-                  <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
-                </div>
-              </div>
-
-              <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
-                12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> sem burocracia
-              </div>
-              <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
-                18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
-              </div>
-
-              <div class="modal-stock-badge" x-text="'Disponibilidade: ' + selectedItem.stock_qty + ' unidades em estoque à pronta entrega'"></div>
-            </div>
-
-            <p class="modal-desc" x-text="selectedItem.description"></p>
-
-            <!-- Tabela de Ficha Técnica -->
-            <div class="modal-specs-section">
-              <h3>Ficha Técnica & Especificações</h3>
-              <div class="specs-table">
-                <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                  <div class="spec-row">
-                    <span class="spec-k" x-text="key"></span>
-                    <span class="spec-v" x-text="val"></span>
+              <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
+                <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
+                  <div class="thumb-item" 
+                       :class="{'active': activeImage === img}"
+                       @click="activeImage = img">
+                    <img :src="img" alt="Foto" decoding="async" loading="lazy">
                   </div>
                 </template>
-                <div class="spec-row" x-show="selectedItem.color">
-                  <span class="spec-k">Cores disponíveis</span>
-                  <span class="spec-v" x-text="selectedItem.color"></span>
-                </div>
               </div>
             </div>
 
-            <!-- Botões de Ação no Modal -->
-            <div class="modal-cta-box">
-              <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
-                 target="_blank" 
-                 class="btn-modal-whatsapp">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
-                <span>Garantir esta Oferta pelo WhatsApp</span>
-              </a>
-              <span class="modal-secure-note">🔒 Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+            <!-- Coluna Detalhes -->
+            <div class="modal-info-col">
+              <div class="modal-header-tag">
+                <span class="modal-category" x-text="selectedItem.category"></span>
+                <template x-if="selectedItem.condition">
+                  <span class="modal-condition-tag" x-text="selectedItem.condition"></span>
+                </template>
+              </div>
+              <h2 class="modal-title" x-text="selectedItem.name"></h2>
+              
+              <!-- Box de Preço e Simulador de Parcelas -->
+              <div class="modal-pricing-box">
+                <div class="price-to">
+                  <span class="currency">R$</span>
+                  <span class="amount" x-text="formatPrice(selectedItem.price_outlet)"></span>
+                  <span class="payment-method">à vista no PIX</span>
+                </div>
+                
+                <!-- Seletor de Opções de Pagamento -->
+                <div class="payment-calculator-tabs">
+                  <span class="calc-label">Simular Pagamento:</span>
+                  <div class="calc-options">
+                    <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
+                    <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
+                  </div>
+                </div>
+
+                <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
+                  12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> sem burocracia
+                </div>
+                <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
+                  18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
+                </div>
+
+                <div class="modal-stock-badge" x-text="'Disponibilidade: ' + selectedItem.stock_qty + ' unidades em estoque à pronta entrega'"></div>
+              </div>
+
+              <p class="modal-desc" x-text="selectedItem.description"></p>
+
+              <!-- Tabela de Ficha Técnica -->
+              <div class="modal-specs-section">
+                <h3>Ficha Técnica & Especificações</h3>
+                <div class="specs-table">
+                  <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                    <div class="spec-row">
+                      <span class="spec-k" x-text="key"></span>
+                      <span class="spec-v" x-text="val"></span>
+                    </div>
+                  </template>
+                  <div class="spec-row" x-show="selectedItem.color">
+                    <span class="spec-k">Cores disponíveis</span>
+                    <span class="spec-v" x-text="selectedItem.color"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões de Ação no Modal (UX Refinada e Compacta) -->
+              <div class="modal-cta-box">
+                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
+                   target="_blank" 
+                   class="btn-modal-whatsapp"
+                   aria-label="Garantir Oferta no WhatsApp">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+                  <span>Garantir Oferta no WhatsApp</span>
+                </a>
+                <div class="modal-secure-note">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <span>Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
   </div>
 
