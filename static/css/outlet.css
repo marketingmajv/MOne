@@ -558,6 +558,123 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* Preços por Cor no Card e no Modal */
+.card-color-prices-badge {
+  background: rgba(229, 169, 59, 0.08);
+  border: 1px solid rgba(229, 169, 59, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.var-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gold-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.color-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.color-price-row:last-child {
+  border-bottom: none;
+}
+
+.cp-name {
+  color: #cbd5e1;
+  font-weight: 600;
+  max-width: 65%;
+}
+
+.cp-val {
+  color: #00cc88;
+  font-weight: 800;
+}
+
+/* Modal Color Prices Selector */
+.modal-color-prices-selector {
+  background: rgba(18, 23, 34, 0.9);
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.selector-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--gold-primary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.color-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.color-price-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  color: var(--text-main);
+}
+
+.color-price-btn:hover {
+  border-color: var(--gold-primary);
+  background: rgba(229, 169, 59, 0.1);
+}
+
+.color-price-btn.active {
+  border-color: #00cc88;
+  background: rgba(0, 204, 136, 0.15);
+  box-shadow: 0 0 12px rgba(0, 204, 136, 0.25);
+}
+
+.btn-color-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.color-price-btn.active .btn-color-name {
+  color: #e2e8f0;
+}
+
+.btn-color-price {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #00cc88;
+  margin: 2px 0;
+}
+
+.btn-color-inst {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
 .card-pricing {
   margin-top: auto;
   padding-top: 14px;

@@ -196,7 +196,24 @@
               <template x-if="item.price_original && Number(item.price_original) > Number(item.price_outlet)">
                 <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
               </template>
+              
+              <!-- Tabela / Badges de Preço por Cor -->
+              <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+                <div class="card-color-prices-badge">
+                  <span class="var-label">🎨 Valores conforme a Cor:</span>
+                  <template x-for="cp in item.specs_json.color_prices" :key="cp.colors">
+                    <div class="color-price-row">
+                      <span class="cp-name" x-text="cp.colors"></span>
+                      <strong class="cp-val" x-text="cp.price"></strong>
+                    </div>
+                  </template>
+                </div>
+              </template>
+
               <div class="price-to">
+                <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+                  <span class="payment-method" style="margin-right: 4px;">A partir de</span>
+                </template>
                 <span class="currency">R$</span>
                 <span class="amount" x-text="formatPrice(item.price_outlet)"></span>
                 <span class="payment-method">à vista</span>
@@ -300,9 +317,28 @@
               
               <!-- Box de Preço e Simulador de Parcelas -->
               <div class="modal-pricing-box">
+                <!-- Seletor Interativo de Cores quando há variação de preço -->
+                <template x-if="selectedItem.specs_json && selectedItem.specs_json.color_prices && selectedItem.specs_json.color_prices.length > 1">
+                  <div class="modal-color-prices-selector">
+                    <span class="selector-title">🎨 Escolha a Cor para ver o Preço:</span>
+                    <div class="color-options-grid">
+                      <template x-for="cp in selectedItem.specs_json.color_prices" :key="cp.colors">
+                        <button type="button" 
+                                class="color-price-btn" 
+                                :class="{'active': selectedColorObj && selectedColorObj.colors === cp.colors}" 
+                                @click="selectColorObj(cp)">
+                          <span class="btn-color-name" x-text="cp.colors"></span>
+                          <strong class="btn-color-price" x-text="cp.price"></strong>
+                          <small class="btn-color-inst" x-text="'12x ' + cp.p12"></small>
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+
                 <div class="price-to">
                   <span class="currency">R$</span>
-                  <span class="amount" x-text="formatPrice(selectedItem.price_outlet)"></span>
+                  <span class="amount" x-text="formatPrice(getActivePrice())"></span>
                   <span class="payment-method">à vista no PIX</span>
                 </div>
                 
@@ -315,11 +351,11 @@
                   </div>
                 </div>
 
-                <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
-                  12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> sem burocracia
+                <div class="modal-installment-result" x-show="selectedInstallment === 12">
+                  12x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment12())"></strong> sem burocracia
                 </div>
-                <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
-                  18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
+                <div class="modal-installment-result" x-show="selectedInstallment === 18">
+                  18x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment18())"></strong> no cartão
                 </div>
 
                 <div class="modal-stock-badge" x-text="'Disponibilidade: ' + selectedItem.stock_qty + ' unidades em estoque à pronta entrega'"></div>
@@ -440,14 +476,52 @@
           return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'price_asc';
         },
 
+        selectedColorObj: null,
+
         openModal(id) {
           const item = this.items.find(i => i.id === id);
           if (item) {
             this.selectedItem = item;
             this.activeImage = item.image_main;
             this.selectedInstallment = 12;
+            if (item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 0) {
+              this.selectedColorObj = item.specs_json.color_prices[0];
+            } else {
+              this.selectedColorObj = null;
+            }
             this.modalOpen = true;
           }
+        },
+
+        selectColorObj(cp) {
+          this.selectedColorObj = cp;
+        },
+
+        getActivePrice() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.price) {
+            const num = parseFloat(this.selectedColorObj.price.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.price_outlet || 0;
+        },
+
+        getActiveInstallment12() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.p12) {
+            const num = parseFloat(this.selectedColorObj.p12.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.installment_12 || 0;
+        },
+
+        getActiveInstallment18() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.p18) {
+            const num = parseFloat(this.selectedColorObj.p18.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.installment_18 || 0;
         },
 
         getItemGallery(item) {
@@ -477,7 +551,11 @@
         },
 
         getWhatsAppUrl(model, price) {
-          const msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          let activeName = model;
+          if (this.selectedItem && this.selectedItem.name === model && this.selectedColorObj && this.selectedColorObj.colors) {
+            activeName = `${model} (Cor: ${this.selectedColorObj.colors})`;
+          }
+          const msg = WA_TEMPLATE.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
           return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
         }
       };
