@@ -378,7 +378,7 @@
       `;
 
       card.innerHTML = `
-        <img src="${imgUrl}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px;" onerror="this.src='/static/logo.png'">
+        <img src="${imgUrl}" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center; border-radius: 6px;" onerror="this.src='/static/logo.png'">
         ${isMain ? '<span style="position: absolute; top: 6px; left: 6px; background: #00cc88; color: #000; font-weight: 800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">⭐ CAPA</span>' : ''}
         <div style="display: flex; gap: 4px; width: 100%; margin-top: 4px;">
           ${!isMain ? `<button type="button" class="btn sm" onclick="setAsCoverPhoto(${index})" style="flex: 1; padding: 2px; font-size: 0.65rem; background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0,204,136,0.3);">Capa</button>` : ''}

@@ -715,8 +715,9 @@ body {
 }
 
 .thumb-item {
-  width: 65px;
-  height: 65px;
+  width: 56px;
+  aspect-ratio: 3 / 4;
+  height: auto;
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
   cursor: pointer;
@@ -731,6 +732,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .modal-category {
