@@ -100,8 +100,7 @@ def product_detail(identifier):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("format") == "json":
         return jsonify({"success": True, "item": item})
 
-    whatsapp_number = get_outlet_setting("whatsapp_number", "5527999999999")
-    return render_template("outlet/detail.html", item=item, whatsapp_number=whatsapp_number)
+    return redirect(url_for("outlet.catalog"))
 
 
 # -------------------------------------------------------------------------
