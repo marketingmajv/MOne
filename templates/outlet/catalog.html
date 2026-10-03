@@ -53,7 +53,7 @@
   <header class="outlet-header">
     <div class="outlet-container header-inner">
       <div class="logo-box">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
         <div class="logo-text">
           <span class="brand-title">MAJ MOBILIDADE</span>
           <span class="brand-badge">CATÁLOGO OFICIAL DE OUTLET</span>
@@ -164,6 +164,7 @@
             <img :src="item.image_main || '/static/logo.png'" 
                  :alt="item.name" 
                  loading="lazy"
+                 decoding="async"
                  class="card-img"
                  @error="$event.target.src='/static/logo.png'">
             <div class="image-overlay-hover">
@@ -271,14 +272,14 @@
           <!-- Coluna Visual / Galeria -->
           <div class="modal-gallery-col">
             <div class="modal-main-image">
-              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name">
+              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
             </div>
             <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
               <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
                 <div class="thumb-item" 
                      :class="{'active': activeImage === img}"
                      @click="activeImage = img">
-                  <img :src="img" alt="Foto">
+                  <img :src="img" alt="Foto" decoding="async" loading="lazy">
                 </div>
               </template>
             </div>
@@ -367,7 +368,7 @@
   <footer class="outlet-footer">
     <div class="outlet-container footer-inner">
       <div class="footer-brand">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo" decoding="async" loading="lazy">
         <p>MAJ Mobilidade Elétrica • O Futuro em Movimento. Todos os direitos reservados.</p>
       </div>
       <div class="footer-links">

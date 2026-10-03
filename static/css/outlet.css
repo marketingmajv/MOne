@@ -406,6 +406,8 @@ body {
   box-shadow: var(--shadow-card);
   position: relative;
   transition: var(--transition);
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 480px;
 }
 
 .product-card:hover {
@@ -471,6 +473,9 @@ body {
   object-position: center;
   display: block;
   transition: transform 0.4s ease;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .product-card:hover .card-img { transform: scale(1.05); }
