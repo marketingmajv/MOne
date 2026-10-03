@@ -690,7 +690,6 @@ body {
 .modal-main-image {
   width: 100%;
   aspect-ratio: 4 / 5;
-  max-height: 600px;
   background: #090d16;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -1143,7 +1142,6 @@ body {
   .modal-main-image {
     width: 100%;
     aspect-ratio: 4 / 5;
-    max-height: 480px;
     background: #090d16;
     border-radius: var(--radius-md);
     margin-bottom: 0;
@@ -1242,7 +1240,7 @@ body {
 
   .modal-main-image {
     aspect-ratio: 4 / 5;
-    max-height: 450px;
+    width: 100%;
   }
 
   .thumb-item {
