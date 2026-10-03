@@ -17,10 +17,16 @@ from routes.helpers import (
     ROLE_LABELS,
     money,
     money_usd,
-    aliquota
+    aliquota,
 )
+from pathlib import Path
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / "templates"),
+    static_folder=str(BASE_DIR / "static"),
+)
 app.secret_key = (
     os.environ.get("FLASK_SECRET_KEY")
     or os.environ.get("SECRET_KEY")
