@@ -1095,19 +1095,158 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+/* --- Mobile-First & Ultra Responsive (Otimizado para +90% Usuários Mobile) --- */
+
+@media (max-width: 768px) {
+  .outlet-container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .outlet-modal-backdrop {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .outlet-modal-box {
+    max-height: 92vh;
+    border-radius: 20px 20px 16px 16px;
+    border: 1px solid var(--border-gold);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+  }
+
+  .modal-close-btn {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+  }
+
+  .modal-content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px 14px 24px;
+  }
+
+  /* Galeria Otimizada para Celular */
+  .modal-gallery-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-main-image {
+    height: 240px;
+    aspect-ratio: 4 / 3;
+    max-height: 260px;
+    border-radius: var(--radius-md);
+    margin-bottom: 0;
+  }
+
+  .modal-thumbs {
+    gap: 6px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .thumb-item {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .modal-title {
+    font-size: 1.4rem;
+    line-height: 1.25;
+    margin: 4px 0 10px;
+  }
+
+  .modal-pricing-box {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  .price-to .amount {
+    font-size: 1.5rem;
+  }
+
+  /* Grid e Cards de Produtos em Telas Menores */
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .card-image-box {
+    height: 210px;
+    aspect-ratio: 4 / 3;
+  }
+
+  .card-body {
+    padding: 14px;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+
+  /* Botão WhatsApp Fixo e Acessível */
+  .floating-whatsapp-widget {
+    bottom: 18px;
+    right: 18px;
+    width: 54px;
+    height: 54px;
+  }
+
   .hero-stats-bar { grid-template-columns: repeat(2, 1fr); }
   .filters-top-bar { flex-direction: column; }
   .sort-select-box { width: 100%; }
   .trust-grid { grid-template-columns: repeat(2, 1fr); }
-  .modal-content-grid { grid-template-columns: 1fr; }
-  .hero-title { font-size: 2.1rem; }
   .footer-inner { flex-direction: column; text-align: center; }
   .footer-links { text-align: center; }
 }
 
-@media (max-width: 580px) {
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .hero-stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 10px 12px;
+  }
+
+  .stat-number {
+    font-size: 1.1rem;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-main-image {
+    height: 210px;
+    aspect-ratio: 16 / 10;
+  }
+
+  .thumb-item {
+    width: 48px;
+    height: 48px;
+  }
+
   .trust-grid { grid-template-columns: 1fr; }
-  .hero-stats-bar { grid-template-columns: 1fr; }
   .widget-tooltip { display: none; }
 }
