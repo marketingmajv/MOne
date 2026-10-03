@@ -82,7 +82,7 @@ def ensure_atacado_schema():
                     installment_18 NUMERIC(10, 2) DEFAULT 0,
                     installments_text VARCHAR(255),
                     stock_qty INTEGER NOT NULL DEFAULT 0,
-                    location VARCHAR(150) DEFAULT 'GALPÃO M-ONE / GALPÃO MAJ NOVO',
+                    location VARCHAR(150) DEFAULT 'GALPÃO M-ONE / GALPÃO MAJ',
                     badge VARCHAR(100) DEFAULT 'EXCLUSIVO CNPJ',
                     specs_json TEXT,
                     description TEXT,
@@ -124,7 +124,7 @@ def ensure_atacado_schema():
                 installment_18 REAL DEFAULT 0,
                 installments_text TEXT,
                 stock_qty INTEGER NOT NULL DEFAULT 0,
-                location TEXT DEFAULT 'GALPÃO M-ONE / GALPÃO MAJ NOVO',
+                location TEXT DEFAULT 'GALPÃO M-ONE / GALPÃO MAJ',
                 badge TEXT DEFAULT 'EXCLUSIVO CNPJ',
                 specs_json TEXT,
                 description TEXT,
@@ -287,7 +287,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
 
         inst_text = data.get("installments_text") or f"12x de R$ {inst12:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stock_qty = int(data.get("stock_qty") or 0)
-        location = (data.get("location") or "GALPÃO M-ONE / GALPÃO MAJ NOVO").strip()
+        location = (data.get("location") or "GALPÃO M-ONE / GALPÃO MAJ").strip()
         badge = (data.get("badge") or "EXCLUSIVO CNPJ").strip()
         description = (data.get("description") or "").strip()
         image_main = (data.get("image_main") or "").strip()
@@ -454,7 +454,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 if avail > 0:
                     combined_stock[model]["total_qty"] += avail
                     combined_stock[model]["colors"][color] += avail
-                    combined_stock[model]["sources"].add("GALPÃO MAJ NOVO")
+                    combined_stock[model]["sources"].add("GALPÃO MAJ")
     except Exception as e:
         logger.error("Erro ao carregar planilha MAJ Antiga: %s", e)
 

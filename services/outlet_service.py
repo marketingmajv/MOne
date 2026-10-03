@@ -59,7 +59,7 @@ def ensure_outlet_schema():
                     installment_18 NUMERIC(10, 2) DEFAULT 0,
                     installments_text VARCHAR(255),
                     stock_qty INTEGER NOT NULL DEFAULT 1,
-                    location VARCHAR(150) DEFAULT 'GALPÃO MAJ NOVO',
+                    location VARCHAR(150) DEFAULT 'GALPÃO MAJ',
                     badge VARCHAR(100),
                     specs_json TEXT,
                     description TEXT,
@@ -100,7 +100,7 @@ def ensure_outlet_schema():
                 installment_18 REAL DEFAULT 0,
                 installments_text TEXT,
                 stock_qty INTEGER NOT NULL DEFAULT 1,
-                location TEXT DEFAULT 'GALPÃO MAJ NOVO',
+                location TEXT DEFAULT 'GALPÃO MAJ',
                 badge TEXT,
                 specs_json TEXT,
                 description TEXT,
@@ -263,7 +263,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
 
         inst_text = data.get("installments_text") or f"12x de R$ {inst12:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stock_qty = int(data.get("stock_qty") or 0)
-        location = (data.get("location") or "GALPÃO MAJ NOVO").strip()
+        location = (data.get("location") or "GALPÃO MAJ").strip()
         badge = (data.get("badge") or "").strip()
         description = (data.get("description") or "").strip()
         image_main = (data.get("image_main") or "").strip()

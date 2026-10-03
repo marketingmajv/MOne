@@ -144,14 +144,14 @@
 </div>
 
 <!-- Modal Edição / Criação Produto Atacado -->
-<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;">
+<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target === this) closeAtacadoModal()">
   <div style="background: var(--bg-card, #121722); border: 1px solid var(--border-gold, #00cc88); border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #fff;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h3 id="atacadoModalTitle" style="font-size: 1.2rem; font-weight: 800; margin: 0; color: #00cc88;">+ Editar Produto Atacado</h3>
       <button type="button" onclick="closeAtacadoModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
     </div>
 
-    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateAtacadoFormPayload(this)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="item_id" id="atacado_form_item_id">
 
@@ -182,6 +182,31 @@
         <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
       </div>
 
+      <!-- Galeria de Fotos e Foto Capa do Atacado -->
+      <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
+        <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Atacado</label>
+        <small style="color: var(--muted); display: block; margin-bottom: 10px; font-size: 0.75rem;">
+          Envie fotos do modelo para o catálogo de atacado. Selecione qual foto será a <strong>Foto Capa (Principal)</strong>.
+        </small>
+
+        <input type="hidden" name="image_main" id="atacado_form_image_main">
+        <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
+
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
+        </div>
+
+        <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
+
+        <!-- Preview da Galeria e Foto Capa -->
+        <div id="atacado_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px;"></div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Descrição / Observações de Atacado</label>
+        <textarea name="description" id="atacado_form_description" rows="2" style="width: 100%; padding: 8px; font-size: 0.85rem;"></textarea>
+      </div>
+
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
         <button type="submit" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
@@ -191,6 +216,10 @@
 </div>
 
 <script>
+  const ATACADO_ITEMS_LIST = {{ items|tojson }};
+  let ATACADO_CURRENT_GALLERY = [];
+  let ATACADO_CURRENT_IMAGE_MAIN = '';
+
   function openAtacadoModal() {
     document.getElementById('atacado_form_item_id').value = '';
     document.getElementById('atacado_form_name').value = '';
@@ -198,6 +227,11 @@
     document.getElementById('atacado_form_price_atacado_plus').value = '';
     document.getElementById('atacado_form_stock_qty').value = '1';
     document.getElementById('atacado_form_color').value = '';
+    document.getElementById('atacado_form_description').value = '';
+    ATACADO_CURRENT_GALLERY = [];
+    ATACADO_CURRENT_IMAGE_MAIN = '';
+    renderAtacadoGalleryPreview();
+    document.getElementById('atacadoModalTitle').textContent = '+ Novo Produto Atacado';
     document.getElementById('atacadoFormModal').style.display = 'flex';
   }
 
@@ -212,7 +246,177 @@
     document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
     document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
     document.getElementById('atacado_form_color').value = item.color || '';
+    document.getElementById('atacado_form_description').value = item.description || '';
+
+    ATACADO_CURRENT_IMAGE_MAIN = item.image_main || '';
+    let gal = item.images_gallery || [];
+    if (typeof gal === 'string') {
+      try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+    }
+    ATACADO_CURRENT_GALLERY = Array.isArray(gal) ? [...gal] : [];
+    if (ATACADO_CURRENT_IMAGE_MAIN && !ATACADO_CURRENT_GALLERY.includes(ATACADO_CURRENT_IMAGE_MAIN)) {
+      ATACADO_CURRENT_GALLERY.unshift(ATACADO_CURRENT_IMAGE_MAIN);
+    }
+    renderAtacadoGalleryPreview();
+
+    document.getElementById('atacadoModalTitle').textContent = 'Editar Produto: ' + (item.name || '');
     document.getElementById('atacadoFormModal').style.display = 'flex';
+  }
+
+  function renderAtacadoGalleryPreview() {
+    const container = document.getElementById('atacado_gallery_preview_container');
+    const mainInput = document.getElementById('atacado_form_image_main');
+    const galleryInput = document.getElementById('atacado_form_images_gallery');
+
+    if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN;
+    if (galleryInput) galleryInput.value = JSON.stringify(ATACADO_CURRENT_GALLERY);
+
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (ATACADO_CURRENT_GALLERY.length === 0) {
+      container.innerHTML = '<small style="grid-column: 1 / -1; color: var(--muted); font-style: italic;">Nenhuma foto na galeria ainda.</small>';
+      return;
+    }
+
+    ATACADO_CURRENT_GALLERY.forEach((imgUrl, index) => {
+      const isMain = (imgUrl === ATACADO_CURRENT_IMAGE_MAIN) || (index === 0 && !ATACADO_CURRENT_IMAGE_MAIN);
+      if (isMain && !ATACADO_CURRENT_IMAGE_MAIN) {
+        ATACADO_CURRENT_IMAGE_MAIN = imgUrl;
+        if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN;
+      }
+
+      const card = document.createElement('div');
+      card.style.cssText = `
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid ${isMain ? '#00cc88' : 'var(--line, #334155)'};
+        background: rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px;
+      `;
+
+      card.innerHTML = `
+        <img src="${imgUrl}" style="width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: center; border-radius: 6px;" onerror="this.src='/static/logo.png'">
+        ${isMain ? '<span style="position: absolute; top: 6px; left: 6px; background: #00cc88; color: #000; font-weight: 800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">⭐ CAPA</span>' : ''}
+        <div style="display: flex; gap: 4px; width: 100%; margin-top: 4px;">
+          ${!isMain ? `<button type="button" class="btn sm" onclick="setAtacadoCoverPhoto(${index})" style="flex: 1; padding: 2px; font-size: 0.65rem; background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0,204,136,0.3);">Capa</button>` : ''}
+          <button type="button" class="btn sm" onclick="removeAtacadoPhotoFromGallery(${index})" style="padding: 2px 6px; font-size: 0.65rem; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);">✕</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function setAtacadoCoverPhoto(index) {
+    if (ATACADO_CURRENT_GALLERY[index]) {
+      ATACADO_CURRENT_IMAGE_MAIN = ATACADO_CURRENT_GALLERY[index];
+      renderAtacadoGalleryPreview();
+    }
+  }
+
+  function removeAtacadoPhotoFromGallery(index) {
+    const removed = ATACADO_CURRENT_GALLERY.splice(index, 1)[0];
+    if (ATACADO_CURRENT_IMAGE_MAIN === removed) {
+      ATACADO_CURRENT_IMAGE_MAIN = ATACADO_CURRENT_GALLERY.length > 0 ? ATACADO_CURRENT_GALLERY[0] : '';
+    }
+    renderAtacadoGalleryPreview();
+  }
+
+  function validateAtacadoFormPayload(form) {
+    const statusDiv = document.getElementById('atacado_upload_status_badge');
+    const mainImg = document.getElementById('atacado_form_image_main')?.value || '';
+    const galleryJson = document.getElementById('atacado_form_images_gallery')?.value || '';
+    const totalChars = mainImg.length + galleryJson.length;
+    const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
+
+    if (sizeMb > 3.0) {
+      alert(`⚠️ O tamanho total da galeria (${sizeMb.toFixed(1)} MB) é muito grande para o limite da Vercel. Por favor, remova algumas fotos antes de salvar.`);
+      if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.textContent = `⚠️ Tamanho excedido (${sizeMb.toFixed(1)} MB). Remova algumas fotos para salvar.`;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function handleAtacadoGalleryUpload(input) {
+    const files = input.files;
+    const statusDiv = document.getElementById('atacado_upload_status_badge');
+    if (!files || files.length === 0) return;
+
+    if (ATACADO_CURRENT_GALLERY.length >= 12) {
+      if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.textContent = '⚠️ Limite máximo de 12 fotos por produto atingido.';
+      }
+      input.value = '';
+      return;
+    }
+
+    if (statusDiv) {
+      statusDiv.style.display = 'block';
+      statusDiv.style.color = '#e5a93b';
+      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)...`;
+    }
+
+    let processedCount = 0;
+    const availableSlots = 12 - ATACADO_CURRENT_GALLERY.length;
+    const totalFiles = Math.min(files.length, availableSlots);
+
+    Array.from(files).slice(0, totalFiles).forEach(file => {
+      compressAtacadoImage(file, 800, 0.72, (base64Data) => {
+        if (!ATACADO_CURRENT_GALLERY.includes(base64Data)) {
+          ATACADO_CURRENT_GALLERY.push(base64Data);
+          if (!ATACADO_CURRENT_IMAGE_MAIN) {
+            ATACADO_CURRENT_IMAGE_MAIN = base64Data;
+          }
+        }
+        processedCount++;
+        if (processedCount === totalFiles) {
+          renderAtacadoGalleryPreview();
+          if (statusDiv) {
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#00cc88';
+            statusDiv.textContent = `✅ ${processedCount} foto(s) adicionada(s) à galeria com sucesso!`;
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 4000);
+          }
+          input.value = '';
+        }
+      });
+    });
+  }
+
+  function compressAtacadoImage(file, maxWidth, quality, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        callback(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 </script>
 {% endblock %}

@@ -157,7 +157,14 @@ def admin_atacado_save():
         item_id = request.form.get("item_id")
         item_id = int(item_id) if item_id and item_id.isdigit() else None
 
-        gallery_imgs = request.form.getlist("images_gallery_existing")
+        gallery_input = request.form.get("images_gallery")
+        if gallery_input and isinstance(gallery_input, str) and gallery_input.strip().startswith("["):
+            try:
+                gallery_imgs = json.loads(gallery_input)
+            except Exception:
+                gallery_imgs = request.form.getlist("images_gallery_existing")
+        else:
+            gallery_imgs = request.form.getlist("images_gallery_existing")
 
         uploaded_files = request.files.getlist("gallery_files")
         if uploaded_files:
@@ -169,7 +176,7 @@ def admin_atacado_save():
                     rel_path = f"/static/img/atacado/uploads/{safe_name}"
                     gallery_imgs.append(rel_path)
 
-        main_img = request.form.get("image_main_selected")
+        main_img = request.form.get("image_main") or request.form.get("image_main_selected")
         if not main_img and gallery_imgs:
             main_img = gallery_imgs[0]
 
