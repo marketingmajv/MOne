@@ -57,20 +57,17 @@ def catalog():
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
 
+    # Totalizadores para badges
+    total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
+
     whatsapp_number = get_outlet_setting("whatsapp_number", "5527999999999")
     whatsapp_message = get_outlet_setting(
         "whatsapp_message",
         "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"
     )
     title = get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE")
-    subtitle = get_outlet_setting("outlet_subtitle", "Queima de Estoque Oficial • Mais de 440 Veículos Elétricos com Descontos Exclusivos")
+    subtitle = get_outlet_setting("outlet_subtitle", f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos")
     urgency_text = get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
-
-    # Extrair categorias únicas para filtros
-    all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
-
-    # Totalizadores para badges
-    total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
 
     return render_template(
         "outlet/catalog.html",
