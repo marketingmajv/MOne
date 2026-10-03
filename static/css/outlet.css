@@ -457,7 +457,7 @@ body {
 
 .card-image-box {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4;
   background: #090d16;
   position: relative;
   overflow: hidden;
@@ -689,8 +689,8 @@ body {
 
 .modal-main-image {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: 520px;
+  aspect-ratio: 3 / 4;
+  max-height: 600px;
   background: #090d16;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -1140,8 +1140,8 @@ body {
 
   .modal-main-image {
     width: 100%;
-    aspect-ratio: 4 / 5;
-    max-height: 380px;
+    aspect-ratio: 3 / 4;
+    max-height: 480px;
     background: #090d16;
     border-radius: var(--radius-md);
     margin-bottom: 0;
@@ -1183,7 +1183,7 @@ body {
   }
 
   .card-image-box {
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 3 / 4;
     width: 100%;
   }
 
@@ -1239,8 +1239,8 @@ body {
   }
 
   .modal-main-image {
-    aspect-ratio: 4 / 5;
-    max-height: 350px;
+    aspect-ratio: 3 / 4;
+    max-height: 450px;
   }
 
   .thumb-item {
