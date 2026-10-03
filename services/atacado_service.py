@@ -414,7 +414,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             content = resp.read().decode("utf-8")
         reader = csv.reader(io.StringIO(content))
         rows = [r for r in reader if any(r)]
-        for r in rows[3:]:
+        for r in rows[2:]:
             if len(r) >= 3 and r[0].strip():
                 model = normalize_model_name(r[0].strip())
                 wholesale_prices[model] = {
