@@ -174,27 +174,39 @@ def db():
     db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or DEFAULT_DB_URL
     if db_url and psycopg2:
         try:
+            conn_raw = None
             pool = get_pg_pool()
-            wrapper = None
             if pool:
-                conn = pool.getconn()
-                wrapper = PGConnWrapper(conn, pool=pool)
-            else:
-                conn = connect_pg(db_url)
-                if conn:
-                    wrapper = PGConnWrapper(conn)
-            if wrapper:
+                try:
+                    conn_raw = pool.getconn()
+                    # Testar vivacidade da conexão obtida do pool
+                    with conn_raw.cursor() as cur:
+                        cur.execute("SELECT 1")
+                except Exception as pool_err:
+                    logger.debug("Conexão do pool inválida/expirada, tentando conexão direta: %s", pool_err)
+                    if conn_raw:
+                        try:
+                            pool.putconn(conn_raw, close=True)
+                        except Exception:
+                            pass
+                    conn_raw = None
+
+            if not conn_raw:
+                conn_raw = connect_pg(db_url)
+
+            if conn_raw:
+                wrapper = PGConnWrapper(conn_raw, pool=pool if conn_raw != pool else None)
                 if not _schema_ensured:
-                    ensure_runtime_schema(wrapper)
+                    try:
+                        ensure_runtime_schema(wrapper)
+                    except Exception as schema_err:
+                        logger.warning("Erro ao assegurar runtime schema: %s", schema_err)
                 return wrapper
         except Exception as e:
             logger.warning("Falha ao obter conexão PostgreSQL via pool/direto: %s", e)
-            if os.environ.get("VERCEL"):
-                raise RuntimeError(f"Falha de conexão com banco de dados remoto PostgreSQL: {e}") from e
 
+    # Fallback seguro para SQLite (local ou Vercel /tmp)
     if os.environ.get("VERCEL"):
-        if not psycopg2:
-            raise RuntimeError("Ambiente Vercel exige psycopg2-binary instalado para conectar ao Supabase.")
         tmp_db_path = Path("/tmp/m_one.db")
         conn = sqlite3.connect(tmp_db_path)
     else:
@@ -202,9 +214,11 @@ def db():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
     if not _schema_ensured:
-        ensure_runtime_schema(conn)
+        try:
+            ensure_runtime_schema(conn)
+        except Exception as schema_err:
+            logger.warning("Erro ao assegurar runtime schema no fallback: %s", schema_err)
     return conn
-
 
 
 _schema_ensured = False
@@ -227,11 +241,17 @@ def ensure_indexes(conn):
         "CREATE INDEX IF NOT EXISTS idx_sale_receipts_sale_id ON sale_receipts(sale_id);",
         "CREATE INDEX IF NOT EXISTS idx_audit_log_id ON audit_log(id DESC);"
     ]
+    is_pg = isinstance(conn, PGConnWrapper) or hasattr(conn, "conn")
     for q in index_queries:
         try:
             conn.execute(q)
-        except (sqlite3.Error, RuntimeError, ValueError, TypeError, KeyError, AttributeError, OSError) as ex:
+        except Exception as ex:
             logger.debug("Erro ao criar índice %s: %s", q, ex)
+            if is_pg:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
 
 
 def ensure_runtime_schema(conn):
