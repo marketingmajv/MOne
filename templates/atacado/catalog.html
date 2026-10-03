@@ -125,9 +125,9 @@
           <div class="sort-select-box">
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="stock_desc">📦 Maior Estoque</option>
               <option value="price_asc">💰 Menor Preço Atacado</option>
               <option value="price_desc">💎 Maior Preço Atacado</option>
-              <option value="stock_desc">📦 Maior Estoque</option>
               <option value="name_asc">🔤 Nome (A-Z)</option>
             </select>
           </div>
@@ -339,7 +339,7 @@
       return {
         searchQuery: '',
         activeCategory: 'all',
-        sortBy: 'price_asc',
+        sortBy: 'stock_desc',
         items: ATACADO_ITEMS_DATA,
         modalOpen: false,
         selectedItem: null,
@@ -376,11 +376,11 @@
         clearFilters() {
           this.searchQuery = '';
           this.activeCategory = 'all';
-          this.sortBy = 'price_asc';
+          this.sortBy = 'stock_desc';
         },
 
         hasActiveFilters() {
-          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'price_asc';
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'stock_desc';
         },
 
         openModal(id) {
