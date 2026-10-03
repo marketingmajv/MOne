@@ -69,6 +69,9 @@ def catalog():
     subtitle = get_outlet_setting("outlet_subtitle", f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos")
     urgency_text = get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
 
+    # Extrair categorias únicas para filtros
+    all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
+
     return render_template(
         "outlet/catalog.html",
         items=items,
