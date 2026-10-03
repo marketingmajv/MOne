@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Painel Atacado CNPJ | M-One{% endblock %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+  
+  <!-- Header do Painel -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="color: #00cc88;">🏢 MAJ ATACADO</span>
+        <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-size: 0.75rem; padding: 4px 10px;">VENDA EXCLUSIVA CNPJ</span>
+      </h1>
+      <p style="color: var(--muted); font-size: 0.9rem; margin: 4px 0 0;">Gestão do Catálogo de Atacado, Sincronização de Estoques (MAJ + COLVIX) e Tabela de Preços CNPJ.</p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <form action="{{ url_for('atacado.admin_atacado_sync') }}" method="POST" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; font-weight: 700; border: none;">
+          ⚡ Sincronizar Estoques & Preços (COLVIX + MAJ)
+        </button>
+      </form>
+      <a href="{{ url_for('atacado.catalog') }}" target="_blank" class="btn" style="background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--line);">
+        🌐 Ver Catálogo Atacado
+      </a>
+      <button type="button" class="btn primary" onclick="openAtacadoModal()" style="font-weight: 700;">
+        + Novo Produto Atacado
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards de Indicadores do Atacado -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Modelos Cadastrados</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #00cc88;">{{ items|length }}</div>
+      <small style="color: #00cc88; font-weight: 600; font-size: 0.75rem;">Ativos para CNPJ</small>
+    </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Estoque Total Unificado</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8;">{{ total_qty }}</div>
+      <small style="color: var(--muted); font-size: 0.75rem;">Veículos disponíveis à pronta entrega</small>
+    </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Potencial de Venda (Atacado)</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #e5a93b;">R$ {{ "{:,.2f}".format(total_revenue).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
+      <small style="color: var(--muted); font-size: 0.75rem;">Faturamento total projetado no atacado</small>
+    </div>
+  </div>
+
+  <!-- Tabela de Produtos do Atacado -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div style="font-weight: 800; font-size: 1rem; color: var(--text);">
+        📦 Modelos e Estoques de Atacado (CNPJ)
+      </div>
+
+      <form method="GET" action="{{ url_for('atacado.admin_atacado') }}" style="display: flex; gap: 8px; margin: 0;">
+        <input type="text" name="q" value="{{ search }}" placeholder="Buscar por modelo ou cor..." style="padding: 6px 12px; font-size: 0.85rem;">
+        <button type="submit" class="btn sm">Buscar</button>
+      </form>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+        <thead>
+          <tr style="background: rgba(255,255,255,0.03); color: var(--muted); border-bottom: 1px solid var(--line);">
+            <th style="padding: 12px 16px;">Imagem</th>
+            <th style="padding: 12px 16px;">Modelo / Categoria</th>
+            <th style="padding: 12px 16px;">Preço Atacado À Vista</th>
+            <th style="padding: 12px 16px;">Preço Atacado Plus</th>
+            <th style="padding: 12px 16px;">Parcelas (12x)</th>
+            <th style="padding: 12px 16px;">Estoque Total</th>
+            <th style="padding: 12px 16px;">Status</th>
+            <th style="padding: 12px 16px; text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom: 1px solid var(--line); transition: background 0.2s;">
+            <td style="padding: 10px 16px;">
+              <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" alt="{{ item.name }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);">
+            </td>
+            <td style="padding: 10px 16px;">
+              <strong style="color: var(--text); font-size: 0.95rem; display: block;">{{ item.name }}</strong>
+              <small style="color: var(--muted); display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ item.color or 'Cores diversas' }}
+              </small>
+            </td>
+            <td style="padding: 10px 16px;">
+              <strong style="color: #00cc88; font-size: 0.95rem;">
+                {% if item.price_outlet > 0 %}
+                  R$ {{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                {% else %}
+                  Sob consulta
+                {% endif %}
+              </strong>
+            </td>
+            <td style="padding: 10px 16px;">
+              {% if item.price_atacado_plus > 0 %}
+                <span style="color: #e2e8f0; font-weight: 600;">R$ {{ "{:,.2f}".format(item.price_atacado_plus).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+              {% else %}
+                <span style="color: var(--muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 10px 16px;">
+              {% if item.installment_12 > 0 %}
+                <span style="color: var(--muted);">12x R$ {{ "{:,.2f}".format(item.installment_12).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+              {% else %}
+                <span style="color: var(--muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 10px 16px;">
+              <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-weight: 700;">
+                {{ item.stock_qty }} un
+              </span>
+            </td>
+            <td style="padding: 10px 16px;">
+              <form action="{{ url_for('atacado.admin_atacado_status', item_id=item.id) }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if item.status == 'active' %}
+                  <button type="submit" class="btn sm" style="background: rgba(0, 204, 136, 0.12); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.3); font-weight: 700;">Ativo</button>
+                {% else %}
+                  <button type="submit" class="btn sm" style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">Inativo</button>
+                {% endif %}
+              </form>
+            </td>
+            <td style="padding: 10px 16px; text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button type="button" class="btn sm" onclick='editAtacadoItem({{ item|tojson|safe }})'>Editar</button>
+                <form action="{{ url_for('atacado.admin_atacado_delete', item_id=item.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name }} do Atacado?');" style="margin: 0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn sm" style="color: #ef4444;">✕</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição / Criação Produto Atacado -->
+<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: var(--bg-card, #121722); border: 1px solid var(--border-gold, #00cc88); border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #fff;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 id="atacadoModalTitle" style="font-size: 1.2rem; font-weight: 800; margin: 0; color: #00cc88;">+ Editar Produto Atacado</h3>
+      <button type="button" onclick="closeAtacadoModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="item_id" id="atacado_form_item_id">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Nome do Modelo</label>
+          <input type="text" name="name" id="atacado_form_name" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado À Vista (R$)</label>
+          <input type="number" step="0.01" name="price_outlet" id="atacado_form_price_outlet" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado Plus (R$)</label>
+          <input type="number" step="0.01" name="price_atacado_plus" id="atacado_form_price_atacado_plus" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Estoque Total (Unidades)</label>
+          <input type="number" name="stock_qty" id="atacado_form_stock_qty" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
+        <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
+        <button type="submit" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openAtacadoModal() {
+    document.getElementById('atacado_form_item_id').value = '';
+    document.getElementById('atacado_form_name').value = '';
+    document.getElementById('atacado_form_price_outlet').value = '';
+    document.getElementById('atacado_form_price_atacado_plus').value = '';
+    document.getElementById('atacado_form_stock_qty').value = '1';
+    document.getElementById('atacado_form_color').value = '';
+    document.getElementById('atacadoFormModal').style.display = 'flex';
+  }
+
+  function closeAtacadoModal() {
+    document.getElementById('atacadoFormModal').style.display = 'none';
+  }
+
+  function editAtacadoItem(item) {
+    document.getElementById('atacado_form_item_id').value = item.id;
+    document.getElementById('atacado_form_name').value = item.name || '';
+    document.getElementById('atacado_form_price_outlet').value = item.price_outlet || '';
+    document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
+    document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
+    document.getElementById('atacado_form_color').value = item.color || '';
+    document.getElementById('atacadoFormModal').style.display = 'flex';
+  }
+</script>
+{% endblock %}

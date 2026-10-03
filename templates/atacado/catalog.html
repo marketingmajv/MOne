@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <style>
+    :root {
+      --gold-primary: #00cc88;
+      --gold-glow: rgba(0, 204, 136, 0.25);
+      --border-gold: rgba(0, 204, 136, 0.35);
+    }
+    .badge-cnpj {
+      background: linear-gradient(135deg, #00cc88, #059669);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .atacado-hero-ribbon {
+      background: linear-gradient(90deg, #047857, #059669, #047857);
+    }
+  </style>
+</head>
+<body x-data="atacadoApp()">
+
+  <!-- Top Urgency Ribbon -->
+  <div class="outlet-ribbon atacado-hero-ribbon">
+    <div class="ribbon-track">
+      <span>🏢 {{ urgency_text }} 🏢</span>
+      <span class="ribbon-dot">•</span>
+      <span>CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES & CNPJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>ESTOQUE UNIFICADO MAJ & COLVIX</span>
+      <span class="ribbon-dot">•</span>
+      <span>GARANTIA OFICIAL DE FÁBRICA MAJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>🏢 {{ urgency_text }} 🏢</span>
+    </div>
+  </div>
+
+  <!-- Header Institucional -->
+  <header class="outlet-header">
+    <div class="outlet-container header-inner">
+      <div class="logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
+        <div class="logo-text">
+          <span class="brand-title">MAJ MOBILIDADE</span>
+          <span class="brand-badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">CATÁLOGO OFICIAL DE ATACADO</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="#catalogo" class="btn-scroll-catalog" style="background: rgba(0,204,136,0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">Ver Catálogo CNPJ</a>
+        <a :href="getWhatsAppUrl('Geral - Catálogo Atacado CNPJ', '0')" target="_blank" class="btn-whatsapp-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+          <span>Falar com Consultor CNPJ</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="outlet-hero">
+    <div class="outlet-container hero-inner">
+      <div class="hero-badge" style="background: rgba(0, 204, 136, 0.15); border-color: rgba(0, 204, 136, 0.3);">
+        <span class="hero-pulse" style="background: #00cc88;"></span>
+        <span style="color: #00cc88;">VENDA EXCLUSIVA DE ATACADO • CNPJ</span>
+      </div>
+      <h1 class="hero-title">{{ title }}</h1>
+      <p class="hero-subtitle">{{ subtitle }}</p>
+
+      <div class="hero-stats-bar">
+        <div class="stat-card">
+          <strong class="stat-number" style="color: #00cc88;">{{ total_vehicles }}+</strong>
+          <span class="stat-label">Veículos em Estoque</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">CNPJ</strong>
+          <span class="stat-label">Venda Direta Atacado</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">2 GALPÕES</strong>
+          <span class="stat-label">Estoque Unificado M-One & COLVIX</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">100%</strong>
+          <span class="stat-label">Garantia Oficial MAJ</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros, Ordenação e Busca -->
+  <section class="outlet-filters-section" id="catalogo">
+    <div class="outlet-container">
+      <div class="filters-wrapper">
+        <div class="filters-top-bar">
+          <div class="search-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" x-model="searchQuery" placeholder="Buscar por modelo de atacado (ex: X13, GP1000, M2, V20)...">
+            <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
+          </div>
+
+          <div class="sort-select-box">
+            <label for="sortBySelect" class="sr-only">Ordenação</label>
+            <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="price_asc">💰 Menor Preço Atacado</option>
+              <option value="price_desc">💎 Maior Preço Atacado</option>
+              <option value="stock_desc">📦 Maior Estoque</option>
+              <option value="name_asc">🔤 Nome (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="category-pills-bar" x-show="hasActiveFilters()">
+          <div class="filter-counter-badge">
+            <span x-text="filteredItems().length + ' modelos de atacado encontrados'"></span>
+            <button type="button" class="btn-reset-filters" @click="clearFilters()">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid de Produtos de Atacado -->
+  <main class="outlet-container catalog-grid-section">
+    <!-- Estado Vazio / Sem Resultados -->
+    <div class="empty-results-box" x-show="filteredItems().length === 0" x-cloak>
+      <div class="empty-icon">🔍</div>
+      <h3>Nenhum modelo de atacado encontrado com estes filtros</h3>
+      <p>Tente ajustar sua busca ou limpar os filtros para visualizar todas as opções do catálogo CNPJ.</p>
+      <button type="button" class="btn-reset-filters-hero" @click="clearFilters()">Ver Todos os Veículos</button>
+    </div>
+
+    <!-- Lista Dinâmica de Cards de Produtos -->
+    <div class="products-grid" x-show="filteredItems().length > 0">
+      <template x-for="item in filteredItems()" :key="item.id">
+        <div class="product-card" x-transition:enter="fade-in">
+          
+          <!-- Badges -->
+          <div class="card-badges">
+            <span class="badge-cnpj">CNPJ ATACADO</span>
+            <span class="badge-stock" x-text="item.stock_qty + ' em estoque'"></span>
+          </div>
+
+          <!-- Imagem Principal -->
+          <div class="card-image-box" @click="openModal(item.id)">
+            <img :src="item.image_main || '/static/logo.png'" 
+                 :alt="item.name" 
+                 loading="lazy"
+                 decoding="async"
+                 class="card-img"
+                 @error="$event.target.src='/static/logo.png'">
+            <div class="image-overlay-hover">
+              <span>🔍 Ver Fotos, Cores e Ficha CNPJ</span>
+            </div>
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="card-body">
+            <div class="card-category" x-text="item.category || 'Atacado CNPJ'"></div>
+            <h2 class="card-title" x-text="item.name"></h2>
+
+            <!-- Chips de Ficha Técnica Rápida -->
+            <div class="card-specs-mini">
+              <template x-if="item.color">
+                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+              </template>
+              <template x-if="item.location">
+                <span class="spec-mini">📍 <span x-text="item.location"></span></span>
+              </template>
+            </div>
+
+            <!-- Preços e Parcelamento Atacado -->
+            <div class="card-pricing">
+              <div class="price-to">
+                <span class="currency">R$</span>
+                <span class="amount" x-text="item.price_outlet > 0 ? formatPrice(item.price_outlet) : 'Sob consulta'"></span>
+                <span class="payment-method">à vista CNPJ</span>
+              </div>
+              <template x-if="item.price_atacado_plus && Number(item.price_atacado_plus) > 0">
+                <div class="price-installments" style="color: #94a3b8;">
+                  Atacado Plus: <strong style="color: #e2e8f0;" x-text="'R$ ' + formatPrice(item.price_atacado_plus)"></strong>
+                </div>
+              </template>
+              <template x-if="item.installment_12 && Number(item.installment_12) > 0">
+                <div class="price-installments-sub" x-text="'ou em 12x de R$ ' + formatPrice(item.installment_12)"></div>
+              </template>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card-actions">
+              <a :href="getWhatsAppUrl(item.name, formatPrice(item.price_outlet))" 
+                 target="_blank" 
+                 class="btn-buy-whatsapp"
+                 style="background: linear-gradient(135deg, #059669, #10b981);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+                <span>Cotação Atacado CNPJ</span>
+              </a>
+              <button type="button" class="btn-details" @click="openModal(item.id)">
+                Ficha Técnica & Cores
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <!-- Modal Interativo de Ficha Técnica e Galeria -->
+  <div class="outlet-modal-backdrop" 
+       x-show="modalOpen" 
+       x-cloak 
+       @click.self="modalOpen = false"
+       @keydown.escape.window="modalOpen = false">
+    
+    <div class="outlet-modal-box">
+      <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
+
+      <template x-if="selectedItem">
+        <div class="modal-content-grid">
+          <!-- Coluna Visual / Galeria -->
+          <div class="modal-gallery-col">
+            <div class="modal-main-image">
+              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
+            </div>
+            <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
+              <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
+                <div class="thumb-item" 
+                     :class="{'active': activeImage === img}"
+                     @click="activeImage = img">
+                  <img :src="img" alt="Foto" decoding="async" loading="lazy">
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Coluna Detalhes -->
+          <div class="modal-info-col">
+            <div class="modal-header-tag">
+              <span class="modal-category" style="color: #00cc88;" x-text="selectedItem.category || 'Atacado CNPJ'"></span>
+              <span class="badge-cnpj">VENDA EXCLUSIVA CNPJ</span>
+            </div>
+            <h2 class="modal-title" x-text="selectedItem.name"></h2>
+            
+            <!-- Box de Preço e Simulador de Parcelas -->
+            <div class="modal-pricing-box">
+              <div class="price-to">
+                <span class="currency">R$</span>
+                <span class="amount" x-text="selectedItem.price_outlet > 0 ? formatPrice(selectedItem.price_outlet) : 'Sob consulta'"></span>
+                <span class="payment-method">à vista no PIX (CNPJ)</span>
+              </div>
+
+              <template x-if="selectedItem.price_atacado_plus && Number(selectedItem.price_atacado_plus) > 0">
+                <div class="modal-installment-result" style="color: #00cc88;">
+                  Tabela Atacado Plus: <strong x-text="'R$ ' + formatPrice(selectedItem.price_atacado_plus)"></strong>
+                </div>
+              </template>
+              
+              <!-- Seletor de Opções de Pagamento -->
+              <div class="payment-calculator-tabs">
+                <span class="calc-label">Simular Parcelamento CNPJ:</span>
+                <div class="calc-options">
+                  <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
+                  <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
+                </div>
+              </div>
+
+              <div class="modal-installment-result" x-show="selectedInstallment === 12 && selectedItem.installment_12">
+                12x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_12)"></strong> no cartão/financiamento
+              </div>
+              <div class="modal-installment-result" x-show="selectedInstallment === 18 && selectedItem.installment_18">
+                18x de <strong x-text="'R$ ' + formatPrice(selectedItem.installment_18)"></strong> no cartão
+              </div>
+
+              <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
+            </div>
+
+            <p class="modal-desc" x-text="selectedItem.description"></p>
+
+            <!-- Tabela de Ficha Técnica -->
+            <div class="modal-specs-section">
+              <h3>Ficha Técnica & Cores em Estoque</h3>
+              <div class="specs-table">
+                <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                  <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices'">
+                    <span class="spec-k" x-text="key"></span>
+                    <span class="spec-v" x-text="val"></span>
+                  </div>
+                </template>
+                <div class="spec-row" x-show="selectedItem.color">
+                  <span class="spec-k">Cores Disponíveis</span>
+                  <span class="spec-v" x-text="selectedItem.color"></span>
+                </div>
+                <div class="spec-row" x-show="selectedItem.location">
+                  <span class="spec-k">Galpões</span>
+                  <span class="spec-v" x-text="selectedItem.location"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botões de Ação no Modal -->
+            <div class="modal-cta-box">
+              <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
+                 target="_blank" 
+                 class="btn-modal-whatsapp"
+                 style="background: linear-gradient(135deg, #059669, #10b981);"
+                 aria-label="Solicitar Cotação CNPJ no WhatsApp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+                <span>Solicitar Cotação CNPJ no WhatsApp</span>
+              </a>
+              <span class="modal-secure-note">🔒 Atendimento oficial de atacado MAJ Mobilidade • Exclusivo CNPJ</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Widget Flutuante de WhatsApp -->
+  <a :href="getWhatsAppUrl('Geral - Atendimento Atacado CNPJ', '0')" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor de Atacado">
+    <div class="widget-pulse" style="background: #00cc88;"></div>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.634.055-1.92-.477-1.523-.628-2.5-2.185-2.576-2.285-.075-.101-.615-.819-.615-1.562 0-.744.388-1.11.527-1.261.14-.15.304-.188.406-.188.101 0 .203.001.291.006.094.004.22-.036.344.262.13.313.443 1.082.482 1.161.04.08.067.172.013.278-.053.106-.08.172-.16.264-.08.093-.169.208-.241.28-.08.081-.164.169-.071.328.094.16 4.14 7.21 1.488 1.488.241.16.482.264.643.344.16.08.254.067.348-.04.094-.106.406-.474.514-.636.108-.162.216-.135.364-.08.148.054.943.445 1.106.526.162.081.27.121.31.189.04.067.04.388-.104.793z"/></svg>
+    <span class="widget-tooltip">Consultor CNPJ • Fale Conosco</span>
+  </a>
+
+  <!-- Footer Institucional -->
+  <footer class="outlet-footer">
+    <div class="outlet-container footer-inner">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo" decoding="async" loading="lazy">
+        <p>MAJ Mobilidade Elétrica • Divisão de Atacado & Revenda CNPJ. Todos os direitos reservados.</p>
+      </div>
+      <div class="footer-links">
+        <span>Garantia de 1 ano contra defeitos de fabricação</span>
+        <span>Peças de reposição originais e rede autorizada MAJ</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Alpine.js para o Catálogo Atacado -->
+  <script>
+    const ATACADO_ITEMS_DATA = {{ items|tojson }};
+    const WA_NUMBER = "{{ whatsapp_number }}";
+    const WA_TEMPLATE = {{ whatsapp_message|tojson }};
+
+    function atacadoApp() {
+      return {
+        searchQuery: '',
+        activeCategory: 'all',
+        sortBy: 'price_asc',
+        items: ATACADO_ITEMS_DATA,
+        modalOpen: false,
+        selectedItem: null,
+        activeImage: '',
+        selectedInstallment: 12,
+
+        filteredItems() {
+          let result = this.items.filter(item => {
+            const q = this.searchQuery.toLowerCase().trim();
+            const matchesQuery = !q || 
+              item.name.toLowerCase().includes(q) || 
+              (item.category && item.category.toLowerCase().includes(q)) || 
+              (item.color && item.color.toLowerCase().includes(q));
+            
+            const matchesCat = this.activeCategory === 'all' || 
+              (item.category && item.category.toLowerCase().includes(this.activeCategory.toLowerCase()));
+            
+            return matchesQuery && matchesCat;
+          });
+
+          if (this.sortBy === 'price_asc') {
+            result.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
+          } else if (this.sortBy === 'price_desc') {
+            result.sort((a, b) => (parseFloat(b.price_outlet) || 0) - (parseFloat(a.price_outlet) || 0));
+          } else if (this.sortBy === 'stock_desc') {
+            result.sort((a, b) => (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0));
+          } else if (this.sortBy === 'name_asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+          }
+
+          return result;
+        },
+
+        clearFilters() {
+          this.searchQuery = '';
+          this.activeCategory = 'all';
+          this.sortBy = 'price_asc';
+        },
+
+        hasActiveFilters() {
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'price_asc';
+        },
+
+        openModal(id) {
+          const item = this.items.find(i => i.id === id);
+          if (item) {
+            this.selectedItem = item;
+            this.activeImage = item.image_main;
+            this.selectedInstallment = 12;
+            this.modalOpen = true;
+          }
+        },
+
+        getItemGallery(item) {
+          if (!item) return [];
+          let gal = item.images_gallery || [];
+          if (typeof gal === 'string') {
+            try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+          }
+          if (!Array.isArray(gal)) gal = [];
+          const all = [item.image_main, ...gal].filter(Boolean);
+          return [...new Set(all)];
+        },
+
+        formatPrice(val) {
+          if (!val) return '0,00';
+          return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        getWhatsAppUrl(model, price) {
+          const msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+        }
+      };
+    }
+  </script>
+</body>
+</html>
