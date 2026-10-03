@@ -491,11 +491,15 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             o_rows = run_exec(conn, "SELECT name, image_main, images_gallery, specs_json FROM outlet_items").fetchall()
             for r in o_rows:
                 d = dict(r)
-                outlet_images[d["name"]] = {
+                info = {
                     "image_main": d.get("image_main") or "",
                     "images_gallery": d.get("images_gallery") or "[]",
                     "specs_json": d.get("specs_json") or "{}"
                 }
+                outlet_images[d["name"]] = info
+                norm_name = normalize_model_name(d["name"])
+                if norm_name:
+                    outlet_images[norm_name] = info
     except Exception as e:
         logger.warning("Erro ao carregar imagens do Outlet: %s", e)
 
