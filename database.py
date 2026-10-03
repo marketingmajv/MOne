@@ -117,13 +117,14 @@ class PGConnWrapper:
                 pass
         if self.pool:
             try:
-                if not getattr(self.conn, "closed", False):
-                    self.conn.rollback()
+                self.pool.putconn(self.conn)
             except Exception:
                 pass
-            self.pool.putconn(self.conn)
         else:
-            self.conn.close()
+            try:
+                self.conn.close()
+            except Exception:
+                pass
 
 
 def connect_pg(db_url: str):
