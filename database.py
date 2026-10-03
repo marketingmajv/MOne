@@ -146,9 +146,13 @@ def connect_pg(db_url: str):
             sslmode="require",
             connect_timeout=10
         )
-    except (RuntimeError, ValueError, TypeError, KeyError, AttributeError, OSError) as ex:
+    except Exception as ex:
         logger.debug("Falha ao conectar via DSN parseada: %s", ex)
-        return psycopg2.connect(db_url, sslmode="require", connect_timeout=10)
+        try:
+            return psycopg2.connect(db_url, sslmode="require", connect_timeout=10)
+        except Exception as ex2:
+            logger.warning("Falha ao conectar via DSN direta ao PostgreSQL: %s", ex2)
+            return None
 
 
 def db():
