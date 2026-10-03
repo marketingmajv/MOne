@@ -44,6 +44,14 @@ def slugify(text: str) -> str:
     return text.strip("-")
 
 
+def normalize_model_name(name: str) -> str:
+    """Normaliza nomes de modelos (ex: X13 é MAX 12)."""
+    n = (name or "").strip()
+    if n.upper() in ["X13", "X-13", "X 13"]:
+        return "MAX 12"
+    return n
+
+
 def ensure_atacado_schema():
     """Garante a existência das tabelas atacado_items e atacado_settings no banco."""
     global _atacado_schema_ensured
@@ -408,7 +416,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
         rows = [r for r in reader if any(r)]
         for r in rows[3:]:
             if len(r) >= 3 and r[0].strip():
-                model = r[0].strip()
+                model = normalize_model_name(r[0].strip())
                 wholesale_prices[model] = {
                     "atacado": parse_price_str(r[1]),
                     "atacado_plus": parse_price_str(r[2]),
@@ -432,7 +440,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
         rows = [r for r in reader if any(r)]
         for r in rows[2:]:
             if len(r) >= 4 and r[0].strip():
-                model = r[0].strip()
+                model = normalize_model_name(r[0].strip())
                 color = r[2].strip() if len(r) > 2 and r[2].strip() else "Conforme lote"
                 try:
                     avail = int(r[3].strip())
@@ -457,7 +465,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             rows = [r for r in reader if any(r)]
             for r in rows[6:]:
                 if len(r) >= 4 and r[0].strip().isdigit():
-                    model = r[2].strip()
+                    model = normalize_model_name(r[2].strip())
                     color = r[3].strip() if len(r) > 3 and r[3].strip() else "Conforme lote"
                     cliente = r[6].strip() if len(r) > 6 else ""
                     
