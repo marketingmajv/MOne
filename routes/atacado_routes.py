@@ -4,6 +4,8 @@ Rotas do Catálogo de Atacado (Venda Exclusiva CNPJ) e Painel Administrativo.
 Independente do módulo Outlet.
 """
 
+import logging
+import os
 from pathlib import Path
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from routes.helpers import login_required, roles_required, audit
@@ -20,8 +22,16 @@ from services.atacado_service import (
 
 atacado_bp = Blueprint("atacado", __name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_ATACADO_DIR = BASE_DIR / "static" / "img" / "atacado" / "uploads"
-UPLOAD_ATACADO_DIR.mkdir(parents=True, exist_ok=True)
+
+if os.environ.get("VERCEL"):
+    UPLOAD_ATACADO_DIR = Path("/tmp/uploads/atacado")
+else:
+    UPLOAD_ATACADO_DIR = BASE_DIR / "static" / "img" / "atacado" / "uploads"
+
+try:
+    UPLOAD_ATACADO_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.debug("Upload atacado dir mkdir warning: %s", e)
 
 
 # -------------------------------------------------------------------------

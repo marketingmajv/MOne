@@ -36,9 +36,17 @@ from services.outlet_service import (
 logger = logging.getLogger(__name__)
 
 outlet_bp = Blueprint("outlet", __name__)
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_OUTLET_DIR = BASE_DIR / "static" / "img" / "outlet" / "uploads"
+
+if os.environ.get("VERCEL"):
+    UPLOAD_OUTLET_DIR = Path("/tmp/uploads/outlet")
+else:
+    UPLOAD_OUTLET_DIR = BASE_DIR / "static" / "img" / "outlet" / "uploads"
+
+try:
+    UPLOAD_OUTLET_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.debug("Upload outlet dir mkdir warning: %s", e)
 
 
 # -------------------------------------------------------------------------

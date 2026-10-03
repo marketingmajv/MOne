@@ -24,7 +24,10 @@ if os.environ.get("VERCEL"):
     UPLOAD_DIR = Path("/tmp/uploads")
 else:
     UPLOAD_DIR = BASE_DIR / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+try:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    pass
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf", "webp", "xlsx", "xls", "csv"}
 

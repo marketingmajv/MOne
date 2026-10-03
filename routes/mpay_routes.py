@@ -43,7 +43,10 @@ if os.environ.get("VERCEL"):
     MPAY_UPLOAD_DIR = Path("/tmp/uploads/mpay")
 else:
     MPAY_UPLOAD_DIR = BASE_DIR / "uploads" / "mpay"
-MPAY_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    MPAY_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.debug("MPay upload dir mkdir warning: %s", e)
 
 
 def check_mpay_access(user: dict[str, Any] | None) -> bool:
