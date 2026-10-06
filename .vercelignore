@@ -1,0 +1,19 @@
+# Ignorar ensaio bruto pesado de 1.4GB para nao estourar o limite de 500MB da Vercel
+static/img/outlet/ENSAIO MAJ out 2026/
+static/img/outlet/ENSAIO*
+static/img/outlet/**
+
+# Ambientes e caches locais
+.venv/
+__pycache__/
+*.pyc
+.git/
+.DS_Store
+
+# Scripts e documentações de desenvolvimento
+scripts/
+docs/
+scratch/
+scratch_*
+*.zip
+*.bak
