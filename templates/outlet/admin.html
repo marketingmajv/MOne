@@ -284,7 +284,7 @@
 
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
           <button type="button" class="btn" onclick="closeOutletModal()">Cancelar</button>
-          <button type="submit" class="btn primary">Salvar Produto</button>
+          <button type="submit" id="outlet_save_btn" class="btn primary">Salvar Produto</button>
         </div>
       </form>
     </div>
@@ -414,8 +414,14 @@
 
   function validateOutletFormPayload(form) {
     const statusDiv = document.getElementById('upload_status_badge');
-    const mainImg = document.getElementById('outlet_form_image_main')?.value || '';
-    const galleryJson = document.getElementById('outlet_form_images_gallery')?.value || '';
+    const mainInput = document.getElementById('outlet_form_image_main');
+    const galleryInput = document.getElementById('outlet_form_images_gallery');
+
+    if (mainInput) mainInput.value = CURRENT_IMAGE_MAIN || '';
+    if (galleryInput) galleryInput.value = JSON.stringify(CURRENT_GALLERY || []);
+
+    const mainImg = mainInput?.value || '';
+    const galleryJson = galleryInput?.value || '';
     const totalChars = mainImg.length + galleryJson.length;
     const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
 
@@ -434,6 +440,7 @@
   function handleOutletGalleryUpload(input) {
     const files = input.files;
     const statusDiv = document.getElementById('upload_status_badge');
+    const saveBtn = document.getElementById('outlet_save_btn');
     if (!files || files.length === 0) return;
 
     if (CURRENT_GALLERY.length >= 12) {
@@ -446,10 +453,17 @@
       return;
     }
 
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = '0.5';
+      saveBtn.style.cursor = 'wait';
+      saveBtn.textContent = '⏳ Processando fotos...';
+    }
+
     if (statusDiv) {
       statusDiv.style.display = 'block';
       statusDiv.style.color = '#e5a93b';
-      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)...`;
+      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)... Aguarde finalizar antes de salvar.`;
     }
 
     let processedCount = 0;
@@ -464,7 +478,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 750;
+          const maxDim = 640;
 
           if (width > maxDim || height > maxDim) {
             if (width > height) {
@@ -481,7 +495,7 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.62);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.50);
           
           CURRENT_GALLERY.push(compressedDataUrl);
           if (!CURRENT_IMAGE_MAIN) {
@@ -496,11 +510,23 @@
               statusDiv.style.color = '#00cc88';
               statusDiv.textContent = `✓ ${CURRENT_GALLERY.length} foto(s) na galeria (Tamanho total: ~${totalKb} KB - Otimizado para Vercel)`;
             }
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.style.opacity = '1';
+              saveBtn.style.cursor = 'pointer';
+              saveBtn.textContent = 'Salvar Produto';
+            }
             input.value = '';
           }
         };
         img.onerror = function() {
           processedCount++;
+          if (processedCount === totalFiles && saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.textContent = 'Salvar Produto';
+          }
         };
         img.src = e.target.result;
       };

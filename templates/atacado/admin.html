@@ -196,7 +196,7 @@
         <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
 
         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-          <input type="file" id="atacado_file_input" name="gallery_files" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
+          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
         </div>
 
         <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
@@ -392,7 +392,7 @@
     const totalFiles = Math.min(files.length, availableSlots);
 
     Array.from(files).slice(0, totalFiles).forEach(file => {
-      compressAtacadoImage(file, 750, 0.62, (base64Data) => {
+      compressAtacadoImage(file, 640, 0.50, (base64Data) => {
         if (base64Data && !ATACADO_CURRENT_GALLERY.includes(base64Data)) {
           ATACADO_CURRENT_GALLERY.push(base64Data);
           if (!ATACADO_CURRENT_IMAGE_MAIN) {
