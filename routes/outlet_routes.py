@@ -133,10 +133,11 @@ def admin_outlet():
 
     items = get_all_outlet_items(status=status_filter if status_filter != "all" else None, search=search)
 
-    # Estatísticas rápidas
-    total_qty = sum(int(i.get("stock_qty") or 0) for i in items)
+    # Estatísticas rápidas (Estoque ativo de pronta entrega)
+    active_items = [i for i in items if i.get("status") == "active"] if status_filter == "all" else items
+    total_qty = sum(int(i.get("stock_qty") or 0) for i in active_items)
     total_active = sum(1 for i in items if i.get("status") == "active")
-    total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in items)
+    total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in active_items)
 
     settings = {
         "whatsapp_number": get_outlet_setting("whatsapp_number", "5527999999999"),
@@ -304,3 +305,17 @@ def sync_outlet():
         logger.exception("Erro ao sincronizar outlet: %s", e)
         flash(f"Erro ao sincronizar catálogo: {e}", "danger")
     return redirect(url_for("outlet.admin_outlet"))
+
+
+@outlet_bp.route("/admin/outlet/spreadsheet")
+@login_required
+@roles_required("admin", "support", "finance")
+def view_spreadsheet():
+    """Retorna a planilha/tabela CSV oficial do Outlet para visualização direta no navegador."""
+    from flask import send_file
+    csv_path = BASE_DIR / "uploads" / "outlet" / "tabela_precos_outlet.csv"
+    if not csv_path.exists():
+        flash("Arquivo de planilha oficial do Outlet não encontrado no servidor.", "warning")
+        return redirect(url_for("outlet.admin_outlet"))
+    return send_file(str(csv_path), mimetype="text/csv; charset=utf-8", as_attachment=False, download_name="tabela_precos_outlet.csv")
+

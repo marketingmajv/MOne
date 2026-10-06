@@ -116,6 +116,7 @@
           <div class="sort-select-box">
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="stock_desc">📦 Maior Estoque</option>
               <option value="price_asc">💰 Menor Preço</option>
               <option value="price_desc">💎 Maior Preço</option>
               <option value="discount_desc">🔥 Maior Desconto %</option>
@@ -180,18 +181,12 @@
 
             <!-- Chips de Ficha Técnica Rápida -->
             <div class="card-specs-mini">
-              <template x-if="item.specs_json && item.specs_json['Autonomia']">
-                <span class="spec-mini">🔋 <span x-text="item.specs_json['Autonomia']"></span></span>
-              </template>
-              <template x-if="item.specs_json && item.specs_json['Velocidade Máxima']">
-                <span class="spec-mini">⚡ <span x-text="item.specs_json['Velocidade Máxima']"></span></span>
-              </template>
               <template x-if="item.color">
                 <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
               </template>
               <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
                 <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
-                  ⚡ <span x-text="item.specs_json.color_prices.length + ' opções de valor'"></span>
+                  🏷️ <span x-text="item.specs_json.color_prices.length + ' opções de valor'"></span>
                 </span>
               </template>
             </div>
@@ -425,7 +420,7 @@
       return {
         searchQuery: '',
         activeCategory: 'all',
-        sortBy: 'price_asc',
+        sortBy: 'stock_desc',
         items: OUTLET_ITEMS_DATA,
         modalOpen: false,
         selectedItem: null,
@@ -446,7 +441,13 @@
             return matchesQuery && matchesCat;
           });
 
-          if (this.sortBy === 'price_asc') {
+          if (this.sortBy === 'stock_desc') {
+            result.sort((a, b) => {
+              const diffStock = (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0);
+              if (diffStock !== 0) return diffStock;
+              return (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0);
+            });
+          } else if (this.sortBy === 'price_asc') {
             result.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
           } else if (this.sortBy === 'price_desc') {
             result.sort((a, b) => (parseFloat(b.price_outlet) || 0) - (parseFloat(a.price_outlet) || 0));
@@ -462,11 +463,11 @@
         clearFilters() {
           this.searchQuery = '';
           this.activeCategory = 'all';
-          this.sortBy = 'price_asc';
+          this.sortBy = 'stock_desc';
         },
 
         hasActiveFilters() {
-          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'price_asc';
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'stock_desc';
         },
 
         selectedColorObj: null,

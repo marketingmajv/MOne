@@ -8,6 +8,9 @@
   <a href="{{ url_for('outlet.catalog') }}" target="_blank" class="btn" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
     <span>🌐 Ver Catálogo Online</span>
   </a>
+  <a href="{{ url_for('outlet.view_spreadsheet') }}" target="_blank" class="btn" title="Visualizar a planilha CSV oficial do Outlet" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+    <span>📊 Ver Planilha</span>
+  </a>
   <form action="{{ url_for('outlet.sync_outlet') }}" method="POST" style="display: inline-block;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn" title="Ressincronizar CSV e fotos do disco">

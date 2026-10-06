@@ -15,6 +15,9 @@
     </div>
 
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="https://docs.google.com/spreadsheets/d/1tFwiOFjfVPp2ll-SLB79bG2c6wcIJHc3yHgQxK6PDxo" target="_blank" rel="noopener noreferrer" class="btn" style="background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--line);">
+        📊 Ver Planilha (Google Sheets)
+      </a>
       <form action="{{ url_for('atacado.admin_atacado_sync') }}" method="POST" style="margin: 0;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; font-weight: 700; border: none;">

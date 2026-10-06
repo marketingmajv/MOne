@@ -208,7 +208,7 @@ def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = 
             s = f"%{search}%"
             params.extend([s, s, s])
 
-        query += " ORDER BY stock_qty DESC, sort_order ASC, price_outlet ASC, id ASC"
+        query += " ORDER BY stock_qty DESC, price_outlet ASC, sort_order ASC, id ASC"
 
         rows = run_exec(conn, query, tuple(params)).fetchall()
         items = []
