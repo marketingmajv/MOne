@@ -12,7 +12,10 @@
   "routes": [
     {
       "src": "/images/(.*)",
-      "dest": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
+      "status": 302,
+      "headers": {
+        "Location": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
+      }
     },
     {
       "src": "/(.*)",
