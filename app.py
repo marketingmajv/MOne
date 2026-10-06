@@ -104,12 +104,17 @@ def apply_security_and_cache_headers(response):
 
 @app.route('/images/<path:filename>')
 def serve_public_images(filename):
-    p = BASE_DIR / "public" / "images" / filename
-    if p.is_file():
-        return send_from_directory(str(BASE_DIR / "public" / "images"), filename)
-    p2 = BASE_DIR / "static" / "img" / "catalog" / filename
-    if p2.is_file():
-        return send_from_directory(str(p2.parent), p2.name)
+    from flask import send_file
+    candidates = [
+        BASE_DIR / "public" / "images" / filename,
+        Path.cwd() / "public" / "images" / filename,
+        Path("/var/task") / "public" / "images" / filename,
+        Path("/var/task") / "m_one_app" / "public" / "images" / filename,
+        BASE_DIR / "static" / "img" / "catalog" / filename,
+    ]
+    for target in candidates:
+        if target.is_file():
+            return send_file(str(target))
     return redirect(f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{filename}")
 
 
