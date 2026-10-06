@@ -5,21 +5,11 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": ["public/**", "static/**", "api/static/**"]
+        "includeFiles": ["static/**", "public/**", "api/static/**"]
       }
     }
   ],
   "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/images/(.*)",
-      "headers": {
-        "Location": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
-      },
-      "status": 302
-    },
     {
       "src": "/(.*)",
       "dest": "api/index.py"
