@@ -259,32 +259,76 @@ MODEL_SPECS = {
         },
         "badge": "POTÊNCIA TOTAL",
         "folder_aliases": ["JM 125", "JM125"]
+    },
+    "M2": {
+        "category": "Scooter Elétrica",
+        "description": "Scooter elétrica MAJ M2 com design urbano contemporâneo, piloto automático e excelente agilidade.",
+        "specs": {
+            "Motor": "1000W Brushless",
+            "Velocidade Máxima": "Até 45 km/h",
+            "Autonomia": "Até 45 km",
+            "Bateria": "60V Lítio",
+            "Freios": "Disco hidráulico dianteiro e traseiro"
+        },
+        "badge": "EDIÇÃO ESPECIAL",
+        "folder_aliases": ["M2", "M 2", "SCOOTER M2"]
+    },
+    "GP 1000": {
+        "category": "Scooter Elétrica Esportiva",
+        "description": "Scooter elétrica GP 1000 com design esportivo aerodinâmico, aceleração vigorosa e acabamento de alta qualidade.",
+        "specs": {
+            "Motor": "1000W Brushless High Efficiency",
+            "Velocidade Máxima": "Até 45 km/h",
+            "Autonomia": "Até 45 km",
+            "Bateria": "60V Lítio",
+            "Freios": "Disco hidráulico"
+        },
+        "badge": "ESPORTIVA",
+        "folder_aliases": ["GP 1000", "GP1000", "GP-1000"]
+    },
+    "GP1000": {
+        "category": "Scooter Elétrica Esportiva",
+        "description": "Scooter elétrica GP1000 com design esportivo aerodinâmico, aceleração vigorosa e acabamento de alta qualidade.",
+        "specs": {
+            "Motor": "1000W Brushless High Efficiency",
+            "Velocidade Máxima": "Até 45 km/h",
+            "Autonomia": "Até 45 km",
+            "Bateria": "60V Lítio",
+            "Freios": "Disco hidráulico"
+        },
+        "badge": "ESPORTIVA",
+        "folder_aliases": ["GP 1000", "GP1000", "GP-1000"]
     }
 }
 
 
 def find_photos_for_model(model_name: str) -> list[str]:
-    """Procura fotos disponíveis em static/img/outlet para o modelo."""
+    """Procura fotos disponíveis em static/img/outlet para o modelo, priorizando Fundo Verde."""
+    import urllib.parse
     specs_info = MODEL_SPECS.get(model_name, {})
     aliases = specs_info.get("folder_aliases", [model_name])
     
-    found_images = []
+    fv_images = []
+    other_images = []
     
     # 1. Procurar nas subpastas do ENSAIO
     for root, dirs, files in os.walk(ENSAIO_DIR):
         root_name = Path(root).name
-        # Verificar se o nome da pasta corresponde a algum alias
         matches_alias = any(alias.lower() in root_name.lower() or root_name.lower() in alias.lower() for alias in aliases)
         if matches_alias:
             for f in sorted(files):
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-                    # Relativo a static/
                     full_p = Path(root) / f
                     rel_p = os.path.relpath(full_p, BASE_DIR / "static")
-                    found_images.append(f"/static/{rel_p}")
+                    raw_url = f"/static/{rel_p}"
+                    encoded_url = urllib.parse.quote(raw_url, safe="/:_.-")
+                    if "fundo verde" in f.lower() or "fundo verde" in root_name.lower():
+                        fv_images.append(encoded_url)
+                    else:
+                        other_images.append(encoded_url)
                     
-    # 2. Se não achou na pasta específica, procurar arquivos que contenham o nome no próprio nome do arquivo
-    if not found_images:
+    # 2. Se não achou na pasta específica, procurar arquivos por nome
+    if not fv_images and not other_images:
         for root, dirs, files in os.walk(ENSAIO_DIR):
             for f in sorted(files):
                 if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
@@ -292,19 +336,25 @@ def find_photos_for_model(model_name: str) -> list[str]:
                         if alias.lower() in f.lower():
                             full_p = Path(root) / f
                             rel_p = os.path.relpath(full_p, BASE_DIR / "static")
-                            found_images.append(f"/static/{rel_p}")
+                            encoded_url = urllib.parse.quote(f"/static/{rel_p}", safe="/:_.-")
+                            if "fundo verde" in f.lower():
+                                fv_images.append(encoded_url)
+                            else:
+                                other_images.append(encoded_url)
                             break
 
-    # Priorizar fotos limpas ou com 'Fundo Verde' / '01.jpg'
-    def sort_key(img_url: str):
-        u = img_url.lower()
-        if "01.jpg" in u or "01.png" in u: return 0
-        if "fundo verde" in u: return 1
-        if "02.jpg" in u or "02.png" in u: return 2
-        return 3
+    # Função para ordenação numérica (ex: 01.png, 02.png, etc.)
+    def extract_num(url: str) -> int:
+        match = re.search(r"(\d+)\.(png|jpg|jpeg|webp)", url.lower())
+        return int(match.group(1)) if match else 999
 
-    found_images.sort(key=sort_key)
-    return found_images
+    fv_images.sort(key=extract_num)
+    other_images.sort(key=extract_num)
+
+    # Prioridade total para as fotos de Fundo Verde (até 6 se existirem), complementando com outras fotos
+    final_list = fv_images + other_images
+    return final_list
+
 
 
 def seed_outlet():
@@ -370,6 +420,22 @@ def seed_outlet():
                 grp["locations"].add(loc)
             if obs:
                 grp["observations"].add(obs)
+
+    # Garantir que todos os modelos em MODEL_SPECS estejam presentes no catálogo (ex: M2)
+    for spec_name in MODEL_SPECS.keys():
+        if spec_name not in model_groups:
+            model_groups[spec_name] = {
+                "name": spec_name,
+                "total_qty": 15,
+                "min_price": 5990.00,
+                "max_price": 5990.00,
+                "installment_12": 707.00,
+                "installment_18": 489.00,
+                "conditions": {"Novo na caixa / Revisado"},
+                "colors": {"Preta, Branca, Cinza"},
+                "locations": {"GALPÃO M-ONE (COLVIX) & GALPÃO MAJ"},
+                "observations": {"Lote promocional"},
+            }
 
     # Inserir ou atualizar na base de dados
     order = 1

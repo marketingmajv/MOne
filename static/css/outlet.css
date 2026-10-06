@@ -787,9 +787,9 @@ body {
   background: #111622;
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-lg);
-  max-width: 950px;
-  width: 100%;
-  max-height: 90vh;
+  max-width: 1040px;
+  width: 94vw;
+  max-height: 92vh;
   position: relative;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
   display: flex;
@@ -825,7 +825,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0 0 2px 0;
-  z-index: 60;
+  z-index: 100;
   transition: var(--transition);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
@@ -839,25 +839,33 @@ body {
 
 .modal-content-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  padding: 30px;
+  grid-template-columns: minmax(300px, 440px) minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px;
+  align-items: start;
 }
 
 .modal-main-image {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  background: #090d16;
+  aspect-ratio: 4 / 3;
+  background: radial-gradient(circle at center, #1a2436 0%, #090d16 100%);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .modal-main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   object-position: center;
   display: block;
   border-radius: var(--radius-sm);
