@@ -45,6 +45,7 @@ def privacy_policy():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/entrar", methods=["GET", "POST"])
 def login():
     if request.method == "GET" and session.get("user_id"):
         return redirect(url_for("dashboard"))
