@@ -22,10 +22,14 @@ from routes.helpers import (
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+api_static_dir = BASE_DIR / "api" / "static"
+static_dir = api_static_dir if api_static_dir.exists() else (BASE_DIR / "static")
+
 app = Flask(
     __name__,
     template_folder=str(BASE_DIR / "templates"),
-    static_folder=str(BASE_DIR / "static"),
+    static_folder=str(static_dir),
+    static_url_path="/static",
 )
 app.secret_key = (
     os.environ.get("FLASK_SECRET_KEY")
@@ -96,22 +100,6 @@ def apply_security_and_cache_headers(response):
     if os.environ.get("VERCEL") or request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
-
-
-@app.route('/static/img/catalog/<path:subpath>')
-def serve_catalog_img(subpath):
-    api_cat = BASE_DIR / "api" / "static" / "img" / "catalog"
-    if (api_cat / subpath).exists():
-        return send_from_directory(str(api_cat), subpath)
-    return send_from_directory(str(BASE_DIR / "static" / "img" / "catalog"), subpath)
-
-
-@app.route('/static/<path:filename>')
-def custom_static(filename):
-    api_stat = BASE_DIR / "api" / "static"
-    if (api_stat / filename).exists():
-        return send_from_directory(str(api_stat), filename)
-    return send_from_directory(str(BASE_DIR / "static"), filename)
 
 
 @app.context_processor
