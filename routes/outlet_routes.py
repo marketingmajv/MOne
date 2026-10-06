@@ -69,8 +69,8 @@ def catalog():
     # Totalizadores para badges
     total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
 
-    raw_wa = get_outlet_setting("whatsapp_number", "5527999999999")
-    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527999999999"
+    raw_wa = get_outlet_setting("whatsapp_number", "5527996051538")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     whatsapp_message = get_outlet_setting(
         "whatsapp_message",
         "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"

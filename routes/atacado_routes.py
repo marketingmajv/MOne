@@ -51,8 +51,8 @@ def catalog():
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
 
-    raw_wa = get_atacado_setting("whatsapp_number", "5527999999999")
-    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527999999999"
+    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     whatsapp_message = get_atacado_setting(
         "whatsapp_message",
         "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."

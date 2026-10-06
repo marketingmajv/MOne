@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_OUTLET_DIR = BASE_DIR / "static" / "img" / "outlet"
 
-DEFAULT_WHATSAPP = "5527999999999"  # Configurável pelo admin
+DEFAULT_WHATSAPP = "5527996051538"  # Configurável pelo admin
 DEFAULT_WA_MESSAGE = "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e gostaria de saber mais informações."
 
 

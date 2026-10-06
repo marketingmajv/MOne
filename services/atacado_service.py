@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEFAULT_WHATSAPP = "5527999999999"
+DEFAULT_WHATSAPP = "5527996051538"
 DEFAULT_WA_MESSAGE = "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
 
 COLVIX_SHEET_ID = "16csh8zLt8OjRER-3TnDrpq34sQX5J17sue4Cuq8txSY"
