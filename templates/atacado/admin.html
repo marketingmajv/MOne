@@ -196,7 +196,7 @@
         <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
 
         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
+          <input type="file" id="atacado_file_input" name="gallery_files" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
         </div>
 
         <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
@@ -212,7 +212,7 @@
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
-        <button type="submit" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
+        <button type="submit" id="atacado_save_btn" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
       </div>
     </form>
   </div>
@@ -361,6 +361,7 @@
   function handleAtacadoGalleryUpload(input) {
     const files = input.files;
     const statusDiv = document.getElementById('atacado_upload_status_badge');
+    const saveBtn = document.getElementById('atacado_save_btn');
     if (!files || files.length === 0) return;
 
     if (ATACADO_CURRENT_GALLERY.length >= 12) {
@@ -373,10 +374,17 @@
       return;
     }
 
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = '0.5';
+      saveBtn.style.cursor = 'wait';
+      saveBtn.textContent = '⏳ Processando fotos...';
+    }
+
     if (statusDiv) {
       statusDiv.style.display = 'block';
       statusDiv.style.color = '#e5a93b';
-      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)...`;
+      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)... Aguarde finalizar antes de salvar.`;
     }
 
     let processedCount = 0;
@@ -400,8 +408,14 @@
           if (statusDiv) {
             statusDiv.style.display = 'block';
             statusDiv.style.color = '#00cc88';
-            statusDiv.textContent = `✅ ${ATACADO_CURRENT_GALLERY.length} foto(s) otimizada(s) (~${totalMb.toFixed(2)} MB - Dentro do limite seguro).`;
+            statusDiv.textContent = `✅ ${ATACADO_CURRENT_GALLERY.length} foto(s) otimizada(s) (~${totalMb.toFixed(2)} MB - Pronto para salvar).`;
             setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
+          }
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+            saveBtn.style.cursor = 'pointer';
+            saveBtn.textContent = 'Salvar no Atacado';
           }
           input.value = '';
         }

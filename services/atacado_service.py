@@ -559,8 +559,14 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             specs_obj["Cores e Lotes"] = colors_str
 
             # Verificar se produto já existe no banco atacado
-            existing = run_exec(conn, "SELECT id FROM atacado_items WHERE name = ?", (model,)).fetchone()
-            
+            existing = run_exec(conn, "SELECT id, image_main, images_gallery FROM atacado_items WHERE name = ?", (model,)).fetchone()
+            if existing:
+                e_dict = dict(existing)
+                if e_dict.get("image_main"):
+                    image_main = e_dict["image_main"]
+                if e_dict.get("images_gallery") and str(e_dict["images_gallery"]).strip() not in ["[]", ""]:
+                    images_gallery = e_dict["images_gallery"]
+
             item_data = {
                 "name": model,
                 "slug": slugify(model),
