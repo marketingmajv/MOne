@@ -303,8 +303,22 @@ MODEL_SPECS = {
 
 
 def find_photos_for_model(model_name: str) -> list[str]:
-    """Procura fotos disponíveis em static/img/outlet para o modelo, priorizando Fundo Verde."""
+    """Procura fotos otimizadas para web em static/img/catalog para o modelo."""
     import urllib.parse
+    slug = re.sub(r"[^\w]", "-", model_name.lower())
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    
+    cat_dir = BASE_DIR / "static" / "img" / "catalog" / slug
+    cat_photos = []
+    if cat_dir.exists():
+        for f in sorted(os.listdir(cat_dir)):
+            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                raw_url = f"/static/img/catalog/{slug}/{f}"
+                encoded_url = urllib.parse.quote(raw_url, safe="/:_.-")
+                cat_photos.append(encoded_url)
+    if cat_photos:
+        return cat_photos
+
     specs_info = MODEL_SPECS.get(model_name, {})
     aliases = specs_info.get("folder_aliases", [model_name])
     
@@ -351,7 +365,6 @@ def find_photos_for_model(model_name: str) -> list[str]:
     fv_images.sort(key=extract_num)
     other_images.sort(key=extract_num)
 
-    # Prioridade total para as fotos de Fundo Verde (até 6 se existirem), complementando com outras fotos
     final_list = fv_images + other_images
     return final_list
 
