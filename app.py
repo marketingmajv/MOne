@@ -102,7 +102,15 @@ def apply_security_and_cache_headers(response):
     return response
 
 
-@app.context_processor
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    p1 = BASE_DIR / "api" / "static" / filename
+    if p1.exists():
+        return send_from_directory(str(BASE_DIR / "api" / "static"), filename)
+    p2 = BASE_DIR / "static" / filename
+    if p2.exists():
+        return send_from_directory(str(BASE_DIR / "static"), filename)
+    return "File not found", 404
 def inject_globals():
     u = current_user()
     return {

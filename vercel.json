@@ -1,9 +1,10 @@
 {
-  "version": 2,
+  "functions": {
+    "api/**/*.py": {
+      "includeFiles": "api/static/**"
+    }
+  },
   "routes": [
-    {
-      "handle": "filesystem"
-    },
     {
       "src": "/(.*)",
       "dest": "api/index.py"
