@@ -313,7 +313,7 @@ def find_photos_for_model(model_name: str) -> list[str]:
     if cat_dir.exists():
         for f in sorted(os.listdir(cat_dir)):
             if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-                raw_url = f"/images/{slug}/{f}"
+                raw_url = f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{slug}/{f}"
                 encoded_url = urllib.parse.quote(raw_url, safe="/:_.-")
                 cat_photos.append(encoded_url)
     if cat_photos:
