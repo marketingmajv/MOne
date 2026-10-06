@@ -183,8 +183,8 @@ def filter_phone(v):
 @app.errorhandler(413)
 def request_entity_too_large(error):
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify({"success": False, "message": "Arquivo ou lote muito grande. O limite máximo permitido é 512MB."}), 413
-    flash("O tamanho total dos arquivos enviados excedeu o limite máximo de 512MB. Por favor, envie em lotes menores.", "danger")
+        return jsonify({"success": False, "message": "O lote de fotos excedeu o limite de requisição de 4.5MB da Vercel. Por favor, envie em lotes ligeiramente menores."}), 413
+    flash("O tamanho total dos arquivos enviados ultrapassou o limite máximo de requisição da Vercel (4.5MB). Por favor, remova 1 ou 2 fotos antes de salvar.", "danger")
     return redirect(request.referrer or url_for("dashboard"))
 
 

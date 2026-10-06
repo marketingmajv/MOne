@@ -419,12 +419,12 @@
     const totalChars = mainImg.length + galleryJson.length;
     const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
 
-    if (sizeMb > 3.0) {
-      alert(`⚠️ O tamanho total da galeria (${sizeMb.toFixed(1)} MB) é muito grande para o limite da Vercel (4.5 MB). Por favor, remova algumas fotos antes de salvar.`);
+    if (sizeMb > 3.8) {
+      alert(`⚠️ O tamanho total da galeria (${sizeMb.toFixed(1)} MB) ultrapassaria o limite máximo de envio da Vercel (4.5 MB). Por favor, remova 1 ou 2 fotos antes de salvar.`);
       if (statusDiv) {
         statusDiv.style.display = 'block';
         statusDiv.style.color = '#ef4444';
-        statusDiv.textContent = `⚠️ Tamanho excedido (${sizeMb.toFixed(1)} MB). Remova algumas fotos para salvar.`;
+        statusDiv.textContent = `⚠️ Tamanho do lote grande (${sizeMb.toFixed(1)} MB / máx 3.8 MB). Remova 1 ou 2 fotos.`;
       }
       return false;
     }
@@ -464,7 +464,7 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 900; // 900px otimizado para não estourar o limite da Vercel
+          const maxDim = 750;
 
           if (width > maxDim || height > maxDim) {
             if (width > height) {
@@ -481,8 +481,7 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Qualidade 0.72 gera ~35-50KB por foto no Data URL
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.62);
           
           CURRENT_GALLERY.push(compressedDataUrl);
           if (!CURRENT_IMAGE_MAIN) {
