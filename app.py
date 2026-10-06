@@ -98,8 +98,19 @@ def apply_security_and_cache_headers(response):
     return response
 
 
+@app.route('/static/img/catalog/<path:subpath>')
+def serve_catalog_img(subpath):
+    api_cat = BASE_DIR / "api" / "static" / "img" / "catalog"
+    if (api_cat / subpath).exists():
+        return send_from_directory(str(api_cat), subpath)
+    return send_from_directory(str(BASE_DIR / "static" / "img" / "catalog"), subpath)
+
+
 @app.route('/static/<path:filename>')
 def custom_static(filename):
+    api_stat = BASE_DIR / "api" / "static"
+    if (api_stat / filename).exists():
+        return send_from_directory(str(api_stat), filename)
     return send_from_directory(str(BASE_DIR / "static"), filename)
 
 
