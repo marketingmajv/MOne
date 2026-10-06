@@ -11,8 +11,13 @@
   ],
   "routes": [
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/images/(.*)",
-      "dest": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1",
+      "headers": {
+        "Location": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
+      },
       "status": 302
     },
     {
