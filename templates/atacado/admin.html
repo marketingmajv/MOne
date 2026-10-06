@@ -34,7 +34,7 @@
   </div>
 
   <!-- Cards de Indicadores do Atacado -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
     <div class="card" style="padding: 16px;">
       <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Modelos Cadastrados</small>
       <div style="font-size: 1.8rem; font-weight: 800; color: #00cc88;">{{ items|length }}</div>
@@ -50,6 +50,62 @@
       <div style="font-size: 1.8rem; font-weight: 800; color: #e5a93b;">R$ {{ "{:,.2f}".format(total_revenue).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
       <small style="color: var(--muted); font-size: 0.75rem;">Faturamento total projetado no atacado</small>
     </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">WhatsApp de Atendimento (CNPJ)</small>
+      <div style="font-size: 1.4rem; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ settings.whatsapp_number | format_phone }}</div>
+      <small style="color: #00cc88; font-size: 0.75rem; font-weight: 600;">Canal oficial de cotações CNPJ</small>
+    </div>
+  </div>
+
+  <!-- Configurações do WhatsApp & Campanha de Atacado -->
+  <div class="panel" style="margin-bottom: 24px; padding: 20px; border-left: 4px solid #00cc88;">
+    <div class="panel-head" style="margin-bottom: 14px;">
+      <div>
+        <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.1rem; font-weight: 800; color: #00cc88;">
+          <span>📱 Configurações do WhatsApp de Atendimento (CNPJ)</span>
+        </h3>
+        <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 0.85rem;">Defina o número comercial receptor e os templates de mensagem automática quando o cliente solicitar cotação no atacado.</p>
+      </div>
+    </div>
+
+    <form action="{{ url_for('atacado.admin_atacado_settings') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Número do WhatsApp Comercial (DDI + DDD)</label>
+          <input type="text" name="whatsapp_number" id="whatsapp_number_input" value="{{ settings.whatsapp_number | format_phone }}" placeholder="+55 (27) 99605-1538" oninput="this.value = maskPhoneInput(this.value)" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem dos Produtos (variáveis: <code>{model}</code> e <code>{price}</code>)</label>
+          <input type="text" name="whatsapp_message" value="{{ settings.whatsapp_message }}" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem Global do Botão Flutuante (Atendimento Geral CNPJ)</label>
+        <input type="text" name="whatsapp_floating_message" value="{{ settings.whatsapp_floating_message }}" required style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Título do Catálogo</label>
+          <input type="text" name="atacado_title" value="{{ settings.atacado_title }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Subtítulo do Catálogo</label>
+          <input type="text" name="atacado_subtitle" value="{{ settings.atacado_subtitle }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Fita de Urgência (Topo do Catálogo)</label>
+          <input type="text" name="atacado_urgency_text" value="{{ settings.atacado_urgency_text }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 10px;">
+        <button type="submit" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar Configurações do Atacado</button>
+      </div>
+    </form>
   </div>
 
   <!-- Tabela de Produtos do Atacado -->

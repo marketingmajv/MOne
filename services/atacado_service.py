@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEFAULT_WHATSAPP = "5527996051538"
 DEFAULT_WA_MESSAGE = "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
+DEFAULT_WA_FLOATING_MESSAGE = "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."
 
 COLVIX_SHEET_ID = "16csh8zLt8OjRER-3TnDrpq34sQX5J17sue4Cuq8txSY"
 COLVIX_GIDS = ["1364652365", "1136023792", "112393779"]

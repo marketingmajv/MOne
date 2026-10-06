@@ -57,6 +57,10 @@ def catalog():
         "whatsapp_message",
         "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
     )
+    whatsapp_floating_message = get_atacado_setting(
+        "whatsapp_floating_message",
+        "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."
+    )
     title = get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE")
     total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
     subtitle = get_atacado_setting(
@@ -75,6 +79,7 @@ def catalog():
         items=items,
         whatsapp_number=whatsapp_number,
         whatsapp_message=whatsapp_message,
+        whatsapp_floating_message=whatsapp_floating_message,
         title=title,
         subtitle=subtitle,
         urgency_text=urgency_text,
@@ -118,11 +123,12 @@ def admin_atacado():
     total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in items)
 
     settings = {
-        "whatsapp_number": get_atacado_setting("whatsapp_number", "5527999999999"),
-        "whatsapp_message": get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ por {price}."),
+        "whatsapp_number": get_atacado_setting("whatsapp_number", "5527996051538"),
+        "whatsapp_message": get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."),
+        "whatsapp_floating_message": get_atacado_setting("whatsapp_floating_message", "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."),
         "atacado_title": get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE"),
-        "atacado_subtitle": get_atacado_setting("atacado_subtitle", "Venda Exclusiva CNPJ / Revendedores"),
-        "atacado_urgency_text": get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA CNPJ • PARCELAMENTO FACILITADO")
+        "atacado_subtitle": get_atacado_setting("atacado_subtitle", "Catálogo Oficial de Atacado • Veículos Elétricos com Preços Exclusivos para CNPJ"),
+        "atacado_urgency_text": get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA")
     }
 
     return render_template(
@@ -245,11 +251,16 @@ def admin_atacado_delete(item_id):
 @roles_required("admin", "support")
 def admin_atacado_settings():
     """Salva configurações gerais do catálogo de atacado."""
-    set_atacado_setting("whatsapp_number", request.form.get("whatsapp_number", "").strip())
+    raw_wa = request.form.get("whatsapp_number", "").strip()
+    clean_wa = re.sub(r"\D", "", raw_wa) or "5527996051538"
+    
+    set_atacado_setting("whatsapp_number", clean_wa)
     set_atacado_setting("whatsapp_message", request.form.get("whatsapp_message", "").strip())
+    set_atacado_setting("whatsapp_floating_message", request.form.get("whatsapp_floating_message", "").strip())
     set_atacado_setting("atacado_title", request.form.get("atacado_title", "").strip())
     set_atacado_setting("atacado_subtitle", request.form.get("atacado_subtitle", "").strip())
     set_atacado_setting("atacado_urgency_text", request.form.get("atacado_urgency_text", "").strip())
 
-    flash("Configurações do Atacado salvas com sucesso.", "success")
+    audit("update_atacado_settings", f"Configurações de Atacado salvas. WhatsApp: {clean_wa}")
+    flash("Configurações do WhatsApp e Catálogo de Atacado salvas com sucesso.", "success")
     return redirect(url_for("atacado.admin_atacado"))
