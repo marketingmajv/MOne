@@ -558,6 +558,29 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.spec-variation-pill {
+  background: rgba(229, 169, 59, 0.12) !important;
+  border: 1px solid rgba(229, 169, 59, 0.35) !important;
+  color: var(--gold-primary) !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.spec-variation-pill:hover {
+  background: rgba(229, 169, 59, 0.22) !important;
+  border-color: var(--gold-primary) !important;
+  transform: translateY(-1px);
+}
+
+.price-starting-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
 /* Preços por Cor no Card e no Modal */
 .card-color-prices-badge {
   background: rgba(229, 169, 59, 0.08);
@@ -1203,13 +1226,13 @@ body {
   z-index: 999;
   background: var(--green-wa);
   color: #fff;
-  width: 60px;
-  height: 60px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.45);
   text-decoration: none;
   transition: var(--transition);
 }
@@ -1217,6 +1240,15 @@ body {
 .floating-whatsapp-widget:hover {
   transform: scale(1.08);
   background: var(--green-wa-hover);
+}
+
+.floating-whatsapp-widget svg {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  display: block;
+  fill: #fff;
 }
 
 .widget-pulse {
@@ -1566,8 +1598,15 @@ body {
   .floating-whatsapp-widget {
     bottom: 18px;
     right: 18px;
-    width: 54px;
-    height: 54px;
+    width: 58px;
+    height: 58px;
+  }
+
+  .floating-whatsapp-widget svg {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .hero-stats-bar { grid-template-columns: repeat(2, 1fr); }

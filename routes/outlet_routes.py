@@ -9,6 +9,7 @@ import base64
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from flask import (
     Blueprint,
@@ -68,10 +69,15 @@ def catalog():
     # Totalizadores para badges
     total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
 
-    whatsapp_number = get_outlet_setting("whatsapp_number", "5527999999999")
+    raw_wa = get_outlet_setting("whatsapp_number", "5527999999999")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527999999999"
     whatsapp_message = get_outlet_setting(
         "whatsapp_message",
         "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"
+    )
+    whatsapp_floating_message = get_outlet_setting(
+        "whatsapp_floating_message",
+        "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de falar com um consultor."
     )
     title = get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE")
     subtitle = get_outlet_setting("outlet_subtitle", f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos")
@@ -85,6 +91,7 @@ def catalog():
         items=items,
         whatsapp_number=whatsapp_number,
         whatsapp_message=whatsapp_message,
+        whatsapp_floating_message=whatsapp_floating_message,
         title=title,
         subtitle=subtitle,
         urgency_text=urgency_text,
@@ -134,6 +141,7 @@ def admin_outlet():
     settings = {
         "whatsapp_number": get_outlet_setting("whatsapp_number", "5527999999999"),
         "whatsapp_message": get_outlet_setting("whatsapp_message", "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"),
+        "whatsapp_floating_message": get_outlet_setting("whatsapp_floating_message", "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor."),
         "outlet_title": get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE"),
         "outlet_subtitle": get_outlet_setting("outlet_subtitle", "Queima de Estoque Oficial • Mais de 440 Veículos Elétricos"),
         "outlet_urgency_text": get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
@@ -272,6 +280,7 @@ def update_settings():
     """Atualiza as configurações do WhatsApp e textos do Outlet."""
     set_outlet_setting("whatsapp_number", request.form.get("whatsapp_number", "").strip())
     set_outlet_setting("whatsapp_message", request.form.get("whatsapp_message", "").strip())
+    set_outlet_setting("whatsapp_floating_message", request.form.get("whatsapp_floating_message", "").strip())
     set_outlet_setting("outlet_title", request.form.get("outlet_title", "").strip())
     set_outlet_setting("outlet_subtitle", request.form.get("outlet_subtitle", "").strip())
     set_outlet_setting("outlet_urgency_text", request.form.get("outlet_urgency_text", "").strip())

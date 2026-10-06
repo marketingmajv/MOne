@@ -44,7 +44,7 @@
 
     <div class="panel" style="margin-bottom: 0; padding: 18px 20px;">
       <small class="muted" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">WhatsApp de Atendimento</small>
-      <div style="font-size: 1.4rem; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ settings.whatsapp_number }}</div>
+      <div style="font-size: 1.4rem; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ settings.whatsapp_number | format_phone }}</div>
       <small style="color: #00cc88; font-size: 0.75rem;">Canal oficial de conversão</small>
     </div>
   </div>
@@ -65,12 +65,17 @@
       <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 14px;">
         <div>
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Número do WhatsApp (com DDI + DDD)</label>
-          <input type="text" name="whatsapp_number" value="{{ settings.whatsapp_number }}" placeholder="Ex: 5527999999999" required style="width: 100%;">
+          <input type="text" name="whatsapp_number" id="whatsapp_number_input" value="{{ settings.whatsapp_number | format_phone }}" placeholder="+55 (27) 99999-9999" oninput="this.value = maskPhoneInput(this.value)" required style="width: 100%;">
         </div>
         <div>
-          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem Padrão (variáveis: <code>{model}</code> e <code>{price}</code>)</label>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem dos Produtos (variáveis: <code>{model}</code> e <code>{price}</code>)</label>
           <input type="text" name="whatsapp_message" value="{{ settings.whatsapp_message }}" required style="width: 100%;">
         </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem Global do Botão Flutuante (Atendimento Geral)</label>
+        <input type="text" name="whatsapp_floating_message" value="{{ settings.whatsapp_floating_message }}" required style="width: 100%;" placeholder="Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.">
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
@@ -508,6 +513,18 @@
   window.removePhotoFromGallery = removePhotoFromGallery;
   window.handleOutletGalleryUpload = handleOutletGalleryUpload;
   window.validateOutletFormPayload = validateOutletFormPayload;
+
+  function maskPhoneInput(val) {
+    if (!val) return '';
+    let d = val.replace(/\D/g, '');
+    if (!d) return '';
+    if (d.length <= 2) return '+' + d;
+    if (d.length <= 4) return '+' + d.slice(0, 2) + ' (' + d.slice(2);
+    if (d.length <= 9) return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4);
+    if (d.length <= 13) return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4, d.length - 4) + '-' + d.slice(d.length - 4);
+    return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4, 9) + '-' + d.slice(9, 13);
+  }
+  window.maskPhoneInput = maskPhoneInput;
 
   function outletAdmin() {
     return {

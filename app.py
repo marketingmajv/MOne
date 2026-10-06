@@ -18,6 +18,7 @@ from routes.helpers import (
     money,
     money_usd,
     aliquota,
+    format_phone,
 )
 from pathlib import Path
 
@@ -142,6 +143,9 @@ def custom_static(filename):
         "cwd": str(cwd),
         "searched": [str(c) for c in candidates]
     }), 404
+
+
+@app.context_processor
 def inject_globals():
     u = current_user()
     return {
@@ -168,6 +172,12 @@ def filter_money_usd(v):
 @app.template_filter("aliquota")
 def filter_aliquota(v):
     return aliquota(v)
+
+
+@app.template_filter("phone")
+@app.template_filter("format_phone")
+def filter_phone(v):
+    return format_phone(v)
 
 
 @app.errorhandler(413)

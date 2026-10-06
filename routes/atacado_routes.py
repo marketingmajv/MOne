@@ -6,6 +6,7 @@ Independente do módulo Outlet.
 
 import logging
 import os
+import re
 from pathlib import Path
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from routes.helpers import login_required, roles_required, audit
@@ -50,7 +51,8 @@ def catalog():
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
 
-    whatsapp_number = get_atacado_setting("whatsapp_number", "5527999999999")
+    raw_wa = get_atacado_setting("whatsapp_number", "5527999999999")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527999999999"
     whatsapp_message = get_atacado_setting(
         "whatsapp_message",
         "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."

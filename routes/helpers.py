@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+import re
 import unicodedata
 from datetime import datetime
 from functools import wraps
@@ -211,6 +212,38 @@ def aliquota(v):
         return f"R$ {float(v):,.4f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except Exception:
         return "—"
+
+
+def format_phone(v: str | None) -> str:
+    """
+    Formata número de telefone no formato internacional: +00 (00) 00000-0000
+    Exemplos:
+      '5527999999999' -> '+55 (27) 99999-9999'
+      '27999999999'   -> '+55 (27) 99999-9999'
+      '552733334444'  -> '+55 (27) 3333-4444'
+    """
+    if not v:
+        return ""
+    digits = re.sub(r"\D", "", str(v))
+    if not digits:
+        return str(v)
+
+    if len(digits) == 13:
+        return f"+{digits[:2]} ({digits[2:4]}) {digits[4:9]}-{digits[9:]}"
+    if len(digits) == 12:
+        return f"+{digits[:2]} ({digits[2:4]}) {digits[4:8]}-{digits[8:]}"
+    if len(digits) == 11:
+        return f"+55 ({digits[:2]}) {digits[2:7]}-{digits[7:]}"
+    if len(digits) == 10:
+        return f"+55 ({digits[:2]}) {digits[2:6]}-{digits[6:]}"
+    if len(digits) > 13:
+        ddi = digits[:-11]
+        ddd = digits[-11:-9]
+        p1 = digits[-9:-4]
+        p2 = digits[-4:]
+        return f"+{ddi} ({ddd}) {p1}-{p2}"
+
+    return str(v)
 
 
 def normalize_headers(row: list) -> list[str]:

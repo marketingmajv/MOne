@@ -38,7 +38,12 @@ MODEL_SPECS = {
             "Freios": "Disco hidráulico dianteiro e traseiro"
         },
         "badge": "MAIS VENDIDO",
-        "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"]
+        "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"],
+        "color_prices": [
+            {"colors": "Cores Padrão (Red, White, Blue, Branca, Azul)", "price": "R$ 7.990,00", "p12": "R$ 762,63", "p18": "R$ 528,02", "stock": 51},
+            {"colors": "Preta Montada", "price": "R$ 8.900,00", "p12": "R$ 849,49", "p18": "R$ 588,15", "stock": 1},
+            {"colors": "Carbon Na Caixa", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1}
+        ]
     },
     "X15 PRO": {
         "category": "Scooter Elétrica",
@@ -52,7 +57,13 @@ MODEL_SPECS = {
             "Painel": "Display Digital Colorido"
         },
         "badge": "ALTA PERFORMANCE",
-        "folder_aliases": ["MAJ X15 PRO", "X15 PRO", "X15"]
+        "folder_aliases": ["MAJ X15 PRO", "X15 PRO", "X15"],
+        "color_prices": [
+            {"colors": "Bateria 10.4Ah", "price": "R$ 7.490,00", "p12": "R$ 714,90", "p18": "R$ 494,97", "stock": 1},
+            {"colors": "Vermelha / Azul Bebê / Verde", "price": "R$ 7.990,00", "p12": "R$ 762,63", "p18": "R$ 528,02", "stock": 5},
+            {"colors": "Preta Montada", "price": "R$ 8.490,00", "p12": "R$ 810,35", "p18": "R$ 561,06", "stock": 1},
+            {"colors": "Carbono Montada", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1}
+        ]
     },
     "Sport 701 short": {
         "category": "Scooter Elétrica",
@@ -285,19 +296,6 @@ MODEL_SPECS = {
         },
         "badge": "ESPORTIVA",
         "folder_aliases": ["GP 1000", "GP1000", "GP-1000"]
-    },
-    "GP1000": {
-        "category": "Scooter Elétrica Esportiva",
-        "description": "Scooter elétrica GP1000 com design esportivo aerodinâmico, aceleração vigorosa e acabamento de alta qualidade.",
-        "specs": {
-            "Motor": "1000W Brushless High Efficiency",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km",
-            "Bateria": "60V Lítio",
-            "Freios": "Disco hidráulico"
-        },
-        "badge": "ESPORTIVA",
-        "folder_aliases": ["GP 1000", "GP1000", "GP-1000"]
     }
 }
 
@@ -364,16 +362,11 @@ def find_photos_for_model(model_name: str) -> list[str]:
 
     fv_images.sort(key=extract_num)
     other_images.sort(key=extract_num)
-
-    final_list = fv_images + other_images
-    return final_list
-
+    return fv_images + other_images
 
 
 def seed_outlet():
     ensure_outlet_schema()
-    
-    # Configurações padrão
     set_outlet_setting("whatsapp_number", "5527999999999")
     set_outlet_setting("whatsapp_message", "Olá! Gostei do {model} no Outlet MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?")
     set_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE")
@@ -434,29 +427,15 @@ def seed_outlet():
             if obs:
                 grp["observations"].add(obs)
 
-    # Garantir que todos os modelos em MODEL_SPECS estejam presentes no catálogo (ex: M2)
-    for spec_name in MODEL_SPECS.keys():
-        if spec_name not in model_groups:
-            model_groups[spec_name] = {
-                "name": spec_name,
-                "total_qty": 15,
-                "min_price": 5990.00,
-                "max_price": 5990.00,
-                "installment_12": 707.00,
-                "installment_18": 489.00,
-                "conditions": {"Novo na caixa / Revisado"},
-                "colors": {"Preta, Branca, Cinza"},
-                "locations": {"GALPÃO M-ONE (COLVIX) & GALPÃO MAJ"},
-                "observations": {"Lote promocional"},
-            }
-
-    # Inserir ou atualizar na base de dados
+    # Inserir ou atualizar na base de dados com base exclusivamente na planilha
     order = 1
     for model_name, grp in sorted(model_groups.items(), key=lambda x: x[1]["total_qty"], reverse=True):
         specs_data = MODEL_SPECS.get(model_name, {})
         category = specs_data.get("category", "Mobilidade Elétrica")
         desc = specs_data.get("description", f"Veículo elétrico MAJ {model_name} de alta qualidade.")
-        specs = specs_data.get("specs", {})
+        specs = dict(specs_data.get("specs", {}))
+        if "color_prices" in specs_data:
+            specs["color_prices"] = specs_data["color_prices"]
         badge = specs_data.get("badge", "OFERTA OUTLET")
 
         # Preço original estimado (cerca de 20-30% acima para dar valor real de De/Por)
@@ -508,6 +487,10 @@ def seed_outlet():
             nid = save_outlet_item(item_dict)
             print(f"Inserido: {model_name} (ID {nid}) | Fotos: {len(photos)}")
         order += 1
+
+    # Assegurar que modelos que não constam na planilha (como M2) fiquem com status inactive
+    with db() as conn:
+        run_exec(conn, "UPDATE outlet_items SET status = 'inactive' WHERE slug = 'm2' OR UPPER(name) = 'M2'")
 
     print("\nSemeadura do Outlet MAJ concluída com sucesso!")
 
