@@ -11,6 +11,10 @@
   ],
   "routes": [
     {
+      "src": "/images/(.*)",
+      "dest": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
