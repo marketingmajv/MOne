@@ -104,13 +104,27 @@ def apply_security_and_cache_headers(response):
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
-    p1 = BASE_DIR / "api" / "static" / filename
-    if p1.exists():
-        return send_from_directory(str(BASE_DIR / "api" / "static"), filename)
-    p2 = BASE_DIR / "static" / filename
-    if p2.exists():
-        return send_from_directory(str(BASE_DIR / "static"), filename)
-    return "File not found", 404
+    base = Path(__file__).resolve().parent
+    cwd = Path.cwd()
+    candidates = [
+        base / "api" / "static" / filename,
+        base / "static" / filename,
+        cwd / "api" / "static" / filename,
+        cwd / "static" / filename,
+        Path("/var/task") / "api" / "static" / filename,
+        Path("/var/task") / "static" / filename,
+        Path("/var/task") / filename,
+    ]
+    for c in candidates:
+        if c.is_file():
+            return send_from_directory(str(c.parent), c.name)
+    return jsonify({
+        "error": "Static file not found",
+        "requested": filename,
+        "base": str(base),
+        "cwd": str(cwd),
+        "searched": [str(c) for c in candidates]
+    }), 404
 def inject_globals():
     u = current_user()
     return {
