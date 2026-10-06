@@ -3,23 +3,20 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": ["api/static/**", "static/**", "public/**"]
-      }
+      "use": "@vercel/python"
     }
   ],
-  "routes": [
+  "redirects": [
     {
-      "src": "/images/(.*)",
-      "status": 302,
-      "headers": {
-        "Location": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/$1"
-      }
-    },
+      "source": "/images/:path*",
+      "destination": "https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "api/index.py"
+      "source": "/(.*)",
+      "destination": "/api/index.py"
     }
   ]
 }
