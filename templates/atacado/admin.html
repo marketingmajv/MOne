@@ -131,7 +131,7 @@
             </td>
             <td style="padding: 10px 16px; text-align: right;">
               <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                <button type="button" class="btn sm" onclick='editAtacadoItem({{ item|tojson|safe }})'>Editar</button>
+                <button type="button" class="btn sm" onclick="editAtacadoItem({{ item.id }})">Editar</button>
                 <form action="{{ url_for('atacado.admin_atacado_delete', item_id=item.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name }} do Atacado?');" style="margin: 0;">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn sm" style="color: #ef4444;">✕</button>
@@ -242,8 +242,12 @@
     document.getElementById('atacadoFormModal').style.display = 'none';
   }
 
-  function editAtacadoItem(item) {
-    document.getElementById('atacado_form_item_id').value = item.id;
+  function editAtacadoItem(itemOrId) {
+    let item = itemOrId;
+    if (typeof itemOrId === 'number' || typeof itemOrId === 'string') {
+      item = (ATACADO_ITEMS_LIST || []).find(i => String(i.id) === String(itemOrId)) || {};
+    }
+    document.getElementById('atacado_form_item_id').value = item.id || '';
     document.getElementById('atacado_form_name').value = item.name || '';
     document.getElementById('atacado_form_price_outlet').value = item.price_outlet || '';
     document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
@@ -331,8 +335,14 @@
 
   function validateAtacadoFormPayload(form) {
     const statusDiv = document.getElementById('atacado_upload_status_badge');
-    const mainImg = document.getElementById('atacado_form_image_main')?.value || '';
-    const galleryJson = document.getElementById('atacado_form_images_gallery')?.value || '';
+    const mainInput = document.getElementById('atacado_form_image_main');
+    const galleryInput = document.getElementById('atacado_form_images_gallery');
+
+    if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN || '';
+    if (galleryInput) galleryInput.value = JSON.stringify(ATACADO_CURRENT_GALLERY || []);
+
+    const mainImg = mainInput?.value || '';
+    const galleryJson = galleryInput?.value || '';
     const totalChars = mainImg.length + galleryJson.length;
     const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
 
