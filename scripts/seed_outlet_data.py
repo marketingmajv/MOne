@@ -303,17 +303,17 @@ MODEL_SPECS = {
 
 
 def find_photos_for_model(model_name: str) -> list[str]:
-    """Procura fotos otimizadas para web em static/img/catalog para o modelo."""
+    """Procura fotos otimizadas para web em public/images para o modelo."""
     import urllib.parse
     slug = re.sub(r"[^\w]", "-", model_name.lower())
     slug = re.sub(r"-+", "-", slug).strip("-")
     
-    cat_dir = BASE_DIR / "static" / "img" / "catalog" / slug
+    cat_dir = BASE_DIR / "public" / "images" / slug
     cat_photos = []
     if cat_dir.exists():
         for f in sorted(os.listdir(cat_dir)):
             if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
-                raw_url = f"/static/img/catalog/{slug}/{f}"
+                raw_url = f"/images/{slug}/{f}"
                 encoded_url = urllib.parse.quote(raw_url, safe="/:_.-")
                 cat_photos.append(encoded_url)
     if cat_photos:
@@ -465,7 +465,7 @@ def seed_outlet():
         
         # Procurar fotos
         photos = find_photos_for_model(model_name)
-        main_img = photos[0] if photos else "/static/logo.png"
+        main_img = photos[0] if photos else "/images/logo.png"
         gallery = photos[1:10] if len(photos) > 1 else []
 
         colors_list = sorted(list(grp["colors"]))
