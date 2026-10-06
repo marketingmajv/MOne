@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, flash, jsonify, redirect, request, session, url_for
+from flask import Flask, flash, jsonify, redirect, request, session, url_for, send_from_directory
 
 load_dotenv()
 load_dotenv(".env.local")
@@ -96,6 +96,11 @@ def apply_security_and_cache_headers(response):
     if os.environ.get("VERCEL") or request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
+
+
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    return send_from_directory(str(BASE_DIR / "static"), filename)
 
 
 @app.context_processor
