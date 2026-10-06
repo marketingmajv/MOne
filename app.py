@@ -44,7 +44,7 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 if os.environ.get("VERCEL") or os.environ.get("FLASK_ENV") == "production":
     app.config["SESSION_COOKIE_SECURE"] = True
-app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 512 * 1024 * 1024
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
 
 
@@ -182,7 +182,10 @@ def filter_phone(v):
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    return jsonify({"success": False, "message": "Arquivo muito grande. O limite máximo permitido é 64MB."}), 413
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": False, "message": "Arquivo ou lote muito grande. O limite máximo permitido é 512MB."}), 413
+    flash("O tamanho total dos arquivos enviados excedeu o limite máximo de 512MB. Por favor, envie em lotes menores.", "danger")
+    return redirect(request.referrer or url_for("dashboard"))
 
 
 @app.errorhandler(500)
