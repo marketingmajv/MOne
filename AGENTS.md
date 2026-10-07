@@ -67,6 +67,14 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
     - Portanto, $\mathbf{PAGAMENTO\ EXTRA = PI - CI}$.
     - Qualquer valor desembolsado além da CI (ou a diferença entre a fatura proforma total e a fatura comercial alfandegária) é registrado e auditado como **Pagamento Extra / Outro Lançamento**, completando a compra sem duplicar custos.
     - A presença de **Contrato de Câmbio** e/ou **Comprovante SWIFT** registra e liquida oficialmente a parcela da CI (`ci_payment`), zerando a pendência de dados na auditoria aduaneira.
+- **Regra de Exibição de Estoque: Outlet MAJ (OM) vs MAJ Catálogo CNPJ (MCC)**:
+  - **Os valores de estoque entre OM e MCC NÃO devem ser necessariamente idênticos**, pois atendem a canais e estratégias comerciais distintas:
+  - **OM (Outlet MAJ — Varejo / Consumidor Final B2C)**:
+    - Opera com **lotes promocionais específicos de desova** (predominantemente alocados no Galpão MAJ ou cotas restritas de varejo).
+    - Utiliza gatilhos comerciais de escassez e exclusividade (*"Últimas unidades"*, *"Peça única"*), evitando expor o volume massivo de atacado para não canibalizar preços de revenda nem comprometer lotes B2B.
+  - **MCC (MAJ Catálogo CNPJ — Atacado / Revenda B2B)**:
+    - Opera com **Estoque Global Unificado** (Galpão MAJ + Galpão COLVIX / M-One), descontando apenas veículos com cliente/venda já vinculados.
+    - Exibe o volume total real de pronta entrega (*"219 em estoque"*, *"73 em estoque"*), demonstrando robustez e capacidade de suprimento para lojistas e revendedores corporativos.
 
 ---
 
