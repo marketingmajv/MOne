@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 import freight_service
 from database import db
 from routes.helpers import ROLE_LABELS, UPLOAD_DIR, audit, current_user, login_required, roles_required
+from services.freight_parser_service import clean_int, clean_numeric, parse_freight_table_unified
 
 freight_bp = Blueprint("freight", __name__)
 
@@ -225,37 +226,64 @@ def freight_whatsapp():
         return jsonify({"success": False, "message": str(e)}), 400
 
 
+@freight_bp.route("/freight/tables/inspect", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def freight_table_inspect():
+    """Inspeciona documento de frete para auto-preenchimento inteligente por IA."""
+    file = request.files.get("table_file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado."}), 400
+    try:
+        from services.freight_parser_service import inspect_freight_document_metadata
+        filename = secure_filename(file.filename)
+        temp_path = UPLOAD_DIR / f"inspect_{int(time.time())}_{filename}"
+        file.save(temp_path)
+        meta = inspect_freight_document_metadata(str(temp_path), filename)
+        if temp_path.exists():
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
+        return jsonify(meta)
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
 @freight_bp.route("/freight/tables/upload", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def freight_table_upload():
-    """Upload e parsing por IA (Gemini) de novas tabelas de frete."""
+    """Upload e parsing resiliente (Nativo + IA) de novas tabelas de frete."""
     try:
         carrier_name = request.form.get("carrier_name", "").strip()
         table_name = request.form.get("table_name", "").strip()
         file = request.files.get("table_file")
 
-        if not carrier_name or not table_name or not file or not file.filename:
-            flash("⚠️ Preencha o nome da transportadora, nome da tabela e selecione o arquivo.", "warning")
-            return redirect(url_for("freight"))
+        if not file or not file.filename:
+            flash("⚠️ Selecione um arquivo de tabela (.xlsx, .pdf, .csv).", "warning")
+            return redirect(url_for("freight", tab="carriers"))
 
         filename = secure_filename(file.filename)
         file_path = UPLOAD_DIR / f"freight_{int(time.time())}_{filename}"
         file.save(file_path)
 
-        parsed_result = freight_service.parse_freight_table_with_gemini(file_path, carrier_name)
+        # Auto-detecção de IA se o usuário não preencheu os campos
+        if not carrier_name or not table_name:
+            from services.freight_parser_service import inspect_freight_document_metadata
+            meta = inspect_freight_document_metadata(str(file_path), filename)
+            carrier_name = carrier_name or meta.get("carrier_name") or Path(filename).stem
+            table_name = table_name or meta.get("table_name") or f"Tabela {Path(filename).stem}"
+
+        parsed_result = parse_freight_table_unified(file_path, carrier_name)
         rates = parsed_result.get("rates", []) if isinstance(parsed_result, dict) else (parsed_result if isinstance(parsed_result, list) else [])
         issues = parsed_result.get("issues", []) if isinstance(parsed_result, dict) else []
         is_valid = parsed_result.get("is_valid", len(rates) > 0) if isinstance(parsed_result, dict) else (len(rates) > 0)
 
         if not is_valid or len(rates) == 0:
-            issues_msg = " • ".join(issues) if issues else "Não foram identificadas faixas tarifárias ou preços válidos no arquivo enviado."
-            flash(
-                f"⚠️ Pendências na planilha da transportadora '{carrier_name}': {issues_msg}. "
-                f"A tabela NÃO foi ativada para evitar simulações incorretas. Solicite estes dados à transportadora.",
-                "warning"
-            )
-            return redirect(url_for("freight"))
+            issues_msg = " • ".join(issues) if issues else "Não foram identificadas faixas tarifárias válidas no arquivo."
+            flash(f"⚠️ Pendências na transportadora '{carrier_name}': {issues_msg}.", "warning")
+            return redirect(url_for("freight", tab="carriers"))
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
@@ -291,20 +319,20 @@ def freight_table_upload():
                         r.get("city"),
                         freight_service.clean_cep(r.get("cep_start")),
                         freight_service.clean_cep(r.get("cep_end")),
-                        float(r.get("min_weight") or 0),
-                        float(r.get("max_weight") or 999999),
-                        float(r.get("fixed_price") or 0),
-                        float(r.get("weight_price_per_kg") or 0),
-                        float(r.get("ad_valorem_percent") or 0),
-                        float(r.get("gris_percent") or 0),
-                        float(r.get("min_freight_price") or 0),
-                        int(r.get("delivery_days") or 1),
-                        r.get("notes") or ""
+                        clean_numeric(r.get("min_weight"), 0.0),
+                        clean_numeric(r.get("max_weight"), 999999.0),
+                        clean_numeric(r.get("fixed_price"), 0.0),
+                        clean_numeric(r.get("weight_price_per_kg"), 0.0),
+                        clean_numeric(r.get("ad_valorem_percent"), 0.0),
+                        clean_numeric(r.get("gris_percent"), 0.0),
+                        clean_numeric(r.get("min_freight_price"), 0.0),
+                        clean_int(r.get("delivery_days"), 1),
+                        str(r.get("notes") or "")[:250]
                     )
                 )
                 inserted_count += 1
 
-        obs_msg = f" (Observações: {' • '.join(issues)})" if issues else ""
+        obs_msg = f" (Auditoria: {' • '.join(issues)})" if issues else ""
         flash(f"✅ Tabela '{table_name}' da transportadora '{carrier_name}' importada com sucesso! ({inserted_count} regras cadastradas){obs_msg}", "success")
     except Exception as e:
         flash(f"Erro ao importar tabela de frete: {str(e)}", "danger")

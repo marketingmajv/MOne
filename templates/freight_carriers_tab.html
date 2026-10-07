@@ -15,15 +15,18 @@
         <p class="text-[11px] text-[var(--text-muted)] mt-1">Upload de planilhas Excel (.xlsx), PDF ou CSV com auditoria automática de faixas tarifárias</p>
       </div>
 
-      <form id="freightUploadForm" method="post" action="{{ url_for('freight_table_upload') }}" enctype="multipart/form-data" class="space-y-3.5" onsubmit="handleFreightUploadSubmit(event)">
+      <form id="freightUploadForm" method="post" action="{{ url_for('freight.freight_table_upload') }}" enctype="multipart/form-data" class="space-y-3.5" onsubmit="handleFreightUploadSubmit(event)">
         <div class="space-y-3">
           <div>
-            <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Transportadora *</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)]">Transportadora *</label>
+              <span id="aiCarrierBadge" class="hidden text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">✨ Preenchido por IA</span>
+            </div>
             <div class="relative flex items-center">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
               </span>
-              <input type="text" name="carrier_name" required placeholder="Ex: Jamef, Braspress, TJB" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;" list="carrier_list">
+              <input type="text" id="carrier_name_input" name="carrier_name" placeholder="Ex: Jamef, Braspress, TJB (ou envie o arquivo para a IA)" class="form-input w-full text-xs font-medium rounded-xl transition-all" style="padding-left: 38px !important;" list="carrier_list">
             </div>
             <datalist id="carrier_list">
               {% for c in carriers %}
@@ -33,12 +36,15 @@
           </div>
 
           <div>
-            <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Nome da Tabela / Região *</label>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)]">Nome da Tabela / Região *</label>
+              <span id="aiTableBadge" class="hidden text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">✨ Preenchido por IA</span>
+            </div>
             <div class="relative flex items-center">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none icon-svg">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               </span>
-              <input type="text" name="table_name" required placeholder="Ex: Sul e Sudeste 2026" class="form-input w-full text-xs font-medium rounded-xl" style="padding-left: 38px !important;">
+              <input type="text" id="table_name_input" name="table_name" placeholder="Ex: Sul e Sudeste 2026 (ou auto-preenchido por IA)" class="form-input w-full text-xs font-medium rounded-xl transition-all" style="padding-left: 38px !important;">
             </div>
           </div>
         </div>
@@ -53,8 +59,8 @@
               <div class="flex items-center justify-center text-[var(--brand-blue)]">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <p class="font-medium">Clique ou arraste a planilha aqui</p>
-              <p class="text-[10px] text-[var(--text-muted)]">Suporta Excel (.xlsx, .xls), PDF ou CSV</p>
+              <p class="font-medium">Clique ou arraste o PDF ou planilha aqui</p>
+              <p class="text-[10px] text-[var(--text-muted)]">A IA detecta automaticamente a transportadora, tabela e faixas</p>
             </div>
 
             <div id="dropZoneSelectedState" class="hidden items-center justify-between text-xs px-2 py-1">
@@ -67,6 +73,12 @@
               </div>
               <span class="text-[11px] text-[var(--brand-blue)] font-bold ml-2 shrink-0 underline">Trocar</span>
             </div>
+          </div>
+
+          <!-- NOTIFICAÇÃO DE AUTO-INSPEÇÃO POR IA -->
+          <div id="aiInspectNotice" class="hidden items-center gap-2 mt-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-[var(--text-primary)] transition-all">
+            <svg class="animate-spin text-[var(--brand-blue)] shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            <span id="aiInspectNoticeText" class="truncate font-medium text-[11px]">✨ IA analisando documento para identificar a transportadora...</span>
           </div>
         </div>
 
@@ -240,4 +252,157 @@ function filterCarriersCards(query) {
     }
   });
 }
+
+function updateUploadFilePreview(input) {
+  const file = input && input.files ? input.files[0] : null;
+  const emptyState = document.getElementById("dropZoneEmptyState");
+  const selectedState = document.getElementById("dropZoneSelectedState");
+  const fileNameEl = document.getElementById("selectedFileName");
+  const fileSizeEl = document.getElementById("selectedFileSize");
+  const dropZone = document.getElementById("uploadDropZone");
+
+  if (file) {
+    if (emptyState) emptyState.classList.add("hidden");
+    if (selectedState) {
+      selectedState.classList.remove("hidden");
+      selectedState.classList.add("flex");
+    }
+    if (fileNameEl) fileNameEl.textContent = file.name;
+    if (fileSizeEl) {
+      const sizeKb = file.size / 1024;
+      fileSizeEl.textContent = sizeKb > 1024 
+        ? `${(sizeKb / 1024).toFixed(2)} MB` 
+        : `${sizeKb.toFixed(1)} KB`;
+    }
+    if (dropZone) dropZone.classList.add("border-[var(--brand-blue)]", "bg-[var(--surface-subtle)]");
+    
+    // Dispara auto-inspeção imediata por IA
+    autoInspectFreightFile(file);
+  } else {
+    if (emptyState) emptyState.classList.remove("hidden");
+    if (selectedState) {
+      selectedState.classList.add("hidden");
+      selectedState.classList.remove("flex");
+    }
+    if (dropZone) dropZone.classList.remove("border-[var(--brand-blue)]", "bg-[var(--surface-subtle)]");
+  }
+}
+
+function autoInspectFreightFile(file) {
+  if (!file) return;
+  const notice = document.getElementById("aiInspectNotice");
+  const noticeText = document.getElementById("aiInspectNoticeText");
+  const carrierBadge = document.getElementById("aiCarrierBadge");
+  const tableBadge = document.getElementById("aiTableBadge");
+  const carrierInput = document.getElementById("carrier_name_input");
+  const tableInput = document.getElementById("table_name_input");
+
+  if (notice) {
+    notice.classList.remove("hidden");
+    notice.classList.add("flex");
+  }
+  if (noticeText) noticeText.textContent = "✨ IA analisando documento para identificar transportadora e tabela...";
+
+  const formData = new FormData();
+  formData.append("table_file", file);
+
+  fetch("{{ url_for('freight.freight_table_inspect') }}", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data && data.success) {
+      if (carrierInput && data.carrier_name) {
+        carrierInput.value = data.carrier_name;
+        carrierInput.classList.add("ring-2", "ring-emerald-400", "bg-emerald-500/10");
+        setTimeout(() => carrierInput.classList.remove("ring-2", "ring-emerald-400", "bg-emerald-500/10"), 2500);
+        if (carrierBadge) carrierBadge.classList.remove("hidden");
+      }
+      if (tableInput && data.table_name) {
+        tableInput.value = data.table_name;
+        tableInput.classList.add("ring-2", "ring-emerald-400", "bg-emerald-500/10");
+        setTimeout(() => tableInput.classList.remove("ring-2", "ring-emerald-400", "bg-emerald-500/10"), 2500);
+        if (tableBadge) tableBadge.classList.remove("hidden");
+      }
+      if (noticeText) {
+        noticeText.textContent = `✅ Identificado: ${data.carrier_name || 'Transportadora'}`;
+      }
+      setTimeout(() => {
+        if (notice) {
+          notice.classList.add("hidden");
+          notice.classList.remove("flex");
+        }
+      }, 4000);
+    } else {
+      if (notice) {
+        notice.classList.add("hidden");
+        notice.classList.remove("flex");
+      }
+    }
+  })
+  .catch(err => {
+    console.warn("[Freight Auto-Inspect Error]", err);
+    if (notice) {
+      notice.classList.add("hidden");
+      notice.classList.remove("flex");
+    }
+  });
+}
+
+function handleFreightUploadSubmit(event) {
+  const fileInput = document.getElementById("table_file_input");
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    alert("Por favor, selecione uma planilha ou arquivo de tabela de frete.");
+    if (event) event.preventDefault();
+    return false;
+  }
+
+  const submitBtn = document.getElementById("btnFreightUploadSubmit");
+  const btnText = document.getElementById("btnUploadText");
+  const statusNotice = document.getElementById("uploadStatusNotice");
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add("opacity-75", "cursor-wait");
+  }
+  if (btnText) {
+    btnText.textContent = "Processando e auditando planilha...";
+  }
+  if (statusNotice) {
+    statusNotice.classList.remove("hidden");
+  }
+  return true;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dropZone = document.getElementById("uploadDropZone");
+  const fileInput = document.getElementById("table_file_input");
+  if (dropZone && fileInput) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add("border-[var(--brand-blue)]", "bg-blue-500/10");
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove("border-[var(--brand-blue)]", "bg-blue-500/10");
+      }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt ? dt.files : null;
+      if (files && files.length > 0) {
+        fileInput.files = files;
+        updateUploadFilePreview(fileInput);
+      }
+    }, false);
+  }
+});
 </script>

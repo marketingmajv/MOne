@@ -565,7 +565,14 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
     """
     api_key = get_gemini_api_key()
     if not api_key:
-        print("[Gemini Freight Parser] API key não configurada.")
+        print("[Gemini Freight Parser] API key não configurada, tentando parser nativo.")
+        try:
+            from services.freight_parser_service import parse_freight_spreadsheet_native
+            native = parse_freight_spreadsheet_native(file_path, carrier_name)
+            if native.get("is_valid") and len(native.get("rates", [])) > 0:
+                return native
+        except Exception:
+            pass
         return {"is_valid": False, "issues": ["API Key do Gemini não está configurada no servidor."], "rates": []}
 
     file_path = str(file_path)
@@ -656,6 +663,13 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
     try:
         gemini_res = execute_gemini_payload(payload, api_key=api_key, timeout=60)
         if not gemini_res.get("success"):
+            try:
+                from services.freight_parser_service import parse_freight_spreadsheet_native
+                native = parse_freight_spreadsheet_native(file_path, carrier_name)
+                if native.get("is_valid") and len(native.get("rates", [])) > 0:
+                    return native
+            except Exception:
+                pass
             err_msg = gemini_res.get("message") or "Falha na comunicação com o serviço de IA."
             return {"is_valid": False, "issues": [err_msg], "rates": []}
 
@@ -695,6 +709,13 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
         return {"is_valid": is_valid, "issues": issues, "rates": rates}
     except Exception as e:
         print(f"[Gemini Freight Parser] Erro na análise por IA: {e}")
+        try:
+            from services.freight_parser_service import parse_freight_spreadsheet_native
+            native = parse_freight_spreadsheet_native(file_path, carrier_name)
+            if native.get("is_valid") and len(native.get("rates", [])) > 0:
+                return native
+        except Exception:
+            pass
         return {"is_valid": False, "issues": [f"Falha ao interpretar resposta da IA: {str(e)}"], "rates": []}
 
 
