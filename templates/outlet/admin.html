@@ -5,8 +5,8 @@
 {% block page_subtitle %}Gestão do Catálogo Promocional de Queima de Estoque e Captação de Leads{% endblock %}
 
 {% block top_actions %}
-  <a href="#painel-automacao" class="btn" style="border-color: rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: #00e599; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
-    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00e599; box-shadow: 0 0 6px #00e599;"></span>
+  <a href="#painel-automacao" onclick="window.dispatchEvent(new CustomEvent('toggle-automation-panel')); document.getElementById('painel-automacao')?.scrollIntoView({behavior: 'smooth'}); return false;" class="btn" style="border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: var(--primary); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent);"></span>
     <span>⚡ Automação 24/7</span>
   </a>
   <a href="{{ url_for('outlet.catalog') }}" target="_blank" class="btn" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
