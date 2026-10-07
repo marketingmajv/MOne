@@ -5,6 +5,10 @@
 {% block page_subtitle %}Gestão do Catálogo Promocional de Queima de Estoque e Captação de Leads{% endblock %}
 
 {% block top_actions %}
+  <a href="#painel-automacao" class="btn" style="border-color: rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: #00e599; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00e599; box-shadow: 0 0 6px #00e599;"></span>
+    <span>⚡ Automação 24/7</span>
+  </a>
   <a href="{{ url_for('outlet.catalog') }}" target="_blank" class="btn" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
     <span>🌐 Ver Catálogo Online</span>
   </a>
@@ -24,9 +28,6 @@
 
 {% block content %}
 <div x-data="outletAdmin()" style="width: 100%; max-width: 100%; box-sizing: border-box;">
-
-  <!-- Painel Executivo de Automação e Sincronização Horária -->
-  {% include 'outlet/automation_panel.html' %}
 
   <!-- Métricas Rápidas (Grid no padrão M-One) -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
@@ -54,6 +55,9 @@
       <small style="color: #00cc88; font-size: 0.75rem;">Canal oficial de conversão</small>
     </div>
   </div>
+
+  <!-- Painel Executivo de Automação e Sincronização Horária -->
+  {% include 'outlet/automation_panel.html' %}
 
   <!-- Configurações do WhatsApp & Textos -->
   <div class="panel" style="margin-bottom: 20px;">
