@@ -14,7 +14,8 @@
           "static/*.js",
           "static/*.png",
           "api/static/**",
-          "public/**"
+          "public/**",
+          "uploads/outlet/**"
         ]
       }
     }

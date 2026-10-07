@@ -295,15 +295,21 @@ def update_settings():
 @login_required
 @roles_required("admin", "support")
 def sync_outlet():
-    """Dispara a sincronização entre a tabela CSV e as fotos locais."""
-    from scripts.seed_outlet_data import seed_outlet
+    """Dispara a sincronização entre a tabela CSV e o banco de dados Supabase."""
     try:
-        seed_outlet()
-        audit("sync_outlet_catalog", "Sincronização manual do catálogo de Outlet realizada")
-        flash("Catálogo do Outlet sincronizado com sucesso a partir da planilha e fotos!", "success")
+        from services.outlet_service import sync_outlet_from_csv
+        result = sync_outlet_from_csv()
+        audit(
+            "sync_outlet_catalog",
+            f"Sincronização manual do catálogo de Outlet: {result.get('synced_count', 0)} modelos, estoque {result.get('total_stock', 0)}"
+        )
+        flash(
+            f"Catálogo do Outlet sincronizado com sucesso! {result.get('synced_count', 0)} modelos atualizados ({result.get('total_stock', 0)} veículos em estoque).",
+            "success"
+        )
     except Exception as e:
         logger.exception("Erro ao sincronizar outlet: %s", e)
-        flash(f"Erro ao sincronizar catálogo: {e}", "danger")
+        flash(f"Erro ao sincronizar catálogo do Outlet: {e}", "danger")
     return redirect(url_for("outlet.admin_outlet"))
 
 
@@ -312,10 +318,31 @@ def sync_outlet():
 @roles_required("admin", "support", "finance")
 def view_spreadsheet():
     """Retorna a planilha/tabela CSV oficial do Outlet para visualização direta no navegador."""
-    from flask import send_file
+    from flask import Response, send_file
+    import urllib.request
+
     csv_path = BASE_DIR / "uploads" / "outlet" / "tabela_precos_outlet.csv"
-    if not csv_path.exists():
-        flash("Arquivo de planilha oficial do Outlet não encontrado no servidor.", "warning")
+    if csv_path.exists():
+        return send_file(
+            str(csv_path),
+            mimetype="text/csv; charset=utf-8",
+            as_attachment=False,
+            download_name="tabela_precos_outlet.csv"
+        )
+
+    # Fallback seguro para Vercel Serverless buscando diretamente do repositório
+    try:
+        url = "https://raw.githubusercontent.com/marketingmajv/MOne/main/uploads/outlet/tabela_precos_outlet.csv"
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            content = resp.read()
+        return Response(
+            content,
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "inline; filename=tabela_precos_outlet.csv"}
+        )
+    except Exception as e:
+        logger.warning("Não foi possível carregar o CSV do Outlet: %s", e)
+        flash("Arquivo de planilha oficial do Outlet não encontrado no momento.", "warning")
         return redirect(url_for("outlet.admin_outlet"))
-    return send_file(str(csv_path), mimetype="text/csv; charset=utf-8", as_attachment=False, download_name="tabela_precos_outlet.csv")
+
 

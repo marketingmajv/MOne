@@ -372,3 +372,10 @@ def parse_currency(val_str: str) -> float:
         return float(clean)
     except ValueError:
         return 0.0
+
+
+def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str, Any]:
+    """Sincroniza os itens do catálogo do Outlet MAJ delegando para services.outlet_sync_service."""
+    from services.outlet_sync_service import sync_outlet_from_csv as _sync_func
+    return _sync_func(csv_content_or_path)
+
