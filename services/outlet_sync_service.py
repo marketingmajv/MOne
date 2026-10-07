@@ -136,6 +136,15 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         if existing:
             main_img = existing.get("image_main") or ""
             gallery = existing.get("images_gallery") or []
+            # Preserva customizações manuais já realizadas no banco
+            if existing.get("description"):
+                desc = existing.get("description")
+            if existing.get("badge"):
+                badge = existing.get("badge")
+            if existing.get("category"):
+                category = existing.get("category")
+            if existing.get("price_original") and float(existing.get("price_original")) > 0:
+                price_orig = float(existing.get("price_original"))
 
         if not main_img:
             slug_img = re.sub(r"[^\w]", "-", model_name.lower())
@@ -173,6 +182,16 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         synced_count += 1
         total_stock += grp["total_qty"]
         order += 1
+
+    # Registrar metadados do último sync sem resetar nenhuma configuração
+    try:
+        from datetime import datetime
+        from services.outlet_service import set_outlet_setting
+        now_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        set_outlet_setting("outlet_last_sync_at", now_str)
+        set_outlet_setting("outlet_last_sync_summary", f"{synced_count} modelos ({total_stock} unidades)")
+    except Exception as e:
+        logger.warning("Aviso ao salvar metadados do último sync: %s", e)
 
     return {
         "synced_count": synced_count,

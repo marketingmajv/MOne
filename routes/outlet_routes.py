@@ -145,7 +145,9 @@ def admin_outlet():
         "whatsapp_floating_message": get_outlet_setting("whatsapp_floating_message", "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor."),
         "outlet_title": get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE"),
         "outlet_subtitle": get_outlet_setting("outlet_subtitle", "Queima de Estoque Oficial • Mais de 440 Veículos Elétricos"),
-        "outlet_urgency_text": get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
+        "outlet_urgency_text": get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X"),
+        "outlet_last_sync_at": get_outlet_setting("outlet_last_sync_at", ""),
+        "outlet_last_sync_summary": get_outlet_setting("outlet_last_sync_summary", ""),
     }
 
     return render_template(
@@ -344,5 +346,35 @@ def view_spreadsheet():
         logger.warning("Não foi possível carregar o CSV do Outlet: %s", e)
         flash("Arquivo de planilha oficial do Outlet não encontrado no momento.", "warning")
         return redirect(url_for("outlet.admin_outlet"))
+
+
+@outlet_bp.route("/api/cron/outlet-sync", methods=["GET", "POST"])
+def cron_sync_outlet():
+    """
+    Endpoint executado automaticamente a cada hora via Vercel Cron (0 * * * *).
+    Executa a mesma rotina de sincronização do botão 'Sync CSV',
+    atualizando estoques e preços sem resetar o banco de dados.
+    """
+    try:
+        from services.outlet_service import sync_outlet_from_csv
+        result = sync_outlet_from_csv()
+        logger.info("[Vercel Cron Outlet] Sincronização horária executada com sucesso: %s", result)
+        audit(
+            "cron_sync_outlet",
+            f"Sincronização automática horária do Outlet: {result.get('synced_count', 0)} modelos, estoque {result.get('total_stock', 0)}"
+        )
+        return jsonify({
+            "status": "success",
+            "message": "Outlet sincronizado com sucesso",
+            "synced_count": result.get("synced_count", 0),
+            "total_stock": result.get("total_stock", 0)
+        }), 200
+    except Exception as e:
+        logger.exception("[Vercel Cron Outlet] Erro na sincronização horária: %s", e)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 
