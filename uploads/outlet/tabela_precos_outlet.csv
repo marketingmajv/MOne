@@ -1,0 +1,72 @@
+Correspondência tabela,Condição,Cor / Banco,Qtd. Disponível,Quantidade Vendida,Preço promoção,Localização,Observação,Promoção 12x (parcela R$),Promoção 18x (parcela R$),Total promoção,Estoque Inicial
+MAX 12,Na caixa,Red,28,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 223.720,00",28
+MAX 12,Na caixa,White,12,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 95.880,00",12
+MAX 12,Na caixa,Blue,3,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 23.970,00",3
+MAX 12,Na caixa,Carbon,1,1,"R$ 8.990,00",GALPÃO MAJ NOVO,Fora da Promoção,"R$ 858,08","R$ 594,10","R$ 8.990,00",2
+MAX 12,Montada,Branca,3,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 23.970,00",3
+MAX 12,Montada,Azul escuro,2,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 15.980,00",2
+MAX 12,Montada,Preta,1,,"R$ 8.900,00",GALPÃO MAJ NOVO,Fora da Promoção,"R$ 849,49","R$ 588,15","R$ 8.900,00",1
+X15 PRO,Montada,Preta,1,,"R$ 8.490,00",GALPÃO MAJ NOVO,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+X15 PRO,Montada,Vermelha,3,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 23.970,00",3
+X15 PRO,Montada,Azul bebê,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+X15 PRO,Montada,Carbono,1,,"R$ 8.990,00",GALPÃO MAJ NOVO,Colocar Amortecedor,"R$ 858,08","R$ 594,10","R$ 8.990,00",1
+X15 PRO,Montada,Verde,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,paralama preto,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+Sport 701 short,Montada,Azul,2,,"R$ 9.490,00",GALPÃO MAJ NOVO,,"R$ 905,80","R$ 627,14","R$ 18.980,00",2
+V20 ULTRA,Na caixa,Banco preto,79,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 513.263,00",79
+V20 ULTRA,Na caixa,Banco marrom,75,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 487.275,00",75
+V20 ULTRA,Montada,Banco preto,3,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 19.491,00",3
+V20 ULTRA,Montada,Banco marrom,2,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 12.994,00",2
+M9 PRO,Na caixa,Banco preto,22,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 142.934,00",22
+M9 PRO,Na caixa,Banco marrom,61,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 396.317,00",61
+M9 PRO,Montada,Banco marrom,1,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+M9 PRO,Montada,Banco preto,2,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 12.994,00",2
+V80 PRO,Na caixa,,25,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 162.425,00",25
+V80 PRO,Montada,,2,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 12.994,00",2
+M50 PRO,Montada,,1,,"R$ 7.197,00",GALPÃO MAJ NOVO,,"R$ 686,94","R$ 475,61","R$ 7.197,00",1
+RIDE ON,Na caixa,Laranja,40,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 219.880,00",40
+RIDE ON,Na caixa,Branca,4,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 21.988,00",4
+RIDE ON,Na caixa,Cinza,15,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 82.455,00",15
+RIDE ON,Montada,Laranja,2,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 10.994,00",2
+RIDE ON,Montada,Branca,1,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 5.497,00",1
+RIDE ON,Montada,Cinza,1,,"R$ 5.497,00",GALPÃO MAJ NOVO,,"R$ 524,68","R$ 363,27","R$ 5.497,00",1
+NOVA,Na caixa,Silver Black,6,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 47.940,00",6
+NOVA,Montada,Silver Black,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+FLOW ONE,Na caixa,Blue Grey,3,,"R$ 8.490,00",GALPÃO MAJ NOVO,,"R$ 810,35","R$ 561,06","R$ 25.470,00",3
+FLOW ONE,Montada,Branca,1,,"R$ 8.490,00",GALPÃO MAJ NOVO,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+FLOW ONE,Montada,Azul,1,,"R$ 8.490,00",GALPÃO MAJ NOVO,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+CLASSIC 1000,Na caixa,White Red,2,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 12.994,00",2
+CLASSIC 1000,Montada,Cinza,1,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+CLASSIC 1000,Montada,Azul,1,,"R$ 6.497,00",GALPÃO MAJ NOVO,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+DB-ZERO,Na caixa,Silver Black,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+DB-ZERO,Montada,Silver Black,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+RZ-110,Montada,Azul,1,,"R$ 7.990,00",GALPÃO MAJ NOVO,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+VITTORIA,Montada,Branca,1,,"R$ 8.490,00",GALPÃO MAJ NOVO,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+MAX 12,Montada,Vermelha,1,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+MAX 12,Montada,Branca,2,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 15.980,00",2
+X15 PRO,Montada,Azul Inglaterra,1,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+X15 PRO,Montada,Verde claro,1,,"R$ 7.490,00",GALPÃO M-ONE,,"R$ 714,90","R$ 494,97","R$ 7.490,00",1
+V8 MINI,Montada,Rosa,1,,"R$ 4.990,00",GALPÃO M-ONE,,"R$ 476,28","R$ 329,76","R$ 4.990,00",1
+V8 MINI,Montada,Preta,1,,"R$ 4.990,00",GALPÃO M-ONE,,"R$ 476,28","R$ 329,76","R$ 4.990,00",1
+V8 MINI,Montada,Cinza,1,,"R$ 4.990,00",GALPÃO M-ONE,,"R$ 476,28","R$ 329,76","R$ 4.990,00",1
+V8 MINI,Montada,Preta,1,,"R$ 4.990,00",GALPÃO M-ONE,,"R$ 476,28","R$ 329,76","R$ 4.990,00",1
+V20 ULTRA,Montada,Preta / Banco preto,1,,"R$ 6.497,00",GALPÃO M-ONE,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+V20 ULTRA,Montada,Preta / Banco marrom,1,,"R$ 6.497,00",GALPÃO M-ONE,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+M50 PRO,Montada,,1,,"R$ 7.197,00",GALPÃO M-ONE,,"R$ 686,94","R$ 475,61","R$ 7.197,00",1
+M9 PRO,Montada,Banco marrom,1,,"R$ 6.497,00",GALPÃO M-ONE,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+Q8,Montada,,1,,"R$ 5.990,00",GALPÃO M-ONE,,"R$ 571,73","R$ 395,85","R$ 5.990,00",1
+MANTIS,Montada,A confirmar,1,,"R$ 7.490,00",GALPÃO M-ONE,,"R$ 714,90","R$ 494,97","R$ 7.490,00",1
+NOVA,Montada,Branca,1,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+NOVA,Montada,Cinza,1,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 7.990,00",1
+JM 125,Montada,Vermelha,1,,"R$ 12.000,00",GALPÃO M-ONE,,"R$ 1.145,37","R$ 793,02","R$ 12.000,00",1
+JM 125,Montada,Cinza,1,,"R$ 12.000,00",GALPÃO M-ONE,,"R$ 1.145,37","R$ 793,02","R$ 12.000,00",1
+RIDE ON,Montada,Laranja,3,,"R$ 5.497,00",GALPÃO M-ONE,,"R$ 524,68","R$ 363,27","R$ 16.491,00",3
+FLOW ONE,Montada,Branca,2,,"R$ 8.490,00",GALPÃO M-ONE,,"R$ 810,35","R$ 561,06","R$ 16.980,00",2
+FLOW ONE,Montada,Creme,1,,"R$ 8.490,00",GALPÃO M-ONE,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+FLOW ONE,Montada,Cinza claro,1,,"R$ 8.490,00",GALPÃO M-ONE,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+FLOW ONE,Montada,Cinza escuro,1,,"R$ 8.490,00",GALPÃO M-ONE,,"R$ 810,35","R$ 561,06","R$ 8.490,00",1
+CLASSIC 1000,Montada,Creme / Para-lama vermelho,1,,"R$ 6.497,00",GALPÃO M-ONE,,"R$ 620,12","R$ 429,35","R$ 6.497,00",1
+RZ-110,Montada,Branca,2,,"R$ 7.990,00",GALPÃO M-ONE,,"R$ 762,63","R$ 528,02","R$ 15.980,00",2
+JM 125,Na caixa,,11,,"R$ 12.000,00",GALPÃO M-ONE,,"R$ 1.145,37","R$ 793,02","R$ 132.000,00",11
+MANTIS,Na caixa,A confirmar,2,,"R$ 7.490,00",GALPÃO MAJ NOVO,,"R$ 714,90","R$ 494,97","R$ 14.980,00",2
+MANTIS,Montada,A confirmar,2,,"R$ 7.490,00",GALPÃO MAJ NOVO,,"R$ 714,90","R$ 494,97","R$ 14.980,00",2
+,,,460,,,,,,,"R$ 3.138.276,00",461

@@ -53,11 +53,13 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         else:
             try:
                 url = "https://raw.githubusercontent.com/marketingmajv/MOne/main/uploads/outlet/tabela_precos_outlet.csv"
-                with urllib.request.urlopen(url, timeout=10) as resp:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (M-One-Sync)"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
                     raw_text = resp.read().decode("utf-8-sig")
             except Exception as e:
-                logger.error("Falha ao buscar CSV do GitHub: %s", e)
-                raise FileNotFoundError("Planilha CSV do Outlet não encontrada localmente nem remotamente.")
+                logger.error("Falha ao buscar CSV do GitHub (%s): %s", url, e)
+                raise FileNotFoundError(f"Planilha CSV do Outlet não encontrada no disco ({csv_file}) nem no GitHub: {e}")
+
 
     reader = csv.DictReader(io.StringIO(raw_text))
     model_groups: Dict[str, Dict[str, Any]] = {}
