@@ -84,3 +84,29 @@ Você deve combater ativamente o inchaço e a formação de monólitos de códig
 - **Pausa Proativa**: Ao realizar alterações ou adicionar novas funcionalidades em arquivos que ultrapassem 500 linhas (especialmente o `app.py`), a IA deve pausar e propor a extração cirúrgica de rotas em Blueprints modulares (`routes/`).
 - **Watcher em Segundo Plano**: O projeto conta com o agente de monitoração `scripts/monolith_watcher.py` (ou `scripts/monolith-watcher.js`), que alerta no terminal e via notificações nativas do sistema operacional sempre que um arquivo exceder o limite.
 
+---
+
+## Pendências e Roadmap de Arquitetura
+
+### 📌 Padronização Global de Fontes de Dados e Automação 24/7 (Padrão Frete + Outlet)
+- **Diretriz**: Replicar a arquitetura da aba **Fontes de Dados** (presente no módulo de Fretes `/freight`) combinada com o **Painel Executivo e Motor de Automação 24/7** (desenvolvido no Outlet MAJ `/admin/outlet`) para todas as demais sessões operacionais do app.
+- **Componentes Obrigatórios do Padrão em Cada Sessão**:
+  1. **Gestão de Fontes de Dados**: Cadastro e mapeamento transparente de origens (Google Sheets, CSV/XLSX, APIs externas, ERP Bling, webhooks).
+  2. **Central de Automação & Sincronização**:
+     - Painel visual expansível/recolhível com Alpine.js, sem sobrecarregar a tela principal.
+     - Botão de atalho rápido no cabeçalho superior (`⚡ Automação 24/7`).
+     - Badges de monitoramento: Status de execução, periodicidade (horária/diária), carimbo da última sincronização e resumo numérico de registros afetados.
+     - Botão de disparo manual instantâneo (`⚡ Sincronizar Agora`).
+     - Acessos diretos para visualização da planilha/origem e visão consolidada.
+  3. **Regra Inegociável Anti-Reset**:
+     - A rotina de sincronização **NUNCA DEVE RESETAR** o banco de dados. Fotos, mídias cadastradas, campos manuais, chassis vinculados e status operacionais devem ser preservados integralmente.
+  4. **Engenharia Modular (Anti-Monólito)**:
+     - Lógica de sincronização desacoplada em serviços especializados (`services/*_sync_service.py`), mantendo arquivos abaixo de 500 linhas.
+     - Endpoints limpos para gatilho manual e chamadas externas (`/cron/<modulo>-sync`).
+- **Módulos no Escopo de Implementação**:
+  - `[ ]` **Estoque & Chassis (`/stock`)**: Sincronização automatizada de lotes de contêineres, Galpão MAJ, Galpão COLVIX e Bling ERP.
+  - `[ ]` **Importações (`/imports`)**: Automação das faturas China (PI/CI), Despesas Brasil, contratos de câmbio e status de navios.
+  - `[ ]` **Produtos & Catálogo (`/products` / `/atacado`)**: Sincronização de catálogo B2B, pesos cubados, dimensões e dados técnicos.
+  - `[ ]` **Vendas (`/sales`)**: Sincronização contínua de pedidos Bling, notas fiscais emitidas e status de faturamento.
+  - `[ ]` **Fiscal & Precificação (`/fiscal/pricing`)**: Sincronização de regras tributárias, MVAs e alíquotas interestaduais.
+
