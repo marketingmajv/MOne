@@ -253,13 +253,47 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261007_v5"></script>
+<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261007_v5"></script>
+<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261007_v5"></script>
+
 <script>
   window.productsCatalog = {{ products|tojson }};
   window.DEFAULT_FREIGHT_CEP = "{{ default_cep }}";
   window.FREIGHT_CALCULATE_URL = "{{ url_for('freight_calculate') }}";
   window.ACTIVE_FREIGHT_TAB = "{{ active_tab }}";
+
+  // Implementação inline global soberana para garantir funcionamento imediato mesmo com cache do navegador
+  window.switchFreightTab = function(tabName) {
+    const validTabs = ['simulator', 'carriers', 'quotes', 'data-sources'];
+    if (!validTabs.includes(tabName)) tabName = 'simulator';
+
+    validTabs.forEach(function(t) {
+      const btn = document.getElementById('freightTabBtn-' + t);
+      const pane = document.getElementById('freightPane-' + t);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+      if (pane) {
+        if (t === tabName) pane.style.display = 'block';
+        else pane.style.display = 'none';
+      }
+    });
+
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabName);
+      window.history.replaceState({}, '', url);
+    } catch (e) {}
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const targetTab = params.get('tab') || window.ACTIVE_FREIGHT_TAB;
+    if (targetTab && ['simulator', 'carriers', 'quotes', 'data-sources'].includes(targetTab)) {
+      window.switchFreightTab(targetTab);
+    }
+  });
 </script>
-<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20260922_v1"></script>
-<script src="{{ url_for('static', filename='js/freight.js') }}?v=20260922_v1"></script>
-<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20260922_v1"></script>
 {% endblock %}
