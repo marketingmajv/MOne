@@ -22,7 +22,7 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/outlet-sync",
+      "path": "/cron/outlet-sync",
       "schedule": "0 * * * *"
     }
   ],

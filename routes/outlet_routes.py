@@ -348,6 +348,8 @@ def view_spreadsheet():
         return redirect(url_for("outlet.admin_outlet"))
 
 
+@outlet_bp.route("/cron/outlet-sync", methods=["GET", "POST"])
+@outlet_bp.route("/admin/outlet/cron-sync", methods=["GET", "POST"])
 @outlet_bp.route("/api/cron/outlet-sync", methods=["GET", "POST"])
 def cron_sync_outlet():
     """
