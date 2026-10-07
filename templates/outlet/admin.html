@@ -25,18 +25,8 @@
 {% block content %}
 <div x-data="outletAdmin()" style="width: 100%; max-width: 100%; box-sizing: border-box;">
 
-  <!-- Barra Informativa de Sync Automático Horário -->
-  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; background: rgba(0, 229, 153, 0.05); border: 1px solid rgba(0, 229, 153, 0.2); border-radius: 10px; padding: 10px 16px; margin-bottom: 20px; font-size: 0.82rem;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00e599; box-shadow: 0 0 8px #00e599;"></span>
-      <span><strong>Sincronização Automática:</strong> Ativa a cada 1 hora na nuvem (Vercel Cron). Atualiza estoques e preços mantendo as fotos e o histórico intactos.</span>
-    </div>
-    {% if settings.outlet_last_sync_at %}
-    <div style="color: var(--muted); font-size: 0.78rem;">
-      Último sync: <strong style="color: var(--text);">{{ settings.outlet_last_sync_at }}</strong> ({{ settings.outlet_last_sync_summary }})
-    </div>
-    {% endif %}
-  </div>
+  <!-- Painel Executivo de Automação e Sincronização Horária -->
+  {% include 'outlet/automation_panel.html' %}
 
   <!-- Métricas Rápidas (Grid no padrão M-One) -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
