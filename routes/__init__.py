@@ -29,6 +29,7 @@ from routes.data_sources_routes import data_sources_bp
 from routes.outlet_routes import outlet_bp
 from routes.atacado_routes import atacado_bp
 from routes.fiscal_pricing_routes import fiscal_pricing_bp
+from routes.freight_data_source_routes import freight_data_source_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -36,6 +37,7 @@ ALL_BLUEPRINTS = [
     sales_bp,
     stock_bp,
     freight_bp,
+    freight_data_source_bp,
     finance_bp,
     webhook_bp,
     product_bp,

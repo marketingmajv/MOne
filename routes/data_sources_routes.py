@@ -16,6 +16,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from database import db
 from routes.helpers import audit, current_user, login_required, roles_required
 from routes.product_routes import parse_products_rows
+from services.freight_data_source_service import sync_products_sheets
 from services.mpay_sheets_service import get_mpay_setting, set_mpay_setting
 
 logger = logging.getLogger(__name__)
@@ -106,70 +107,10 @@ def sync_source(key: str):
     sheets_url = source.get("sheets_url") or ""
 
     if key == "products_catalog":
-        # Sincronização do Catálogo de Produtos
-        if not sheets_url:
-            flash("Configure a URL do Google Sheets antes de sincronizar.", "warning")
-            return redirect(url_for("data_sources.data_sources_hub"))
-
-        export_url = sheets_url
-        if "docs.google.com/spreadsheets" in export_url and "/export" not in export_url:
-            export_url = export_url.split("/edit")[0].rstrip("/") + "/export?format=csv"
-            gid = None
-            if "#gid=" in sheets_url:
-                gid = sheets_url.split("#gid=")[1].split("&")[0]
-            elif "gid=" in sheets_url:
-                gid = sheets_url.split("gid=")[1].split("&")[0]
-            if gid:
-                export_url += f"&gid={gid}"
-
         try:
-            req = urllib.request.Request(export_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                csv_text = resp.read().decode("utf-8-sig", errors="replace")
-                parsed_rows = parse_products_rows(text_content=csv_text)
-
-            created_count, updated_count = 0, 0
             with db() as conn:
-                for r in parsed_rows:
-                    existing = None
-                    if r.get("sku"):
-                        existing = conn.execute("SELECT id FROM products WHERE lower(sku)=lower(%s)", (r["sku"],)).fetchone()
-                    if not existing and r.get("name"):
-                        existing = conn.execute("SELECT id FROM products WHERE lower(name)=lower(%s)", (r["name"],)).fetchone()
-
-                    if existing:
-                        conn.execute(
-                            """UPDATE products SET name=%s, sku=COALESCE(%s, sku), category=COALESCE(%s, category),
-                               fob_price_usd=%s, aliquota_rate=%s, unit_cost=%s, wholesale_price=%s, retail_price=%s,
-                               installment_12x=%s, installment_18x=%s, promo_eligible=%s WHERE id=%s""",
-                            (r["name"], r.get("sku"), r.get("category"), r.get("fob_price_usd", 0), r.get("aliquota_rate", 0),
-                             r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0),
-                             r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
-                        )
-                        updated_count += 1
-                    else:
-                        conn.execute(
-                            """INSERT INTO products (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
-                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                            (r["name"], r.get("sku"), r.get("category"), r.get("fob_price_usd", 0), r.get("aliquota_rate", 0),
-                             r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0),
-                             r.get("installment_18x", 0), r["promo_eligible"])
-                        )
-                        created_count += 1
-
-                total_synced = created_count + updated_count
-                msg = f"{total_synced} produtos processados ({created_count} novos, {updated_count} atualizados)"
-                conn.execute(
-                    """
-                    UPDATE data_sources
-                    SET last_sync_at = CURRENT_TIMESTAMP, last_sync_status = 'synced',
-                        last_sync_message = %s, records_count = %s
-                    WHERE key = %s
-                    """,
-                    (msg, total_synced, key)
-                )
-                conn.commit()
-
+                res = sync_products_sheets(conn, custom_url=sheets_url)
+                msg = res.get("message", "")
             audit("data_sources.synced", f"key={key}; {msg}")
             flash(f"Sincronização de Produtos concluída com sucesso! {msg}.", "success")
         except Exception as e:

@@ -49,29 +49,32 @@
           </div>
         </div>
 
-        <!-- ZONA MODERNA DE DRAG & DROP -->
+        <!-- ZONA MODERNA DE DRAG & DROP MULTI-ARQUIVOS -->
         <div>
-          <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Arquivo da Tabela *</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] font-semibold text-[var(--text-secondary)]">Documentos da Tabela (Tarifas + Prazos) *</label>
+            <span class="text-[10px] text-[var(--brand-blue)] font-medium">✨ Suporta PDF + Excel juntos</span>
+          </div>
           <div class="relative border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-blue)] rounded-xl p-4 text-center transition-all bg-[var(--surface-subtle)]/40 hover:bg-[var(--surface-subtle)] cursor-pointer" onclick="document.getElementById('table_file_input').click()" id="uploadDropZone">
-            <input type="file" id="table_file_input" name="table_file" required accept=".xlsx,.xls,.pdf,.csv" class="hidden" onchange="updateUploadFilePreview(this)">
+            <input type="file" id="table_file_input" name="table_files" multiple required accept=".xlsx,.xls,.pdf,.csv" class="hidden" onchange="updateUploadFilePreview(this)">
             
             <div id="dropZoneEmptyState" class="space-y-1.5 py-1 text-xs text-[var(--text-secondary)]">
               <div class="flex items-center justify-center text-[var(--brand-blue)]">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <p class="font-medium">Clique ou arraste o PDF ou planilha aqui</p>
-              <p class="text-[10px] text-[var(--text-muted)]">A IA detecta automaticamente a transportadora, tabela e faixas</p>
+              <p class="font-medium">Clique ou arraste um ou mais arquivos aqui</p>
+              <p class="text-[10px] text-[var(--text-muted)]">Envie o PDF de Tarifas junto com a Planilha de Prazos/Cidades para fusão inteligente</p>
             </div>
 
-            <div id="dropZoneSelectedState" class="hidden items-center justify-between text-xs px-2 py-1">
-              <div class="flex items-center gap-2 truncate">
-                <span class="text-emerald-400 font-bold text-base">📊</span>
-                <div class="text-left truncate">
-                  <span id="selectedFileName" class="font-bold text-[var(--text-primary)] block truncate">arquivo.xlsx</span>
-                  <span id="selectedFileSize" class="text-[10px] text-[var(--text-muted)]">0 KB</span>
-                </div>
+            <div id="dropZoneSelectedState" class="hidden flex-col gap-2 text-xs px-1 py-1">
+              <div class="flex items-center justify-between">
+                <span id="selectedFilesCount" class="font-bold text-[var(--text-primary)] flex items-center gap-1.5 text-xs">
+                  <span class="text-emerald-400">📊</span>
+                  <span id="selectedCountText">1 arquivo selecionado</span>
+                </span>
+                <span class="text-[11px] text-[var(--brand-blue)] font-bold shrink-0 underline">Alterar</span>
               </div>
-              <span class="text-[11px] text-[var(--brand-blue)] font-bold ml-2 shrink-0 underline">Trocar</span>
+              <div id="selectedFilesList" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto"></div>
             </div>
           </div>
 
@@ -84,7 +87,7 @@
 
         <button id="btnFreightUploadSubmit" type="submit" class="w-full bg-[var(--brand-blue)] hover:opacity-90 text-white font-bold text-xs py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md">
           <svg class="icon-svg text-amber-300" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span id="btnUploadText">Ler e Auditar Tabela com Gemini IA</span>
+          <span id="btnUploadText">Ler e Auditar Documentos com Gemini IA</span>
         </button>
 
         <div id="uploadStatusNotice" class="hidden text-center text-xs text-[var(--brand-blue)] font-medium space-y-1 pt-1">
@@ -254,30 +257,41 @@ function filterCarriersCards(query) {
 }
 
 function updateUploadFilePreview(input) {
-  const file = input && input.files ? input.files[0] : null;
+  const files = input && input.files ? Array.from(input.files) : [];
   const emptyState = document.getElementById("dropZoneEmptyState");
   const selectedState = document.getElementById("dropZoneSelectedState");
-  const fileNameEl = document.getElementById("selectedFileName");
-  const fileSizeEl = document.getElementById("selectedFileSize");
+  const countTextEl = document.getElementById("selectedCountText");
+  const listEl = document.getElementById("selectedFilesList");
   const dropZone = document.getElementById("uploadDropZone");
 
-  if (file) {
+  if (files.length > 0) {
     if (emptyState) emptyState.classList.add("hidden");
     if (selectedState) {
       selectedState.classList.remove("hidden");
       selectedState.classList.add("flex");
     }
-    if (fileNameEl) fileNameEl.textContent = file.name;
-    if (fileSizeEl) {
-      const sizeKb = file.size / 1024;
-      fileSizeEl.textContent = sizeKb > 1024 
-        ? `${(sizeKb / 1024).toFixed(2)} MB` 
-        : `${sizeKb.toFixed(1)} KB`;
+    if (countTextEl) {
+      countTextEl.textContent = files.length === 1 
+        ? "1 arquivo selecionado" 
+        : `${files.length} arquivos selecionados (Tarifas + Prazos)`;
+    }
+    if (listEl) {
+      listEl.innerHTML = "";
+      files.forEach(f => {
+        const isPdf = f.name.toLowerCase().endsWith(".pdf");
+        const icon = isPdf ? "📄" : "📊";
+        const sizeKb = (f.size / 1024).toFixed(1);
+        const chip = document.createElement("span");
+        chip.className = "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--surface-primary)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] font-medium truncate max-w-full";
+        chip.innerHTML = `<span>${icon}</span><span class="truncate max-w-[180px]">${f.name}</span><span class="text-[9px] text-[var(--text-muted)] shrink-0">(${sizeKb} KB)</span>`;
+        listEl.appendChild(chip);
+      });
     }
     if (dropZone) dropZone.classList.add("border-[var(--brand-blue)]", "bg-[var(--surface-subtle)]");
     
-    // Dispara auto-inspeção imediata por IA
-    autoInspectFreightFile(file);
+    // Dispara auto-inspeção imediata por IA com o primeiro arquivo representativo
+    const primaryFile = files.find(f => f.name.toLowerCase().endsWith(".pdf")) || files[0];
+    autoInspectFreightFile(primaryFile);
   } else {
     if (emptyState) emptyState.classList.remove("hidden");
     if (selectedState) {

@@ -457,7 +457,7 @@ window.exportFreightPDF = exportFreightPDF;
  * Controle de Abas M-One: Simulador, Transportadoras e Histórico de Cotações
  */
 function switchFreightTab(tabName) {
-  const tabs = ['simulator', 'carriers', 'quotes'];
+  const tabs = ['simulator', 'carriers', 'quotes', 'data-sources'];
   if (!tabs.includes(tabName)) tabName = 'simulator';
 
   tabs.forEach(t => {
@@ -491,7 +491,7 @@ window.switchFreightTab = switchFreightTab;
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const tabFromUrl = params.get('tab') || window.ACTIVE_FREIGHT_TAB;
-  if (tabFromUrl && ['simulator', 'carriers', 'quotes'].includes(tabFromUrl)) {
+  if (tabFromUrl && ['simulator', 'carriers', 'quotes', 'data-sources'].includes(tabFromUrl)) {
     switchFreightTab(tabFromUrl);
   }
 });

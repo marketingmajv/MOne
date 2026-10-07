@@ -8,6 +8,7 @@ from __future__ import annotations
 import csv
 import io
 import os
+import re
 import unicodedata
 import urllib.request
 
@@ -56,35 +57,24 @@ def calc_product_pricing(fob, aliq, cost, retail, inst12, inst18):
 
 def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"):
     rows = []
-    all_rows = []
-    if text_content:
-        text = text_content
-        sample = text[:2048]
-        try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
-        except Exception:
-            dialect = csv.excel
-            dialect.delimiter = ";"
-        reader = csv.reader(io.StringIO(text), dialect)
-        all_rows = list(reader)
-    elif data_bytes:
+    text = text_content
+    if not text and data_bytes:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "csv"
         if ext == "xlsx":
             if load_workbook is None:
                 raise ValueError("Suporte a XLSX indisponível. Instale openpyxl.")
             wb = load_workbook(io.BytesIO(data_bytes), read_only=True, data_only=True)
-            ws = wb.active
-            all_rows = [[cell for cell in row] for row in ws.iter_rows(values_only=True)]
+            all_rows = [[cell for cell in row] for row in wb.active.iter_rows(values_only=True)]
         else:
             text = data_bytes.decode("utf-8-sig", errors="replace")
-            sample = text[:2048]
-            try:
-                dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
-            except Exception:
-                dialect = csv.excel
-                dialect.delimiter = ";"
-            reader = csv.reader(io.StringIO(text), dialect)
-            all_rows = list(reader)
+
+    if text:
+        try:
+            dialect = csv.Sniffer().sniff(text[:2048], delimiters=",;\t")
+        except Exception:
+            dialect = csv.excel
+            dialect.delimiter = ";"
+        all_rows = list(csv.reader(io.StringIO(text), dialect))
 
     if not all_rows:
         return []
@@ -108,6 +98,8 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
     i_inst_12x = idx(["12x varejo", "12x", "12x (parcela)", "parcela 12x", "12x varejo (parcela)"])
     i_inst_18x = idx(["18x varejo", "18x", "18x (parcela)", "parcela 18x", "18x varejo (parcela)"])
     i_promo = idx(["promo", "promo_eligible", "elegivel", "promocional"])
+    i_peso = idx(["peso embalado", "peso", "weight", "weight_kg", "peso (kg)"])
+    i_dims = idx(["dimensoes centimetros lxaxc", "dimensões centimetros lxaxc", "dimensoes lxaxc", "dimensões lxaxc", "dimensoes", "dimensões", "medidas"])
 
     if i_name is None and i_sku is None:
         raise ValueError("A planilha precisa conter ao menos a coluna 'PRODUTO', 'MODELO' ou 'SKU'.")
@@ -143,6 +135,14 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
         promo_val = str(raw[i_promo] or "").strip().lower() if i_promo is not None and i_promo < len(raw) else "1"
         promo_eligible = True if promo_val in ["1", "true", "sim", "s", "elegivel", "yes"] else False
 
+        peso_raw = str(raw[i_peso] or "").strip().lower().replace("kg", "").replace(",", ".") if i_peso is not None and i_peso < len(raw) else ""
+        weight_kg = parse_float(peso_raw) if peso_raw else None
+        dims_raw = str(raw[i_dims] or "").strip().lower() if i_dims is not None and i_dims < len(raw) else ""
+        m_dims = re.match(r"(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)", dims_raw)
+        width_cm = float(m_dims.group(1).replace(",", ".")) if m_dims else None
+        height_cm = float(m_dims.group(2).replace(",", ".")) if m_dims else None
+        length_cm = float(m_dims.group(3).replace(",", ".")) if m_dims else None
+
         if name or sku:
             rows.append({
                 "name": clean_product_name(name) if name else sku,
@@ -155,7 +155,11 @@ def parse_products_rows(data_bytes=None, text_content=None, filename="sheet.csv"
                 "retail_price": retail_price,
                 "installment_12x": installment_12x,
                 "installment_18x": installment_18x,
-                "promo_eligible": promo_eligible
+                "promo_eligible": promo_eligible,
+                "weight_kg": weight_kg,
+                "length_cm": length_cm,
+                "width_cm": width_cm,
+                "height_cm": height_cm,
             })
     return rows
 
@@ -320,15 +324,24 @@ def import_products():
             if existing:
                 conn.execute(
                     """UPDATE products SET name=%s, sku=COALESCE(%s, sku), category=COALESCE(%s, category),
-                       fob_price_usd=%s, aliquota_rate=%s, unit_cost=%s, wholesale_price=%s, retail_price=%s, installment_12x=%s, installment_18x=%s, promo_eligible=%s WHERE id=%s""",
-                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"], existing["id"])
+                       fob_price_usd=%s, aliquota_rate=%s, unit_cost=%s, wholesale_price=%s, retail_price=%s,
+                       installment_12x=%s, installment_18x=%s, promo_eligible=%s,
+                       weight_kg=COALESCE(%s, weight_kg), length_cm=COALESCE(%s, length_cm),
+                       width_cm=COALESCE(%s, width_cm), height_cm=COALESCE(%s, height_cm) WHERE id=%s""",
+                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0),
+                     r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0),
+                     r.get("installment_18x", 0), r["promo_eligible"], r.get("weight_kg"), r.get("length_cm"),
+                     r.get("width_cm"), r.get("height_cm"), existing["id"])
                 )
                 updated_count += 1
             else:
                 conn.execute(
-                    """INSERT INTO products (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0), r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0), r.get("installment_18x", 0), r["promo_eligible"])
+                    """INSERT INTO products (name, sku, category, fob_price_usd, aliquota_rate, unit_cost, wholesale_price, retail_price, installment_12x, installment_18x, promo_eligible, weight_kg, length_cm, width_cm, height_cm)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                    (r["name"], r["sku"], r["category"], r.get("fob_price_usd", 0), r.get("aliquota_rate", 0),
+                     r["unit_cost"], r["wholesale_price"], r["retail_price"], r.get("installment_12x", 0),
+                     r.get("installment_18x", 0), r["promo_eligible"], r.get("weight_kg"), r.get("length_cm"),
+                     r.get("width_cm"), r.get("height_cm"))
                 )
                 created_count += 1
         conn.commit()

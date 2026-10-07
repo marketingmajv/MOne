@@ -16,6 +16,10 @@ from werkzeug.utils import secure_filename
 import freight_service
 from database import db
 from routes.helpers import ROLE_LABELS, UPLOAD_DIR, audit, current_user, login_required, roles_required
+from services.freight_data_source_service import (
+    get_products_data_source,
+    get_products_with_specs,
+)
 from services.freight_parser_service import clean_int, clean_numeric, parse_freight_table_unified
 
 freight_bp = Blueprint("freight", __name__)
@@ -29,36 +33,8 @@ def freight():
     with db() as conn:
         freight_service.ensure_freight_tables(conn)
 
-        cur_p = conn.execute("SELECT id, name, wholesale_price, retail_price FROM products ORDER BY name ASC")
-        products_raw = cur_p.fetchall()
-        products = []
-        for p in products_raw:
-            w_price = float(p.get("wholesale_price") or 0)
-            p_name_upper = (p.get("name") or "").upper()
-            if "MINI" in p_name_upper:
-                w_kg, l_cm, wi_cm, h_cm = 55.0, 150.0, 60.0, 95.0
-            elif "V20" in p_name_upper or "RIDE" in p_name_upper or "M9" in p_name_upper or "M50" in p_name_upper or "V80" in p_name_upper:
-                w_kg, l_cm, wi_cm, h_cm = 65.0, 165.0, 65.0, 100.0
-            elif "CLASSIC" in p_name_upper or "FLOW" in p_name_upper or "DB" in p_name_upper or "M2" in p_name_upper or "RZ" in p_name_upper:
-                w_kg, l_cm, wi_cm, h_cm = 80.0, 175.0, 70.0, 105.0
-            elif "MAX" in p_name_upper or "NOVA" in p_name_upper or "VITTORIA" in p_name_upper or "SPORT" in p_name_upper:
-                w_kg, l_cm, wi_cm, h_cm = 88.0, 180.0, 70.0, 110.0
-            elif "GP" in p_name_upper:
-                w_kg, l_cm, wi_cm, h_cm = 95.0, 185.0, 75.0, 115.0
-            else:
-                w_kg, l_cm, wi_cm, h_cm = 85.0, 180.0, 70.0, 110.0
-
-            products.append({
-                "id": p.get("id"),
-                "name": p.get("name"),
-                "wholesale_price": w_price,
-                "one_third_wholesale": round(w_price / 3.0, 2),
-                "retail_price": float(p.get("retail_price") or 0),
-                "weight_kg": w_kg,
-                "length_cm": l_cm,
-                "width_cm": wi_cm,
-                "height_cm": h_cm
-            })
+        products_source = get_products_data_source(conn)
+        products, specs_stats = get_products_with_specs(conn)
 
         sql_t = """
             SELECT 
@@ -103,9 +79,10 @@ def freight():
                ORDER BY fq.id DESC LIMIT 50"""
         )
         archived_quotes = cur_fq.fetchall()
+        products_specs = products
 
     active_tab = request.args.get("tab", "simulator").strip().lower()
-    if active_tab not in ["simulator", "carriers", "quotes"]:
+    if active_tab not in ["simulator", "carriers", "quotes", "data-sources"]:
         active_tab = "simulator"
 
     return render_template(
@@ -116,8 +93,11 @@ def freight():
         tables=tables,
         carriers=carriers,
         archived_quotes=archived_quotes,
+        products_source=products_source,
+        products_specs=products_specs,
+        specs_stats=specs_stats,
         active_tab=active_tab,
-        default_cep=freight_service.DEFAULT_MAJ_CEP
+        default_cep=freight_service.DEFAULT_MAJ_CEP,
     )
 
 
@@ -254,69 +234,73 @@ def freight_table_inspect():
 @login_required
 @roles_required("admin", "support")
 def freight_table_upload():
-    """Upload e parsing resiliente (Nativo + IA) de novas tabelas de frete."""
+    """Upload e parsing resiliente (Nativo + IA) de novas tabelas de frete (suporta múltiplos arquivos)."""
     try:
         carrier_name = request.form.get("carrier_name", "").strip()
         table_name = request.form.get("table_name", "").strip()
-        file = request.files.get("table_file")
 
-        if not file or not file.filename:
-            flash("⚠️ Selecione um arquivo de tabela (.xlsx, .pdf, .csv).", "warning")
+        # Aceita múltiplos arquivos ("table_files" ou "table_file")
+        files = request.files.getlist("table_files")
+        if not files or not any(f.filename for f in files):
+            single_file = request.files.get("table_file")
+            files = [single_file] if single_file and single_file.filename else []
+
+        if not files or not any(f.filename for f in files):
+            flash("⚠️ Selecione ao menos um arquivo de tabela (.xlsx, .pdf, .csv).", "warning")
             return redirect(url_for("freight", tab="carriers"))
 
-        filename = secure_filename(file.filename)
-        file_path = UPLOAD_DIR / f"freight_{int(time.time())}_{filename}"
-        file.save(file_path)
+        saved_paths = []
+        for f in files:
+            if f and f.filename:
+                fn = secure_filename(f.filename)
+                fp = UPLOAD_DIR / f"freight_{int(time.time())}_{fn}"
+                f.save(fp)
+                saved_paths.append(fp)
 
-        # Auto-detecção de IA se o usuário não preencheu os campos
-        if not carrier_name or not table_name:
-            from services.freight_parser_service import inspect_freight_document_metadata
-            meta = inspect_freight_document_metadata(str(file_path), filename)
-            carrier_name = carrier_name or meta.get("carrier_name") or Path(filename).stem
-            table_name = table_name or meta.get("table_name") or f"Tabela {Path(filename).stem}"
+        from services.freight_multi_doc_service import process_multi_document_upload
+        res = process_multi_document_upload(saved_paths, carrier_name, table_name)
 
-        parsed_result = parse_freight_table_unified(file_path, carrier_name)
-        rates = parsed_result.get("rates", []) if isinstance(parsed_result, dict) else (parsed_result if isinstance(parsed_result, list) else [])
-        issues = parsed_result.get("issues", []) if isinstance(parsed_result, dict) else []
-        is_valid = parsed_result.get("is_valid", len(rates) > 0) if isinstance(parsed_result, dict) else (len(rates) > 0)
-
-        if not is_valid or len(rates) == 0:
-            issues_msg = " • ".join(issues) if issues else "Não foram identificadas faixas tarifárias válidas no arquivo."
-            flash(f"⚠️ Pendências na transportadora '{carrier_name}': {issues_msg}.", "warning")
+        if not res.get("is_valid") or not res.get("rates"):
+            issues_msg = " • ".join(res.get("issues", [])) or "Não foram identificadas faixas tarifárias válidas nos documentos."
+            flash(f"⚠️ Pendências na transportadora: {issues_msg}", "warning")
             return redirect(url_for("freight", tab="carriers"))
+
+        c_name = res.get("carrier_name") or carrier_name or "Transportadora"
+        t_name = res.get("table_name") or table_name or "Tabela de Frete"
+        rates = res.get("rates", [])
+        meta = res.get("metadata", {})
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
-
-            cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) = LOWER(%s)", (carrier_name,))
+            cur_c = conn.execute("SELECT id FROM carriers WHERE LOWER(name) = LOWER(%s)", (c_name,))
             row_c = cur_c.fetchone()
             if row_c:
                 carrier_id = row_c["id"]
+                if meta.get("trade_name"):
+                    conn.execute("UPDATE carriers SET trade_name = COALESCE(trade_name, %s) WHERE id = %s", (meta["trade_name"], carrier_id))
             else:
-                cur_ins = conn.execute("INSERT INTO carriers (name) VALUES (%s) RETURNING id", (carrier_name,))
+                cur_ins = conn.execute("INSERT INTO carriers (name, trade_name) VALUES (%s, %s) RETURNING id", (c_name, meta.get("trade_name", c_name)))
                 carrier_id = cur_ins.fetchone()["id"]
 
-            report_text = " • ".join(issues) if issues else "Tabela importada e auditada com 100% de conformidade operacional."
+            file_urls_str = ", ".join([p.name for p in saved_paths])
             cur_t = conn.execute(
-                "INSERT INTO freight_tables (carrier_id, name, file_url, notes) VALUES (%s, %s, %s, %s) RETURNING id",
-                (carrier_id, table_name, str(file_path.name), report_text)
+                """INSERT INTO freight_tables 
+                   (carrier_id, name, file_url, notes, origin_city, cubing_factor, tas_fixed) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (carrier_id, t_name, file_urls_str, meta.get("notes", ""), 
+                 meta.get("origin_city", "Cariacica/ES"), meta.get("cubing_factor", 300.0), meta.get("tas_fixed", 0.0))
             )
             table_id = cur_t.fetchone()["id"]
 
-            inserted_count = 0
-            for r in rates:
-                conn.execute(
-                    """
-                    INSERT INTO freight_rates (
-                        table_id, uf, city, cep_start, cep_end, 
-                        min_weight, max_weight, fixed_price, weight_price_per_kg, 
-                        ad_valorem_percent, gris_percent, min_freight_price, delivery_days, notes
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        table_id,
-                        r.get("uf"),
-                        r.get("city"),
+            chunk_size = 150
+            for i in range(0, len(rates), chunk_size):
+                chunk = rates[i:i + chunk_size]
+                placeholders = []
+                params = []
+                for r in chunk:
+                    placeholders.append("(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                    params.extend([
+                        table_id, r.get("uf"), r.get("city"),
                         freight_service.clean_cep(r.get("cep_start")),
                         freight_service.clean_cep(r.get("cep_end")),
                         clean_numeric(r.get("min_weight"), 0.0),
@@ -328,12 +312,16 @@ def freight_table_upload():
                         clean_numeric(r.get("min_freight_price"), 0.0),
                         clean_int(r.get("delivery_days"), 1),
                         str(r.get("notes") or "")[:250]
-                    )
+                    ])
+                conn.execute(
+                    f"""INSERT INTO freight_rates 
+                        (table_id, uf, city, cep_start, cep_end, min_weight, max_weight, fixed_price, weight_price_per_kg, ad_valorem_percent, gris_percent, min_freight_price, delivery_days, notes) 
+                        VALUES {', '.join(placeholders)}""",
+                    tuple(params)
                 )
-                inserted_count += 1
 
-        obs_msg = f" (Auditoria: {' • '.join(issues)})" if issues else ""
-        flash(f"✅ Tabela '{table_name}' da transportadora '{carrier_name}' importada com sucesso! ({inserted_count} regras cadastradas){obs_msg}", "success")
+        mapped_txt = f", {meta.get('mapped_cities')} cidades com prazo" if meta.get("mapped_cities") else ""
+        flash(f"✅ Tabela '{t_name}' da transportadora '{c_name}' importada com sucesso! ({len(rates)} regras{mapped_txt})", "success")
     except Exception as e:
         flash(f"Erro ao importar tabela de frete: {str(e)}", "danger")
 

@@ -28,6 +28,10 @@
       <span>📋 Histórico de Cotações & Envios</span>
       <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(0, 229, 153, 0.15); color: var(--accent); border-color: rgba(0, 229, 153, 0.3);">{{ archived_quotes|length }}</span>
     </button>
+    <button type="button" class="tab-btn {% if active_tab == 'data-sources' %}active{% endif %}" id="freightTabBtn-data-sources" onclick="switchFreightTab('data-sources')">
+      <span>📑 Fonte de Dados dos Produtos</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">{{ specs_stats.total_products if specs_stats is defined else products|length }}</span>
+    </button>
   </div>
 
   <!-- ABA 1: SIMULADOR DE FRETE (SPLIT SCREEN: FORMULÁRIO + FEED DE RESULTADOS) -->
@@ -234,6 +238,11 @@
   <!-- ABA 3: HISTÓRICO DE COTAÇÕES & STATUS DE ENVIO -->
   <div id="freightPane-quotes" class="freight-tab-pane" style="{% if active_tab != 'quotes' %}display: none;{% endif %}">
     {% include 'freight_quotes_tab.html' %}
+  </div>
+
+  <!-- ABA 4: FONTE DE DADOS DOS PRODUTOS & DIMENSÕES -->
+  <div id="freightPane-data-sources" class="freight-tab-pane" style="{% if active_tab != 'data-sources' %}display: none;{% endif %}">
+    {% include 'freight_data_sources_tab.html' %}
   </div>
 
   <!-- MODAIS EXECUTIVOS SOBREPOSTOS -->

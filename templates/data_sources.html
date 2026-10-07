@@ -113,9 +113,32 @@
         </div>
 
         <!-- Description -->
-        <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.45;margin:0 0 16px 0;">
+        <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.45;margin:0 0 12px 0;">
           {{ s.description }}
         </p>
+
+        <!-- Sessões Impactadas / Onde é usada -->
+        <div style="margin-bottom:16px;padding:8px 10px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:8px;">
+          <small style="display:block;font-size:0.72rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">
+            📌 Sessões do Sistema Abastecidas:
+          </small>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            {% if s.key == 'products_catalog' %}
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25);">🚚 Frete & Cotações</span>
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid rgba(168,85,247,0.25);">🛍️ Catálogo de Produtos</span>
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">💼 Vendas & Atacado</span>
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">📊 Preço Fiscal</span>
+            {% elif s.key == 'freight_tariffs' %}
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25);">🚚 Frete & Simulador</span>
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">🏢 Transportadoras</span>
+            {% elif s.key == 'mpay_receipts' %}
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);">💳 M-Pay</span>
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);">💰 Conciliação Financeira</span>
+            {% else %}
+              <span class="badge" style="font-size:0.72rem;padding:2px 7px;background:rgba(255,255,255,0.05);color:var(--text-muted);">Sessões Gerais</span>
+            {% endif %}
+          </div>
+        </div>
 
         <!-- Stats & Sync Info Box -->
         <div style="background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:18px;">

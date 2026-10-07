@@ -1,0 +1,435 @@
+<!-- Sub-Aba 4: Fonte de Dados dos Produtos & Dimensões (templates/freight_data_sources_tab.html) -->
+<div class="freight-data-sources-view" style="display: flex; flex-direction: column; gap: 20px;">
+
+  <!-- CARD EXECUTIVO: FONTE DE DADOS OFICIAL -->
+  <div class="panel" style="padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 20px;">
+    
+    <!-- Linha Superior Decorativa -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #10b981, #0ea5e9, #6366f1);"></div>
+
+    <!-- CABEÇALHO DO CARD: TÍTULO, STATUS E BOTÃO DE SINCRONIZAÇÃO -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+      
+      <!-- Lado Esquerdo: Ícone, Nome e Status -->
+      <div style="display: flex; align-items: center; gap: 14px; min-width: 280px; flex: 1;">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+          📑
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text); letter-spacing: -0.3px;">
+              Catálogo Oficial de Veículos & Dimensões
+            </h3>
+            {% if products_source.last_sync_status == 'synced' %}
+              <span class="badge" style="font-size: 0.74rem; font-weight: 600; padding: 3px 9px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 99px; display: inline-flex; align-items: center; gap: 5px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                Conectado & Sincronizado
+              </span>
+            {% elif products_source.last_sync_status == 'error' %}
+              <span class="badge" style="font-size: 0.74rem; font-weight: 600; padding: 3px 9px; background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 99px;">
+                🔴 Erro de Sincronização
+              </span>
+            {% else %}
+              <span class="badge" style="font-size: 0.74rem; font-weight: 600; padding: 3px 9px; background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 99px;">
+                🟡 Sincronização Pendente
+              </span>
+            {% endif %}
+          </div>
+          <p style="margin: 3px 0 0 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+            Planilha mestre do Google Sheets que abastece pesos, caixas de embalagem e preços do ecossistema.
+          </p>
+        </div>
+      </div>
+
+      <!-- Lado Direito: Botão Sincronizar com Loading -->
+      <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+          <small style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px;">Última Atualização</small>
+          <span style="font-size: 0.8rem; font-weight: 600; color: var(--text); font-family: monospace;">
+            {% if products_source.last_sync_at %}
+              {{ products_source.last_sync_at.strftime('%d/%m/%Y às %H:%M') if products_source.last_sync_at.strftime is defined else products_source.last_sync_at }}
+            {% else %}
+              Pendente
+            {% endif %}
+          </span>
+        </div>
+
+        <form method="post" action="{{ url_for('freight_data_source.sync_products_data_source') }}" id="formSyncFreightProducts" onsubmit="handleSyncButtonLoading(this)">
+          <button type="submit" id="btnSyncProductsNow" class="btn primary" style="font-size: 0.82rem; font-weight: 700; padding: 10px 18px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25); cursor: pointer; transition: all 0.2s ease;">
+            <svg id="syncIconSvg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            <span id="syncBtnText">⚡ Sincronizar Agora</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- FAIXA DE SESSÕES DO SISTEMA CONECTADAS -->
+    <div style="background: var(--surface-subtle, rgba(0,0,0,0.02)); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+          📌 Módulos Ativos Abastecidos:
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: rgba(14, 165, 233, 0.1); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.25);">
+          🚚 Frete & Cotações
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: rgba(168, 85, 247, 0.1); color: #9333ea; border: 1px solid rgba(168, 85, 247, 0.25);">
+          🛍️ Catálogo de Produtos
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25);">
+          💼 Vendas & Atacado
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 6px; background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25);">
+          📊 Formação Preço Fiscal
+        </span>
+      </div>
+
+      {% if products_source.last_sync_message %}
+        <span style="font-size: 0.74rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
+          <span>✓</span> <strong style="color: var(--text); font-weight: 600;">{{ products_source.last_sync_message }}</strong>
+        </span>
+      {% endif %}
+    </div>
+
+    <!-- LINHA DE URL DO GOOGLE SHEETS COM AÇÕES INTEGRADAS -->
+    <div style="border-top: 1px solid var(--line); padding-top: 16px;">
+      <form method="post" action="{{ url_for('freight_data_source.update_products_sheets_url') }}" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        
+        <div style="flex: 1; min-width: 320px; position: relative; display: flex; align-items: center;">
+          <span style="position: absolute; left: 12px; font-size: 0.8rem; color: var(--text-muted); pointer-events: none;">
+            🔗
+          </span>
+          <input type="url" name="sheets_url" required value="{{ products_source.sheets_url }}" 
+                 placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=..." 
+                 class="form-input" 
+                 style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.78rem; font-family: monospace; border-radius: 10px; height: 38px;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="submit" class="btn secondary sm" style="height: 38px; font-size: 0.78rem; font-weight: 600; padding: 0 14px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Salvar Link</span>
+          </button>
+          
+          <a href="{{ products_source.sheets_url }}" target="_blank" rel="noopener noreferrer" 
+             class="btn secondary sm" style="height: 38px; font-size: 0.78rem; font-weight: 600; padding: 0 14px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; color: var(--primary);">
+            <span>Abrir no Sheets</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+
+  <!-- KPI SUMMARY ROW (4 CARDS HARMONIOSOS) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+    
+    <!-- KPI 1: MODELOS NO BANCO -->
+    <div class="panel" style="padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+        📦
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Modelos Cadastrados</small>
+        <strong style="font-size: 1.45rem; font-weight: 800; color: var(--text); line-height: 1.2; font-family: monospace;">{{ specs_stats.total_products }}</strong>
+        <span style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">Total no M-One</span>
+      </div>
+    </div>
+
+    <!-- KPI 2: MEDIDAS COMPLETAS -->
+    <div class="panel" style="padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+        ✅
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Medidas Completas</small>
+        <strong style="font-size: 1.45rem; font-weight: 800; color: #10b981; line-height: 1.2; font-family: monospace;">{{ specs_stats.complete_specs }}</strong>
+        <span style="display: block; font-size: 0.68rem; color: #10b981; font-weight: 600; margin-top: 2px;">100% prontos para frete</span>
+      </div>
+    </div>
+
+    <!-- KPI 3: PENDENTES DE MEDIDA -->
+    <div class="panel" style="padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+        {% if specs_stats.missing_specs > 0 %}⚠️{% else %}🛡️{% endif %}
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Pendentes de Caixa</small>
+        <strong style="font-size: 1.45rem; font-weight: 800; color: {% if specs_stats.missing_specs > 0 %}#f59e0b{% else %}var(--text){% endif %}; line-height: 1.2; font-family: monospace;">
+          {{ specs_stats.missing_specs }}
+        </strong>
+        <span style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+          {% if specs_stats.missing_specs == 0 %}Nenhuma pendência{% else %}Requer atenção{% endif %}
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI 4: FATOR DE CUBAGEM -->
+    <div class="panel" style="padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+        ⚖️
+      </div>
+      <div>
+        <small style="color: var(--text-muted); display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Densidade Logística</small>
+        <strong style="font-size: 1.45rem; font-weight: 800; color: var(--text); line-height: 1.2; font-family: monospace;">300 <span style="font-size: 0.85rem; font-weight: 600;">kg/m³</span></strong>
+        <span style="display: block; font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">Padrão transportadoras</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABELA DE MODELOS & DIMENSÕES DE CAIXA -->
+  <div class="panel" style="padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: 0 4px 18px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 16px;">
+    
+    <!-- Topo da Tabela: Título + Busca -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+      <div>
+        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">
+          Especificações Físicas das Embalagens & Cubagem
+        </h4>
+        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+          Valores oficiais utilizados automaticamente no cálculo de frete para encontrar o melhor preço.
+        </p>
+      </div>
+
+      <!-- Barra de Filtros & Busca -->
+      <div style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 320px;">
+        <div style="position: relative; width: 100%;">
+          <span style="position: absolute; left: 12px; top: 9px; font-size: 0.85rem; color: var(--text-muted); pointer-events: none;">
+            🔍
+          </span>
+          <input type="text" id="filterProductSpecsInput" onkeyup="filterProductSpecsTable()" 
+                 placeholder="Filtrar modelo de veículo..." 
+                 class="form-input" 
+                 style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.8rem; border-radius: 10px; height: 36px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela Responsiva com Scroll Suave -->
+    <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 12px;">
+      <table class="table" id="productSpecsTable" style="width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0;">
+        <thead>
+          <tr style="background: var(--surface-subtle, rgba(0,0,0,0.03)); border-bottom: 1px solid var(--line); text-align: left;">
+            <th style="padding: 12px 16px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px;">Modelo do Veículo</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Peso Real</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Dimensões (L × A × C)</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Volume Real</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Peso Cubado (@ 300)</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: right;">Atacado</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: right;">1/3 Atacado (Seguro)</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Status</th>
+            <th style="padding: 12px 16px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Ações</th>
+          </tr>
+        </thead>
+        <tbody style="divide-y: 1px solid var(--line);">
+          {% for p in products_specs %}
+          <tr class="product-spec-row" data-name="{{ p.name|lower }}" style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;">
+            
+            <!-- Modelo -->
+            <td style="padding: 12px 16px; font-weight: 700; color: var(--text);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1rem; opacity: 0.85;">🛵</span>
+                <span>{{ p.name }}</span>
+              </div>
+            </td>
+
+            <!-- Peso Real -->
+            <td style="padding: 12px 14px; text-align: center; font-family: monospace; font-weight: 700; color: var(--text);">
+              {% if p.weight_kg > 0 %}
+                {{ "%.1f"|format(p.weight_kg) }} kg
+              {% else %}
+                <span style="color: #f59e0b; font-weight: normal;">--</span>
+              {% endif %}
+            </td>
+
+            <!-- Dimensões LxAxC -->
+            <td style="padding: 12px 14px; text-align: center; font-family: monospace;">
+              {% if p.width_cm > 0 and p.height_cm > 0 and p.length_cm > 0 %}
+                <span style="color: var(--text); font-weight: 600;">{{ "%.0f"|format(p.width_cm) }} × {{ "%.0f"|format(p.height_cm) }} × {{ "%.0f"|format(p.length_cm) }}</span>
+                <span style="color: var(--text-muted); font-size: 0.72rem;"> cm</span>
+              {% else %}
+                <span style="color: #f59e0b; font-size: 0.76rem;">Não informado</span>
+              {% endif %}
+            </td>
+
+            <!-- Volume Real m3 -->
+            <td style="padding: 12px 14px; text-align: center; font-family: monospace; font-weight: 700; color: #0284c7;">
+              {% if p.volume_m3 > 0 %}
+                {{ "%.3f"|format(p.volume_m3) }} m³
+              {% else %}
+                <span style="color: var(--text-muted); font-weight: normal;">--</span>
+              {% endif %}
+            </td>
+
+            <!-- Peso Cubado -->
+            <td style="padding: 12px 14px; text-align: center; font-family: monospace; font-weight: 700; color: #9333ea;">
+              {% if p.cubed_kg > 0 %}
+                {{ "%.1f"|format(p.cubed_kg) }} kg
+              {% else %}
+                <span style="color: var(--text-muted); font-weight: normal;">--</span>
+              {% endif %}
+            </td>
+
+            <!-- Atacado -->
+            <td style="padding: 12px 14px; text-align: right; font-family: monospace; color: var(--text-muted);">
+              R$ {{ "%.2f"|format(p.wholesale_price)|replace('.', ',') }}
+            </td>
+
+            <!-- 1/3 Atacado -->
+            <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: #10b981;">
+              R$ {{ "%.2f"|format(p.one_third_wholesale)|replace('.', ',') }}
+            </td>
+
+            <!-- Status -->
+            <td style="padding: 12px 14px; text-align: center;">
+              {% if p.has_specs %}
+                <span class="badge" style="font-size: 0.72rem; padding: 2px 8px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 99px;">
+                  🟢 Pronto
+                </span>
+              {% else %}
+                <span class="badge" style="font-size: 0.72rem; padding: 2px 8px; background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 99px;">
+                  ⚠️ Sem Medidas
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Ações -->
+            <td style="padding: 12px 16px; text-align: center;">
+              <button type="button" class="btn secondary sm" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;"
+                      onclick="openEditProductSpecModal({{ p.id }}, '{{ p.name }}', {{ p.weight_kg }}, {{ p.length_cm }}, {{ p.width_cm }}, {{ p.height_cm }}, {{ p.wholesale_price }})"
+                      title="Editar medidas e preço deste modelo">
+                ✏️ <span>Ajustar</span>
+              </button>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- MODAL DE AJUSTE MANUAL RÁPIDO DE MEDIDAS -->
+<div id="modalEditProductSpec" class="modal" style="display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); padding: 16px;">
+  <div style="background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 440px; padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 18px; margin: auto;">
+    
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); pb: 12px; padding-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text);" id="modalEditProductTitle">Ajustar Medidas da Caixa</h3>
+      <button type="button" onclick="closeEditProductSpecModal()" style="background: transparent; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer;">×</button>
+    </div>
+
+    <form method="post" id="formEditProductSpec" action="" style="display: flex; flex-direction: column; gap: 14px;">
+      <input type="hidden" name="product_id" id="modalEditProductId">
+
+      <div>
+        <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Preço de Atacado (R$)</label>
+        <input type="number" step="0.01" name="wholesale_price" id="modalEditProductWholesale" required
+               class="form-input" style="width: 100%; font-family: monospace; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Peso Embalado (kg)</label>
+          <input type="number" step="0.1" name="weight_kg" id="modalEditProductWeight" required
+                 class="form-input" style="width: 100%; font-family: monospace; text-align: center; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Comprimento (cm)</label>
+          <input type="number" step="0.1" name="length_cm" id="modalEditProductLength" required
+                 class="form-input" style="width: 100%; font-family: monospace; text-align: center; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Largura (cm)</label>
+          <input type="number" step="0.1" name="width_cm" id="modalEditProductWidth" required
+                 class="form-input" style="width: 100%; font-family: monospace; text-align: center; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Altura (cm)</label>
+          <input type="number" step="0.1" name="height_cm" id="modalEditProductHeight" required
+                 class="form-input" style="width: 100%; font-family: monospace; text-align: center; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--line); padding-top: 14px; display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+        <button type="button" onclick="closeEditProductSpecModal()" class="btn secondary sm" style="border-radius: 8px;">Cancelar</button>
+        <button type="submit" class="btn primary sm" style="border-radius: 8px; font-weight: 700;">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function filterProductSpecsTable() {
+    const input = document.getElementById("filterProductSpecsInput");
+    const filter = (input ? input.value : "").toLowerCase().trim();
+    const rows = document.querySelectorAll("#productSpecsTable .product-spec-row");
+    rows.forEach(r => {
+      const name = r.getAttribute("data-name") || "";
+      if (name.includes(filter)) {
+        r.style.display = "";
+      } else {
+        r.style.display = "none";
+      }
+    });
+  }
+
+  function handleSyncButtonLoading(form) {
+    const btn = document.getElementById("btnSyncProductsNow");
+    const icon = document.getElementById("syncIconSvg");
+    const text = document.getElementById("syncBtnText");
+    if (btn) {
+      btn.style.opacity = "0.75";
+      btn.style.pointerEvents = "none";
+      if (text) text.textContent = "Sincronizando Planilha...";
+      if (icon) {
+        icon.style.animation = "spin 1s linear infinite";
+      }
+    }
+  }
+
+  function openEditProductSpecModal(id, name, weight, length, width, height, wholesale) {
+    document.getElementById("modalEditProductId").value = id;
+    document.getElementById("modalEditProductTitle").textContent = "Ajustar Medidas: " + name;
+    document.getElementById("modalEditProductWeight").value = weight || "";
+    document.getElementById("modalEditProductLength").value = length || "";
+    document.getElementById("modalEditProductWidth").value = width || "";
+    document.getElementById("modalEditProductHeight").value = height || "";
+    document.getElementById("modalEditProductWholesale").value = wholesale || "";
+    document.getElementById("formEditProductSpec").action = `/freight/products/${id}/quick-edit`;
+    
+    const modal = document.getElementById("modalEditProductSpec");
+    if (modal) {
+      modal.style.display = "flex";
+    }
+  }
+
+  function closeEditProductSpecModal() {
+    const modal = document.getElementById("modalEditProductSpec");
+    if (modal) {
+      modal.style.display = "none";
+    }
+  }
+</script>
+
+<style>
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  #productSpecsTable .product-spec-row:hover {
+    background: var(--surface-subtle, rgba(0,0,0,0.02)) !important;
+  }
+</style>
