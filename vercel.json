@@ -20,12 +20,6 @@
       }
     }
   ],
-  "crons": [
-    {
-      "path": "/cron/outlet-sync",
-      "schedule": "0 * * * *"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
