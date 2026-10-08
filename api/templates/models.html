@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MAJ Mobilidade — Modelos & Engenharia</title>
+  
+  <!-- Fontes de Alta Performance Estilo Gogoro Pulse / Apple / Tesla -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=Michroma&family=Space+Grotesk:wght@500;700;800&family=Syncopate:wght@700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  <!-- Critical Inline CSS (Prevents FOUC and guarantees white studio navbar) -->
+  <style>
+    html, body { background-color: #ffffff !important; color: #111114 !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    .showroom-header { position: fixed; top: 0; left: 0; width: 100%; height: 64px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); z-index: 1000; display: flex; align-items: center; }
+    .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+    .brand-maj-logo { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #111114 !important; text-decoration: none !important; text-transform: lowercase; }
+    .header-main-nav { display: flex; align-items: center; gap: 24px; }
+    .header-main-nav .nav-link { font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #55585d !important; text-decoration: none !important; transition: color 0.2s; }
+    .header-main-nav .nav-link:hover, .header-main-nav .nav-link.active { color: #111114 !important; }
+    .model-subnav-bar { position: fixed; top: 64px; left: 0; width: 100%; height: 56px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.06); z-index: 999; display: flex; align-items: center; }
+    .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; gap: 20px; }
+    .subnav-category-pills { display: flex; gap: 6px; border-right: 1px solid rgba(0, 0, 0, 0.08); padding-right: 16px; flex-shrink: 0; }
+    .cat-filter-btn { background: transparent; color: #666; border: 1px solid transparent; padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .cat-filter-btn.active { background: #f0f0f3; color: #111114; }
+    .subnav-models-track { display: flex !important; flex-direction: row !important; gap: 8px; overflow-x: auto; white-space: nowrap; flex: 1; padding: 4px 0; scrollbar-width: none; }
+    .subnav-models-track::-webkit-scrollbar { display: none; }
+    .model-pill-item { display: inline-flex !important; align-items: center; gap: 8px; background: transparent; border: 1px solid transparent; border-radius: 100px; padding: 6px 14px; color: #55585d; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; }
+    .model-pill-item:hover { color: #111114; background: rgba(0, 0, 0, 0.04); }
+    .model-pill-item.active { background: #111114 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); }
+    .model-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #999; }
+    .model-pill-item.active .model-pill-dot { background: #ffffff; }
+    main.showroom-viewport { margin-top: 120px; }
+    .hero-studio-stage { position: relative; min-height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 36%, #ffffff 0%, #f6f6f9 55%, #eaeaf0 100%); overflow: hidden; padding: 20px 20px 60px; }
+    .hero-giant-backdrop { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; z-index: 1; pointer-events: none; user-select: none; }
+    .hero-giant-title { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: clamp(84px, 17vw, 250px); font-weight: 800; letter-spacing: 0.08em; line-height: 0.82; text-transform: uppercase; color: #111114; white-space: nowrap; display: inline-block; }
+    .hero-vehicle-center { position: relative; z-index: 2; width: 100%; max-width: 980px; display: flex; justify-content: center; align-items: flex-end; margin-top: 30px; }
+    .hero-vehicle-cutout { position: relative; z-index: 3; max-width: 90%; max-height: 58vh; object-fit: contain; }
+    .hero-contact-shadow { display: none; }
+  </style>
+
+  <link rel="stylesheet" href="/static/css/showroom.css?v={{ cache_id or 1 }}">
+</head>
+<body class="showroom-body">
+
+  <!-- 1. Header Global Estilo Gogoro / Apple (Clean White Navbar) -->
+  <header class="showroom-header">
+    <div class="header-inner">
+      <a href="/modelos" class="brand-maj-logo">maj</a>
+      
+      <nav class="header-main-nav">
+        <a href="#hero" class="nav-link active">MODELOS</a>
+        <a href="#telemetry" class="nav-link">PROPULSÃO</a>
+        <a href="#cockpit" class="nav-link">COCKPIT</a>
+        <a href="#techDrawer" class="nav-link">ENGENHARIA</a>
+        <a href="#gallery" class="nav-link">GALERIA</a>
+        <a href="#comparison" class="nav-link">COMPARAR</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="/admin/models" class="btn-admin-order" style="font-size: 11px; text-decoration: none; color: #555; background: #f0f0f4; border: 1px solid #d5d5dc; padding: 4px 10px; border-radius: 100px; font-weight: 600;">
+          ⚙️ Ordenar Produtos
+        </a>
+        <div class="sync-indicator">
+          <span class="sync-dot"></span>
+          <span>SHEETS 24/7 SINCRONIZADO</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. Barra de Seleção de Modelos Estilo Apple / Gogoro (Subnav Elegante) -->
+  <nav class="model-subnav-bar">
+    <div class="subnav-inner">
+      <div class="subnav-category-pills">
+        <button class="cat-filter-btn active" onclick="filterCategory('all')">TODOS (13)</button>
+        <button class="cat-filter-btn" onclick="filterCategory('scooter')">SCOOTERS (8)</button>
+        <button class="cat-filter-btn" onclick="filterCategory('bike')">BIKES (5)</button>
+      </div>
+      <div class="subnav-models-track" id="modelsCarouselNav">
+        <!-- Pílulas dos modelos geradas via showroom.js -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- 3. Viewport Principal -->
+  <main class="showroom-viewport">
+    
+    <!-- Hero Estúdio Branco Cinematográfico (Idêntico ao Gogoro Pulse) -->
+    <section class="hero-studio-stage" id="hero">
+      
+      <!-- Letreiro Gigante Arquitetural de Fundo (Atrás do Veículo) -->
+      <div class="hero-giant-backdrop" aria-hidden="true">
+        <h1 class="hero-giant-title" id="heroModelTitle">MAX 12</h1>
+      </div>
+
+      <!-- Palco Central com Cutout Transparente e Sombra de Contato de Piso -->
+      <div class="hero-vehicle-center">
+        <!-- Recorte transparente do veículo com sombras naturais integradas -->
+        <img src="/public/images/models/cutouts/max-12.png?v=3" alt="MAX 12" class="hero-vehicle-cutout" id="heroVehicleImg">
+      </div>
+
+      <!-- Tagline Técnica de Canto Inferior Esquerdo (Exatamente como no Gogoro Pulse) -->
+      <div class="hero-bottom-tagline">
+        <div class="tagline-eyebrow" id="heroCategoryLabel">MAJ ELECTRIC SCOOTER</div>
+        <div class="tagline-headline" id="heroTaglineHeadline">THE HYPER URBAN SCOOTER.</div>
+        <div class="tagline-desc" id="heroModelDesc">
+          Potência pura, design agressivo e estabilidade superior para dominar o tráfego urbano.
+        </div>
+      </div>
+
+      <!-- Faixa Minimalista de Telemetria Canto Inferior Direito -->
+      <div class="hero-bottom-specs">
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetryPower">1.000W</span>
+          <span class="hero-spec-lbl">POTÊNCIA NOMINAL</span>
+        </div>
+        <div class="hero-spec-sep"></div>
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetrySpeed">32 km/h</span>
+          <span class="hero-spec-lbl">VELOCIDADE MÁXIMA</span>
+        </div>
+        <div class="hero-spec-sep"></div>
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetryRange">35 km</span>
+          <span class="hero-spec-lbl">AUTONOMIA REAL</span>
+        </div>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div class="hero-scroll-cue">
+        <span class="scroll-arrow">↓</span>
+      </div>
+
+    </section>
+
+    <!-- 4. Scrollytelling Telemetry Section -->
+    <section class="section-telemetry-scroller" id="telemetry">
+      <div class="telemetry-grid-wrapper">
+        <div class="telemetry-big-card">
+          <div class="telemetry-eyebrow">PROPULSÃO ELÉTRICA</div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricPower">1.000</span><span class="telemetry-huge-unit">W</span>
+          </div>
+          <p class="telemetry-card-desc">
+            Motor elétrico de tração contínua calibrado para torque imediato e eficiência térmica avançada em qualquer relevo.
+          </p>
+        </div>
+
+        <div class="telemetry-big-card">
+          <div class="telemetry-eyebrow">VELOCIDADE HOMOLOGADA</div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricSpeed">32</span><span class="telemetry-huge-unit">KM/H</span>
+          </div>
+          <p class="telemetry-card-desc">
+            Velocidade máxima com limitador inteligente em conformidade com as normas brasileiras de mobilidade urbana.
+          </p>
+        </div>
+
+        <div class="telemetry-big-card">
+          <div class="telemetry-eyebrow">AUTONOMIA CONSERVADORA</div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricRange">35</span><span class="telemetry-huge-unit">KM</span>
+          </div>
+          <p class="telemetry-card-desc" id="bigMetricRangeSub">
+            Autonomia conservadora estimada para rotas urbanas do dia a dia (até 50 km em condições ideais).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Cockpit Panorâmico 10.25" Interativo -->
+    <section class="section-cockpit-sim" id="cockpit">
+      <div class="hero-category-label">TELEMETRIA & INTERFACE</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">Cockpit Digital Inteligente</h2>
+      <p style="color: var(--text-muted); max-width: 600px; margin: 12px auto 0;">
+        Painel de instrumentos digital multifuncional com telemetria ativa, indicador de carga e seletor de modos.
+      </p>
+
+      <div class="cockpit-bezel-frame">
+        <div class="cockpit-screen-ui" id="cockpitScreenUI">
+          <div class="hud-top-row">
+            <span id="hudModelName">MAJ MAX 12 MAJ</span>
+            <span style="color: var(--maj-lime); font-weight: 700;">SISTEMA OK</span>
+            <span id="hudBatteryInfo">BATERIA: 60V 20Ah</span>
+          </div>
+
+          <div class="hud-center-stage">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <div class="hud-speedometer-val" id="hudSpeedVal">32</div>
+              <div style="font-family: var(--font-telemetry); font-size: 13px; letter-spacing: 2px; color: var(--maj-cyan);">KM / H</div>
+              <div class="hud-mode-pill-active" id="hudModeBadge">MODO SPORT ATIVO</div>
+            </div>
+          </div>
+
+          <div class="hud-top-row" style="border-top: 1px solid rgba(255,255,255,0.08); border-bottom: none; padding-top: 10px; padding-bottom: 0;">
+            <span>ODÔMETRO TOTAL: 0000 KM</span>
+            <span>TEMPERATURA AMBIENTE: 26°C</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cockpit-controls-row">
+        <button class="cockpit-mode-btn active" onclick="setCockpitMode('sport', '32', 'MODO SPORT ATIVO', '#e1ff32')">Modo Sport (32 km/h)</button>
+        <button class="cockpit-mode-btn" onclick="setCockpitMode('eco', '20', 'MODO ECO ATIVO', '#00d7ff')">Modo Eco (20 km/h)</button>
+        <button class="cockpit-mode-btn" onclick="setCockpitMode('touring', '25', 'MODO URBANO', '#28e1a5')">Modo Urbano (25 km/h)</button>
+        <button class="cockpit-mode-btn" onclick="setCockpitMode('standby', '0', 'VEÍCULO PARADO', '#ffffff')">Standby (0 km/h)</button>
+      </div>
+    </section>
+
+    <!-- 6. Expandable Technical Drawer -->
+    <section class="section-drawer-tech">
+      <button class="drawer-toggle-btn" onclick="toggleTechDrawer()">
+        <span>Explorar Ficha Técnica e Engenharia</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div class="drawer-expandable-area" id="techDrawer">
+        <div class="tech-cards-carousel" id="techCardsCarousel">
+          <!-- Cards gerados dinamicamente via showroom.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Galeria de Fotos do Ensaio Oficial com Vinheta Fade-to-Black -->
+    <section class="section-gallery-vignette" id="gallery">
+      <div class="hero-category-label">ENSAIO FOTOGRÁFICO OFICIAL</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 52px); text-transform: uppercase;">Galeria de Detalhes</h2>
+      <p style="color: var(--text-muted); margin-top: 8px;">Fotos reais de estúdio do veículo em alta resolução.</p>
+
+      <div class="gallery-scroller" id="galleryScroller">
+        <!-- Fotos do ensaio geradas dinamicamente via showroom.js -->
+      </div>
+    </section>
+
+    <!-- 8. Matriz Comparativa Interativa -->
+    <section class="section-comparison-matrix" id="comparison">
+      <div class="hero-category-label">ENGENHARIA COMPARADA</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 52px); text-transform: uppercase;">Comparar com Outro Modelo MAJ</h2>
+      <p style="color: var(--text-muted); margin-top: 8px;">Confronte especificações lado a lado com qualquer modelo do catálogo.</p>
+
+      <div style="margin-top: 24px;">
+        <label style="font-size: 13px; color: var(--text-muted); margin-right: 12px;">Selecione o modelo para comparar:</label>
+        <select id="compareModelSelect" style="background: var(--bg-surface-elevated); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 8px; font-family: var(--font-telemetry); font-size: 13px; cursor: pointer;">
+          <!-- Opções geradas via showroom.js -->
+        </select>
+      </div>
+
+      <div class="comparison-table-outer">
+        <table class="comparison-matrix-table">
+          <thead>
+            <tr>
+              <th>Especificação Técnica</th>
+              <th class="active-col" id="compColActiveHeader">Modelo Selecionado</th>
+              <th id="compColSecondHeader">Modelo Comparado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color: var(--text-muted);">Potência Nominal</td>
+              <td id="comp-active-potencia_nominal_w" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-potencia_nominal_w" style="font-weight: 700;">—</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">Velocidade Máxima</td>
+              <td id="comp-active-velocidade_max_kmh" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-velocidade_max_kmh" style="font-weight: 700;">—</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">Autonomia Conservadora</td>
+              <td id="comp-active-autonomia_conservadora_km" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-autonomia_conservadora_km" style="font-weight: 700;">—</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">Carga Máxima Suportada</td>
+              <td id="comp-active-carga_maxima_kg" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-carga_maxima_kg" style="font-weight: 700;">—</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">Peso do Veículo</td>
+              <td id="comp-active-peso_kg" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-peso_kg" style="font-weight: 700;">—</td>
+            </tr>
+            <tr>
+              <td style="color: var(--text-muted);">Sistema de Freios</td>
+              <td id="comp-active-freios" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-freios" style="font-weight: 700;">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="showroom-footer">
+    <p>© 2026 MAJ Mobilidade Urbana & M-One Operating System. Mostruário Oficial de Engenharia.</p>
+  </footer>
+
+  <script src="/static/js/showroom.js?v={{ cache_id or 1 }}"></script>
+</body>
+</html>

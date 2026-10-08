@@ -17,5 +17,6 @@ scratch_*
 .DS_Store
 api/static/img/outlet/
 api/static/images/
+gogoro_*
 
 

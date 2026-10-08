@@ -30,6 +30,7 @@ from routes.outlet_routes import outlet_bp
 from routes.atacado_routes import atacado_bp
 from routes.fiscal_pricing_routes import fiscal_pricing_bp
 from routes.freight_data_source_routes import freight_data_source_bp
+from routes.showroom_routes import showroom_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -59,6 +60,7 @@ ALL_BLUEPRINTS = [
     mpay_bp,
     outlet_bp,
     atacado_bp,
+    showroom_bp,
 ]
 
 

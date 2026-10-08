@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}M-One • Gestão & Ordenação de Modelos{% endblock %}
+{% block page_title %}Gestão & Ordenação de Modelos{% endblock %}
+{% block page_subtitle %}Defina a ordem de exibição e visibilidade dos veículos no mostruário público (/modelos).{% endblock %}
+
+{% block top_actions %}
+  <a href="/modelos" target="_blank" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+    👁️ Ver Mostruário ao Vivo
+  </a>
+  <button type="button" class="btn primary" id="btnSaveOrder" onclick="saveNewOrder()" style="display:inline-flex;align-items:center;gap:6px;">
+    💾 Salvar Nova Ordem
+  </button>
+{% endblock %}
+
+{% block content %}
+<!-- Alerta de Sucesso / Feedback -->
+<div id="saveToast" style="display:none;padding:12px 18px;margin-bottom:18px;border-radius:8px;background:rgba(46,125,50,0.15);border:1px solid #2e7d32;color:var(--text);font-size:13px;font-weight:600;align-items:center;justify-content:space-between;">
+  <span id="saveToastMsg">✅ Ordem dos modelos atualizada com sucesso no mostruário!</span>
+  <button type="button" onclick="document.getElementById('saveToast').style.display='none'" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;">✕</button>
+</div>
+
+<!-- Painel Principal de Ordenação -->
+<div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+  
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <strong style="font-size:16px;color:var(--text);">Catálogo de Veículos MAJ</strong>
+      <span class="badge" style="background:var(--bg);color:var(--text-muted);border:1px solid var(--line);padding:4px 10px;border-radius:100px;font-size:12px;">
+        {{ models|length }} modelos cadastrados
+      </span>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);">
+      💡 Use <strong>▲ Subir</strong> / <strong>▼ Descer</strong>, clique em <strong>🔝 Topo</strong> ou arraste para reorganizar.
+    </div>
+  </div>
+
+  <!-- Lista Reordenável de Modelos (Sem bullets, 100% responsiva) -->
+  <div id="sortableModelsList" style="display:flex;flex-direction:column;gap:10px;">
+    {% for m in models %}
+    <div class="model-sort-item"
+         data-slug="{{ m.slug }}"
+         draggable="true"
+         style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:grab;transition:all 0.15s ease;">
+      
+      <!-- Lado Esquerdo: Grip, Posição, Thumbnail, Nome e Dados -->
+      <div style="display:flex;align-items:center;gap:14px;flex:1;">
+        <span class="drag-handle" style="color:var(--text-muted);font-size:18px;cursor:grab;user-select:none;" title="Arraste para mover">
+          ⋮⋮
+        </span>
+
+        <span class="model-pos-badge" style="font-family:monospace;font-size:13px;font-weight:700;min-width:38px;text-align:center;padding:5px 8px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);">
+          #{{ loop.index }}
+        </span>
+
+        <!-- Thumbnail do Veículo -->
+        <div style="width:52px;height:52px;border-radius:8px;background:var(--card);border:1px solid var(--line);padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          {% if m.cutout_image %}
+          <img src="{{ m.cutout_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+          {% elif m.images and m.images|length > 0 %}
+          <img src="{{ m.images[0] }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+          {% else %}
+          <span style="font-size:10px;color:var(--text-muted);">Sem foto</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <strong style="font-size:15px;color:var(--text);">{{ m.modelo }}</strong>
+            <span class="badge" style="font-size:10px;padding:2px 8px;border-radius:100px;font-weight:600;{% if m.categoria == 'Scooter' %}background:rgba(0,180,216,0.15);color:#0077b6;border:1px solid rgba(0,180,216,0.3);{% else %}background:rgba(255,183,3,0.15);color:#d48b00;border:1px solid rgba(255,183,3,0.3);{% endif %}">
+              {{ m.categoria|upper }}
+            </span>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:3px;font-family:monospace;">
+            Slug: <code>{{ m.slug }}</code>
+            {% if m.metrics and m.metrics.potencia_nominal_w %}
+            • Potência Nominal: <strong style="color:var(--text);">{{ m.metrics.potencia_nominal_w }}W</strong>
+            {% endif %}
+            {% if m.metrics and m.metrics.velocidade_max_kmh %}
+            • Vel: <strong style="color:var(--text);">{{ m.metrics.velocidade_max_kmh }} km/h</strong>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Lado Direito: Botões de Movimentação e Toggle de Ativação -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;gap:4px;">
+          <button type="button" class="btn sm secondary" onclick="moveModelItem(this, -1)" title="Subir uma posição" style="padding:4px 10px;">
+            ▲
+          </button>
+          <button type="button" class="btn sm secondary" onclick="moveModelItem(this, 1)" title="Descer uma posição" style="padding:4px 10px;">
+            ▼
+          </button>
+          <button type="button" class="btn sm secondary" onclick="moveModelToTop(this)" title="Mover direto para 1º lugar" style="padding:4px 10px;font-weight:600;">
+            🔝 Topo
+          </button>
+        </div>
+
+        <!-- Toggle Ativo/Inativo -->
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin:0 0 0 10px;font-size:12px;font-weight:600;">
+          <input type="checkbox" id="status-{{ m.slug }}" {% if m.is_active %}checked{% endif %} onchange="toggleModelActive('{{ m.slug }}', this.checked)" style="width:16px;height:16px;cursor:pointer;">
+          <span id="lbl-status-{{ m.slug }}" style="color:{% if m.is_active %}#2e7d32{% else %}#c62828{% endif %};">
+            {% if m.is_active %}Ativo{% else %}Inativo{% endif %}
+          </span>
+        </label>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Ações no Rodapé do Card -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px;border-top:1px solid var(--line);padding-top:16px;">
+    <button type="button" class="btn secondary" onclick="resetToDefaultOrder()">
+      ↺ Restaurar Ordem Original
+    </button>
+    <button type="button" class="btn primary" onclick="saveNewOrder()" style="font-weight:600;">
+      💾 Salvar Alterações no Mostruário
+    </button>
+  </div>
+
+</div>
+
+<!-- Script Dinâmico de Ordenação & Drag-and-Drop -->
+<script>
+let draggedItem = null;
+
+function initSortable() {
+  const container = document.getElementById('sortableModelsList');
+  const items = container.querySelectorAll('.model-sort-item');
+
+  items.forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      draggedItem = item;
+      item.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.style.opacity = '1';
+      draggedItem = null;
+      updatePositionBadges();
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const bounding = item.getBoundingClientRect();
+      const offset = bounding.y + (bounding.height / 2);
+      if (e.clientY - offset > 0) {
+        item.parentNode.insertBefore(draggedItem, item.nextSibling);
+      } else {
+        item.parentNode.insertBefore(draggedItem, item);
+      }
+    });
+  });
+}
+
+function updatePositionBadges() {
+  const badges = document.querySelectorAll('.model-pos-badge');
+  badges.forEach((b, idx) => {
+    b.textContent = `#${idx + 1}`;
+    if (idx === 0) {
+      b.style.background = 'rgba(46, 125, 50, 0.15)';
+      b.style.borderColor = '#2e7d32';
+      b.style.color = '#2e7d32';
+    } else {
+      b.style.background = 'var(--card)';
+      b.style.borderColor = 'var(--line)';
+      b.style.color = 'var(--text)';
+    }
+  });
+}
+
+function moveModelItem(btn, direction) {
+  const item = btn.closest('.model-sort-item');
+  if (direction === -1 && item.previousElementSibling) {
+    item.parentNode.insertBefore(item, item.previousElementSibling);
+  } else if (direction === 1 && item.nextElementSibling) {
+    item.parentNode.insertBefore(item.nextElementSibling, item);
+  }
+  updatePositionBadges();
+}
+
+function moveModelToTop(btn) {
+  const item = btn.closest('.model-sort-item');
+  const container = document.getElementById('sortableModelsList');
+  if (container.firstElementChild !== item) {
+    container.insertBefore(item, container.firstElementChild);
+    updatePositionBadges();
+  }
+}
+
+async function saveNewOrder() {
+  const container = document.getElementById('sortableModelsList');
+  const items = container.querySelectorAll('.model-sort-item');
+  const order = Array.from(items).map(el => el.getAttribute('data-slug'));
+
+  const btn = document.getElementById('btnSaveOrder');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Salvando...';
+  }
+
+  try {
+    const res = await fetch('/api/models/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: order })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Ordem dos modelos salva com sucesso! O mostruário público já está atualizado.', true);
+    } else {
+      showToast('Erro ao salvar ordem: ' + (data.error || 'Falha no servidor'), false);
+    }
+  } catch (err) {
+    showToast('Erro de conexão: ' + err.message, false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '💾 Salvar Nova Ordem';
+    }
+  }
+}
+
+async function toggleModelActive(slug, isActive) {
+  try {
+    const res = await fetch(`/api/models/${slug}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: isActive })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const lbl = document.getElementById(`lbl-status-${slug}`);
+      if (lbl) {
+        lbl.textContent = isActive ? 'Ativo' : 'Inativo';
+        lbl.style.color = isActive ? '#2e7d32' : '#c62828';
+      }
+      showToast(`Modelo ${slug.toUpperCase()} ${isActive ? 'ativado' : 'inativado'} com sucesso.`, true);
+    }
+  } catch (err) {
+    showToast('Erro ao alterar status: ' + err.message, false);
+  }
+}
+
+async function resetToDefaultOrder() {
+  if (!confirm('Deseja restaurar a ordem original padrão da planilha?')) return;
+  try {
+    const res = await fetch('/api/models/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: [] })
+    });
+    if (res.ok) {
+      window.location.reload();
+    }
+  } catch (err) {
+    showToast('Erro ao resetar: ' + err.message, false);
+  }
+}
+
+function showToast(msg, isSuccess) {
+  const toast = document.getElementById('saveToast');
+  const msgEl = document.getElementById('saveToastMsg');
+  if (!toast || !msgEl) return;
+  toast.style.background = isSuccess ? 'rgba(46,125,50,0.15)' : 'rgba(198,40,40,0.15)';
+  toast.style.borderColor = isSuccess ? '#2e7d32' : '#c62828';
+  msgEl.textContent = (isSuccess ? '✅ ' : '⚠️ ') + msg;
+  toast.style.display = 'flex';
+  setTimeout(() => {
+    toast.style.display = 'none';
+  }, 4000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSortable();
+  updatePositionBadges();
+});
+</script>
+{% endblock %}

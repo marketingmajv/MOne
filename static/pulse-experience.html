@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MAJ Pulse — Hyper Scooter Elétrica | Experiência Imersiva</title>
+  
+  <!-- Fontes de Alta Performance Estilo Gogoro Pulse -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-void: #070709;
+      --bg-surface: #121215;
+      --bg-surface-elevated: #18181e;
+      --bg-glass: rgba(18, 18, 21, 0.75);
+      
+      --maj-cyan: #00d7ff;
+      --maj-blue: #0653ff;
+      --maj-lime: #e1ff32;
+      --maj-gold: #ffb800;
+      
+      --text-pure: #ffffff;
+      --text-muted: #9fa3a9;
+      --text-subtle: #5f6368;
+      
+      --font-display: 'Syne', sans-serif;
+      --font-telemetry: 'Space Grotesk', 'Chakra Petch', monospace;
+      --font-sans: 'Inter', sans-serif;
+      
+      --nav-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-pure);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient WebGL / Flow Canvas */
+    #waveCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    /* Global Header / LocalNav */
+    .local-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--nav-height);
+      background: rgba(7, 7, 9, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .nav-logo-maj {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .nav-badge-pulse {
+      background: linear-gradient(135deg, var(--maj-cyan), var(--maj-blue));
+      color: #000;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--maj-cyan);
+    }
+
+    .nav-cta {
+      background: var(--text-pure);
+      color: #000;
+      padding: 8px 20px;
+      border-radius: 100px;
+      font-weight: 600;
+      font-size: 13px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .nav-cta:hover {
+      background: var(--maj-cyan);
+      box-shadow: 0 0 25px rgba(0, 215, 255, 0.4);
+    }
+
+    /* Main Container */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 1. Hero Section */
+    .section-hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 20px 60px;
+      background: radial-gradient(circle at 50% 40%, rgba(0, 215, 255, 0.08) 0%, rgba(7, 7, 9, 0) 70%);
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-telemetry);
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: var(--maj-cyan);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: "";
+      width: 20px;
+      height: 1px;
+      background: var(--maj-cyan);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(64px, 12vw, 150px);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -2px;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 40%, #5f6368 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 24px;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2.5vw, 24px);
+      font-weight: 300;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 40px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-scooter-stage {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      perspective: 1000px;
+    }
+
+    .hero-scooter-graphic {
+      width: 100%;
+      height: auto;
+      filter: drop-shadow(0 20px 40px rgba(0, 215, 255, 0.25));
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-metrics-pill {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 100px;
+      padding: 8px 24px;
+      gap: 32px;
+      margin-top: 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-metric-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hero-metric-val {
+      font-family: var(--font-telemetry);
+      font-weight: 700;
+      font-size: 20px;
+      color: #fff;
+    }
+
+    .hero-metric-lbl {
+      font-size: 10px;
+      color: var(--text-subtle);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    /* 2. Sticky Telemetry & Scrollytelling */
+    .section-sticky-telemetry {
+      position: relative;
+      height: 250vh; /* Scroll room */
+      background: var(--bg-surface);
+    }
+
+    .sticky-telemetry-viewport {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 80px;
+      overflow: hidden;
+    }
+
+    .telemetry-left {
+      max-width: 500px;
+    }
+
+    .telemetry-headline {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 800;
+      line-height: 1.05;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .telemetry-headline span.accent {
+      color: var(--maj-lime);
+      display: block;
+    }
+
+    .telemetry-desc {
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .telemetry-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .telemetry-metric-box {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid var(--maj-cyan);
+      padding: 24px 32px;
+      border-radius: 0 16px 16px 0;
+      transition: all 0.4s ease;
+    }
+
+    .telemetry-metric-box.active {
+      background: rgba(0, 215, 255, 0.08);
+      border-left-color: var(--maj-lime);
+      transform: translateX(10px);
+    }
+
+    .telemetry-title {
+      font-family: var(--font-telemetry);
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .telemetry-number {
+      font-family: var(--font-telemetry);
+      font-size: clamp(48px, 6vw, 84px);
+      font-weight: 700;
+      line-height: 0.9;
+      color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .telemetry-unit {
+      font-size: 20px;
+      color: var(--maj-cyan);
+      font-weight: 600;
+    }
+
+    /* 3. Cockpit 10.25" iQ Touch HD Simulator */
+    .section-cockpit {
+      padding: 120px 20px;
+      background: var(--bg-void);
+      text-align: center;
+    }
+
+    .section-tag {
+      font-family: var(--font-telemetry);
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--maj-cyan);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 56px);
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .section-subheading {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 600px;
+      margin: 0 auto 50px;
+    }
+
+    .cockpit-frame-outer {
+      position: relative;
+      width: clamp(340px, 85vw, 980px);
+      aspect-ratio: 2.1 / 1;
+      margin: 0 auto;
+      background: #0d0d10;
+      border: 8px solid #25252a;
+      border-radius: 28px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 215, 255, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cockpit-bezel {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+      z-index: 10;
+    }
+
+    .cockpit-screen-content {
+      position: absolute;
+      inset: 0;
+      background: #050608;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 32px;
+      transition: opacity 0.4s ease;
+    }
+
+    /* Screen UI - Top Bar */
+    .hud-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-telemetry);
+      font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+    }
+
+    .hud-status-icons {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .hud-badge-ready {
+      color: var(--maj-lime);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    /* Screen UI - Center Telemetry */
+    .hud-center {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      height: 100%;
+    }
+
+    .hud-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hud-speed-value {
+      font-family: var(--font-telemetry);
+      font-size: clamp(60px, 9vw, 110px);
+      font-weight: 700;
+      line-height: 0.9;
+      color: #fff;
+      text-shadow: 0 0 30px rgba(0, 215, 255, 0.6);
+    }
+
+    .hud-speed-unit {
+      font-family: var(--font-telemetry);
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--maj-cyan);
+    }
+
+    .hud-mode-pill {
+      background: rgba(225, 255, 50, 0.15);
+      border: 1px solid var(--maj-lime);
+      color: var(--maj-lime);
+      font-family: var(--font-telemetry);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-top: 12px;
+    }
+
+    .hud-bottombar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-telemetry);
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+    }
+
+    .cockpit-selectors {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .cockpit-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 100px;
+      font-family: var(--font-telemetry);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .cockpit-btn.active, .cockpit-btn:hover {
+      background: var(--maj-cyan);
+      color: #000;
+      border-color: var(--maj-cyan);
+      box-shadow: 0 0 20px rgba(0, 215, 255, 0.3);
+    }
+
+    /* 4. Adaptive Matrix Lighting Demonstrator */
+    .section-lighting {
+      padding: 100px 20px;
+      background: var(--bg-surface);
+      text-align: center;
+    }
+
+    .matrix-demo-box {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--bg-surface-elevated);
+      border-radius: 24px;
+      padding: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .matrix-light-stage {
+      position: relative;
+      height: 240px;
+      background: radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.08) 0%, rgba(0,0,0,0.8) 70%);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .matrix-beams-container {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      height: 100%;
+      padding-bottom: 20px;
+    }
+
+    .matrix-beam {
+      width: 18px;
+      height: 120px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(0, 215, 255, 0.8) 100%);
+      border-radius: 100px;
+      transition: height 0.2s, background 0.2s;
+    }
+
+    .matrix-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 14px;
+    }
+
+    .slider-input {
+      flex: 1;
+      accent-color: var(--maj-cyan);
+    }
+
+    /* 5. Color Customizer Studio */
+    .section-colors {
+      padding: 100px 20px;
+      background: var(--bg-void);
+      text-align: center;
+    }
+
+    .colors-stage {
+      position: relative;
+      max-width: 700px;
+      margin: 0 auto 32px;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .color-vehicle-display {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .color-halo {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      transition: background 0.6s ease;
+    }
+
+    .color-swatches {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .color-swatch-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .color-swatch-circle {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    .color-swatch-btn.active {
+      border-color: var(--maj-cyan);
+      box-shadow: 0 0 15px rgba(0, 215, 255, 0.25);
+    }
+
+    /* 6. Expandable Technical Drawer & Horizontal Snap Cards */
+    .section-drawer-demo {
+      padding: 80px 20px;
+      background: var(--bg-surface);
+      text-align: center;
+    }
+
+    .drawer-trigger-btn {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 100px;
+      padding: 14px 32px;
+      font-family: var(--font-telemetry);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s;
+    }
+
+    .drawer-trigger-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--maj-cyan);
+    }
+
+    .drawer-content-box {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 40px;
+    }
+
+    .drawer-content-box.open {
+      max-height: 800px;
+    }
+
+    .cards-horizontal-snap {
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding: 20px 40px 40px;
+      scrollbar-width: none;
+    }
+
+    .cards-horizontal-snap::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tech-card {
+      flex: 0 0 clamp(280px, 70vw, 420px);
+      scroll-snap-align: center;
+      background: var(--bg-surface-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tech-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(0, 215, 255, 0.1);
+      color: var(--maj-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    .tech-card-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .tech-card-body {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* 7. Specs Comparison Grid */
+    .section-specs {
+      padding: 120px 20px;
+      background: var(--bg-void);
+      text-align: center;
+    }
+
+    .specs-table-wrapper {
+      max-width: 1000px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+
+    .specs-grid {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .specs-grid th, .specs-grid td {
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .specs-grid th {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .specs-grid th.highlight {
+      color: var(--maj-cyan);
+      border-bottom: 2px solid var(--maj-cyan);
+    }
+
+    .specs-grid td.feature-name {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px 40px;
+      background: #040405;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-subtle);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Wave/Flow Canvas -->
+  <canvas id="waveCanvas"></canvas>
+
+  <!-- Local Navigation Bar -->
+  <nav class="local-nav">
+    <a href="#" class="nav-brand">
+      <span class="nav-logo-maj">MAJ</span>
+      <span class="nav-badge-pulse">PULSE</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#performance">Performance</a></li>
+      <li><a href="#cockpit">Cockpit HD</a></li>
+      <li><a href="#lighting">Faróis Matrix</a></li>
+      <li><a href="#colors">Cores</a></li>
+      <li><a href="#specs">Especificações</a></li>
+    </ul>
+    <a href="#specs" class="nav-cta">Reservar Lote</a>
+  </nav>
+
+  <main>
+    <!-- 1. Hero Section -->
+    <section class="section-hero">
+      <div class="hero-eyebrow">A Primeira Hyper Scooter Elétrica do Brasil</div>
+      <h1 class="hero-title">MAJ PULSE</h1>
+      <p class="hero-subtitle">
+        Projetada com um único propósito: acelerar seus batimentos com tecnologia de ponta, 
+        motor central HyperDrive e cockpit digital panorâmico.
+      </p>
+
+      <div class="hero-scooter-stage">
+        <svg class="hero-scooter-graphic" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Ilustração Vetorial Estilizada Cyberpunk MAJ Pulse -->
+          <path d="M120 280 C120 220 180 180 250 180 L420 180 L520 100 L580 100 L620 180 L700 240 C730 260 740 300 700 330 C660 360 580 340 560 300 L240 300 C220 340 140 340 120 280 Z" fill="#16181f" stroke="#00d7ff" stroke-width="2"/>
+          <!-- Roda Dianteira -->
+          <circle cx="640" cy="290" r="60" stroke="#00d7ff" stroke-width="4" fill="#0c0d12"/>
+          <circle cx="640" cy="290" r="40" stroke="rgba(0, 215, 255, 0.4)" stroke-dasharray="4 4" stroke-width="2"/>
+          <circle cx="640" cy="290" r="16" fill="#00d7ff"/>
+          <!-- Roda Traseira -->
+          <circle cx="200" cy="290" r="60" stroke="#00d7ff" stroke-width="4" fill="#0c0d12"/>
+          <circle cx="200" cy="290" r="40" stroke="rgba(0, 215, 255, 0.4)" stroke-dasharray="4 4" stroke-width="2"/>
+          <circle cx="200" cy="290" r="16" fill="#00d7ff"/>
+          <!-- Linhas de Luz LED & Carenagem -->
+          <path d="M540 120 L660 210" stroke="#00d7ff" stroke-width="4" stroke-linecap="round"/>
+          <path d="M420 180 L480 260" stroke="#e1ff32" stroke-width="3"/>
+          <text x="320" y="240" fill="#ffffff" font-family="'Syne', sans-serif" font-weight="800" font-size="28" letter-spacing="4">MAJ HYPER</text>
+        </svg>
+      </div>
+
+      <div class="hero-metrics-pill">
+        <div class="hero-metric-item">
+          <span class="hero-metric-val">3.05s</span>
+          <span class="hero-metric-lbl">0-50 km/h</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-val">9.0 kW</span>
+          <span class="hero-metric-lbl">Potência Pico</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-val">11.000</span>
+          <span class="hero-metric-lbl">RPM Máx</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Sticky Telemetry & Scrollytelling Section -->
+    <section class="section-sticky-telemetry" id="performance">
+      <div class="sticky-telemetry-viewport">
+        <div class="telemetry-left">
+          <h2 class="telemetry-headline">
+            IGNITE YOUR <span class="accent">PULSE.</span>
+          </h2>
+          <p class="telemetry-desc">
+            Nosso mais potente sistema de tração HyperDrive, refrigerado a ar com unidade MCU 
+            líquida inteligente e distribuição de potência ride-by-wire para arrancadas fulminantes.
+          </p>
+        </div>
+
+        <div class="telemetry-cards">
+          <div class="telemetry-metric-box active">
+            <div class="telemetry-title">ACELERAÇÃO 0–50 KM/H</div>
+            <div class="telemetry-number">3.05 <span class="telemetry-unit">SEG</span></div>
+          </div>
+          <div class="telemetry-metric-box">
+            <div class="telemetry-title">POTÊNCIA MÁXIMA DE SAÍDA</div>
+            <div class="telemetry-number">9.0 <span class="telemetry-unit">KW</span></div>
+          </div>
+          <div class="telemetry-metric-box">
+            <div class="telemetry-title">ROTAÇÃO DO MOTOR CENTRAL</div>
+            <div class="telemetry-number">11.000 <span class="telemetry-unit">RPM</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Cockpit 10.25" iQ Touch HD Simulator -->
+    <section class="section-cockpit" id="cockpit">
+      <div class="section-tag">iQ Touch HD Panorâmico</div>
+      <h2 class="section-heading">Respiração Suspensa. Toda Vez.</h2>
+      <p class="section-subheading">
+        O cockpit panorâmico touch de 10.25 polegadas Full HD acionado pelo processador HyperCore
+        oferece a mais imersiva telemetria de pilotagem sobre duas rodas.
+      </p>
+
+      <div class="cockpit-frame-outer">
+        <div class="cockpit-bezel"></div>
+        <div class="cockpit-screen-content" id="cockpitScreen">
+          <!-- Top Telemetry Status -->
+          <div class="hud-topbar">
+            <span>MAJ OS v4.2 • CONECTADO</span>
+            <div class="hud-status-icons">
+              <span class="hud-badge-ready">READY</span>
+              <span>GPS 100%</span>
+              <span>BAT 98%</span>
+            </div>
+          </div>
+
+          <!-- Center Cluster Dynamic -->
+          <div class="hud-center">
+            <div class="hud-gauge">
+              <div class="hud-speed-value" id="hudSpeedDisplay">0</div>
+              <div class="hud-speed-unit">KM / H</div>
+              <div class="hud-mode-pill" id="hudModeBadge">LAUNCH SPORT MODE</div>
+            </div>
+          </div>
+
+          <!-- Bottom Status -->
+          <div class="hud-bottombar">
+            <span>AUTONOMIA ESTIMADA: 142 KM</span>
+            <span>TEMPERATURA DO MOTOR: 38°C</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Selector Buttons -->
+      <div class="cockpit-selectors">
+        <button class="cockpit-btn active" onclick="setCockpitMode('launch', '0', 'LAUNCH SPORT MODE', '#e1ff32')">Modo Launch</button>
+        <button class="cockpit-btn" onclick="setCockpitMode('track', '85', 'TRACK CIRCUIT MODE', '#00d7ff')">Modo Pista</button>
+        <button class="cockpit-btn" onclick="setCockpitMode('eco', '35', 'ECO RANGE TOURING', '#28e1a5')">Modo Eco 140km</button>
+        <button class="cockpit-btn" onclick="setCockpitMode('nav', '48', 'GPS TURN-BY-TURN', '#0653ff')">Navegação GPS</button>
+      </div>
+    </section>
+
+    <!-- 4. Adaptive Matrix Lighting Demonstrator -->
+    <section class="section-lighting" id="lighting">
+      <div class="section-tag">Active Matrix Light</div>
+      <h2 class="section-heading">Brilho Não É Suficiente.</h2>
+      <p class="section-subheading">
+        Conjunto de LEDs independentes que ajustam o ângulo e a intensidade dinamicamente
+        conforme você se inclina nas curvas ou acelera na rodovia.
+      </p>
+
+      <div class="matrix-demo-box">
+        <div class="matrix-light-stage">
+          <div class="matrix-beams-container" id="matrixBeams">
+            <!-- 11 Feixes de Matrix Gerados Dinamicamente -->
+          </div>
+        </div>
+
+        <div class="matrix-controls">
+          <div class="slider-row">
+            <span>Ângulo de Inclinação da Curva: <strong id="leanAngleVal">0°</strong></span>
+            <input type="range" class="slider-input" min="-45" max="45" value="0" id="leanSlider" oninput="updateMatrixLight()">
+          </div>
+          <div class="slider-row">
+            <span>Velocidade de Deslocamento: <strong id="speedVal">50 km/h</strong></span>
+            <input type="range" class="slider-input" min="0" max="110" value="50" id="speedSlider" oninput="updateMatrixLight()">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Color Customizer Studio -->
+    <section class="section-colors" id="colors">
+      <div class="section-tag">Cores de Carroceria</div>
+      <h2 class="section-heading">Escolha Sua Identidade.</h2>
+      <p class="section-subheading">Pintura eletrostática premium multicamadas de alta durabilidade aeroespacial.</p>
+
+      <div class="colors-stage">
+        <div class="color-halo" id="colorHalo" style="background: #00d7ff;"></div>
+        <div class="color-vehicle-display">
+          <svg width="480" height="240" viewBox="0 0 600 300" fill="none">
+            <path id="scooterBodyPath" d="M100 220 C100 170 150 140 210 140 L350 140 L430 80 L480 80 L510 140 L570 190 C590 205 600 240 570 260 C540 280 480 270 460 240 L200 240 C180 270 120 270 100 220 Z" fill="#b9bcbf" stroke="#ffffff" stroke-width="2"/>
+            <circle cx="510" cy="230" r="45" stroke="#ffffff" stroke-width="4" fill="#121215"/>
+            <circle cx="170" cy="230" r="45" stroke="#ffffff" stroke-width="4" fill="#121215"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="color-swatches">
+        <button class="color-swatch-btn active" onclick="setScooterColor('#b9bcbf', '#00d7ff', this)">
+          <span class="color-swatch-circle" style="background: #b9bcbf;"></span>
+          Silver Metálico
+        </button>
+        <button class="color-swatch-btn" onclick="setScooterColor('#2a2b30', '#e1ff32', this)">
+          <span class="color-swatch-circle" style="background: #2a2b30;"></span>
+          Stealth Matte Grey
+        </button>
+        <button class="color-swatch-btn" onclick="setScooterColor('#ffffff', '#0653ff', this)">
+          <span class="color-swatch-circle" style="background: #ffffff;"></span>
+          Cyber Glacier White
+        </button>
+      </div>
+    </section>
+
+    <!-- 6. Expandable Technical Drawer & Horizontal Cards -->
+    <section class="section-drawer-demo">
+      <button class="drawer-trigger-btn" onclick="toggleDrawer()">
+        <span>Explorar Engenharia HyperDrive</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <div class="drawer-content-box" id="techDrawer">
+        <div class="cards-horizontal-snap">
+          <div class="tech-card">
+            <div class="tech-card-icon">⚡</div>
+            <h3 class="tech-card-title">Motor Central H1</h3>
+            <p class="tech-card-body">Aceleração com torque instantâneo de 378 Nm na roda e rotações até 11.000 RPM sem perda de eficiência térmica.</p>
+          </div>
+          <div class="tech-card">
+            <div class="tech-card-icon">❄️</div>
+            <h3 class="tech-card-title">Dual-Cooling Líquido</h3>
+            <p class="tech-card-body">Refrigeração híbrida a ar forçado e circuito fechado de líquido para controle térmico do inversor MCU sob pilotagem esportiva.</p>
+          </div>
+          <div class="tech-card">
+            <div class="tech-card-icon">⚙️</div>
+            <h3 class="tech-card-title">Correia Gates Carbon</h3>
+            <p class="tech-card-body">Transmissão secundária reforçada com cordas de fibra de carbono Gates para silêncio absoluto e zero manutenção de corrente.</p>
+          </div>
+          <div class="tech-card">
+            <div class="tech-card-icon">🛡️</div>
+            <h3 class="tech-card-title">Bosch ABS 10 Dual Channel</h3>
+            <p class="tech-card-body">Módulo de frenagem antibloqueio com controle de tração integrado (TCS) ativo em pisos molhados e pistas de alta aderência.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Specs Comparison Grid -->
+    <section class="section-specs" id="specs">
+      <div class="section-tag">Linha Comparativa</div>
+      <h2 class="section-heading">Escolha Seu MAJ PULSE</h2>
+      <p class="section-subheading">Disponível para pronta-entrega corporativa B2B e reservas exclusivas no ecossistema MAJ.</p>
+
+      <div class="specs-table-wrapper">
+        <table class="specs-grid">
+          <thead>
+            <tr>
+              <th>Recurso Técnico</th>
+              <th class="highlight">MAJ Pulse Ultra</th>
+              <th>MAJ Pulse Pro</th>
+              <th>MAJ Pulse Standard</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="feature-name">Cockpit Digital</td>
+              <td><strong>10.25" Panorâmico Touch HD</strong></td>
+              <td>LCD Negativo Colorido</td>
+              <td>LCD Monocromático</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Motor & Potência</td>
+              <td><strong>H1 Dual-Cooling (9.0 kW)</strong></td>
+              <td>H1 Dual-Cooling (9.0 kW)</td>
+              <td>H1 Air-Cooled (7.5 kW)</td>
+            </tr>
+            <tr>
+              <td class="feature-name">0–50 km/h</td>
+              <td><strong>3.05 segundos</strong></td>
+              <td>3.05 segundos</td>
+              <td>3.80 segundos</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Faróis</td>
+              <td><strong>Active Matrix Classe D</strong></td>
+              <td>LED Classe D Simples</td>
+              <td>LED Projetor Padrão</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Frenagem & Segurança</td>
+              <td><strong>ABS Bosch 10 Dual + TCS</strong></td>
+              <td>ABS Bosch 10 Dianteiro</td>
+              <td>SBS Sistema Combinado</td>
+            </tr>
+            <tr>
+              <td class="feature-name">Chave Digital</td>
+              <td><strong>Apple Wallet + NFC + App</strong></td>
+              <td>NFC + App MAJ</td>
+              <td>Cartão RFID</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 MAJ Mobilidade Urbana & M-One Operating System. Engenharia de Experiência Reversa Gogoro Pulse.</p>
+  </footer>
+
+  <script>
+    // 1. Ambient Particle Wave Canvas
+    (function initWaveCanvas() {
+      const canvas = document.getElementById('waveCanvas');
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      let step = 0;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(0, 215, 255, 0.25)';
+        ctx.lineWidth = 1;
+
+        const lines = 6;
+        for (let l = 0; l < lines; l++) {
+          ctx.beginPath();
+          for (let x = 0; x < width; x += 15) {
+            const y = height * 0.5 + 
+              Math.sin(x * 0.003 + step * 0.02 + l * 0.8) * 80 +
+              Math.cos(x * 0.001 - step * 0.01) * 40;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        step++;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // 2. Cockpit Mode Switcher
+    function setCockpitMode(mode, speed, badge, color) {
+      document.getElementById('hudSpeedDisplay').textContent = speed;
+      const badgeElem = document.getElementById('hudModeBadge');
+      badgeElem.textContent = badge;
+      badgeElem.style.borderColor = color;
+      badgeElem.style.color = color;
+
+      document.querySelectorAll('.cockpit-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    // 3. Matrix Lighting Demonstrator
+    const matrixBeamsContainer = document.getElementById('matrixBeams');
+    const totalBeams = 13;
+    for (let i = 0; i < totalBeams; i++) {
+      const beam = document.createElement('div');
+      beam.className = 'matrix-beam';
+      beam.id = 'beam-' + i;
+      matrixBeamsContainer.appendChild(beam);
+    }
+
+    function updateMatrixLight() {
+      const lean = parseInt(document.getElementById('leanSlider').value);
+      const speed = parseInt(document.getElementById('speedSlider').value);
+      
+      document.getElementById('leanAngleVal').textContent = lean + '°';
+      document.getElementById('speedVal').textContent = speed + ' km/h';
+
+      const centerIdx = Math.floor(totalBeams / 2);
+      for (let i = 0; i < totalBeams; i++) {
+        const beam = document.getElementById('beam-' + i);
+        const dist = Math.abs(i - centerIdx);
+        
+        let baseHeight = Math.max(40, speed * 1.5 - dist * 10);
+        
+        // Curva para a esquerda / direita
+        if (lean < 0 && i < centerIdx) {
+          baseHeight += Math.abs(lean) * 2;
+        } else if (lean > 0 && i > centerIdx) {
+          baseHeight += Math.abs(lean) * 2;
+        }
+
+        beam.style.height = Math.min(200, Math.max(30, baseHeight)) + 'px';
+        if (baseHeight > 140) {
+          beam.style.background = 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(225, 255, 50, 0.9) 100%)';
+        } else {
+          beam.style.background = 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(0, 215, 255, 0.8) 100%)';
+        }
+      }
+    }
+    updateMatrixLight();
+
+    // 4. Color Customizer
+    function setScooterColor(color, glow, btn) {
+      document.getElementById('scooterBodyPath').setAttribute('fill', color);
+      document.getElementById('colorHalo').style.background = glow;
+      document.querySelectorAll('.color-swatch-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    // 5. Expandable Drawer
+    function toggleDrawer() {
+      const drawer = document.getElementById('techDrawer');
+      drawer.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

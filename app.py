@@ -59,8 +59,8 @@ def generate_csrf_token() -> str:
 def validate_csrf():
     """Valida tokens CSRF em todas as requisições de alteração de estado (POST/PUT/DELETE/PATCH)."""
     if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
-        # 1. Exceção: Webhooks externos de terceiros (ex: WhatsApp/Z-API) que não usam sessão
-        if request.path.startswith("/webhook/"):
+        # 1. Exceção: Webhooks externos e APIs públicas/automação (ex: WhatsApp/Z-API, /api/models/)
+        if request.path.startswith("/webhook/") or request.path.startswith("/api/models/"):
             return
 
         # 2. Exceção de testes automatizados unitários
