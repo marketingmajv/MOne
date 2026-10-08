@@ -39,7 +39,7 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "badge": "ALTA PERFORMANCE",
         "folder_aliases": ["MAJ X15 PRO", "X15 PRO", "X15"],
         "color_prices": [
-            {"colors": "Bateria 10.4Ah", "price": "R$ 7.490,00", "p12": "R$ 714,90", "p18": "R$ 494,97", "stock": 1},
+            {"colors": "Verde Claro", "price": "R$ 7.490,00", "p12": "R$ 714,90", "p18": "R$ 494,97", "stock": 1},
             {"colors": "Vermelha / Azul Bebê / Verde", "price": "R$ 7.990,00", "p12": "R$ 762,63", "p18": "R$ 528,02", "stock": 5},
             {"colors": "Preta Montada", "price": "R$ 8.490,00", "p12": "R$ 810,35", "p18": "R$ 561,06", "stock": 1},
             {"colors": "Carbono Montada", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1},
