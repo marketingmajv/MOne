@@ -66,7 +66,9 @@
         <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
         <div class="logo-text">
           <span class="brand-title">MAJ MOBILIDADE</span>
-          <span class="brand-badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">CATÁLOGO OFICIAL DE ATACADO</span>
+          <span class="brand-badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">
+            {% if show_prices %}CATÁLOGO OFICIAL DE ATACADO{% else %}MOSTRUÁRIO DE ATACADO • CNPJ{% endif %}
+          </span>
         </div>
       </div>
 
@@ -85,7 +87,7 @@
     <div class="outlet-container hero-inner">
       <div class="hero-badge" style="background: rgba(0, 204, 136, 0.15); border-color: rgba(0, 204, 136, 0.3);">
         <span class="hero-pulse" style="background: #00cc88;"></span>
-        <span style="color: #00cc88;">VENDA EXCLUSIVA DE ATACADO • CNPJ</span>
+        <span style="color: #00cc88;">{% if show_prices %}VENDA EXCLUSIVA DE ATACADO • CNPJ{% else %}MOSTRUÁRIO DE ATACADO • CNPJ (SEM PREÇOS){% endif %}</span>
       </div>
       <h1 class="hero-title">{{ title }}</h1>
       <p class="hero-subtitle">{{ subtitle }}</p>
@@ -126,8 +128,10 @@
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
               <option value="stock_desc">📦 Maior Estoque</option>
+              {% if show_prices %}
               <option value="price_asc">💰 Menor Preço Atacado</option>
               <option value="price_desc">💎 Maior Preço Atacado</option>
+              {% endif %}
               <option value="name_asc">🔤 Nome (A-Z)</option>
             </select>
           </div>
@@ -192,6 +196,7 @@
               </template>
             </div>
 
+            {% if show_prices %}
             <!-- Preço Atacado (Apenas à Vista CNPJ) -->
             <div class="card-pricing">
               <div class="price-to">
@@ -200,6 +205,15 @@
                 <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
               </div>
             </div>
+            {% else %}
+            <!-- Cotação Sob Consulta (Sem Exibição de Preços) -->
+            <div class="card-pricing" style="border-top: 1px solid rgba(0,204,136,0.15); padding-top: 10px; margin-top: 10px;">
+              <div class="price-to">
+                <span class="amount" style="font-size: 1.15rem; color: #00cc88; font-weight: 800; letter-spacing: -0.02em;">Cotação Sob Consulta</span>
+                <span class="payment-method">Condições Exclusivas para CNPJ & Revenda</span>
+              </div>
+            </div>
+            {% endif %}
 
             <!-- Botões de Ação -->
             <div class="card-actions">
@@ -256,6 +270,7 @@
               </div>
               <h2 class="modal-title" x-text="selectedItem.name"></h2>
               
+              {% if show_prices %}
               <!-- Box de Preço Atacado (Apenas à Vista CNPJ) -->
               <div class="modal-pricing-box">
                 <div class="price-to">
@@ -266,6 +281,15 @@
 
                 <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
               </div>
+              {% else %}
+              <div class="modal-pricing-box">
+                <div class="price-to">
+                  <span class="amount" style="font-size: 1.35rem; color: #00cc88; font-weight: 800;">Cotação Sob Consulta</span>
+                  <span class="payment-method">Condições de Venda Direta Atacado CNPJ</span>
+                </div>
+                <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
+              </div>
+              {% endif %}
 
               <p class="modal-desc" x-text="selectedItem.description"></p>
 
@@ -336,9 +360,11 @@
     const WA_NUMBER = "{{ whatsapp_number }}".replace(/\D/g, "");
     const WA_TEMPLATE = {{ whatsapp_message|tojson }};
     const WA_FLOATING_MSG = {{ whatsapp_floating_message|tojson }};
+    const SHOW_PRICES = {{ 'true' if show_prices else 'false' }};
 
     function atacadoApp() {
       return {
+        showPrices: SHOW_PRICES,
         searchQuery: '',
         activeCategory: 'all',
         sortBy: 'stock_desc',
@@ -412,7 +438,12 @@
         },
 
         getWhatsAppUrl(model, price) {
-          const msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          let msg = '';
+          if (this.showPrices && price && price !== '0,00' && price !== 'Sob consulta') {
+            msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          } else {
+            msg = `Olá! Tenho interesse no modelo ${model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação.`;
+          }
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
           return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
         },

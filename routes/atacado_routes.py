@@ -39,9 +39,8 @@ except Exception as e:
 # ROTAS PÚBLICAS DO CATÁLOGO MAJ ATACADO (CNPJ)
 # -------------------------------------------------------------------------
 
-@atacado_bp.route("/atacado")
-def catalog():
-    """Landing Page Pública do Catálogo MAJ Atacado CNPJ."""
+def _render_atacado_catalog(show_prices=True):
+    """Função auxiliar para renderizar o catálogo de atacado (com ou sem preços)."""
     ensure_atacado_schema()
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
@@ -53,20 +52,30 @@ def catalog():
 
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
-    whatsapp_message = get_atacado_setting(
-        "whatsapp_message",
-        "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
-    )
+    
+    if show_prices:
+        whatsapp_message = get_atacado_setting(
+            "whatsapp_message",
+            "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
+        )
+    else:
+        whatsapp_message = "Olá! Tenho interesse no modelo {model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação."
+
     whatsapp_floating_message = get_atacado_setting(
         "whatsapp_floating_message",
         "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."
     )
     title = get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE")
     total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
-    subtitle = get_atacado_setting(
-        "atacado_subtitle",
-        f"Catálogo Oficial de Atacado • {total_vehicles} Veículos Elétricos com Preços Exclusivos para CNPJ"
-    )
+    
+    if show_prices:
+        subtitle = get_atacado_setting(
+            "atacado_subtitle",
+            f"Catálogo Oficial de Atacado • {total_vehicles} Veículos Elétricos com Preços Exclusivos para CNPJ"
+        )
+    else:
+        subtitle = f"Catálogo Oficial de Atacado • {total_vehicles} Veículos Elétricos em Estoque (Mostruário CNPJ)"
+
     urgency_text = get_atacado_setting(
         "atacado_urgency_text",
         "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA"
@@ -84,8 +93,25 @@ def catalog():
         subtitle=subtitle,
         urgency_text=urgency_text,
         all_categories=all_categories,
-        total_vehicles=total_vehicles
+        total_vehicles=total_vehicles,
+        show_prices=show_prices
     )
+
+
+@atacado_bp.route("/atacado")
+def catalog():
+    """Landing Page Pública do Catálogo MAJ Atacado CNPJ (Com Preço ou Sem Preço via query param)."""
+    sem_preco = request.args.get("sem_preco", "").lower() in ["1", "true", "sim", "yes"] or request.args.get("hide_prices", "").lower() in ["1", "true", "sim", "yes"]
+    return _render_atacado_catalog(show_prices=not sem_preco)
+
+
+@atacado_bp.route("/atacado/sem-preco")
+@atacado_bp.route("/atacado-sem-preco")
+@atacado_bp.route("/atacado/catalogo-sem-preco")
+def catalog_no_prices():
+    """Landing Page Pública do Catálogo MAJ Atacado CNPJ sem Exibição de Preços."""
+    return _render_atacado_catalog(show_prices=False)
+
 
 
 @atacado_bp.route("/atacado/<identifier>")
