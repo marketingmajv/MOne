@@ -7,7 +7,7 @@ endpoint de ativação/inativação de modelos e a rota do mostruário /modelos.
 import time
 import logging
 from flask import Blueprint, jsonify, render_template, request
-from routes.helpers import current_user, login_required
+from routes.helpers import current_user, login_required, roles_required
 from services.maj_models_sync_service import (
     sync_models_from_sheets,
     get_all_models,
@@ -93,7 +93,9 @@ def api_sync_models():
 
 
 @showroom_bp.route("/admin/models", methods=["GET"])
+@showroom_bp.route("/admin/modelos", methods=["GET"])
 @login_required
+@roles_required("admin", "support")
 def admin_models_page():
     """Painel de Gestão e Ordenação de Produtos no Mostruário da MAJ."""
     me = current_user()

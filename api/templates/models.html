@@ -38,6 +38,10 @@
     .hero-vehicle-center { position: relative; z-index: 2; width: 100%; max-width: 980px; display: flex; justify-content: center; align-items: flex-end; margin-top: 30px; }
     .hero-vehicle-cutout { position: relative; z-index: 3; max-width: 90%; max-height: 58vh; object-fit: contain; }
     .hero-contact-shadow { display: none; }
+    .model-panoramic-banner-wrapper { width: 100%; margin: 0; padding: 0; overflow: hidden; line-height: 0; display: none; position: relative; background: #ffffff; }
+    .model-panoramic-banner-container { width: 100%; margin: 0; padding: 0; line-height: 0; }
+    .model-panoramic-banner-container picture { display: block; width: 100%; margin: 0; padding: 0; line-height: 0; }
+    .model-panoramic-banner-img { width: 100% !important; max-width: 100% !important; height: auto !important; display: block; margin: 0; padding: 0; }
   </style>
 
   <link rel="stylesheet" href="/static/css/showroom.css?v={{ cache_id or 1 }}">
@@ -59,7 +63,7 @@
       </nav>
 
       <div class="header-actions">
-        <a href="/admin/models" class="btn-admin-order" style="font-size: 11px; text-decoration: none; color: #555; background: #f0f0f4; border: 1px solid #d5d5dc; padding: 4px 10px; border-radius: 100px; font-weight: 600;">
+        <a href="/admin/modelos" class="btn-admin-order" style="font-size: 11px; text-decoration: none; color: #555; background: #f0f0f4; border: 1px solid #d5d5dc; padding: 4px 10px; border-radius: 100px; font-weight: 600;">
           ⚙️ Ordenar Produtos
         </a>
         <div class="sync-indicator">
@@ -87,8 +91,24 @@
   <!-- 3. Viewport Principal -->
   <main class="showroom-viewport">
     
+    <!-- Banner Panorâmico Full-Width Widescreen (Exclusivo MAX 12 MAJ) -->
+    <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" aria-label="Apresentação Widescreen MAX 12 MAJ">
+      <div class="model-panoramic-banner-container">
+        <picture>
+          <source srcset="/public/images/models/banners/max-12-banner.webp?v=20261013_2k" type="image/webp">
+          <img 
+            src="/public/images/models/banners/max-12-banner.webp?v=20261013_2k" 
+            alt="MAX 12 MAJ - E-Scooter Urbana de Alta Performance" 
+            class="model-panoramic-banner-img"
+            loading="eager"
+            decoding="async"
+          >
+        </picture>
+      </div>
+    </section>
+
     <!-- Hero Estúdio Branco Cinematográfico (Idêntico ao Gogoro Pulse) -->
-    <section class="hero-studio-stage" id="hero">
+    <section class="hero-studio-stage" id="hero" style="display: none;">
       
       <!-- Letreiro Gigante Arquitetural de Fundo (Atrás do Veículo) -->
       <div class="hero-giant-backdrop" aria-hidden="true">
@@ -141,7 +161,7 @@
         <div class="telemetry-big-card">
           <div class="telemetry-eyebrow">PROPULSÃO ELÉTRICA</div>
           <div class="telemetry-huge-num">
-            <span id="bigMetricPower">1.000</span><span class="telemetry-huge-unit">W</span>
+            <span id="bigMetricPower">1000</span><span class="telemetry-huge-unit">W</span>
           </div>
           <p class="telemetry-card-desc">
             Motor elétrico de tração contínua calibrado para torque imediato e eficiência térmica avançada em qualquer relevo.

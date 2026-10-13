@@ -14,41 +14,28 @@
 
   // 1. Inicialização do Wave Canvas em Background
   function initWaveCanvas() {
-    const canvas = document.getElementById('waveCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    let step = 0;
-
-    function resize() {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    }
+    const c = document.getElementById('waveCanvas');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    let w, h, s = 0;
+    const resize = () => { w = c.width = window.innerWidth; h = c.height = window.innerHeight; };
     window.addEventListener('resize', resize);
     resize();
-
-    function render() {
-      ctx.clearRect(0, 0, width, height);
+    (function render() {
+      ctx.clearRect(0, 0, w, h);
       ctx.strokeStyle = 'rgba(0, 215, 255, 0.22)';
       ctx.lineWidth = 1;
-
-      const lines = 6;
-      for (let l = 0; l < lines; l++) {
+      for (let l = 0; l < 6; l++) {
         ctx.beginPath();
-        for (let x = 0; x < width; x += 20) {
-          const y =
-            height * 0.45 +
-            Math.sin(x * 0.003 + step * 0.015 + l * 0.8) * 75 +
-            Math.cos(x * 0.001 - step * 0.008) * 35;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        for (let x = 0; x < w; x += 20) {
+          const y = h * 0.45 + Math.sin(x * 0.003 + s * 0.015 + l * 0.8) * 75 + Math.cos(x * 0.001 - s * 0.008) * 35;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
         ctx.stroke();
       }
-      step++;
+      s++;
       requestAnimationFrame(render);
-    }
-    render();
+    })();
   }
 
   // 2. Carregamento dos Modelos da API /api/models
@@ -78,10 +65,7 @@
       const btn = document.createElement('button');
       btn.className = `model-pill-item ${currentModel && currentModel.slug === m.slug ? 'active' : ''}`;
       btn.id = `pill-${m.slug}`;
-      btn.innerHTML = `
-        <span class="model-pill-dot"></span>
-        <span class="model-pill-name">${m.modelo}</span>
-      `;
+      btn.innerHTML = `<span class="model-pill-dot"></span><span class="model-pill-name">${m.modelo}</span>`;
       btn.addEventListener('click', () => selectModel(m.slug));
       nav.appendChild(btn);
     });
@@ -99,6 +83,36 @@
     if (activePill) {
       activePill.classList.add('active');
       activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    // Atualizar Banner Panorâmico Full-Width Exclusivo (MAX 12 MAJ)
+    const bannerElem = document.getElementById('max12PanoramicBanner');
+    const heroStageElem = document.getElementById('hero');
+    const isMax12 = slug === 'max-12' || (found.modelo && found.modelo.toUpperCase().includes('MAX 12'));
+
+    if (bannerElem) {
+      if (isMax12) {
+        bannerElem.style.display = 'block';
+        bannerElem.style.opacity = '0';
+        requestAnimationFrame(() => {
+          bannerElem.style.transition = 'opacity 0.35s ease';
+          bannerElem.style.opacity = '1';
+        });
+        if (heroStageElem) {
+          heroStageElem.style.display = 'none';
+        }
+      } else {
+        bannerElem.style.transition = 'opacity 0.25s ease';
+        bannerElem.style.opacity = '0';
+        setTimeout(() => {
+          if (currentModel && currentModel.slug !== 'max-12' && !(currentModel.modelo && currentModel.modelo.toUpperCase().includes('MAX 12'))) {
+            bannerElem.style.display = 'none';
+          }
+        }, 250);
+        if (heroStageElem) {
+          heroStageElem.style.display = 'flex';
+        }
+      }
     }
 
     // 1. Atualizar Hero
@@ -160,19 +174,7 @@
     if (heroAut) heroAut.textContent = found.metrics.autonomia_conservadora_km ? `${found.metrics.autonomia_conservadora_km}` : '35 km';
 
     // 3. Atualizar Big Cards da Seção de Telemetria
-    const bigPot = document.getElementById('bigMetricPower');
-    if (bigPot) bigPot.textContent = found.metrics.potencia_nominal_w || '1.000';
-
-    const bigVel = document.getElementById('bigMetricSpeed');
-    if (bigVel) bigVel.textContent = found.metrics.velocidade_max_kmh || '32';
-
-    const bigAut = document.getElementById('bigMetricRange');
-    if (bigAut) bigAut.textContent = found.metrics.autonomia_conservadora_km ? found.metrics.autonomia_conservadora_km.replace('km', '').trim() : '35';
-
-    const bigAutSub = document.getElementById('bigMetricRangeSub');
-    if (bigAutSub) {
-      bigAutSub.textContent = `Autonomia conservadora estimada para rotas urbanas (até ${found.metrics.autonomia_maxima_km || '50'} km em condições ideais).`;
-    }
+    updateTelemetryBigCards(found);
 
     // 4. Atualizar Cockpit HD
     updateCockpitForModel(found);
@@ -201,22 +203,49 @@
       const ah = model.metrics.capacidade_ah || '20Ah';
       hudBattery.textContent = `BATERIA: ${volt} ${ah}`;
     }
+
+    const topSpeed = parseInt(model.metrics.velocidade_max_kmh || '32', 10) || 32;
+    const sportBtn = document.querySelector('.cockpit-mode-btn[onclick*="sport"]');
+    if (sportBtn) {
+      sportBtn.setAttribute('onclick', `setCockpitMode('sport', '${topSpeed}', 'MODO SPORT ATIVO', '#e1ff32')`);
+      sportBtn.textContent = `Modo Sport (${topSpeed} km/h)`;
+    }
+
+    if (cockpitHasBeenRevealed) {
+      animateCockpitSpeedometer(topSpeed);
+    } else {
+      const hudSpeed = document.getElementById('hudSpeedVal');
+      if (hudSpeed) hudSpeed.textContent = topSpeed;
+    }
+  }
+
+  function animateCockpitSpeedometer(targetSpeed) {
+    const el = document.getElementById('hudSpeedVal');
+    if (!el) return;
+    const target = Math.round(Number(targetSpeed)) || 0;
+    const current = Math.round(Number(el.textContent)) || 0;
+    if (current === target) return;
+
+    el.classList.remove('tachometer-accel', 'tachometer-brake');
+    el.classList.add(target > current ? 'tachometer-accel' : 'tachometer-brake');
+
+    animateCountUp(el, current, target, 750, 0, () => {
+      el.classList.remove('tachometer-accel', 'tachometer-brake');
+    });
   }
 
   // 6. Alternância de Modos do Cockpit
   window.setCockpitMode = function (mode, speed, badgeText, color) {
-    const speedVal = document.getElementById('hudSpeedVal');
-    if (speedVal) speedVal.textContent = speed;
-
     const badge = document.getElementById('hudModeBadge');
     if (badge) {
       badge.textContent = badgeText;
       badge.style.color = color;
       badge.style.borderColor = color;
     }
-
     document.querySelectorAll('.cockpit-mode-btn').forEach((b) => b.classList.remove('active'));
-    if (event && event.target) event.target.classList.add('active');
+    if (window.event && window.event.target) window.event.target.classList.add('active');
+
+    animateCockpitSpeedometer(speed);
   };
 
   // 7. Renderização dos Cards Técnicos na Gaveta
@@ -224,48 +253,40 @@
     const container = document.getElementById('techCardsCarousel');
     if (!container) return;
     container.innerHTML = '';
-
-    const sections = model.sections || {};
+    const s = model.sections || {};
+    const m = model.metrics || {};
 
     const cardsData = [
       {
-        title: 'Motorização & Desempenho',
-        icon: '⚡',
-        items: [
-          { lbl: 'Potência Nominal', val: `${model.metrics.potencia_nominal_w || '1.000'}W` },
-          { lbl: 'Velocidade Máxima', val: `${model.metrics.velocidade_max_kmh || '32'} km/h` },
-          { lbl: 'Modos de Condução', val: sections['Desempenho']?.['Modos de condução'] || '3 níveis' },
-          { lbl: 'Possui Marcha a Ré?', val: sections['Desempenho']?.['Possui ré?'] || 'Não' },
+        title: 'Motorização & Desempenho', icon: '⚡', items: [
+          { lbl: 'Potência Nominal', val: `${m.potencia_nominal_w || '1000'}W` },
+          { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` },
+          { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
+          { lbl: 'Possui Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Não' },
         ],
       },
       {
-        title: 'Bateria & Autonomia',
-        icon: '🔋',
-        items: [
-          { lbl: 'Voltagem / Capacidade', val: `${model.metrics.voltagem_v || '60V'} • ${model.metrics.capacidade_ah || '20Ah'}` },
-          { lbl: 'Capacidade Total', val: model.metrics.capacidade_wh || '1200Wh' },
-          { lbl: 'Bateria Removível?', val: sections['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
-          { lbl: 'Autonomia Estimada', val: `${model.metrics.autonomia_conservadora_km || '35km'} (até ${model.metrics.autonomia_maxima_km || '50km'})` },
+        title: 'Bateria & Autonomia', icon: '🔋', items: [
+          { lbl: 'Voltagem / Capacidade', val: `${m.voltagem_v || '60V'} • ${m.capacidade_ah || '20Ah'}` },
+          { lbl: 'Capacidade Total', val: m.capacidade_wh || '1200Wh' },
+          { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
+          { lbl: 'Autonomia Estimada', val: `${m.autonomia_conservadora_km || '35km'} (até ${m.autonomia_maxima_km || '50km'})` },
         ],
       },
       {
-        title: 'Estrutura & Conforto',
-        icon: '🛡️',
-        items: [
-          { lbl: 'Carga Máxima Suportada', val: `${model.metrics.carga_maxima_kg || '180'} kg` },
-          { lbl: 'Peso do Veículo', val: model.metrics.peso_kg || '75 kg' },
-          { lbl: 'Ocupantes Recomendados', val: sections['Estrutura e conforto']?.['Ocupantes recomendados'] || '1 a 2' },
-          { lbl: 'Compartimento / Baú', val: sections['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Incluso' },
+        title: 'Estrutura & Conforto', icon: '🛡️', items: [
+          { lbl: 'Carga Máxima Suportada', val: `${m.carga_maxima_kg || '180'} kg` },
+          { lbl: 'Peso do Veículo', val: m.peso_kg || '75 kg' },
+          { lbl: 'Ocupantes Recomendados', val: s['Estrutura e conforto']?.['Ocupantes recomendados'] || '1 a 2' },
+          { lbl: 'Compartimento / Baú', val: s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Incluso' },
         ],
       },
       {
-        title: 'Segurança & Freios',
-        icon: '🛑',
-        items: [
-          { lbl: 'Sistema de Frenagem', val: model.metrics.freios || 'Disco / Hidráulico' },
-          { lbl: 'Suspensão Dianteira', val: sections['Segurança e componentes']?.['Suspensão dianteira'] || 'Hidráulica' },
-          { lbl: 'Suspensão Traseira', val: sections['Segurança e componentes']?.['Suspensão traseira'] || 'Duplo amortecedor' },
-          { lbl: 'Iluminação', val: sections['Segurança e componentes']?.['Iluminação'] || 'Full LED' },
+        title: 'Segurança & Freios', icon: '🛑', items: [
+          { lbl: 'Sistema de Frenagem', val: m.freios || 'Disco / Hidráulico' },
+          { lbl: 'Suspensão Dianteira', val: s['Segurança e componentes']?.['Suspensão dianteira'] || 'Hidráulica' },
+          { lbl: 'Suspensão Traseira', val: s['Segurança e componentes']?.['Suspensão traseira'] || 'Duplo amortecedor' },
+          { lbl: 'Iluminação', val: s['Segurança e componentes']?.['Iluminação'] || 'Full LED' },
         ],
       },
     ];
@@ -273,15 +294,8 @@
     cardsData.forEach((cd) => {
       const card = document.createElement('div');
       card.className = 'tech-spec-card';
-      let listHtml = '';
-      cd.items.forEach((it) => {
-        listHtml += `<li><span class="lbl">${it.lbl}</span><span class="val">${it.val}</span></li>`;
-      });
-      card.innerHTML = `
-        <span class="tech-spec-card-icon">${cd.icon}</span>
-        <h4 class="tech-spec-card-title">${cd.title}</h4>
-        <ul class="tech-spec-card-list">${listHtml}</ul>
-      `;
+      const listHtml = cd.items.map((it) => `<li><span class="lbl">${it.lbl}</span><span class="val">${it.val}</span></li>`).join('');
+      card.innerHTML = `<span class="tech-spec-card-icon">${cd.icon}</span><h4 class="tech-spec-card-title">${cd.title}</h4><ul class="tech-spec-card-list">${listHtml}</ul>`;
       container.appendChild(card);
     });
   }
@@ -357,31 +371,128 @@
     });
   }
 
-  function updateComparisonActiveCol(model) {
-    const colHeader = document.getElementById('compColActiveHeader');
+  function updateComparisonCol(prefix, model) {
+    const colHeader = document.getElementById(prefix === 'active' ? 'compColActiveHeader' : 'compColSecondHeader');
     if (colHeader) colHeader.textContent = model.modelo;
-
-    const fields = ['potencia_nominal_w', 'velocidade_max_kmh', 'autonomia_conservadora_km', 'carga_maxima_kg', 'peso_kg', 'freios'];
-    fields.forEach((f) => {
-      const el = document.getElementById(`comp-active-${f}`);
+    ['potencia_nominal_w', 'velocidade_max_kmh', 'autonomia_conservadora_km', 'carga_maxima_kg', 'peso_kg', 'freios'].forEach((f) => {
+      const el = document.getElementById(`comp-${prefix}-${f}`);
       if (el) el.textContent = model.metrics[f] || '—';
     });
   }
+  function updateComparisonActiveCol(model) { updateComparisonCol('active', model); }
+  function updateComparisonSecondCol(model) { updateComparisonCol('second', model); }
 
-  function updateComparisonSecondCol(model) {
-    const colHeader = document.getElementById('compColSecondHeader');
-    if (colHeader) colHeader.textContent = model.modelo;
+  // 7. Animações de Entrada em Cascata & Scroll Observers
+  let telemetryHasBeenRevealed = false;
+  let cockpitHasBeenRevealed = false;
 
-    const fields = ['potencia_nominal_w', 'velocidade_max_kmh', 'autonomia_conservadora_km', 'carga_maxima_kg', 'peso_kg', 'freios'];
-    fields.forEach((f) => {
-      const el = document.getElementById(`comp-second-${f}`);
-      if (el) el.textContent = model.metrics[f] || '—';
-    });
+  function initShowroomScrollObservers() {
+    const secTel = document.getElementById('telemetry');
+    const grid = document.querySelector('.telemetry-grid-wrapper');
+    const cards = document.querySelectorAll('.telemetry-big-card');
+    if (secTel && grid && cards.length > 0) {
+      grid.classList.add('anim-ready');
+      const obsTel = new IntersectionObserver((entries, obs) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && !telemetryHasBeenRevealed) {
+            telemetryHasBeenRevealed = true;
+            cards.forEach((c, idx) => setTimeout(() => c.classList.add('card-revealed'), idx * 150));
+            animateTelemetryCountUp(true);
+            obs.disconnect();
+          }
+        });
+      }, { threshold: 0.15 });
+      obsTel.observe(secTel);
+    }
+
+    const secCockpit = document.getElementById('cockpit');
+    if (secCockpit) {
+      const obsCockpit = new IntersectionObserver((entries, obs) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && !cockpitHasBeenRevealed) {
+            cockpitHasBeenRevealed = true;
+            const top = currentModel ? (parseInt(currentModel.metrics.velocidade_max_kmh || '32', 10) || 32) : 32;
+            const hud = document.getElementById('hudSpeedVal');
+            if (hud) hud.textContent = '0';
+            animateCockpitSpeedometer(top);
+            obs.disconnect();
+          }
+        });
+      }, { threshold: 0.2 });
+      obsCockpit.observe(secCockpit);
+    }
+  }
+
+  function animateCountUp(element, startVal, endVal, duration = 1200, delay = 0, onComplete = null) {
+    if (!element) return;
+    const end = Math.round(endVal), start = Math.round(startVal);
+    element.dataset.animTarget = end;
+
+    setTimeout(() => {
+      if (parseInt(element.dataset.animTarget, 10) !== end) return;
+      let startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        element.textContent = Math.floor(start + (end - start) * ease);
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          element.textContent = end;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      }
+      requestAnimationFrame(step);
+    }, delay);
+  }
+
+  function animateTelemetryCountUp(fromZero = false) {
+    if (!currentModel) return;
+    const potVal = parseInt(String(currentModel.metrics.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+    const velVal = parseInt(String(currentModel.metrics.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const autVal = parseInt(String(currentModel.metrics.autonomia_conservadora_km || '35').replace(/[^\d]/g, ''), 10) || 35;
+
+    const bigPot = document.getElementById('bigMetricPower');
+    const bigVel = document.getElementById('bigMetricSpeed');
+    const bigAut = document.getElementById('bigMetricRange');
+
+    if (fromZero) {
+      animateCountUp(bigPot, 0, potVal, 1300, 50);
+      animateCountUp(bigVel, 0, velVal, 1200, 200);
+      animateCountUp(bigAut, 0, autVal, 1200, 350);
+    } else {
+      const curPot = bigPot ? (parseInt(bigPot.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      const curVel = bigVel ? (parseInt(bigVel.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      const curAut = bigAut ? (parseInt(bigAut.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      animateCountUp(bigPot, curPot, potVal, 800, 0);
+      animateCountUp(bigVel, curVel, velVal, 750, 0);
+      animateCountUp(bigAut, curAut, autVal, 750, 0);
+    }
+  }
+
+  function updateTelemetryBigCards(model) {
+    const sub = document.getElementById('bigMetricRangeSub');
+    if (sub) sub.textContent = `Autonomia conservadora estimada para rotas urbanas (até ${model.metrics.autonomia_maxima_km || '50'} km em condições ideais).`;
+
+    if (telemetryHasBeenRevealed) {
+      animateTelemetryCountUp(false);
+    } else {
+      const potVal = parseInt(String(model.metrics.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+      const velVal = parseInt(String(model.metrics.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+      const autVal = parseInt(String(model.metrics.autonomia_conservadora_km || '35').replace(/[^\d]/g, ''), 10) || 35;
+      const p = document.getElementById('bigMetricPower'); if (p) p.textContent = potVal;
+      const v = document.getElementById('bigMetricSpeed'); if (v) v.textContent = velVal;
+      const a = document.getElementById('bigMetricRange'); if (a) a.textContent = autVal;
+    }
   }
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
     initWaveCanvas();
     loadModels();
+    initShowroomScrollObservers();
   });
 })();
