@@ -64,6 +64,15 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
     reader = csv.DictReader(io.StringIO(raw_text))
     model_groups: Dict[str, Dict[str, Any]] = {}
 
+    # Carregar modelos canônicos da Planilha Oficial Google para unificação de dados
+    official_models: Dict[str, Dict[str, Any]] = {}
+    try:
+        from services.maj_models_sync_service import get_all_models
+        for m in get_all_models(include_inactive=True):
+            official_models[m.get("modelo", "").strip().upper()] = m
+    except Exception as e:
+        logger.warning("Não foi possível carregar modelos oficiais da planilha: %s", e)
+
     for row in reader:
         raw_name = (row.get("Correspondência tabela") or "").strip()
         if not raw_name:
@@ -121,6 +130,28 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         category = specs_data.get("category", "Mobilidade Elétrica")
         desc = specs_data.get("description", f"Veículo elétrico MAJ {model_name} de alta qualidade.")
         specs = dict(specs_data.get("specs", {}))
+
+        # Cruzar dinamicamente com as especificações oficiais da Planilha Google
+        clean_name = model_name.strip().upper()
+        matched = official_models.get(clean_name)
+        if not matched:
+            for s_k, s_m in official_models.items():
+                if s_k in clean_name or clean_name in s_k or s_k.replace(" ", "") == clean_name.replace(" ", ""):
+                    matched = s_m
+                    break
+        if matched:
+            m_metrics = matched.get("metrics", {})
+            if m_metrics.get("potencia_nominal_w"):
+                specs["Motor"] = f"{m_metrics['potencia_nominal_w']}W"
+            if m_metrics.get("velocidade_max_kmh"):
+                specs["Velocidade Máxima"] = f"Até {m_metrics['velocidade_max_kmh']} km/h"
+            if m_metrics.get("autonomia_maxima_km"):
+                specs["Autonomia"] = f"Até {m_metrics['autonomia_maxima_km']} km"
+            if m_metrics.get("carga_maxima_kg"):
+                specs["Carga Máxima"] = f"{m_metrics['carga_maxima_kg']} kg"
+            if m_metrics.get("freios"):
+                specs["Freios"] = m_metrics["freios"]
+
         if "color_prices" in specs_data:
             specs["color_prices"] = specs_data["color_prices"]
         badge = specs_data.get("badge", "OFERTA OUTLET")

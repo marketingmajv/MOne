@@ -1,6 +1,7 @@
 """
 M-One Outlet Specs (services/outlet_specs.py)
 Especificações técnicas de fábrica, categorias, descrições e badges dos modelos do Outlet MAJ.
+Padronizado 100% de acordo com a Planilha Oficial Google e Resolução CONTRAN nº 996/2023.
 """
 
 from typing import Any, Dict
@@ -10,11 +11,11 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica",
         "description": "A scooter elétrica mais vendida e amada do Brasil. Design clássico, excelente estabilidade, iluminação full LED e potência de sobra para o dia a dia.",
         "specs": {
-            "Motor": "1200W High Torque",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km por recarga",
-            "Bateria": "Lítio 60V removível",
-            "Carga Máxima": "160 kg",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
+            "Bateria": "Lítio 60V 20Ah removível (LiFePO₄)",
+            "Carga Máxima": "180 kg",
             "Freios": "Disco hidráulico dianteiro e traseiro",
         },
         "badge": "MAIS VENDIDO",
@@ -29,8 +30,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica",
         "description": "Linhas esportivas arrojadas e suspensão reforçada com duplo amortecedor. Ideal para quem busca performance e presença marcante.",
         "specs": {
-            "Motor": "1500W Brushless",
-            "Velocidade Máxima": "Até 50 km/h",
+            "Motor": "1000W Brushless",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 50 km",
             "Bateria": "Lítio 60V 20Ah",
             "Freios": "Disco duplo hidráulico",
@@ -49,9 +50,9 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica",
         "description": "Design esportivo 'short wheelbase' exclusivo, aceleração rápida e manobrabilidade impecável no trânsito urbano.",
         "specs": {
-            "Motor": "1500W",
-            "Velocidade Máxima": "Até 50 km/h",
-            "Autonomia": "Até 45 km",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
             "Bateria": "Lítio 60V",
             "Suspensão": "Invertida esportiva",
         },
@@ -62,9 +63,9 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Bicicleta Elétrica Fat Tire",
         "description": "A rainha das e-bikes fat tire. Pneus largos 20x4.0 que encaram asfalto, areia ou trilha com conforto absoluto e muito estilo.",
         "specs": {
-            "Motor": "750W Peak 1000W",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 65 km no pedal assistido",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 65 km",
             "Bateria": "48V 15Ah Removível com chave",
             "Pneus": "Fat Tire 20x4.0 todo terreno",
             "Câmbio": "Shimano 7 velocidades",
@@ -76,8 +77,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Bicicleta Elétrica",
         "description": "Visual retrô café racer autêntico com acabamento de banco premium em couro e quadro robusto. Condução macia e silenciosa.",
         "specs": {
-            "Motor": "750W",
-            "Velocidade Máxima": "Até 42 km/h",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 55 km",
             "Bateria": "48V Lítio",
             "Farol": "Farol redondo vintage LED",
@@ -90,8 +91,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Bicicleta Elétrica",
         "description": "Versatilidade e robustez para todos os trajetos com design moderno e geometria ergonômica.",
         "specs": {
-            "Motor": "750W",
-            "Velocidade Máxima": "Até 40 km/h",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 50 km",
             "Bateria": "48V Lítio",
             "Freios": "Disco mecânico/hidráulico",
@@ -103,8 +104,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Bicicleta Elétrica",
         "description": "Quadro reforçado, motor potente e excelente autonomia para o deslocamento diário sem esforço.",
         "specs": {
-            "Motor": "750W",
-            "Velocidade Máxima": "Até 42 km/h",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 50 km",
             "Bateria": "48V Lítio",
             "Quadro": "Alumínio aeroespacial",
@@ -117,7 +118,7 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Praticidade pura e diversão em duas rodas com cores vibrantes. Leve, econômica e perfeita para o transporte diário ágil.",
         "specs": {
             "Motor": "800W",
-            "Velocidade Máxima": "Até 35 km/h",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 40 km",
             "Bateria": "Lítio 48V/60V",
             "Peso": "Ultra leve e fácil de manobrar",
@@ -130,8 +131,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "A combinação perfeita entre tecnologia e elegância urbana. Visual refinado em Silver Black e pilotagem suave.",
         "specs": {
             "Motor": "1000W Brushless",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
             "Bateria": "60V Lítio",
             "Alarme": "Partida sem chave e alarme integrado",
         },
@@ -142,8 +143,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica",
         "description": "Design europeu contemporâneo com curvas elegantes, paleta de cores exclusivas e conforto superior para dois ocupantes.",
         "specs": {
-            "Motor": "1200W",
-            "Velocidade Máxima": "Até 45 km/h",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 50 km",
             "Bateria": "60V Lítio",
             "Porta-objetos": "Espaçoso porta-capacete",
@@ -156,8 +157,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Charme clássico atemporal que remete às icônicas scooters italianas, agora 100% elétrica e ecológica.",
         "specs": {
             "Motor": "1000W Silencioso",
-            "Velocidade Máxima": "Até 40 km/h",
-            "Autonomia": "Até 45 km",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
             "Bateria": "60V Lítio",
             "Estilo": "Retrô com retrovisores e para-lamas vintage",
         },
@@ -169,8 +170,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Linhas futuristas em Silver Black, peso reduzido e excelente resposta de torque instantâneo.",
         "specs": {
             "Motor": "1000W",
-            "Velocidade Máxima": "Até 42 km/h",
-            "Autonomia": "Até 40 km",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 45 km",
             "Bateria": "60V Lítio",
         },
         "badge": "FUTURISTA",
@@ -181,8 +182,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Agilidade e economia para o trânsito da cidade, com ótima aceleração e faróis ultra potentes.",
         "specs": {
             "Motor": "1000W",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 40 km",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 45 km",
             "Bateria": "60V Lítio",
         },
         "badge": "ÁGIL E PRÁTICA",
@@ -192,9 +193,9 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica Clássica",
         "description": "Elegância pura em acabamento branco perolizado. Um toque de classe para quem quer se locomover com sofisticação.",
         "specs": {
-            "Motor": "1200W",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
             "Bateria": "60V Lítio",
         },
         "badge": "PEÇA ÚNICA",
@@ -204,8 +205,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Bicicleta Elétrica Compacta",
         "description": "A compacta favorita com rodas fat tire em proporção reduzida. Super divertida, prática de guardar e fácil de pilotar.",
         "specs": {
-            "Motor": "500W Peak 750W",
-            "Velocidade Máxima": "Até 35 km/h",
+            "Motor": "500W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 40 km",
             "Bateria": "48V Lítio",
             "Diferencial": "Quadro baixo ergonômico",
@@ -229,8 +230,8 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "category": "Scooter Elétrica",
         "description": "Chassi reforçado, design diferenciado e suspensão firme para resposta rápida e esportiva.",
         "specs": {
-            "Motor": "1200W",
-            "Velocidade Máxima": "Até 48 km/h",
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 45 km",
             "Bateria": "60V Lítio",
         },
@@ -256,7 +257,7 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Scooter elétrica MAJ M2 com design urbano contemporâneo, piloto automático e excelente agilidade.",
         "specs": {
             "Motor": "1000W Brushless",
-            "Velocidade Máxima": "Até 45 km/h",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 45 km",
             "Bateria": "60V Lítio",
             "Freios": "Disco hidráulico dianteiro e traseiro",
@@ -269,7 +270,7 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "description": "Scooter elétrica GP 1000 com design esportivo aerodinâmico, aceleração vigorosa e acabamento de alta qualidade.",
         "specs": {
             "Motor": "1000W Brushless High Efficiency",
-            "Velocidade Máxima": "Até 45 km/h",
+            "Velocidade Máxima": "Até 32 km/h",
             "Autonomia": "Até 45 km",
             "Bateria": "60V Lítio",
             "Freios": "Disco hidráulico",

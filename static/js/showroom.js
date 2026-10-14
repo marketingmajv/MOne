@@ -12,39 +12,12 @@
   let currentModel = null;
   let currentCategory = 'all';
 
-  // 1. Inicialização do Wave Canvas em Background
-  function initWaveCanvas() {
-    const c = document.getElementById('waveCanvas');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    let w, h, s = 0;
-    const resize = () => { w = c.width = window.innerWidth; h = c.height = window.innerHeight; };
-    window.addEventListener('resize', resize);
-    resize();
-    (function render() {
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = 'rgba(0, 215, 255, 0.22)';
-      ctx.lineWidth = 1;
-      for (let l = 0; l < 6; l++) {
-        ctx.beginPath();
-        for (let x = 0; x < w; x += 20) {
-          const y = h * 0.45 + Math.sin(x * 0.003 + s * 0.015 + l * 0.8) * 75 + Math.cos(x * 0.001 - s * 0.008) * 35;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-      s++;
-      requestAnimationFrame(render);
-    })();
-  }
-
-  // 2. Carregamento dos Modelos da API /api/models
+  // 1. Carregamento dos Modelos da API /api/models
   async function loadModels() {
     try {
       const response = await fetch('/api/models');
       const data = await response.json();
       allModels = data.models || [];
-
       if (allModels.length > 0) {
         renderModelCarousel(allModels);
         selectModel(allModels[0].slug);
@@ -55,12 +28,11 @@
     }
   }
 
-  // 3. Renderização da Barra Seletora de Modelos (Apple/Tesla Style)
+  // 2. Renderização da Barra Seletora de Modelos
   function renderModelCarousel(modelsToRender) {
     const nav = document.getElementById('modelsCarouselNav');
     if (!nav) return;
     nav.innerHTML = '';
-
     modelsToRender.forEach((m) => {
       const btn = document.createElement('button');
       btn.className = `model-pill-item ${currentModel && currentModel.slug === m.slug ? 'active' : ''}`;
@@ -71,7 +43,7 @@
     });
   }
 
-  // 4. Seleção Dinâmica do Modelo (Zero Reload)
+  // 3. Seleção Dinâmica do Modelo (Zero Reload)
   function selectModel(slug) {
     const found = allModels.find((m) => m.slug === slug);
     if (!found) return;
@@ -85,34 +57,14 @@
       activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
-    // Atualizar Banner Panorâmico Full-Width Exclusivo (MAX 12 MAJ)
+    // Atualizar Banner Panorâmico Widescreen (Exclusivo MAX 12 MAJ)
     const bannerElem = document.getElementById('max12PanoramicBanner');
     const heroStageElem = document.getElementById('hero');
     const isMax12 = slug === 'max-12' || (found.modelo && found.modelo.toUpperCase().includes('MAX 12'));
-
     if (bannerElem) {
-      if (isMax12) {
-        bannerElem.style.display = 'block';
-        bannerElem.style.opacity = '0';
-        requestAnimationFrame(() => {
-          bannerElem.style.transition = 'opacity 0.35s ease';
-          bannerElem.style.opacity = '1';
-        });
-        if (heroStageElem) {
-          heroStageElem.style.display = 'none';
-        }
-      } else {
-        bannerElem.style.transition = 'opacity 0.25s ease';
-        bannerElem.style.opacity = '0';
-        setTimeout(() => {
-          if (currentModel && currentModel.slug !== 'max-12' && !(currentModel.modelo && currentModel.modelo.toUpperCase().includes('MAX 12'))) {
-            bannerElem.style.display = 'none';
-          }
-        }, 250);
-        if (heroStageElem) {
-          heroStageElem.style.display = 'flex';
-        }
-      }
+      bannerElem.style.display = isMax12 ? 'block' : 'none';
+      bannerElem.style.opacity = isMax12 ? '1' : '0';
+      if (heroStageElem) heroStageElem.style.display = isMax12 ? 'none' : 'flex';
     }
 
     // 1. Atualizar Hero
@@ -159,8 +111,7 @@
     // Atualizar Taglines do Hero
     const taglineHead = document.getElementById('heroTaglineHeadline');
     if (taglineHead) {
-      const typeLabel = found.categoria.toUpperCase() === 'BIKE' ? 'E-BIKE' : 'SCOOTER';
-      taglineHead.textContent = `THE HYPER URBAN ${typeLabel}.`;
+      taglineHead.textContent = `ALTA PERFORMANCE ${found.categoria.toUpperCase() === 'BIKE' ? 'E-BIKE' : 'SCOOTER'}.`;
     }
 
     // 2. Atualizar Telemetria Hero (Potência Nominal, Vel, Autonomia)
@@ -171,7 +122,7 @@
     if (heroVel) heroVel.textContent = found.metrics.velocidade_max_kmh ? `${found.metrics.velocidade_max_kmh} km/h` : '32 km/h';
 
     const heroAut = document.getElementById('heroTelemetryRange');
-    if (heroAut) heroAut.textContent = found.metrics.autonomia_conservadora_km ? `${found.metrics.autonomia_conservadora_km}` : '35 km';
+    if (heroAut) heroAut.textContent = found.metrics.autonomia_maxima_km ? `Até ${found.metrics.autonomia_maxima_km} km` : 'Até 50 km';
 
     // 3. Atualizar Big Cards da Seção de Telemetria
     updateTelemetryBigCards(found);
@@ -191,25 +142,35 @@
 
   // 5. Atualização do Cockpit HD
   function updateCockpitForModel(model) {
-    const hudSpeed = document.getElementById('hudSpeedVal');
-    if (hudSpeed) hudSpeed.textContent = model.metrics.velocidade_max_kmh || '32';
+    const s = model.sections || {}, m = model.metrics || {};
+    const topSpeed = parseInt(m.velocidade_max_kmh || '32', 10) || 32;
 
     const hudModelName = document.getElementById('hudModelName');
     if (hudModelName) hudModelName.textContent = `MAJ ${model.modelo.toUpperCase()}`;
 
     const hudBattery = document.getElementById('hudBatteryInfo');
     if (hudBattery) {
-      const volt = model.metrics.voltagem_v || '60V';
-      const ah = model.metrics.capacidade_ah || '20Ah';
-      hudBattery.textContent = `BATERIA: ${volt} ${ah}`;
+      const volt = m.voltagem_v || '60V';
+      const ah = m.capacidade_ah || '20Ah';
+      const quim = (s['Bateria e autonomia']?.['Química / tipo'] || '').includes('LiFePO') ? 'LiFePO₄' : 'Lítio';
+      hudBattery.textContent = `BATERIA: ${volt} ${ah} • ${quim}`;
     }
 
-    const topSpeed = parseInt(model.metrics.velocidade_max_kmh || '32', 10) || 32;
-    const sportBtn = document.querySelector('.cockpit-mode-btn[onclick*="sport"]');
-    if (sportBtn) {
-      sportBtn.setAttribute('onclick', `setCockpitMode('sport', '${topSpeed}', 'MODO SPORT ATIVO', '#e1ff32')`);
-      sportBtn.textContent = `Modo Sport (${topSpeed} km/h)`;
+    const hudChassis = document.getElementById('hudChassisInfo');
+    if (hudChassis) hudChassis.textContent = `ESTRUTURA: AÇO CARBONO • CARGA ${m.carga_maxima_kg || '180'} KG`;
+
+    const hudBrakes = document.getElementById('hudBrakesInfo');
+    if (hudBrakes) hudBrakes.textContent = `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase();
+
+    const btnLevel3 = document.getElementById('btnCockpitLevel3');
+    if (btnLevel3) {
+      btnLevel3.setAttribute('onclick', `setCockpitMode('level3', '${topSpeed}', 'NÍVEL 3 (MÁXIMA)', '#e1ff32')`);
+      btnLevel3.textContent = `Nível 3 (${topSpeed} km/h)`;
     }
+
+    const hasReverse = (s['Desempenho']?.['Possui ré?'] || '').toLowerCase().includes('sim');
+    const revBtn = document.getElementById('btnCockpitReverse');
+    if (revBtn) revBtn.style.display = hasReverse ? 'inline-flex' : 'none';
 
     if (cockpitHasBeenRevealed) {
       animateCockpitSpeedometer(topSpeed);
@@ -253,40 +214,53 @@
     const container = document.getElementById('techCardsCarousel');
     if (!container) return;
     container.innerHTML = '';
-    const s = model.sections || {};
-    const m = model.metrics || {};
+    const s = model.sections || {}, m = model.metrics || {};
+    const cL = s['Estrutura e conforto']?.['Comprimento (cm)'] || '170';
+    const lG = s['Estrutura e conforto']?.['Largura (cm)'] || '76';
+    const alt = s['Estrutura e conforto']?.['Altura (cm)'] || '130';
+    const ass = s['Estrutura e conforto']?.['Altura do assento (cm)'] || '76';
+    const quim = (s['Bateria e autonomia']?.['Química / tipo'] || '').includes('LiFePO') ? 'LiFePO₄ (LFP)' : (s['Bateria e autonomia']?.['Química / tipo'] || 'Lítio');
 
     const cardsData = [
       {
         title: 'Motorização & Desempenho', icon: '⚡', items: [
-          { lbl: 'Potência Nominal', val: `${m.potencia_nominal_w || '1000'}W` },
-          { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` },
-          { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
-          { lbl: 'Possui Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Não' },
+          { lbl: 'Potência Nominal', val: `${m.potencia_nominal_w || '1000'}W` }, { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` },
+          { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' }, { lbl: 'Possui Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' },
+          { lbl: 'Subidas / Relevo', val: s['Uso e comercial']?.['Subidas: limite e condições'] || 'Subidas íngremes' },
         ],
       },
       {
         title: 'Bateria & Autonomia', icon: '🔋', items: [
-          { lbl: 'Voltagem / Capacidade', val: `${m.voltagem_v || '60V'} • ${m.capacidade_ah || '20Ah'}` },
-          { lbl: 'Capacidade Total', val: m.capacidade_wh || '1200Wh' },
-          { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
-          { lbl: 'Autonomia Estimada', val: `${m.autonomia_conservadora_km || '35km'} (até ${m.autonomia_maxima_km || '50km'})` },
+          { lbl: 'Química da Bateria', val: quim }, { lbl: 'Voltagem / Capacidade', val: `${m.voltagem_v || '60V'} • ${m.capacidade_ah || '20Ah'}` },
+          { lbl: 'Capacidade Total', val: m.capacidade_wh || '1200Wh' }, { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
+          { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' }, { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km de autonomia` },
         ],
       },
       {
-        title: 'Estrutura & Conforto', icon: '🛡️', items: [
-          { lbl: 'Carga Máxima Suportada', val: `${m.carga_maxima_kg || '180'} kg` },
-          { lbl: 'Peso do Veículo', val: m.peso_kg || '75 kg' },
-          { lbl: 'Ocupantes Recomendados', val: s['Estrutura e conforto']?.['Ocupantes recomendados'] || '1 a 2' },
-          { lbl: 'Compartimento / Baú', val: s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Incluso' },
+        title: 'Chassi & Dimensões', icon: '🛡️', items: [
+          { lbl: 'Dimensões (C × L × A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm` },
+          { lbl: 'Carga Máxima', val: `${m.carga_maxima_kg || '180'} kg` }, { lbl: 'Peso do Veículo', val: m.peso_kg || '75 kg' },
+          { lbl: 'Ocupantes Homologados', val: `${s['Estrutura e conforto']?.['Ocupantes homologados'] || '2'} pessoas` }, { lbl: 'Estrutura do Chassi', val: 'Aço carbono de alta qualidade' },
         ],
       },
       {
         title: 'Segurança & Freios', icon: '🛑', items: [
-          { lbl: 'Sistema de Frenagem', val: m.freios || 'Disco / Hidráulico' },
-          { lbl: 'Suspensão Dianteira', val: s['Segurança e componentes']?.['Suspensão dianteira'] || 'Hidráulica' },
-          { lbl: 'Suspensão Traseira', val: s['Segurança e componentes']?.['Suspensão traseira'] || 'Duplo amortecedor' },
-          { lbl: 'Iluminação', val: s['Segurança e componentes']?.['Iluminação'] || 'Full LED' },
+          { lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' }, { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' },
+          { lbl: 'Suspensão Diant. / Tras.', val: 'Hidráulica com duplo amortecedor' }, { lbl: 'Pneus / Rodagem', val: s['Segurança e componentes']?.['Pneu / aro'] || 'Pneus largos' },
+          { lbl: 'Alarme & Iluminação', val: 'Alarme sonoro ativo e Iluminação LED' },
+        ],
+      },
+      {
+        title: 'Uso, Ergonomia & Conforto', icon: '🛵', items: [
+          { lbl: 'Porta-Objetos / Baú', val: s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Porta-Objetos' }, { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' },
+          { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos e trabalho diário' }, { lbl: 'Restrições de Uso', val: s['Uso e comercial']?.['Não recomendado para'] || 'Menores de 16 anos' },
+        ],
+      },
+      {
+        title: 'Garantia & Regulamentação', icon: '📜', items: [
+          { lbl: 'Garantia do Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias' }, { lbl: 'Garantia da Bateria', val: '1 ano com revisões (90 dias revenda)' },
+          { lbl: 'Assistência Técnica', val: 'Autorizada Maj Mobilidade Elétrica' }, { lbl: 'Exige CNH?', val: 'Não exigido' },
+          { lbl: 'Exige Emplacamento?', val: 'Não (Resolução CONTRAN nº 996/2023)' },
         ],
       },
     ];
@@ -374,9 +348,18 @@
   function updateComparisonCol(prefix, model) {
     const colHeader = document.getElementById(prefix === 'active' ? 'compColActiveHeader' : 'compColSecondHeader');
     if (colHeader) colHeader.textContent = model.modelo;
-    ['potencia_nominal_w', 'velocidade_max_kmh', 'autonomia_conservadora_km', 'carga_maxima_kg', 'peso_kg', 'freios'].forEach((f) => {
+    const m = model.metrics || {};
+    const map = {
+      potencia_nominal_w: m.potencia_nominal_w ? `${m.potencia_nominal_w}W` : '1000W',
+      velocidade_max_kmh: m.velocidade_max_kmh ? `${m.velocidade_max_kmh} km/h` : '32 km/h',
+      autonomia_maxima_km: `Até ${m.autonomia_maxima_km || '50'} km`,
+      carga_maxima_kg: m.carga_maxima_kg ? `${m.carga_maxima_kg} kg` : '180 kg',
+      peso_kg: m.peso_kg || '75 kg',
+      freios: m.freios || 'Hidráulico',
+    };
+    Object.entries(map).forEach(([f, val]) => {
       const el = document.getElementById(`comp-${prefix}-${f}`);
-      if (el) el.textContent = model.metrics[f] || '—';
+      if (el) el.textContent = val;
     });
   }
   function updateComparisonActiveCol(model) { updateComparisonCol('active', model); }
@@ -451,9 +434,10 @@
 
   function animateTelemetryCountUp(fromZero = false) {
     if (!currentModel) return;
-    const potVal = parseInt(String(currentModel.metrics.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-    const velVal = parseInt(String(currentModel.metrics.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    const autVal = parseInt(String(currentModel.metrics.autonomia_conservadora_km || '35').replace(/[^\d]/g, ''), 10) || 35;
+    const m = currentModel.metrics || {};
+    const potVal = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+    const velVal = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const autVal = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
 
     const bigPot = document.getElementById('bigMetricPower');
     const bigVel = document.getElementById('bigMetricSpeed');
@@ -474,15 +458,28 @@
   }
 
   function updateTelemetryBigCards(model) {
-    const sub = document.getElementById('bigMetricRangeSub');
-    if (sub) sub.textContent = `Autonomia conservadora estimada para rotas urbanas (até ${model.metrics.autonomia_maxima_km || '50'} km em condições ideais).`;
+    const s = model.sections || {}, m = model.metrics || {};
+    const potSub = document.getElementById('bigMetricPowerSub');
+    if (potSub) potSub.textContent = s['Desempenho']?.['Observações de desempenho'] || 'Motor de alta performance calibrado para rendimento e subidas urbanas.';
+
+    const speedSub = document.getElementById('bigMetricSpeedSub');
+    if (speedSub) {
+      const topSpeed = m.velocidade_max_kmh || '32';
+      speedSub.textContent = `Velocidade máxima homologada de ${topSpeed} km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.`;
+    }
+
+    const rangeSub = document.getElementById('bigMetricRangeSub');
+    if (rangeSub) {
+      rangeSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg em piso plano, seco e pavimentado.`;
+    }
+
+    const potVal = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+    const velVal = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const autVal = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
 
     if (telemetryHasBeenRevealed) {
       animateTelemetryCountUp(false);
     } else {
-      const potVal = parseInt(String(model.metrics.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-      const velVal = parseInt(String(model.metrics.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-      const autVal = parseInt(String(model.metrics.autonomia_conservadora_km || '35').replace(/[^\d]/g, ''), 10) || 35;
       const p = document.getElementById('bigMetricPower'); if (p) p.textContent = potVal;
       const v = document.getElementById('bigMetricSpeed'); if (v) v.textContent = velVal;
       const a = document.getElementById('bigMetricRange'); if (a) a.textContent = autVal;
@@ -491,7 +488,6 @@
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
-    initWaveCanvas();
     loadModels();
     initShowroomScrollObservers();
   });

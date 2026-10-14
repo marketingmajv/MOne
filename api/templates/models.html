@@ -123,10 +123,10 @@
 
       <!-- Tagline Técnica de Canto Inferior Esquerdo (Exatamente como no Gogoro Pulse) -->
       <div class="hero-bottom-tagline">
-        <div class="tagline-eyebrow" id="heroCategoryLabel">MAJ ELECTRIC SCOOTER</div>
-        <div class="tagline-headline" id="heroTaglineHeadline">THE HYPER URBAN SCOOTER.</div>
+        <div class="tagline-eyebrow" id="heroCategoryLabel">SCOOTER ELÉTRICA MAJ</div>
+        <div class="tagline-headline" id="heroTaglineHeadline">ALTA PERFORMANCE URBANA.</div>
         <div class="tagline-desc" id="heroModelDesc">
-          Potência pura, design agressivo e estabilidade superior para dominar o tráfego urbano.
+          Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.
         </div>
       </div>
 
@@ -143,8 +143,8 @@
         </div>
         <div class="hero-spec-sep"></div>
         <div class="hero-spec-item">
-          <span class="hero-spec-val" id="heroTelemetryRange">35 km</span>
-          <span class="hero-spec-lbl">AUTONOMIA REAL</span>
+          <span class="hero-spec-val" id="heroTelemetryRange">Até 50 km</span>
+          <span class="hero-spec-lbl">AUTONOMIA</span>
         </div>
       </div>
 
@@ -163,8 +163,8 @@
           <div class="telemetry-huge-num">
             <span id="bigMetricPower">1000</span><span class="telemetry-huge-unit">W</span>
           </div>
-          <p class="telemetry-card-desc">
-            Motor elétrico de tração contínua calibrado para torque imediato e eficiência térmica avançada em qualquer relevo.
+          <p class="telemetry-card-desc" id="bigMetricPowerSub">
+            Motor de alta performance, capaz de enfrentar com facilidade a maioria das ladeiras urbanas em condições adequadas de carga, bateria e piso.
           </p>
         </div>
 
@@ -173,18 +173,18 @@
           <div class="telemetry-huge-num">
             <span id="bigMetricSpeed">32</span><span class="telemetry-huge-unit">KM/H</span>
           </div>
-          <p class="telemetry-card-desc">
-            Velocidade máxima com limitador inteligente em conformidade com as normas brasileiras de mobilidade urbana.
+          <p class="telemetry-card-desc" id="bigMetricSpeedSub">
+            Velocidade máxima homologada de 32 km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.
           </p>
         </div>
 
         <div class="telemetry-big-card">
-          <div class="telemetry-eyebrow">AUTONOMIA CONSERVADORA</div>
+          <div class="telemetry-eyebrow">AUTONOMIA ESTIMADA</div>
           <div class="telemetry-huge-num">
-            <span id="bigMetricRange">35</span><span class="telemetry-huge-unit">KM</span>
+            <span id="bigMetricRange">50</span><span class="telemetry-huge-unit">KM</span>
           </div>
           <p class="telemetry-card-desc" id="bigMetricRangeSub">
-            Autonomia conservadora estimada para rotas urbanas do dia a dia (até 50 km em condições ideais).
+            (Até 50 km de autonomia). Avaliação realizada com piloto de ~75 kg em piso plano, seco e pavimentado.
           </p>
         </div>
       </div>
@@ -203,28 +203,29 @@
           <div class="hud-top-row">
             <span id="hudModelName">MAJ MAX 12 MAJ</span>
             <span style="color: var(--maj-lime); font-weight: 700;">SISTEMA OK</span>
-            <span id="hudBatteryInfo">BATERIA: 60V 20Ah</span>
+            <span id="hudBatteryInfo">BATERIA: 60V 20Ah • LiFePO₄</span>
           </div>
 
           <div class="hud-center-stage">
             <div style="display: flex; flex-direction: column; align-items: center;">
               <div class="hud-speedometer-val" id="hudSpeedVal">32</div>
               <div style="font-family: var(--font-telemetry); font-size: 13px; letter-spacing: 2px; color: var(--maj-cyan);">KM / H</div>
-              <div class="hud-mode-pill-active" id="hudModeBadge">MODO SPORT ATIVO</div>
+              <div class="hud-mode-pill-active" id="hudModeBadge">NÍVEL 3 (MÁXIMA)</div>
             </div>
           </div>
 
           <div class="hud-top-row" style="border-top: 1px solid rgba(255,255,255,0.08); border-bottom: none; padding-top: 10px; padding-bottom: 0;">
-            <span>ODÔMETRO TOTAL: 0000 KM</span>
-            <span>TEMPERATURA AMBIENTE: 26°C</span>
+            <span id="hudChassisInfo">ESTRUTURA: AÇO CARBONO • CARGA 180 KG</span>
+            <span id="hudBrakesInfo">FREIOS: HIDRÁULICOS D/T</span>
           </div>
         </div>
       </div>
 
       <div class="cockpit-controls-row">
-        <button class="cockpit-mode-btn active" onclick="setCockpitMode('sport', '32', 'MODO SPORT ATIVO', '#e1ff32')">Modo Sport (32 km/h)</button>
-        <button class="cockpit-mode-btn" onclick="setCockpitMode('eco', '20', 'MODO ECO ATIVO', '#00d7ff')">Modo Eco (20 km/h)</button>
-        <button class="cockpit-mode-btn" onclick="setCockpitMode('touring', '25', 'MODO URBANO', '#28e1a5')">Modo Urbano (25 km/h)</button>
+        <button class="cockpit-mode-btn" onclick="setCockpitMode('level1', '15', 'NÍVEL 1 ATIVO', '#00d7ff')">Nível 1 (15 km/h)</button>
+        <button class="cockpit-mode-btn" onclick="setCockpitMode('level2', '25', 'NÍVEL 2 ATIVO', '#28e1a5')">Nível 2 (25 km/h)</button>
+        <button class="cockpit-mode-btn active" id="btnCockpitLevel3" onclick="setCockpitMode('level3', '32', 'NÍVEL 3 (MÁXIMA)', '#e1ff32')">Nível 3 (32 km/h)</button>
+        <button class="cockpit-mode-btn" id="btnCockpitReverse" onclick="setCockpitMode('reverse', '5', 'MARCHA A RÉ (R)', '#ff5252')">Marcha a Ré (R)</button>
         <button class="cockpit-mode-btn" onclick="setCockpitMode('standby', '0', 'VEÍCULO PARADO', '#ffffff')">Standby (0 km/h)</button>
       </div>
     </section>
@@ -288,9 +289,9 @@
               <td id="comp-second-velocidade_max_kmh" style="font-weight: 700;">—</td>
             </tr>
             <tr>
-              <td style="color: var(--text-muted);">Autonomia Conservadora</td>
-              <td id="comp-active-autonomia_conservadora_km" style="font-weight: 700; color: #fff;">—</td>
-              <td id="comp-second-autonomia_conservadora_km" style="font-weight: 700;">—</td>
+              <td style="color: var(--text-muted);">Autonomia Estimada</td>
+              <td id="comp-active-autonomia_maxima_km" style="font-weight: 700; color: #fff;">—</td>
+              <td id="comp-second-autonomia_maxima_km" style="font-weight: 700;">—</td>
             </tr>
             <tr>
               <td style="color: var(--text-muted);">Carga Máxima Suportada</td>

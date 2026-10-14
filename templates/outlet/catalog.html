@@ -355,10 +355,12 @@
                 <h3>Ficha Técnica & Especificações</h3>
                 <div class="specs-table">
                   <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                    <div class="spec-row">
-                      <span class="spec-k" x-text="key"></span>
-                      <span class="spec-v" x-text="val"></span>
-                    </div>
+                    <template x-if="key !== 'color_prices' && typeof val === 'string'">
+                      <div class="spec-row">
+                        <span class="spec-k" x-text="key"></span>
+                        <span class="spec-v" x-text="val"></span>
+                      </div>
+                    </template>
                   </template>
                   <div class="spec-row" x-show="selectedItem.color">
                     <span class="spec-k">Cores disponíveis</span>
