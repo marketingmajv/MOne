@@ -40,6 +40,25 @@
     .atacado-hero-ribbon {
       background: linear-gradient(90deg, #047857, #059669, #047857);
     }
+    .sticker-min-qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 204, 136, 0.12);
+      color: #00cc88;
+      border: 1px solid rgba(0, 204, 136, 0.45);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px rgba(0, 204, 136, 0.15);
+      margin-bottom: 8px;
+    }
+    .sticker-min-qty svg {
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body x-data="atacadoApp()">
@@ -199,6 +218,10 @@
             {% if show_prices %}
             <!-- Preço Atacado (Apenas à Vista CNPJ) -->
             <div class="card-pricing">
+              <div class="sticker-min-qty">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                <span>{{ min_qty_text }}</span>
+              </div>
               <div class="price-to">
                 <span class="currency">R$</span>
                 <span class="amount" x-text="item.price_outlet > 0 ? formatPrice(item.price_outlet) : 'Sob consulta'"></span>
@@ -273,6 +296,10 @@
               {% if show_prices %}
               <!-- Box de Preço Atacado (Apenas à Vista CNPJ) -->
               <div class="modal-pricing-box">
+                <div class="sticker-min-qty" style="margin-bottom: 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                  <span>{{ min_qty_text }}</span>
+                </div>
                 <div class="price-to">
                   <span class="currency">R$</span>
                   <span class="amount" x-text="selectedItem.price_outlet > 0 ? formatPrice(selectedItem.price_outlet) : 'Sob consulta'"></span>

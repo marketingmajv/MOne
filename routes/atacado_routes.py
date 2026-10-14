@@ -56,7 +56,7 @@ def _render_atacado_catalog(show_prices=True):
     if show_prices:
         whatsapp_message = get_atacado_setting(
             "whatsapp_message",
-            "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."
+            "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido."
         )
     else:
         whatsapp_message = "Olá! Tenho interesse no modelo {model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação."
@@ -80,6 +80,10 @@ def _render_atacado_catalog(show_prices=True):
         "atacado_urgency_text",
         "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA"
     )
+    min_qty_text = get_atacado_setting(
+        "atacado_min_qty_text",
+        "Valor a partir de 3 unidades"
+    )
 
     all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
 
@@ -92,6 +96,7 @@ def _render_atacado_catalog(show_prices=True):
         title=title,
         subtitle=subtitle,
         urgency_text=urgency_text,
+        min_qty_text=min_qty_text,
         all_categories=all_categories,
         total_vehicles=total_vehicles,
         show_prices=show_prices
@@ -150,11 +155,12 @@ def admin_atacado():
 
     settings = {
         "whatsapp_number": get_atacado_setting("whatsapp_number", "5527996051538"),
-        "whatsapp_message": get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price}. Gostaria de solicitar uma cotação/pedido."),
+        "whatsapp_message": get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido."),
         "whatsapp_floating_message": get_atacado_setting("whatsapp_floating_message", "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."),
         "atacado_title": get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE"),
         "atacado_subtitle": get_atacado_setting("atacado_subtitle", "Catálogo Oficial de Atacado • Veículos Elétricos com Preços Exclusivos para CNPJ"),
-        "atacado_urgency_text": get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA")
+        "atacado_urgency_text": get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA"),
+        "atacado_min_qty_text": get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades")
     }
 
     return render_template(
@@ -286,6 +292,7 @@ def admin_atacado_settings():
     set_atacado_setting("atacado_title", request.form.get("atacado_title", "").strip())
     set_atacado_setting("atacado_subtitle", request.form.get("atacado_subtitle", "").strip())
     set_atacado_setting("atacado_urgency_text", request.form.get("atacado_urgency_text", "").strip())
+    set_atacado_setting("atacado_min_qty_text", request.form.get("atacado_min_qty_text", "").strip() or "Valor a partir de 3 unidades")
 
     audit("update_atacado_settings", f"Configurações de Atacado salvas. WhatsApp: {clean_wa}")
     flash("Configurações do WhatsApp e Catálogo de Atacado salvas com sucesso.", "success")

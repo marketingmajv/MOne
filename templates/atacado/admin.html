@@ -87,7 +87,7 @@
         <input type="text" name="whatsapp_floating_message" value="{{ settings.whatsapp_floating_message }}" required style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.">
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
         <div>
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Título do Catálogo</label>
           <input type="text" name="atacado_title" value="{{ settings.atacado_title }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
@@ -96,9 +96,16 @@
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Subtítulo do Catálogo</label>
           <input type="text" name="atacado_subtitle" value="{{ settings.atacado_subtitle }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
         </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
         <div>
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Fita de Urgência (Topo do Catálogo)</label>
           <input type="text" name="atacado_urgency_text" value="{{ settings.atacado_urgency_text }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">🏷️ Sticker / Regra de Lote Mínimo (Ex: Valor a partir de 3 unidades)</label>
+          <input type="text" name="atacado_min_qty_text" value="{{ settings.atacado_min_qty_text or 'Valor a partir de 3 unidades' }}" placeholder="Valor a partir de 3 unidades" style="width: 100%; padding: 8px; font-size: 0.85rem; border: 1px solid rgba(0, 204, 136, 0.4);">
         </div>
       </div>
 
