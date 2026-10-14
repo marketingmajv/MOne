@@ -122,6 +122,12 @@
           <span>Auditoria</span>
         </a>
         {% endif %}
+        {% if me %}
+        <a href="{{ url_for('implementation_plan.index') }}" class="{{ 'active' if request.endpoint and 'implementation_plan' in request.endpoint else '' }}" title="Relatórios Semanais e Plano de Governança MAJ">
+          <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Relatórios & Plano</span>
+        </a>
+        {% endif %}
         {% if me and user_has_permission(me, 'copilot', default_for_sales=True) %}
         <a href="{{ url_for('copilot') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='copilot' else '' }}">
           <svg class="nav-icon text-sky-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>

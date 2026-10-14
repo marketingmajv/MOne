@@ -1,0 +1,101 @@
+<!-- templates/admin/reports_consolidation_tab.html -->
+<div x-show="activeTab === 'consolidation'" {% if active_tab != 'consolidation' %}x-cloak style="display: none;"{% endif %}>
+
+  <!-- Banner do Briefing da Reunião de Segunda-Feira -->
+  <div class="panel" style="margin-bottom: 24px; border-left: 4px solid #8b5cf6; padding: 20px 24px; border-radius: 12px; background: var(--panel);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+          <span style="font-size: 1.4rem;">📑</span>
+          <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text);">
+            Consolidação Semanal — Reunião de Gestão (20-30 min)
+          </h3>
+          <span class="badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.35); font-weight: 800; font-size: 0.72rem;">
+            PAUTA EXECUTIVA
+          </span>
+        </div>
+        <p class="muted" style="margin: 0; font-size: 0.85rem; max-width: 820px; line-height: 1.45;">
+          Visão unificada dos 6 eixos estratégicos levantados nas cartilhas de função para alinhamento direto entre 
+          <strong>Jam Penitenti</strong>, <strong>Geysa</strong> e <strong>Fauzer</strong> toda segunda-feira.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" 
+                class="btn" 
+                onclick="window.print()" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🖨️</span>
+          <span>Imprimir / Gerar PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid das 6 Frentes Críticas -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 18px; margin-bottom: 24px;">
+    {% for front in consolidation.fronts %}
+    <div class="panel" style="margin-bottom: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <div>
+        <!-- Cabeçalho da Frente -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+          <div>
+            <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">
+              {{ front.front_title }}
+            </h4>
+            <small style="color: var(--text-dim); font-size: 0.78rem;">
+              Responsável: <strong style="color: var(--text);">{{ front.owner }}</strong>
+            </small>
+          </div>
+          
+          <span class="badge" style="background: rgba(217, 119, 6, 0.12); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.35); font-weight: 800; font-size: 0.72rem;">
+            {{ front.badge }}
+          </span>
+        </div>
+
+        <!-- Destaques das Respostas -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for hl in front.key_highlights %}
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;">
+              {{ hl.label }}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text); line-height: 1.45; white-space: pre-line;">
+              {% if hl.answer and hl.answer.strip() %}
+                {{ hl.answer }}
+              {% else %}
+                <span class="muted" style="font-style: italic; font-size: 0.8rem;">
+                  ⏳ Não informado ou pendente de envio.
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Rodapé do Card -->
+      <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-dim);">
+        <div>
+          Status: 
+          {% if front.employee_data and front.employee_data.status in ['submitted_on_time', 'submitted_late'] %}
+            <span style="color: #10b981; font-weight: 700;">✓ Submetido</span>
+          {% else %}
+            <span style="color: #ef4444; font-weight: 700;">⏳ Aguardando retorno</span>
+          {% endif %}
+        </div>
+
+        <button type="button" 
+                class="btn" 
+                style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0;"
+                @click="selectedEmployee = '{{ front.employee_data.key if front.employee_data else '' }}'; showReportModal = true">
+          Ver relatório completo →
+        </button>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+</div>

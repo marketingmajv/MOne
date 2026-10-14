@@ -1,0 +1,219 @@
+<!-- templates/admin/reports_dashboard_tab.html -->
+<div x-show="activeTab === 'dashboard'" {% if active_tab != 'dashboard' %}x-cloak style="display: none;"{% endif %}>
+
+  <!-- Métricas Rápidas das Entregas -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+    <!-- Card Total Concluído -->
+    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #10b981; border-radius: 12px;">
+      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
+        Conclusão do Ciclo
+      </small>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+        <span style="font-size: 1.7rem; font-weight: 800; color: #10b981;">
+          {{ summary.completion_percent }}%
+        </span>
+        <span class="muted" style="font-size: 0.8rem;">
+          ({{ summary.total_submitted }}/{{ summary.counts.total }} entregues)
+        </span>
+      </div>
+      <div style="background: var(--panel2); border-radius: 6px; height: 6px; width: 100%; margin-top: 8px; overflow: hidden;">
+        <div style="background: #10b981; height: 100%; width: {{ summary.completion_percent }}%;"></div>
+      </div>
+    </div>
+
+    <!-- Card No Prazo -->
+    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #059669; border-radius: 12px;">
+      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
+        Enviados no Prazo
+      </small>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+        <span style="font-size: 1.7rem; font-weight: 800; color: var(--text);">
+          {{ summary.counts.submitted_on_time }}
+        </span>
+        <span class="badge" style="background: rgba(5, 150, 105, 0.12); color: #059669; font-size: 0.72rem; font-weight: 800;">
+          {{ summary.on_time_percent }}% pontualidade
+        </span>
+      </div>
+      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
+        Antes do prazo oficial
+      </small>
+    </div>
+
+    <!-- Card Pendentes -->
+    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #ef4444; border-radius: 12px;">
+      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
+        Pendentes de Envio
+      </small>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+        <span style="font-size: 1.7rem; font-weight: 800; color: #ef4444;">
+          {{ summary.counts.pending }}
+        </span>
+        <span class="muted" style="font-size: 0.8rem;">colaboradores</span>
+      </div>
+      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
+        Lembrete via WhatsApp disponível
+      </small>
+    </div>
+
+    <!-- Card Atrasados ou Rascunhos -->
+    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #f59e0b; border-radius: 12px;">
+      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
+        Atrasados / Rascunhos
+      </small>
+      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+        <span style="font-size: 1.7rem; font-weight: 800; color: #f59e0b;">
+          {{ summary.counts.submitted_late + summary.counts.draft }}
+        </span>
+        <span class="muted" style="font-size: 0.8rem;">
+          ({{ summary.counts.submitted_late }} atraso / {{ summary.counts.draft }} rascunho)
+        </span>
+      </div>
+      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
+        Acompanhamento gerencial
+      </small>
+    </div>
+  </div>
+
+  <!-- Barra de Controle de Prazos e Prazo Oficial -->
+  <div class="panel" style="margin-bottom: 20px; padding: 16px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.5rem;">⏱️</span>
+        <div>
+          <div style="font-size: 0.95rem; font-weight: 800; color: var(--text);">
+            Prazo Limite Oficial do {{ cycle.title }}
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-dim);">
+            Sexta-feira às 18:00 (Data limite no banco: <strong>{{ summary.deadline_str }}</strong>)
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão para abrir edição de prazo -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" 
+                class="btn" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px;"
+                @click="showDeadlineModal = true">
+          ✏️ Alterar Prazo do Ciclo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Monitoramento das Entregas -->
+  <div class="panel" style="margin-bottom: 24px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px;">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">
+        Quadro de Entregas Semanais (7 Colaboradores Oficiais)
+      </h3>
+      <span class="muted" style="font-size: 0.78rem;">
+        Atualizado em tempo real
+      </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+        <thead>
+          <tr style="background: var(--panel2); border-bottom: 1px solid var(--line); color: var(--text-dim); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
+            <th style="padding: 12px 18px;">Colaborador</th>
+            <th style="padding: 12px 18px;">Área & Função</th>
+            <th style="padding: 12px 18px; text-align: center;">Status da Entrega</th>
+            <th style="padding: 12px 18px; text-align: center;">Preenchimento</th>
+            <th style="padding: 12px 18px; text-align: center;">Data/Hora Envio</th>
+            <th style="padding: 12px 18px; text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in summary.employees %}
+          <tr style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;"
+              onmouseover="this.style.background='var(--panel2)'" 
+              onmouseout="this.style.background='transparent'">
+            
+            <!-- Nome e Ícone -->
+            <td style="padding: 14px 18px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: var(--text);">
+                  {{ emp.name[0] }}
+                </div>
+                <div>
+                  <strong style="color: var(--text); font-size: 0.92rem; display: block;">{{ emp.name }}</strong>
+                  <span class="muted" style="font-size: 0.75rem;">@{{ emp.key }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Área & Função -->
+            <td style="padding: 14px 18px;">
+              <span class="badge" style="background: rgba(217, 119, 6, 0.12); color: #d97706; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; display: inline-block;">
+                {{ emp.badge }}
+              </span>
+              <div style="color: var(--text-dim); font-size: 0.78rem;">
+                {{ emp.role_title }}
+              </div>
+            </td>
+
+            <!-- Status da Entrega -->
+            <td style="padding: 14px 18px; text-align: center;">
+              <span class="badge {{ emp.badge_class }}" style="font-size: 0.76rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
+                <span>{{ emp.icon }}</span>
+                <span>{{ emp.status_label }}</span>
+              </span>
+            </td>
+
+            <!-- Preenchimento -->
+            <td style="padding: 14px 18px; text-align: center;">
+              <div style="display: inline-block; width: 100px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px; color: var(--text-dim);">
+                  <span>{{ emp.answered_count }}/{{ emp.total_questions }}</span>
+                  <span>{{ emp.progress_percent }}%</span>
+                </div>
+                <div style="background: var(--panel2); border-radius: 4px; height: 5px; width: 100%; overflow: hidden;">
+                  <div style="background: {{ '#10b981' if emp.progress_percent == 100 else '#f59e0b' }}; height: 100%; width: {{ emp.progress_percent }}%;"></div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Data/Hora -->
+            <td style="padding: 14px 18px; text-align: center; font-size: 0.78rem; color: var(--text-dim);">
+              {% if emp.submitted_at %}
+                {{ emp.submitted_at|string }}
+              {% else %}
+                <span class="muted">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Ações -->
+            <td style="padding: 14px 18px; text-align: right;">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+                <!-- Botão de Cobrança WhatsApp se pendente -->
+                {% if emp.status in ['pending', 'draft', 'submitted_late'] %}
+                <a href="{{ emp.whatsapp_url }}" 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   class="btn" 
+                   title="Cobrar ou enviar lembrete via WhatsApp"
+                   style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.35); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                  <span>💬</span>
+                  <span>Cobrar WhatsApp</span>
+                </a>
+                {% endif %}
+
+                <!-- Botão de Ver Respostas -->
+                <button type="button" 
+                        class="btn" 
+                        style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 6px;"
+                        @click="selectedEmployee = '{{ emp.key }}'; showReportModal = true">
+                  👁️ Ver Respostas
+                </button>
+              </div>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

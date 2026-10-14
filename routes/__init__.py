@@ -31,6 +31,8 @@ from routes.atacado_routes import atacado_bp
 from routes.fiscal_pricing_routes import fiscal_pricing_bp
 from routes.freight_data_source_routes import freight_data_source_bp
 from routes.showroom_routes import showroom_bp
+from routes.implementation_plan_routes import implementation_plan_bp
+from routes.botconversa_routes import botconversa_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -61,6 +63,8 @@ ALL_BLUEPRINTS = [
     outlet_bp,
     atacado_bp,
     showroom_bp,
+    implementation_plan_bp,
+    botconversa_bp,
 ]
 
 

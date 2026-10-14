@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Plano MAJ & Relatórios Semanais | M-One{% endblock %}
+
+{% block content %}
+<script id="employeesDataScript" type="application/json">{{ summary.employees|tojson|safe if summary is defined and summary else '[]' }}</script>
+
+<div class="content-body" x-data="{
+  activeTab: '{{ active_tab }}',
+  searchMember: '',
+  showDeadlineModal: false,
+  showReportModal: false,
+  selectedEmployee: 'marisa',
+  employeesData: JSON.parse(document.getElementById('employeesDataScript') ? document.getElementById('employeesDataScript').textContent : '[]')
+}">
+
+  {% if not is_admin_viewer %}
+    <!-- ===================================================================== -->
+    <!-- VISÃO RESTRITA DO COLABORADOR: APENAS SEU FORMULÁRIO SEMANAL         -->
+    <!-- ===================================================================== -->
+    {% include "admin/employee_report_form_tab.html" %}
+
+  {% else %}
+    <!-- ===================================================================== -->
+    <!-- VISÃO EXECUTIVA DA DIRETORIA (JAM, GEYSA, FAUZER & SUPORTE)          -->
+    <!-- ===================================================================== -->
+
+    <!-- Header Executivo Superior -->
+    <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--accent, #e5a93b);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span style="font-size: 1.5rem;">📋</span>
+            <h2 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
+              Relatórios Semanais & Governança MAJ
+            </h2>
+            <span class="badge comex-value-amber" style="background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.35); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em;">
+              PAINEL DA DIRETORIA
+            </span>
+          </div>
+          <p class="muted" style="margin: 0; font-size: 0.88rem; max-width: 820px; line-height: 1.45;">
+            Gestão das entregas dos 7 relatórios semanais, pauta da reunião de segunda-feira e governança dos 11 profissionais da MAJ Mobilidade.
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; text-align: center; min-width: 140px;">
+            <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Ciclo Ativo</small>
+            <div class="comex-value-amber" style="font-size: 1.3rem; font-weight: 800;">{{ cycle.cycle_code }}</div>
+            <small style="font-size: 0.72rem; color: var(--text-dim); font-weight: 600;">{{ summary.deadline_str if summary else 'Sexta 18h' }}</small>
+          </div>
+
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; text-align: center; min-width: 140px;">
+            <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Entregas</small>
+            <div class="comex-value-emerald" style="font-size: 1.3rem; font-weight: 800;">{{ summary.total_submitted }}/{{ summary.counts.total }}</div>
+            <small style="font-size: 0.72rem; color: var(--text-dim); font-weight: 600;">{{ summary.completion_percent }}% concluído</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação por Abas Intuitivas -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; flex-wrap: wrap;">
+      <button type="button" 
+              class="btn" 
+              style="{% if active_tab == 'dashboard' %}background: #e5a93b; color: #000; font-weight: 800; border: none;{% else %}background: var(--panel2); color: var(--text);{% endif %}"
+              :style="activeTab === 'dashboard' ? 'background: #e5a93b; color: #000; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
+              @click="activeTab = 'dashboard'">
+        📊 Dashboard de Entregas & Prazos (7)
+      </button>
+
+      <button type="button" 
+              class="btn" 
+              style="{% if active_tab == 'consolidation' %}background: #e5a93b; color: #000; font-weight: 800; border: none;{% else %}background: var(--panel2); color: var(--text);{% endif %}"
+              :style="activeTab === 'consolidation' ? 'background: #e5a93b; color: #000; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
+              @click="activeTab = 'consolidation'">
+        📑 Briefing Reunião Segunda-feira (Jam + Geysa + Fauzer)
+      </button>
+
+      <button type="button" 
+              class="btn" 
+              style="{% if active_tab == 'team' %}background: #e5a93b; color: #000; font-weight: 800; border: none;{% else %}background: var(--panel2); color: var(--text);{% endif %}"
+              :style="activeTab === 'team' ? 'background: #e5a93b; color: #000; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
+              @click="activeTab = 'team'">
+        👥 Equipe & Responsabilidades (11)
+      </button>
+
+      <button type="button" 
+              class="btn" 
+              style="{% if active_tab == 'governance' %}background: #e5a93b; color: #000; font-weight: 800; border: none;{% else %}background: var(--panel2); color: var(--text);{% endif %}"
+              :style="activeTab === 'governance' ? 'background: #e5a93b; color: #000; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
+              @click="activeTab = 'governance'">
+        🏢 Áreas & Alçadas de Decisão
+      </button>
+
+      {% if me and me.username == 'fauzer' %}
+      <button type="button" 
+              class="btn" 
+              :style="activeTab === 'fauzer_relatorio' ? 'background: #8b5cf6; color: #fff; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
+              @click="activeTab = 'fauzer_relatorio'">
+        ✍️ Meu Relatório Semanal (Fauzer)
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Conteúdo das Abas -->
+    {% include "admin/reports_dashboard_tab.html" %}
+    {% include "admin/reports_consolidation_tab.html" %}
+    {% include "admin/team_tab.html" %}
+    {% include "admin/governance_tab.html" %}
+
+    {% if me and me.username == 'fauzer' %}
+    <div x-show="activeTab === 'fauzer_relatorio'" x-cloak>
+      {% set form_meta = fauzer_meta %}
+      {% set form_report = fauzer_report %}
+      {% include "admin/employee_report_form_tab.html" %}
+    </div>
+    {% endif %}
+
+    <!-- ===================================================================== -->
+    <!-- ESTILOS ESPECÍFICOS DOS MODAIS (ALINHAMENTO & RESPONSIVIDADE)          -->
+    <!-- ===================================================================== -->
+    <style>
+      .plano-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .plano-modal-backdrop[style*="display: none"] {
+        display: none !important;
+      }
+      .plano-modal-box {
+        background: var(--panel, #1e2430);
+        border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+        border-radius: 16px;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75);
+        max-width: 760px;
+        width: min(760px, 94vw);
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin: auto;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .plano-modal-header {
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--panel, #1e2430);
+        flex-shrink: 0;
+      }
+      .plano-modal-body {
+        padding: 20px 24px;
+        overflow-y: auto;
+        flex: 1 1 auto;
+      }
+      .plano-modal-footer {
+        padding: 14px 24px;
+        border-top: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--panel, #1e2430);
+        flex-shrink: 0;
+      }
+    </style>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: ALTERAR PRAZO DO CICLO                                         -->
+    <!-- ===================================================================== -->
+    <template x-teleport="body">
+      <div x-show="showDeadlineModal" 
+           x-cloak 
+           class="plano-modal-backdrop"
+           :style="showDeadlineModal ? 'display: flex !important;' : 'display: none !important;'"
+           @click.self="showDeadlineModal = false"
+           @keydown.escape.window="showDeadlineModal = false">
+        <div class="panel" 
+             style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);" 
+             @click.away="showDeadlineModal = false">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">
+              Alterar Prazo Oficial de Entrega
+            </h3>
+            <button type="button" class="btn" style="padding: 4px 10px; font-size: 0.85rem; background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line); border-radius: 6px;" @click="showDeadlineModal = false">
+              ✕
+            </button>
+          </div>
+          <p class="muted" style="font-size: 0.82rem; margin-bottom: 20px; line-height: 1.45;">
+            Ajuste o horário limite para os colaboradores submeterem seus relatórios do {{ cycle.title }}.
+          </p>
+
+          <form action="{{ url_for('implementation_plan.update_deadline') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+
+            <div style="margin-bottom: 18px;">
+              <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">
+                Nova Data e Hora Limite:
+              </label>
+              <input type="datetime-local" 
+                     name="deadline" 
+                     required
+                     value="{{ cycle.deadline|string|replace(' ', 'T') if cycle.deadline else '' }}"
+                     style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); font-size: 0.9rem; box-sizing: border-box;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" class="btn" style="background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line);" @click="showDeadlineModal = false">
+                Cancelar
+              </button>
+              <button type="submit" class="btn" style="background: #e5a93b; color: #000; font-weight: 800; border: none; cursor: pointer;">
+                Salvar Novo Prazo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: VISUALIZAR RESPOSTAS DO COLABORADOR                            -->
+    <!-- ===================================================================== -->
+    <template x-teleport="body">
+      <div x-show="showReportModal" 
+           x-cloak 
+           class="plano-modal-backdrop"
+           :style="showReportModal ? 'display: flex !important;' : 'display: none !important;'"
+           @click.self="showReportModal = false"
+           @keydown.escape.window="showReportModal = false">
+        <div class="plano-modal-box" 
+             @click.away="showReportModal = false">
+          
+          <template x-for="emp in employeesData.filter(e => e.key === selectedEmployee)" :key="emp.key">
+            <div style="display: flex; flex-direction: column; max-height: 88vh; width: 100%; overflow: hidden;">
+              <!-- Header Fixo do Modal -->
+              <div class="plano-modal-header">
+                <div>
+                  <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);" x-text="'Relatório de ' + emp.name"></h3>
+                  <small class="muted" style="font-size: 0.82rem;" x-text="emp.role_title + ' • ' + emp.area"></small>
+                </div>
+                <button type="button" 
+                        class="btn" 
+                        style="padding: 6px 14px; font-size: 0.82rem; background: var(--panel2); color: var(--text); border-radius: 8px; cursor: pointer; border: 1px solid var(--line); font-weight: 700;" 
+                        @click="showReportModal = false"
+                        title="Fechar visualização">
+                  ✕ Fechar
+                </button>
+              </div>
+
+              <!-- Corpo Rolável do Modal -->
+              <div class="plano-modal-body">
+                <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <span class="badge" :class="emp.badge_class" x-text="emp.icon + ' ' + emp.status_label"></span>
+                  <small class="muted" x-text="emp.submitted_at ? 'Enviado em: ' + emp.submitted_at : 'Ainda não submetido'"></small>
+                </div>
+
+                <!-- Respostas -->
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                  <template x-for="(val, key) in emp.answers" :key="key">
+                    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
+                      <div style="font-size: 0.76rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;" x-text="key.replaceAll('_', ' ')"></div>
+                      <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="val || '(Em branco)'"></div>
+                    </div>
+                  </template>
+                  
+                  <div x-show="!Object.keys(emp.answers || {}).length" class="muted" style="text-align: center; padding: 24px; font-size: 0.88rem;">
+                    Nenhuma resposta enviada até o momento.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Rodapé Fixo do Modal -->
+              <div class="plano-modal-footer">
+                <a :href="emp.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: #25d366; color: #fff; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <span>💬</span>
+                  <span>Chamar no WhatsApp</span>
+                </a>
+                <button type="button" 
+                        class="btn" 
+                        style="background: var(--panel2); color: var(--text); padding: 8px 20px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); font-weight: 600;" 
+                        @click="showReportModal = false">
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </div>
+    </template>
+
+  {% endif %}
+
+</div>
+{% endblock %}

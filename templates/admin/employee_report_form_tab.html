@@ -1,0 +1,152 @@
+<!-- templates/admin/employee_report_form_tab.html -->
+{% set meta = form_meta if form_meta is defined and form_meta else employee_meta %}
+{% set rep = form_report if form_report is defined and form_report else my_report %}
+{% set ans = rep.answers if rep and rep.answers else {} %}
+
+{% if meta %}
+<div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--accent, #e5a93b); padding: 24px;">
+  <!-- Cabeçalho do Formulário -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="width: 52px; height: 52px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1.7rem;">
+        📝
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
+            Relatório Semanal — {{ meta.name }}
+          </h2>
+          <span class="badge" style="background: rgba(217, 119, 6, 0.14); border: 1px solid rgba(217, 119, 6, 0.35); color: #d97706; font-size: 0.72rem; font-weight: 800;">
+            {{ meta.badge }}
+          </span>
+        </div>
+        <p class="muted" style="margin: 4px 0 0 0; font-size: 0.85rem;">
+          {{ meta.role_title }} • {{ meta.area }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Badge do Ciclo & Prazo -->
+    <div style="text-align: right; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px;">
+      <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em;">
+        {{ cycle.title }}
+      </div>
+      <div style="font-size: 0.88rem; font-weight: 800; color: #d97706; margin-top: 2px;">
+        Prazo: {{ meta.deadline_day }} às {{ meta.deadline_time }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Atual do Relatório -->
+  <div style="margin-bottom: 24px;">
+    {% if rep and rep.status == 'submitted_on_time' %}
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.4rem;">✅</span>
+        <div>
+          <strong style="color: #10b981; font-size: 0.95rem; display: block;">Relatório Oficial Enviado no Prazo!</strong>
+          <span style="color: var(--text-dim); font-size: 0.82rem;">
+            Submetido com sucesso para a Diretoria em {{ rep.submitted_at|string if rep.submitted_at else 'data recente' }}. Você pode realizar ajustes até o encerramento do ciclo.
+          </span>
+        </div>
+      </div>
+    {% elif rep and rep.status == 'submitted_late' %}
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.4rem;">⚠️</span>
+        <div>
+          <strong style="color: #f59e0b; font-size: 0.95rem; display: block;">Relatório Enviado com Atraso</strong>
+          <span style="color: var(--text-dim); font-size: 0.82rem;">
+            Submetido em {{ rep.submitted_at|string if rep.submitted_at else 'data recente' }}.
+          </span>
+        </div>
+      </div>
+    {% elif rep and rep.status == 'draft' %}
+      <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.4rem;">📝</span>
+        <div>
+          <strong style="color: #0ea5e9; font-size: 0.95rem; display: block;">Rascunho Salvo</strong>
+          <span style="color: var(--text-dim); font-size: 0.82rem;">
+            Você salvou respostas preliminares. Não se esqueça de clicar em <strong>Enviar Relatório Oficial</strong> antes de {{ meta.deadline_day }} às {{ meta.deadline_time }}.
+          </span>
+        </div>
+      </div>
+    {% else %}
+      <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.4rem;">⏳</span>
+        <div>
+          <strong style="color: #ef4444; font-size: 0.95rem; display: block;">Pendente de Preenchimento</strong>
+          <span style="color: var(--text-dim); font-size: 0.82rem;">
+            Por favor, responda aos tópicos da sua rotina semanal até {{ meta.deadline_day }} às {{ meta.deadline_time }}.
+          </span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Instrução Operacional -->
+  <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 24px; font-size: 0.85rem; color: var(--text-dim); line-height: 1.45;">
+    💡 <strong>Diretriz MAJ:</strong> {{ meta.instructions }}
+  </div>
+
+  <!-- Formulário das Perguntas Oficiais -->
+  <form action="{{ url_for('implementation_plan.submit_report') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+    <input type="hidden" name="employee_key" value="{{ meta.key }}">
+    <input type="hidden" name="redirect_tab" value="{{ active_tab }}">
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      {% for q in meta.questions %}
+      <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow-sm);">
+        <label for="field_{{ q.id }}" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.95rem; color: var(--text);">
+          {{ q.label }}
+        </label>
+        
+        {% if q.help %}
+        <p class="muted" style="margin: 0 0 10px 0; font-size: 0.8rem; color: var(--text-dim);">
+          📌 <em>{{ q.help }}</em>
+        </p>
+        {% endif %}
+
+        <textarea 
+          id="field_{{ q.id }}"
+          name="{{ q.id }}" 
+          rows="4" 
+          placeholder="{{ q.placeholder }}"
+          style="width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); padding: 12px; font-size: 0.88rem; line-height: 1.5; font-family: inherit; resize: vertical; box-sizing: border-box;"
+        >{{ ans.get(q.id, '') }}</textarea>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Barra de Ações Inferior -->
+    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; color: var(--text-dim); font-size: 0.8rem;">
+        <span>🔒</span>
+        <span>Respostas confidenciais, consolidadas exclusivamente para a Reunião de Gestão da Diretoria.</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <button type="submit" 
+                name="action" 
+                value="draft" 
+                class="btn" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+          💾 Salvar Rascunho
+        </button>
+
+        <button type="submit" 
+                name="action" 
+                value="submit" 
+                class="btn" 
+                style="background: #e5a93b; color: #000; font-weight: 800; border: none; padding: 10px 24px; border-radius: 8px; box-shadow: 0 2px 6px rgba(229, 169, 59, 0.3);">
+          ⚡ Enviar Relatório Oficial
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="panel" style="padding: 30px; text-align: center;">
+  <p class="muted">Nenhum perfil de relatório semanal configurado para o seu usuário.</p>
+</div>
+{% endif %}
