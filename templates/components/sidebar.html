@@ -1,0 +1,436 @@
+{#
+  M-One Sidebar Component (templates/components/sidebar.html)
+  Padrão Linear / Stripe: Categorias elegantes com títulos sutis e acesso direto em 1 clique.
+#}
+{% set ep = (request.endpoint or '').split('.')[-1] %}
+{% set full_ep = request.endpoint or '' %}
+
+{# Verificações de permissão #}
+{% set can_copilot = me and user_has_permission(me, 'copilot', default_for_sales=True) %}
+
+{% set can_custom_catalogs = me and (me.role in ['admin','support'] or user_has_permission(me, 'custom_catalogs', default_for_sales=False)) %}
+{% set can_outlet = me and me.role in ['admin','support'] %}
+{% set can_atacado = me and me.role in ['admin','support'] %}
+{% set can_showroom = me and me.role in ['admin','support'] %}
+{% set has_comercial = True %}
+
+{% set can_stock = me and user_has_permission(me, 'stock', default_for_sales=True) %}
+{% set can_freight = me and user_has_permission(me, 'freight', default_for_sales=True) %}
+{% set can_imports = me and me.role in ['admin','support'] %}
+{% set can_products = me and (me.role in ['admin','finance','stock','support'] or user_has_permission(me, 'products', default_for_sales=False)) %}
+{% set has_logistica = can_stock or can_freight or can_imports or can_products %}
+
+{% set can_payments = me and me.role in ['admin','finance','support'] %}
+{% set can_fiscal = me and me.role in ['admin','support','finance'] %}
+{% set has_financeiro = can_payments or can_fiscal %}
+
+{% set can_docs = me and me.role in ['admin','support'] %}
+{% set can_plan = me is defined and me is not none %}
+{% set can_users = me and me.role in ['admin','support'] %}
+{% set can_audit = me and me.role in ['admin','support'] %}
+{% set has_governanca = can_docs or can_plan or can_users or can_audit %}
+
+{% set can_sys = me and (me.role in ['admin','support'] or me.username in ['jam', 'fauzer']) %}
+{% set can_infra = me and me.username in ['jam', 'fauzer'] %}
+{% set has_sistema = can_sys or can_infra %}
+
+{# Ativação de rotas #}
+{% set is_active_dashboard = (ep == 'dashboard') %}
+{% set is_active_copilot = ('copilot' in full_ep) %}
+
+{% set is_active_sales = (ep == 'sales') %}
+{% set is_active_custom_catalog = ('custom_catalog' in full_ep) %}
+{% set is_active_outlet = ('outlet' in full_ep) %}
+{% set is_active_atacado = ('atacado' in full_ep) %}
+{% set is_active_showroom = ('showroom' in full_ep or 'model' in full_ep) %}
+
+{% set is_active_stock = (ep == 'stock') %}
+{% set is_active_freight = (ep == 'freight') %}
+{% set is_active_imports = ('import' in full_ep) %}
+{% set is_active_products = (ep == 'products') %}
+
+{% set is_active_payments = (ep == 'payments') %}
+{% set is_active_fiscal = ('fiscal' in full_ep) %}
+
+{% set is_active_docs = ('document' in full_ep) %}
+{% set is_active_plan = ('implementation_plan' in full_ep) %}
+{% set is_active_users = (ep == 'users') %}
+{% set is_active_audit = ('audit' in full_ep) %}
+
+{% set is_active_datasources = ('data_sources' in full_ep) %}
+{% set is_active_connections = ('connection' in full_ep) %}
+{% set is_active_bling = ('bling' in full_ep) %}
+{% set is_active_backups = ('backup' in full_ep) %}
+{% set is_active_infra = ('infra' in full_ep) %}
+
+<style>
+  /* Sidebar Moderna Linear / Stripe — Garantia Imediata contra Cache */
+  .sidebar {
+    width: 260px !important;
+  }
+  .main {
+    margin-left: 260px !important;
+    width: calc(100% - 260px) !important;
+  }
+  .sidebar-nav-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    padding-right: 6px;
+    margin-top: 6px;
+  }
+  .nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 16px;
+  }
+  .nav-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #38bdf8 !important; /* Ciano Elétrico MAJ — alto contraste e super visível */
+    padding: 16px 12px 6px;
+    user-select: none;
+  }
+  .nav-section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(56, 189, 248, 0.25);
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    color: #f1f5f9 !important; /* Texto branco-acinzentado nítido e vivo */
+    font-weight: 500;
+    font-size: 13.5px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+  .nav-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nav-item .nav-icon {
+    width: 18px;
+    height: 18px;
+    color: #94a3b8 !important; /* Ícones claros e visíveis */
+    transition: color 0.15s ease;
+    flex-shrink: 0;
+  }
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.09) !important;
+    color: #ffffff !important;
+  }
+  .nav-item:hover .nav-icon {
+    color: #ffffff !important;
+  }
+  .nav-item.active {
+    background: #0070F3 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    border: 1px solid #0070F3 !important;
+    box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4) !important;
+  }
+  .nav-item.active .nav-icon {
+    color: #ffffff !important;
+  }
+  .nav-item.active span {
+    color: #ffffff !important;
+  }
+</style>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo MAJ M-One">
+    </div>
+    <div>
+      <strong>M-One</strong>
+      <small>MAJ Operating System</small>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav-container">
+    {# ==================================================================== #}
+    {# PRINCIPAL / QUICK ACCESS #}
+    {# ==================================================================== #}
+    <div class="nav-section">
+      <a href="{{ url_for('dashboard') }}" class="nav-item {{ 'active' if is_active_dashboard else '' }}" title="Visão Geral">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>Visão Geral</span>
+      </a>
+
+      {% if can_copilot %}
+      <a href="{{ url_for('copilot') }}" class="nav-item {{ 'active' if is_active_copilot else '' }}" title="Copilot Inteligente MAJ">
+        <svg class="nav-icon text-sky-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Copilot IA</span>
+      </a>
+      {% endif %}
+    </div>
+
+    {# ==================================================================== #}
+    {# COMERCIAL & VENDAS #}
+    {# ==================================================================== #}
+    {% if has_comercial %}
+    <div class="nav-section">
+      <div class="nav-section-label">COMERCIAL & VENDAS</div>
+
+      <a href="{{ url_for('sales') }}" class="nav-item {{ 'active' if is_active_sales else '' }}" title="Painel de Vendas e Pedidos">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+        </svg>
+        <span>Vendas</span>
+      </a>
+
+      {% if can_custom_catalogs %}
+      <a href="{{ url_for('custom_catalog.admin_dashboard') }}" class="nav-item {{ 'active' if is_active_custom_catalog else '' }}" title="Gestão e Distribuição de Catálogos Personalizados">
+        <svg class="nav-icon text-purple-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span>Gestão de Catálogos</span>
+      </a>
+      {% endif %}
+
+      {% if can_outlet %}
+      <a href="{{ url_for('outlet.admin_outlet') }}" class="nav-item {{ 'active' if is_active_outlet else '' }}" title="Gestão do Canal Outlet MAJ B2C">
+        <svg class="nav-icon text-amber-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Outlet MAJ</span>
+      </a>
+      {% endif %}
+
+      {% if can_atacado %}
+      <a href="{{ url_for('atacado.admin_atacado') }}" class="nav-item {{ 'active' if is_active_atacado else '' }}" title="Gestão do Catálogo MAJ Atacado CNPJ B2B">
+        <svg class="nav-icon text-emerald-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>MAJ Atacado CNPJ</span>
+      </a>
+      {% endif %}
+
+      {% if can_showroom %}
+      <a href="{{ url_for('showroom.admin_models_page') }}" class="nav-item {{ 'active' if is_active_showroom else '' }}" title="Gestão de Modelos e Showroom MAJ">
+        <svg class="nav-icon text-sky-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span>Modelos & Showroom</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ==================================================================== #}
+    {# LOGÍSTICA & ESTOQUE #}
+    {# ==================================================================== #}
+    {% if has_logistica %}
+    <div class="nav-section">
+      <div class="nav-section-label">LOGÍSTICA & ESTOQUE</div>
+
+      {% if can_stock %}
+      <a href="{{ url_for('stock') }}" class="nav-item {{ 'active' if is_active_stock else '' }}" title="Gestão de Estoque e Chassis">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>Estoque / Chassis</span>
+      </a>
+      {% endif %}
+
+      {% if can_freight %}
+      <a href="{{ url_for('freight') }}" class="nav-item {{ 'active' if is_active_freight else '' }}" title="Tabelas de Frete e Cotações">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+        <span>Fretes & Expedição</span>
+      </a>
+      {% endif %}
+
+      {% if can_imports %}
+      <a href="{{ url_for('imports') }}" class="nav-item {{ 'active' if is_active_imports else '' }}" title="Processos de Importação China (PI / CI)">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Importações China</span>
+      </a>
+      {% endif %}
+
+      {% if can_products %}
+      <a href="{{ url_for('products') }}" class="nav-item {{ 'active' if is_active_products else '' }}" title="Catálogo de Produtos e Fichas Técnicas">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        <span>Produtos</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ==================================================================== #}
+    {# FINANCEIRO & FISCAL #}
+    {# ==================================================================== #}
+    {% if has_financeiro %}
+    <div class="nav-section">
+      <div class="nav-section-label">FINANCEIRO & FISCAL</div>
+
+      {% if can_payments %}
+      <a href="{{ url_for('payments') }}" class="nav-item {{ 'active' if is_active_payments else '' }}" title="Controle de Pagamentos e Quitações">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        <span>Pagamentos</span>
+      </a>
+      {% endif %}
+
+      {% if can_fiscal %}
+      <a href="{{ url_for('fiscal_pricing.index') }}" class="nav-item {{ 'active' if is_active_fiscal else '' }}" title="Simulador e Regras Tributárias">
+        <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        <span>Precificação Fiscal</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ==================================================================== #}
+    {# GOVERNANÇA & EQUIPE #}
+    {# ==================================================================== #}
+    {% if has_governanca %}
+    <div class="nav-section">
+      <div class="nav-section-label">GOVERNANÇA & EQUIPE</div>
+
+      {% if can_docs %}
+      <a href="{{ url_for('document_center.document_center') }}" class="nav-item {{ 'active' if is_active_docs else '' }}" title="Central Unificada de Documentos">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>Central de Docs</span>
+      </a>
+      {% endif %}
+
+      {% if can_plan %}
+      <a href="{{ url_for('implementation_plan.index') }}" class="nav-item {{ 'active' if is_active_plan else '' }}" title="Relatórios Semanais e Governança MAJ">
+        <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span>Relatórios & Plano</span>
+      </a>
+      {% endif %}
+
+      {% if can_users %}
+      <a href="{{ url_for('users') }}" class="nav-item {{ 'active' if is_active_users else '' }}" title="Gestão de Usuários e Permissões">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Gestão de Usuários</span>
+      </a>
+      <a href="{{ url_for('audit_logs') }}" class="nav-item {{ 'active' if is_active_audit else '' }}" title="Trilha de Auditoria e Segurança">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Auditoria</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ==================================================================== #}
+    {# INTEGRAÇÕES & SISTEMA #}
+    {# ==================================================================== #}
+    {% if has_sistema %}
+    <div class="nav-section">
+      <div class="nav-section-label">INTEGRAÇÕES & SISTEMA</div>
+
+      {% if can_sys %}
+      <a href="{{ url_for('data_sources.data_sources_hub') }}" class="nav-item {{ 'active' if is_active_datasources else '' }}" title="Fontes de Dados e Automação Contínua 24/7">
+        <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>
+        </svg>
+        <span>Fontes de Dados (24/7)</span>
+      </a>
+
+      <a href="{{ url_for('connections.connections_hub') }}" class="nav-item {{ 'active' if is_active_connections else '' }}" title="Central de Conexões e APIs">
+        <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>Conexões</span>
+      </a>
+
+      <a href="{{ url_for('integrations_bling') }}" class="nav-item {{ 'active' if is_active_bling else '' }}" title="Integração ERP Bling">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span>Bling ERP</span>
+      </a>
+
+      <a href="{{ url_for('backups.backups_dashboard') }}" class="nav-item {{ 'active' if is_active_backups else '' }}" title="Backups Físicos e Snapshots">
+        <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+        </svg>
+        <span>Backups Físicos</span>
+      </a>
+      {% endif %}
+
+      {% if can_infra %}
+      <a href="{{ url_for('infra.infra_performance') }}" class="nav-item {{ 'active' if is_active_infra else '' }}" title="Monitor de Infra e Vercel">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+          <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+        </svg>
+        <span>Infra & Vercel</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </nav>
+
+  {# ==================================================================== #}
+  {# RODAPÉ DO SIDEBAR (PERFIL, VERSÃO E SAIR) #}
+  {# ==================================================================== #}
+  <div class="sidebar-foot">
+    <div class="user-chip" onclick="openProfileModal()" style="cursor:pointer;" title="Clique para abrir seu perfil e alterar senha">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <b>{{ me.name if me else 'Usuário' }}</b>
+        <span style="font-size:0.7rem;background:rgba(0,229,153,0.18);color:#00E599;border:1px solid rgba(0,229,153,0.3);padding:1px 6px;border-radius:6px;font-weight:700;">🟢 Online</span>
+      </div>
+      <small>{{ role_labels.get(me.role, me.role) if me else 'Visitante' }} • Segurança</small>
+    </div>
+    <div class="user-actions-row">
+      <button type="button" class="link-btn" onclick="openProfileModal()">🔒 Alterar Senha</button>
+      <a class="logout" href="{{ url_for('logout') }}">Sair</a>
+    </div>
+    {% if app_version is defined and app_version %}
+    <div class="sidebar-version-block">
+      <div class="version-meta">
+        <span class="version-label">M-One {{ app_version.display_version }}</span>
+        <span class="version-build">b.{{ app_version.build }}</span>
+      </div>
+      <button type="button" class="version-notes-btn" onclick="openVersionModal(true)" title="Ver notas da versão e histórico de atualizações">
+        ✨ Notas da versão
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</aside>

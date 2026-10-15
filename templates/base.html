@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20260914_saas_v3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20261015_sidebar_v3') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="mone-version" content="{{ app_version.version if (app_version is defined and app_version) else '1.1.0' }}">
   <meta name="mone-build" content="{{ app_version.build if (app_version is defined and app_version) else '20260922.1' }}">
@@ -20,6 +20,7 @@
   </script>
   <!-- Modern Frontend Stack: HTMX + Alpine.js + Chart.js -->
   <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+  <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.3/dist/cdn.min.js"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
@@ -47,149 +48,7 @@
   </div>
 
   <div class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="brand-mark"><img src="{{ url_for('static', filename='logo.png') }}" alt="Logo MAJ M-One"></div><div><strong>M-One</strong><small>MAJ Operating System</small></div></div>
-      <nav>
-        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='dashboard' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          <span>Visão geral</span>
-        </a>
-        <a href="{{ url_for('sales') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='sales' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          <span>Vendas</span>
-        </a>
-        {% if me and user_has_permission(me, 'freight', default_for_sales=True) %}
-        <a href="{{ url_for('freight') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='freight' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          <span>Fretes</span>
-        </a>
-        {% endif %}
-        {% if me and user_has_permission(me, 'stock', default_for_sales=True) %}
-        <a href="{{ url_for('stock') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='stock' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-          <span>Estoque / Chassis</span>
-        </a>
-        {% endif %}
-        {% if me and (me.role in ['admin','finance','stock','support'] or user_has_permission(me, 'products', default_for_sales=False)) %}
-        <a href="{{ url_for('products') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='products' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          <span>Produtos</span>
-        </a>
-        {% endif %}
-        {% if me and me.role in ['admin','support'] %}
-        <a href="{{ url_for('outlet.admin_outlet') }}" class="{{ 'active' if request.endpoint and 'outlet' in request.endpoint else '' }}">
-          <svg class="nav-icon text-amber-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>Outlet MAJ</span>
-        </a>
-        <a href="{{ url_for('atacado.admin_atacado') }}" class="{{ 'active' if request.endpoint and 'atacado' in request.endpoint else '' }}">
-          <svg class="nav-icon text-emerald-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>MAJ Atacado CNPJ</span>
-        </a>
-        <a href="{{ url_for('showroom.admin_models_page') }}" class="{{ 'active' if request.endpoint and ('showroom' in request.endpoint or 'model' in request.endpoint) else '' }}" title="Gestão de Modelos e Mostruário MAJ">
-          <svg class="nav-icon text-sky-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          <span>Modelos</span>
-        </a>
-        {% endif %}
-        {% if me and (me.role in ['admin','support'] or user_has_permission(me, 'custom_catalogs', default_for_sales=False)) %}
-        <a href="{{ url_for('custom_catalog.admin_dashboard') }}" class="{{ 'active' if request.endpoint and 'custom_catalog' in request.endpoint else '' }}" title="Gestão e Distribuição de Catálogos Personalizados">
-          <svg class="nav-icon text-purple-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span>Gestão de Catálogos</span>
-        </a>
-        {% endif %}
-        {% if me and me.role in ['admin','finance','support'] %}
-        <a href="{{ url_for('payments') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='payments' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          <span>Pagamentos</span>
-        </a>
-        {% endif %}
-        {% if me and me.role in ['admin','support','finance'] %}
-        <a href="{{ url_for('fiscal_pricing.index') }}" class="{{ 'active' if request.endpoint and 'fiscal_pricing' in request.endpoint else '' }}">
-          <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Precificação Fiscal</span>
-        </a>
-        {% endif %}
-        {% if me and me.role in ['admin','support'] %}
-        <a href="{{ url_for('imports') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='imports' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          <span>Importações</span>
-        </a>
-        <a href="{{ url_for('document_center.document_center') }}" class="{{ 'active' if request.endpoint and 'document' in request.endpoint else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          <span>Central de Docs</span>
-        </a>
-        {% endif %}
-        {% if me and me.role in ['admin','support'] %}
-        <a href="{{ url_for('users') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='users' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Usuários</span>
-        </a>
-        <a href="{{ url_for('audit_logs') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='audit_logs' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Auditoria</span>
-        </a>
-        {% endif %}
-        {% if me %}
-        <a href="{{ url_for('implementation_plan.index') }}" class="{{ 'active' if request.endpoint and 'implementation_plan' in request.endpoint else '' }}" title="Relatórios Semanais e Plano de Governança MAJ">
-          <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span>Relatórios & Plano</span>
-        </a>
-        {% endif %}
-        {% if me and user_has_permission(me, 'copilot', default_for_sales=True) %}
-        <a href="{{ url_for('copilot') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='copilot' else '' }}">
-          <svg class="nav-icon text-sky-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>Copilot IA</span>
-        </a>
-        {% endif %}
-        {% if me and me.username in ['jam', 'fauzer'] %}
-        <a href="{{ url_for('infra.infra_performance') }}" class="{{ 'active' if request.endpoint and 'infra' in request.endpoint else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-          <span>Infra & Vercel</span>
-        </a>
-        {% endif %}
-        {% if me and (me.role in ['admin','support'] or me.username in ['jam', 'fauzer']) %}
-        <a href="{{ url_for('backups.backups_dashboard') }}" class="{{ 'active' if request.endpoint and 'backup' in request.endpoint else '' }}">
-          <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-          <span>Backups Físicos</span>
-        </a>
-        <a href="{{ url_for('connections.connections_hub') }}" class="{{ 'active' if request.endpoint and 'connections' in request.endpoint else '' }}">
-          <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Conexões</span>
-        </a>
-        <a href="{{ url_for('data_sources.data_sources_hub') }}" class="{{ 'active' if request.endpoint and 'data_sources' in request.endpoint else '' }}">
-          <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
-          <span>Fontes de Dados</span>
-        </a>
-        <a href="{{ url_for('integrations_bling') }}" class="{{ 'active' if request.endpoint and request.endpoint.split('.')[-1]=='integrations_bling' else '' }}">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          <span>Bling ERP</span>
-        </a>
-        {% endif %}
-      </nav>
-      <div class="sidebar-foot">
-        <div class="user-chip" onclick="openProfileModal()" style="cursor:pointer;" title="Clique para abrir seu perfil e alterar senha">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <b>{{ me.name }}</b>
-            <span style="font-size:0.7rem;background:rgba(0,229,153,0.18);color:#00E599;border:1px solid rgba(0,229,153,0.3);padding:1px 6px;border-radius:6px;font-weight:700;">🟢 Online</span>
-          </div>
-          <small>{{ role_labels.get(me.role, me.role) }} • Segurança</small>
-        </div>
-        <div class="user-actions-row">
-          <button type="button" class="link-btn" onclick="openProfileModal()">🔒 Alterar Senha</button>
-          <a class="logout" href="{{ url_for('logout') }}">Sair</a>
-        </div>
-        {% if app_version is defined and app_version %}
-        <div class="sidebar-version-block">
-          <div class="version-meta">
-            <span class="version-label">M-One {{ app_version.display_version }}</span>
-            <span class="version-build">b.{{ app_version.build }}</span>
-          </div>
-          <button type="button" class="version-notes-btn" onclick="openVersionModal(true)" title="Ver notas da versão e histórico de atualizações">
-            ✨ Notas da versão
-          </button>
-        </div>
-        {% endif %}
-      </div>
-    </aside>
+    {% include 'components/sidebar.html' %}
 
     <main class="main">
       <header class="topbar">
