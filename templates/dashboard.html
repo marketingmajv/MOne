@@ -1,69 +1,107 @@
 {% extends 'base.html' %}
-{% block title %}M-One • Visão Geral{% endblock %}
-{% block page_title %}Visão Geral{% endblock %}
-{% block page_subtitle %}O que merece sua decisão hoje.{% endblock %}
+{% block title %}M-One • Visão Geral Operacional{% endblock %}
+{% block page_title %}Visão Geral Operacional{% endblock %}
+{% block page_subtitle %}Cockpit executivo e inteligência integrada do ecossistema MAJ.{% endblock %}
 
 {% block content %}
+<style>
+/* Regras de Contraste Absoluto (Dark & Light Theme First) */
+.bento-hero { border-radius: var(--radius-lg); padding: 24px 28px; position: relative; overflow: hidden; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; }
+[data-theme="light"] .bento-hero { background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25) !important; color: #FFFFFF !important; }
+[data-theme="light"] .bento-hero .bento-hero-title, [data-theme="light"] .bento-hero .bento-hero-kpi-val, [data-theme="light"] .bento-hero strong { color: #FFFFFF !important; }
+[data-theme="light"] .bento-hero .bento-hero-desc, [data-theme="light"] .bento-hero .bento-hero-kpi-label, [data-theme="light"] .bento-hero small { color: #94A3B8 !important; }
+[data-theme="light"] .bento-hero .hero-indicator { color: #E2E8F0 !important; }
+[data-theme="dark"] .bento-hero, :root:not([data-theme="light"]) .bento-hero { background: linear-gradient(135deg, #131E33 0%, #0B1120 100%) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7) !important; color: #F8FAFC !important; }
+[data-theme="dark"] .bento-hero .bento-hero-title, [data-theme="dark"] .bento-hero .bento-hero-kpi-val, [data-theme="dark"] .bento-hero strong { color: #F8FAFC !important; }
+[data-theme="dark"] .bento-hero .bento-hero-desc, [data-theme="dark"] .bento-hero .bento-hero-kpi-label, [data-theme="dark"] .bento-hero small { color: #94A3B8 !important; }
+[data-theme="dark"] .bento-hero .hero-indicator { color: #E2E8F0 !important; }
+.radar-item { border-bottom: 1px solid var(--line) !important; padding: 8px 0 !important; }
+.radar-detail { color: var(--text-dim, #475569) !important; }
+[data-theme="light"] .radar-detail { color: #334155 !important; }
+</style>
+
 <!-- TOP ROW: COCKPIT STEALTH HERO + RADAR ACONTECENDO AGORA -->
 <div class="cockpit-top-grid" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; margin-bottom: 22px; align-items: stretch;">
-  <!-- COCKPIT HERO: Faturamento & Potência Operacional (Contrast Box) -->
+  <!-- COCKPIT HERO: Potência Operacional & Portfólio Ativo -->
   <div class="bento-hero">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
       <div>
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-          <span style="font-size: 1.3rem;">👋</span>
+          <span style="font-size: 1.3rem;">⚡</span>
           <h2 class="bento-hero-title" style="margin: 0; font-size: 1.35rem; font-weight: 800;">
-            Bom dia, {{ me.name.split(' ')[0] if me and me.name else 'Gestor' }}
+            Cockpit M-One • {{ me.name.split(' ')[0] if me and me.name else 'Gestor' }}
           </h2>
-          <span class="badge" style="font-weight: 700;">
-            🟢 Pátio Operacional • {{ stock_available }} Chassis Prontos
+          <span class="badge" style="font-weight: 700; background: rgba(0, 229, 153, 0.18); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.4);">
+            🟢 Operação Ao Vivo
           </span>
         </div>
-        <p class="bento-hero-desc" style="margin: 0; font-size: 0.88rem;">
-          Acompanhamento consolidado de vendas, faturamento e logística de montagem MAJ.
+        <p class="bento-hero-desc" style="margin: 0; font-size: 0.88rem; max-width: 560px;">
+          Inteligência unificada de estoques em pátio, catálogos Atacado e Outlet, simulações de frete cubado e rastreabilidade logística.
         </p>
       </div>
 
+      <!-- KPI de Destaque no Topo: Total Financeiro Apenas para Admin/Suporte; Quantidade para o restante -->
       <div style="text-align: right;">
-        <small class="bento-hero-kpi-label" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;">Faturamento Realizado (Mês)</small>
-        <div class="bento-hero-kpi-val" style="font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; margin-top: 2px;">
-          {{ sales_month|money }}
+        {% if is_admin_or_support %}
+        <small class="bento-hero-kpi-label" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; display: block;">Portfólio em Catálogos</small>
+        <div class="bento-hero-kpi-val" style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-top: 2px;">
+          {{ kpis.total_catalog_value|money }}
         </div>
+        <small style="font-size: 0.78rem; color: #00E599; font-weight: 600;">
+          {{ kpis.total_catalog_units }} unidades disponíveis
+        </small>
+        {% else %}
+        <small class="bento-hero-kpi-label" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; display: block;">Veículos em Pronta Entrega</small>
+        <div class="bento-hero-kpi-val" style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-top: 2px;">
+          {{ kpis.total_catalog_units }} Veículos
+        </div>
+        <small style="font-size: 0.78rem; color: #00E599; font-weight: 600;">
+          Catálogo Atacado & Outlet ativos
+        </small>
+        {% endif %}
       </div>
     </div>
 
-    <div style="margin-top: 22px;">
-      <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px;">
-        <span class="bento-hero-track-label">Meta Mensal de Vendas</span>
-        <span class="bento-hero-track-meta" style="font-weight: 700;">84% da Meta • Ritmo Operacional Ativo</span>
+    <!-- Indicadores Rápidos de Conexão e Integridade (Com Alto Contraste) -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+      <div class="hero-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #00E599;"></span>
+        <span><b>Pátio Central:</b> 293 Chassis</span>
       </div>
-      <div class="progress-track">
-        <div class="progress-fill" style="width: 84%;"></div>
+      <div class="hero-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #38bdf8;"></span>
+        <span><b>Malha de Fretes:</b> 5 Transportadoras</span>
+      </div>
+      <div class="hero-indicator" style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #fbbf24;"></span>
+        <span><b>Importações:</b> 2 Lotes Marítimos</span>
       </div>
     </div>
   </div>
 
   <!-- Radar de Operações ao Vivo ("Acontecendo Agora" Lateral) -->
-  <div class="radar-panel" style="height: 100%; margin-bottom: 0;">
+  <div class="radar-panel" style="height: 100%; margin-bottom: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span class="radar-dot"></span>
+        <span class="radar-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent);"></span>
         <h3 style="margin: 0; font-size: 0.98rem; font-weight: 700; color: var(--text);">Acontecendo Agora</h3>
       </div>
-      <a href="{{ url_for('audit_logs') }}" style="font-size: 0.75rem; color: var(--muted); text-decoration: none; font-weight: 600;">Ver Todos ↗</a>
+      {% if is_admin_or_support %}
+      <a href="{{ url_for('audit_logs') }}" style="font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600;">Ver Todos ↗</a>
+      {% endif %}
     </div>
 
-    <div class="radar-feed" style="overflow-y: auto; max-height: 200px;">
+    <div class="radar-feed" style="overflow-y: auto; max-height: 160px; flex: 1;">
       {% if recent_activities %}
         {% for act in recent_activities %}
-        <div class="radar-item">
-          <span class="radar-dot" style="margin-top: 4px;"></span>
+        <div class="radar-item" style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 5px; flex-shrink: 0;"></span>
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; justify-content: space-between; gap: 6px;">
-              <strong style="color: var(--text); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ act.action }}</strong>
-              <small style="color: var(--muted); font-size: 0.7rem;">{{ act.created_at.strftime('%H:%M') if act.created_at else 'recente' }}</small>
+              <strong class="radar-title" style="font-size: 0.80rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ act.action }}</strong>
+              <small style="color: var(--muted); font-size: 0.68rem;">{{ act.created_at.strftime('%H:%M') if act.created_at else 'recente' }}</small>
             </div>
-            <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <p class="radar-detail" style="margin: 2px 0 0; font-size: 0.74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               {{ act.detail or act.user_name }}
             </p>
           </div>
@@ -71,277 +109,340 @@
         {% endfor %}
       {% else %}
         <div style="color: var(--muted); font-size: 0.82rem; text-align: center; padding: 30px 10px;">
-          Tudo calmo na operação. Movimentações em tempo real aparecerão aqui.
+          Operação estável. Movimentações em tempo real aparecerão aqui.
         </div>
       {% endif %}
     </div>
   </div>
 </div>
 
-<!-- BENTO GRID: 4 MÉTRICAS CHAVE COM LINHA DE CARGA -->
-<div class="bento-grid-4">
-  <div class="bento-metric">
+<!-- BENTO GRID: 4 MÉTRICAS CHAVE DA OPERAÇÃO REAL -->
+<div class="bento-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px;">
+  <!-- 1. Valor Global em Catálogo (ou Volume para Equipe) -->
+  <div class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden;">
     <div>
-      <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Vendas Hoje</small>
-      <strong style="font-size: 1.65rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ sales_today|money }}</strong>
-      <span style="font-size: 0.82rem; color: var(--muted);">{{ sales_today_count or 0 }} pedido(s) faturado(s)</span>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+          {% if is_admin_or_support %}Portfólio Comercial{% else %}Veículos em Catálogo{% endif %}
+        </small>
+        <span style="font-size: 1rem;">🏷️</span>
+      </div>
+      {% if is_admin_or_support %}
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.total_catalog_value|money }}</strong>
+      <span style="font-size: 0.80rem; color: var(--accent); font-weight: 600;">{{ kpis.total_catalog_units }} unidades ativas</span>
+      {% else %}
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.total_catalog_units }} unidades</strong>
+      <span style="font-size: 0.80rem; color: var(--accent); font-weight: 600;">{{ channels.outlet.count + channels.atacado.count }} modelos ativos</span>
+      {% endif %}
     </div>
-    <div class="charge-line" style="width: 100%;"></div>
+    <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-cyan));"></div>
   </div>
 
-  <div class="bento-metric">
+  <!-- 2. Pátio Físico / Chassis -->
+  <a href="{{ url_for('stock') }}" class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden; text-decoration: none;">
     <div>
-      <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Faturamento Mês</small>
-      <strong style="font-size: 1.65rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ sales_month|money }}</strong>
-      <span style="font-size: 0.82rem; color: var(--accent); font-weight: 600;">↗ Consolidado no período</span>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Chassis em Pátio</small>
+        <span style="font-size: 1rem;">📦</span>
+      </div>
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.stock_chassis_count }} chassis</strong>
+      <span style="font-size: 0.80rem; color: var(--muted);">Depósito Consolação & Galpão</span>
     </div>
-    <div class="charge-line" style="width: 100%;"></div>
-  </div>
+    <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8);"></div>
+  </a>
 
-  <div class="bento-metric">
+  <!-- 3. Importações China (Apenas Admin/Suporte vê Dólares; Vendedores veem Cotações de Frete) -->
+  {% if is_admin_or_support %}
+  <a href="{{ url_for('imports') }}" class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden; text-decoration: none;">
     <div>
-      <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Pagamentos Liquidados</small>
-      <strong style="font-size: 1.65rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ payments_month|money }}</strong>
-      <span style="font-size: 0.82rem; color: var(--muted);">Recebimentos confirmados</span>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Importações China</small>
+        <span style="font-size: 1rem;">🚢</span>
+      </div>
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.imports_total_usd|money_usd }}</strong>
+      <span style="font-size: 0.80rem; color: #fbbf24; font-weight: 600;">{{ kpis.imports_count }} processos marítimos</span>
     </div>
-    <div class="charge-line" style="width: 100%;"></div>
-  </div>
+    <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div>
+  </a>
+  {% else %}
+  <a href="{{ url_for('freight') }}" class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden; text-decoration: none;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Cotações Realizadas</small>
+        <span style="font-size: 1rem;">📊</span>
+      </div>
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.freight_quotes_count }} cotações</strong>
+      <span style="font-size: 0.80rem; color: var(--accent); font-weight: 600;">Histórico operacional de frete</span>
+    </div>
+    <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-cyan));"></div>
+  </a>
+  {% endif %}
 
-  <div class="bento-metric">
+  <!-- 4. Malha Logística & Fretes -->
+  <a href="{{ url_for('freight') }}" class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden; text-decoration: none;">
     <div>
-      <small style="color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Chassis em Pátio</small>
-      <strong style="font-size: 1.65rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ stock_available }} un.</strong>
-      <span style="font-size: 0.82rem; color: var(--muted);">Pronta entrega imediata</span>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Malha de Fretes</small>
+        <span style="font-size: 1rem;">🚚</span>
+      </div>
+      <strong style="font-size: 1.55rem; font-weight: 800; color: var(--text); margin: 6px 0 2px; display: block;">{{ kpis.carriers_count }} transportadoras</strong>
+      <span style="font-size: 0.80rem; color: var(--muted);">{{ kpis.freight_rates_count }} tarifas cubadas ativas</span>
     </div>
-    <div class="charge-line" style="width: 100%;"></div>
-  </div>
+    <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899);"></div>
+  </a>
 </div>
 
-{% if chassis_alerts %}
-<div class="rule-banner" style="display: flex; align-items: center; gap: 10px; margin-bottom: 22px;">
-  <span>⚠️</span>
-  <span><b>Atenção de Estoque:</b> Há {{ chassis_alerts }} chassis ainda vinculados a importações em desembaraço aduaneiro.</span>
-</div>
-{% endif %}
-
-<!-- SEÇÃO INFERIOR: ANALYTICS + RANKING LADO A LADO -->
-<div class="charts-ranking-grid" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; margin-bottom: 22px;" x-data="dashboardAnalytics()" x-init="init()">
-  <!-- Gráfico Panorâmico de Evolução -->
-  <div class="panel" style="margin-bottom: 0;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
-      <div>
-        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">
-          📈 Evolução de Vendas & Faturamento
-        </h3>
-        <p style="margin: 2px 0 0; font-size: 0.82rem; color: var(--muted);">
-          Total no período: <strong style="color: var(--accent);" x-text="formatMoney(totalRevenue)">R$ 0,00</strong> • <span x-text="totalOrders">0</span> pedidos
-        </p>
-      </div>
-
-      <!-- Seletor de Período Pill -->
-      <div style="display: inline-flex; background: var(--panel2); border: 1px solid var(--line); border-radius: 99px; padding: 3px; gap: 3px;">
-        <button type="button" @click="setPeriod('7d')" :class="period === '7d' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.76rem; padding: 4px 10px; border-radius: 99px;">7 Dias</button>
-        <button type="button" @click="setPeriod('30d')" :class="period === '30d' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.76rem; padding: 4px 10px; border-radius: 99px;">30 Dias</button>
-        <button type="button" @click="setPeriod('month')" :class="period === 'month' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.76rem; padding: 4px 10px; border-radius: 99px;">Mês</button>
-        <button type="button" @click="setPeriod('year')" :class="period === 'year' ? 'btn primary sm' : 'btn sm'" style="font-size: 0.76rem; padding: 4px 10px; border-radius: 99px;">Ano</button>
-      </div>
-    </div>
-
-    <div style="position: relative; height: 260px; width: 100%;">
-      <div x-show="loading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); z-index: 10; border-radius: var(--radius); backdrop-filter: blur(4px);">
-        <span style="font-size: 0.85rem; color: var(--accent);">⏳ Atualizando métricas...</span>
-      </div>
-      <canvas id="salesTrendChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Mais Vendidos (Ranking de Veículos) -->
-  <section class="panel" style="margin-bottom: 0;">
-    <div class="panel-head">
-      <div>
-        <h3>Mais Vendidos</h3>
-        <p>Ranking por volume no mês atual</p>
-      </div>
-      <a href="{{ url_for('sales') }}">Ver Vendas ↗</a>
-    </div>
-    {% if top_products %}
-      <div class="rank-list">
-        {% for p in top_products %}
-        <div class="rank-row">
-          <span class="rank">{{ loop.index }}</span>
-          <div class="grow">
-            <b>{{ p.name }}</b>
-            <small>{{ p.units }} unidade(s) faturada(s)</small>
-          </div>
-          <strong>{{ p.revenue|money }}</strong>
-        </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty">Nenhuma venda registrada neste ciclo ainda.</div>
-    {% endif %}
-  </section>
-</div>
-
-<!-- SEÇÃO INFERIOR: GIRO DE ESTOQUE -->
-<div class="single-col" style="margin-bottom: 22px;">
-  <section class="panel opportunity-panel">
-    <div class="panel-head">
-      <div>
-        <h3>Inteligência de Estoque & Giro Acelerado</h3>
-        <p>Unidades com mais de 60 dias em pátio para campanha e giro comercial</p>
-      </div>
-      <span class="pill" style="background: rgba(0, 229, 153, 0.15); color: var(--accent); border: 1px solid rgba(0, 229, 153, 0.3);">Giro Sugerido</span>
-    </div>
-    {% if opportunities %}
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
-        {% for p in opportunities %}
-        <div class="opportunity">
+<!-- SEÇÃO MÉDIA: CANAIS COMERCIAIS & GERADOR RÁPIDO DE CATÁLOGO -->
+<div style="display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 20px; margin-bottom: 24px; align-items: stretch;">
+  <!-- Canal 1: Outlet MAJ (B2C) -->
+  <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🔥</span>
           <div>
-            <b>{{ p.name }}</b>
-            <small>{{ p.available }} em estoque • {{ p.days_in_stock }} dias • {{ p.sold_30 }} venda(s)</small>
-          </div>
-          <div class="suggestion">
-            <small>Preço Giro</small>
-            <strong>{{ p.suggested_price|money }}</strong>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">MAJ Outlet (B2C)</h3>
+            <small style="color: var(--muted); font-size: 0.76rem;">Canal de Varejo & Oportunidades</small>
           </div>
         </div>
-        {% endfor %}
+        <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+          Até {{ channels.outlet.avg_discount }}% OFF
+        </span>
+      </div>
+
+      <div style="margin: 16px 0;">
+        {% if is_admin_or_support %}
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text);">
+          {{ channels.outlet.val|money }}
+        </div>
+        <div style="font-size: 0.82rem; color: var(--muted); margin-top: 4px;">
+          <b>{{ channels.outlet.count }}</b> modelos ativos • <b>{{ channels.outlet.qty }}</b> un. em estoque
+        </div>
+        {% else %}
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text);">
+          {{ channels.outlet.qty }} unidades
+        </div>
+        <div style="font-size: 0.82rem; color: var(--muted); margin-top: 4px;">
+          <b>{{ channels.outlet.count }}</b> modelos ativos • Lote promocional pronta entrega
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 14px;">
+      <a href="{{ url_for('admin_outlet') }}" class="btn primary sm" style="flex: 1; text-align: center; text-decoration: none;">
+        Gerenciar Outlet
+      </a>
+      <a href="{{ url_for('outlet.catalog') }}" target="_blank" class="btn sm" style="text-decoration: none;" title="Abrir vitrine pública">
+        ↗ Vitrine
+      </a>
+    </div>
+  </div>
+
+  <!-- Canal 2: Atacado B2B (CNPJ) -->
+  <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🏢</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">MAJ Atacado (B2B)</h3>
+            <small style="color: var(--muted); font-size: 0.76rem;">Catálogo Direto para Lojistas</small>
+          </div>
+        </div>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+          CNPJ / Revenda
+        </span>
+      </div>
+
+      <div style="margin: 16px 0;">
+        {% if is_admin_or_support %}
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text);">
+          {{ channels.atacado.val|money }}
+        </div>
+        <div style="font-size: 0.82rem; color: var(--muted); margin-top: 4px;">
+          <b>{{ channels.atacado.count }}</b> modelos corporativos • <b>{{ channels.atacado.qty }}</b> un. disponíveis
+        </div>
+        {% else %}
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text);">
+          {{ channels.atacado.qty }} unidades
+        </div>
+        <div style="font-size: 0.82rem; color: var(--muted); margin-top: 4px;">
+          <b>{{ channels.atacado.count }}</b> modelos corporativos • Pronta entrega para lojistas
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 14px;">
+      <a href="{{ url_for('admin_atacado') }}" class="btn primary sm" style="flex: 1; text-align: center; text-decoration: none;">
+        Gerenciar Atacado
+      </a>
+      <a href="{{ url_for('atacado.catalog') }}" target="_blank" class="btn sm" style="text-decoration: none;" title="Abrir vitrine pública atacado">
+        ↗ Vitrine
+      </a>
+    </div>
+  </div>
+
+  <!-- Canal 3: Gerador Rápido de Catálogo Personalizado (Alpine.js) -->
+  <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0;" x-data="{ copied: false }">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">⚡ Catálogos Personalizados</h3>
+        <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.76rem;">Links exclusivos para parceiros e lojistas</p>
+      </div>
+      <a href="{{ url_for('custom_catalog.admin_dashboard') }}" style="font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600;">Ver Todos ↗</a>
+    </div>
+
+    {% if channels.custom_catalogs %}
+      {% set c = channels.custom_catalogs[0] %}
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="color: var(--text); font-size: 0.85rem;">{{ c.client_name }}</strong>
+          {% if is_admin_or_support %}
+          <span class="badge" style="background: rgba(0, 229, 153, 0.15); color: var(--accent); font-size: 0.72rem; font-weight: 700;">+{{ c.percentage_markup }}% Markup</span>
+          {% else %}
+          <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #0284c7; font-size: 0.72rem; font-weight: 700;">Link Ativo</span>
+          {% endif %}
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--text-dim, #475569); font-weight: 500;">
+          <span>👁️ {{ c.views_count or 0 }} visualizações</span>
+          <span>💬 {{ c.whatsapp_clicks_count or 0 }} cliques no WhatsApp</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" @click="navigator.clipboard.writeText('https://m-one.majmobilidade.com.br/c/{{ c.slug }}'); copied = true; setTimeout(() => copied = false, 2500)" class="btn sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span x-text="copied ? '✅ Copiado!' : '📋 Copiar Link'"></span>
+        </button>
+        <a href="https://api.whatsapp.com/send?text=Confira%20o%20cat%C3%A1logo%20exclusivo%20MAJ:%20https://m-one.majmobilidade.com.br/c/{{ c.slug }}" target="_blank" class="btn primary sm" style="display: flex; align-items: center; gap: 6px; text-decoration: none;">
+          <span>💬 WhatsApp</span>
+        </a>
       </div>
     {% else %}
-      <div class="empty">Nenhum chassi parado crítico no momento. Operação com giro saudável.</div>
+      <div style="padding: 16px; text-align: center; color: var(--muted); font-size: 0.82rem;">
+        Crie seu primeiro catálogo personalizado e compartilhe direto com o lojista.
+        <div style="margin-top: 10px;">
+          <a href="{{ url_for('custom_catalog.admin_dashboard') }}" class="btn primary sm">Criar Catálogo</a>
+        </div>
+      </div>
     {% endif %}
-  </section>
+  </div>
+</div>
+
+<!-- SEÇÃO INFERIOR: SHOWROOM EM DESTAQUE + COTAÇÕES RECENTES DE FRETE -->
+<div style="display: grid; grid-template-columns: 1.4fr 1.6fr; gap: 20px; margin-bottom: 24px; align-items: stretch;">
+  <!-- SHOWROOM: MODELOS POPULARES -->
+  <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">🛵 Veículos em Pátio (Destaques)</h3>
+        <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.78rem;">Modelos líderes de procura e pronta entrega</p>
+      </div>
+      <a href="{{ url_for('admin_outlet') }}" style="font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600;">Ver Catálogo ↗</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      {% for m in showroom_models %}
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="position: relative; width: 100%; height: 100px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.06); margin-bottom: 10px;">
+            <img src="{{ m.image_main }}" alt="{{ m.name }}" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src='/static/img/placeholder-vehicle.svg'">
+            {% if m.discount_percent %}
+            <span style="position: absolute; top: 6px; right: 6px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">
+              -{{ m.discount_percent }}%
+            </span>
+            {% endif %}
+          </div>
+          <strong style="color: var(--text); font-size: 0.88rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ m.name }}</strong>
+          <small style="color: var(--muted); font-size: 0.72rem;">{{ m.speed }} • {{ m.range }}</small>
+        </div>
+        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 800; color: var(--accent);">{{ m.price_outlet|money }}</div>
+          </div>
+          <span class="badge" style="font-size: 0.70rem; background: rgba(0, 0, 0, 0.05); color: var(--text); font-weight: 600;">
+            {{ m.stock_qty }} un.
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- LOGÍSTICA: ÚLTIMAS COTAÇÕES DE FRETE -->
+  <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">🚚 Cotações Recentes de Frete</h3>
+        <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.78rem;">Simulações de transporte cubado para clientes</p>
+      </div>
+      <a href="{{ url_for('freight') }}" class="btn primary sm" style="text-decoration: none;">＋ Nova Cotação</a>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--line); color: var(--muted);">
+            <th style="padding: 8px 10px; font-weight: 600;">Protocolo / Destino</th>
+            <th style="padding: 8px 10px; font-weight: 600;">Melhor Frete</th>
+            <th style="padding: 8px 10px; font-weight: 600;">Valor Cotado</th>
+            <th style="padding: 8px 10px; font-weight: 600; text-align: right;">Prazo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for q in recent_quotes %}
+          <tr style="border-bottom: 1px solid var(--line);">
+            <td style="padding: 10px;">
+              <strong style="color: var(--text); display: block; font-size: 0.80rem;">{{ q.quote_number }}</strong>
+              <small style="color: var(--muted); font-size: 0.72rem;">CEP: {{ q.cep_dest }} • {{ q.item_name }}</small>
+            </td>
+            <td style="padding: 10px;">
+              <span style="color: var(--text); font-weight: 600;">{{ q.best_carrier }}</span>
+            </td>
+            <td style="padding: 10px;">
+              <strong style="color: var(--accent);">{{ q.best_price|money }}</strong>
+            </td>
+            <td style="padding: 10px; text-align: right; color: var(--text-dim, #475569); font-weight: 500;">
+              {{ q.delivery_days }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--muted); padding: 24px;">
+              Nenhuma simulação recente. Utilize o cotador de frete para simular rotas.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- MATRIZ DE AÇÕES RÁPIDAS -->
-<div class="quick-grid">
-  <a class="quick" href="{{ url_for('sales') }}">
-    <span>＋</span>
-    <div><b>Registrar Venda</b><small>Pedido + NF + Chassis</small></div>
+<div class="quick-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+  <a class="quick" href="{{ url_for('freight') }}" style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+    <span style="font-size: 1.5rem;">🚚</span>
+    <div><b style="color: var(--text); font-size: 0.88rem; display: block;">Cotar Frete</b><small style="color: var(--muted); font-size: 0.74rem;">Simulação multi-transportadora</small></div>
   </a>
-  <a class="quick" href="{{ url_for('stock') }}">
-    <span>⌕</span>
-    <div><b>Consultar Chassi</b><small>Rastreabilidade única</small></div>
+  <a class="quick" href="{{ url_for('admin_outlet') }}" style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+    <span style="font-size: 1.5rem;">🏷️</span>
+    <div><b style="color: var(--text); font-size: 0.88rem; display: block;">MAJ Outlet</b><small style="color: var(--muted); font-size: 0.74rem;">Catálogo e lote varejo</small></div>
   </a>
-  <a class="quick" href="{{ url_for('freight') }}">
-    <span>🚚</span>
-    <div><b>Cotar Frete</b><small>Simulação multi-transportadora</small></div>
+  <a class="quick" href="{{ url_for('admin_atacado') }}" style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+    <span style="font-size: 1.5rem;">🏢</span>
+    <div><b style="color: var(--text); font-size: 0.88rem; display: block;">MAJ Atacado</b><small style="color: var(--muted); font-size: 0.74rem;">Catálogo global B2B</small></div>
   </a>
-  {% if me.role in ['admin','support'] %}
-  <a class="quick" href="{{ url_for('imports') }}">
-    <span>🚢</span>
-    <div><b>Importações</b><small>Contêineres marítimos & DI</small></div>
+  <a class="quick" href="{{ url_for('stock') }}" style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+    <span style="font-size: 1.5rem;">🔍</span>
+    <div><b style="color: var(--text); font-size: 0.88rem; display: block;">Consultar Chassi</b><small style="color: var(--muted); font-size: 0.74rem;">293 chassis rastreados</small></div>
+  </a>
+  {% if is_admin_or_support %}
+  <a class="quick" href="{{ url_for('imports') }}" style="display: flex; align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s;">
+    <span style="font-size: 1.5rem;">🚢</span>
+    <div><b style="color: var(--text); font-size: 0.88rem; display: block;">Importações</b><small style="color: var(--muted); font-size: 0.74rem;">Faturas marítimas & DI</small></div>
   </a>
   {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function dashboardAnalytics() {
-  return {
-    period: '30d',
-    loading: false,
-    totalRevenue: 0,
-    totalOrders: 0,
-    trendChart: null,
-
-    init() {
-      this.fetchData();
-      window.addEventListener('mone-theme-changed', () => {
-        if (this.trendChart) this.renderTrendChart(this.lastTrend);
-      });
-    },
-
-    formatMoney(val) {
-      return (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    },
-
-    setPeriod(p) {
-      if (this.period === p) return;
-      this.period = p;
-      this.fetchData();
-    },
-
-    async fetchData() {
-      this.loading = true;
-      try {
-        const res = await fetch(`/api/dashboard/chart-data?period=${this.period}`);
-        const data = await res.json();
-        if (data.success) {
-          this.totalRevenue = data.trend.total_revenue;
-          this.totalOrders = data.trend.total_orders;
-          this.lastTrend = data.trend;
-          this.renderTrendChart(data.trend);
-        }
-      } catch (err) {
-        console.error('Erro ao buscar dados do gráfico:', err);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    renderTrendChart(trend) {
-      const ctx = document.getElementById('salesTrendChart');
-      if (!ctx || !trend) return;
-
-      if (this.trendChart) {
-        this.trendChart.destroy();
-      }
-
-      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-      const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
-      const tickColor = isLight ? '#64748B' : '#94A3B8';
-      const lineColor = '#00E599';
-      const fillColor = isLight ? 'rgba(0, 229, 153, 0.12)' : 'rgba(0, 229, 153, 0.18)';
-
-      this.trendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: trend.labels,
-          datasets: [{
-            label: 'Faturamento (R$)',
-            data: trend.values,
-            borderColor: lineColor,
-            backgroundColor: fillColor,
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.38,
-            pointBackgroundColor: lineColor,
-            pointRadius: trend.labels.length > 20 ? 1.5 : 3.5,
-            pointHoverRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (c) => `Faturamento: ${Number(c.parsed.y).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: gridColor },
-              ticks: { color: tickColor, font: { size: 11, family: 'Plus Jakarta Sans' } }
-            },
-            y: {
-              grid: { color: gridColor },
-              ticks: {
-                color: tickColor,
-                font: { size: 11, family: 'Plus Jakarta Sans' },
-                callback: (val) => 'R$ ' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val)
-              }
-            }
-          }
-        }
-      });
-    }
-  };
-}
-</script>
 {% endblock %}
