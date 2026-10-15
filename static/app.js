@@ -24,6 +24,10 @@ function closeModal(id) {
 
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('modal')) {
+    // Não interferir com modais reativos gerenciados pelo Alpine.js
+    if (e.target.hasAttribute('x-show') || e.target.hasAttribute('x-cloak') || e.target.hasAttribute('x-data') || e.target._x_dataStack) {
+      return;
+    }
     e.target.classList.remove('show');
     e.target.style.display = 'none';
     if (typeof stopLiveCamera === 'function') {
