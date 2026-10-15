@@ -10,16 +10,14 @@ Este protocolo deve ser executado obrigatoriamente e imediatamente sempre que o 
 ## Etapas Obrigatórias de Execução:
 
 ### Passo 01 — Varredura de Integridade do Código (Pre-Deploy Checks)
-Executar rotina de verificação profunda para identificar erros de tipagem, sintaxe e configurações antes de publicar:
-1. **Compilação e Sintaxe Python**:
-   - `python3 -m py_compile app.py api/index.py`
-2. **Validação de Templates Jinja2/HTML**:
-   - Parsear todos os arquivos em `templates/*.html` com `jinja2.Environment` para garantir que não há tags não fechadas, blocos quebrados ou variáveis inexistentes.
-3. **Instanciação e Rotas do Flask**:
-   - Importar o app e executar teste do endpoint `/login` via `app.test_client()`.
-4. **Verificação de Banco de Dados**:
-   - Validar que o pooler IPv4 do Supabase (`aws-0-us-west-2.pooler.supabase.com:6543`) está configurado como fallback ou DSN principal, prevenindo falha de conexão na Vercel.
-5. **Critério de Parada**:
+Executar rotina de verificação profunda para identificar erros de dependência, tipagem, sintaxe e canais comerciais antes de publicar:
+1. Executar `.venv/bin/python3 scripts/validate.py`, que audita:
+   - **Paridade Estrita de Dependências**: AST Scan em 100% dos arquivos Python contra `requirements.txt` (impede erro de pacotes não declarados).
+   - **Compilação e Sintaxe Python Completa**: Compilação recursiva da raiz, `routes/`, `services/`, `scripts/` e `api/`.
+   - **Validação de Templates Jinja2**: Parsing em todos os templates e subpastas.
+   - **Teste Ativo de Canais Comerciais**: Valida `/outlet`, `/atacado`, `/modelos` e `/login` retornando HTTP 200.
+   - **Verificação de Banco de Dados**: Valida DSN do Pooler IPv4 Supabase (`aws-0-us-west-2.pooler.supabase.com:6543`).
+2. **Critério de Parada**:
    - Se QUALQUER verificação falhar, o deploy é **IMEDIATAMENTE INTERROMPIDO**. O agente deve reportar o erro exato e sugerir a correção antes de prosseguir.
 
 ### Passo 02 — Sincronização e Git Push (Deploy Online)
@@ -32,16 +30,15 @@ Executar rotina de verificação profunda para identificar erros de tipagem, sin
 4. Se o repositório já estiver 100% atualizado e sem alterações locais:
    - Registrar que não houve necessidade de push adicional.
 
-### Passo 03 — Relatório de Publicação e Links
+### Passo 03 — Relatório de Publicação e Smoke Test Online
 Apresentar ao usuário um relatório de encerramento contendo:
-1. **Resultado da Varredura**:
-   - Código Python: Aprovado.
-   - Templates HTML/Jinja: Aprovados.
-   - Rotas e inicialização Flask: Aprovadas.
+1. **Resultado da Varredura Preditiva**:
+   - Dependências, sintaxe, templates, canais comerciais e DB: Aprovados.
 2. **Resumo do Envio Git**:
-   - Hash do commit enviado para a nuvem.
-   - Lista resumida dos arquivos publicados.
-3. **Status de Produção e Links**:
+   - Hash do commit enviado para a nuvem e lista de arquivos.
+3. **Smoke Test em Produção**:
+   - Testar rotas ao vivo via `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 online.
+4. **Status de Produção e Links**:
    - 🚀 **Link Oficial em Produção**: `https://m-one.majmobilidade.com.br`
-   - 🌐 **Status Vercel**: Compilação automática disparada via GitHub.
-   - 💻 **Ambiente Local**: Informar se o servidor local continua ativo ou se a sessão pode ser encerrada.
+   - 🌐 **Status Vercel**: Compilação automática confirmada.
+   - 💻 **Ambiente Local**: Status do servidor local.

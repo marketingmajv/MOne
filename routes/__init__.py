@@ -71,18 +71,25 @@ ALL_BLUEPRINTS = [
 
 
 def register_blueprints(app):
-    """Registra todos os blueprints e cria aliases de endpoint para compatibilidade total."""
+    """Registra todos os blueprints e cria aliases de endpoint para compatibilidade total com resiliência defensiva."""
     for bp in ALL_BLUEPRINTS:
-        app.register_blueprint(bp)
+        try:
+            app.register_blueprint(bp)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error("[CRITICAL] Falha ao registrar Blueprint %s: %s", getattr(bp, "name", bp), e, exc_info=True)
 
     # Injetar aliases curtos (ex: 'sales' -> 'sales.sales') para compatibilidade de url_for nos templates legados
     for rule in list(app.url_map.iter_rules()):
-        if "." in rule.endpoint:
-            short_name = rule.endpoint.split(".", 1)[1]
-            if short_name not in app.view_functions:
-                app.add_url_rule(
-                    rule.rule,
-                    endpoint=short_name,
-                    view_func=app.view_functions[rule.endpoint],
-                    methods=rule.methods,
-                )
+        try:
+            if "." in rule.endpoint:
+                short_name = rule.endpoint.split(".", 1)[1]
+                if short_name not in app.view_functions:
+                    app.add_url_rule(
+                        rule.rule,
+                        endpoint=short_name,
+                        view_func=app.view_functions[rule.endpoint],
+                        methods=rule.methods,
+                    )
+        except Exception:
+            pass

@@ -36,9 +36,9 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
 
 1. **Passo 01 — Varredura e Validação de Integridade do Código**:
    - Executar varredura profunda com o script `.venv/bin/python3 scripts/validate.py`.
-   - Validar sintaxe Python (`app.py`, `api/index.py`), templates Jinja2 e rotas Flask.
+   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, templates Jinja2 e canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`).
    - Checar integridade da conexão Supabase IPv4 Pooler.
-   - **Trava de Segurança**: Se houver qualquer erro de sintaxe, importação ou tipagem que prejudique o deploy, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
+   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe ou rota comercial, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
 
 2. **Passo 02 — Git Commit e Push Automático**:
    - Verificar arquivos alterados ou pendentes (`git status -sb`).
@@ -46,9 +46,10 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
    - Criar commit objetivo descrevendo as alterações da sessão.
    - Executar `git push origin main` para acionar o deploy automático na Vercel.
 
-3. **Passo 03 — Relatório de Publicação e Confirmação Online**:
-   - Resumo da varredura (status das validações).
+3. **Passo 03 — Relatório de Publicação e Smoke Test Online**:
+   - Resumo da varredura preditiva (status das 5 etapas).
    - Detalhes do commit enviado e lista de arquivos atualizados.
+   - Executar Smoke Test ao vivo com `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 no ar.
    - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br`
 
 ---
