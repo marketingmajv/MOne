@@ -25,6 +25,7 @@ from services.employee_reports_data import (
 )
 from services.employee_reports_service import (
     ensure_reports_schema,
+    get_all_cycles,
     get_cycle_submissions_summary,
     get_employee_report,
     get_monday_consolidation_briefing,
@@ -62,7 +63,13 @@ def index():
     role = (me.get("role") or "").lower().strip()
     admin_view = is_admin_viewer(username, role)
 
-    cycle = get_or_create_current_cycle()
+    all_cycles = get_all_cycles()
+    selected_cycle_id = request.args.get("cycle_id", type=int)
+    cycle = None
+    if selected_cycle_id:
+        cycle = next((c for c in all_cycles if c["id"] == selected_cycle_id), None)
+    if not cycle:
+        cycle = get_or_create_current_cycle()
 
     # Se NÃO for administrador/gerência, exibe estritamente o formulário do próprio colaborador
     if not admin_view:
@@ -76,6 +83,7 @@ def index():
             is_admin_viewer=False,
             active_tab="meu_relatorio",
             cycle=cycle,
+            all_cycles=all_cycles,
             employee_meta=emp_meta,
             my_report=my_report,
         )
@@ -97,6 +105,7 @@ def index():
         is_admin_viewer=True,
         active_tab=active_tab,
         cycle=cycle,
+        all_cycles=all_cycles,
         summary=summary,
         consolidation=consolidation,
         team=team,

@@ -203,7 +203,7 @@
                 <button type="button" 
                         class="btn" 
                         style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 6px;"
-                        @click="selectedEmployee = '{{ emp.key }}'; showReportModal = true">
+                        @click.stop="openReport('{{ emp.key }}')">
                   👁️ Ver Respostas
                 </button>
               </div>

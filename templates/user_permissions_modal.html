@@ -1,4 +1,5 @@
-<!-- MODAL: PERMISSÕES PERSONALIZADAS DO USUÁRIO -->
+<!-- MODAL: PERMISSÕES PERSONALIZADAS DO USUÁRIO (ACESSO EXCLUSIVO: ADMIN) -->
+{% if me and me.role == 'admin' %}
 {% for u in users %}
 {% set perms = u.custom_permissions or {} %}
 {% if perms is string %}
@@ -8,39 +9,47 @@
   {% set p_stock = 'stock": false' not in perms %}
   {% set p_products = 'products": true' in perms or u.role in ['admin', 'support', 'stock', 'finance'] %}
   {% set p_all_sales = 'all_sales": true' in perms or u.role in ['admin', 'support', 'finance'] %}
+  {% set p_custom_catalogs = 'custom_catalogs": true' in perms or u.role in ['admin', 'support'] %}
 {% else %}
   {% set p_copilot = perms.get('copilot') if perms.get('copilot') is not none else True %}
   {% set p_freight = perms.get('freight') if perms.get('freight') is not none else True %}
   {% set p_stock = perms.get('stock') if perms.get('stock') is not none else True %}
   {% set p_products = perms.get('products') if perms.get('products') is not none else (u.role in ['admin', 'support', 'stock', 'finance']) %}
   {% set p_all_sales = perms.get('all_sales') if perms.get('all_sales') is not none else (u.role in ['admin', 'support', 'finance']) %}
+  {% set p_custom_catalogs = perms.get('custom_catalogs') if perms.get('custom_catalogs') is not none else (u.role in ['admin', 'support']) %}
 {% endif %}
 
 <div class="modal" id="userPerms_{{ u.id }}" onclick="if(event.target === this) closeModal('userPerms_{{ u.id }}')">
-  <div class="modal-card" style="max-width: 520px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-    <div class="modal-head" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+  <div class="modal-card" style="max-width: 520px; background: var(--surface-card, #121722); border: 1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius: 18px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+    <div class="modal-head" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); padding-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em;">🔐 Permissões: {{ u.name }}</h3>
-        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
-          Usuário: <code class="mono" style="color: var(--brand-emerald); font-weight: 600;">@{{ u.username }}</code> • Perfil: <strong>{{ role_labels.get(u.role, u.role) }}</strong>
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text, #f8fafc); letter-spacing: -0.02em;">🔐 Permissões: {{ u.name }}</h3>
+        <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--muted, #94a3b8);">
+          Usuário: <code class="mono" style="color: var(--accent, #00e599); font-weight: 600;">@{{ u.username }}</code> • Perfil: <strong>{{ role_labels.get(u.role, u.role) }}</strong>
         </p>
       </div>
-      <button type="button" onclick="closeModal('userPerms_{{ u.id }}')" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('userPerms_{{ u.id }}')" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <form method="post" action="{{ url_for('user.update_user_permissions', uid=u.id) }}">
-      <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.4;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <p style="font-size: 0.82rem; color: var(--muted, #94a3b8); margin: 0 0 16px 0; line-height: 1.4;">
         Ative ou desative os módulos operacionais autorizados para este usuário:
       </p>
 
-      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--surface-subtle, rgba(255,255,255,0.03)); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 14px; padding: 16px; margin-bottom: 24px;">
         
         <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px;">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.1rem;">⚡</span>
             <div>
-              <strong style="color: var(--text-primary); display: block;">Copilot IA Assistente</strong>
-              <small style="color: var(--text-muted); font-size: 0.74rem;">Assistente comercial inteligente e de produtos</small>
+              <strong style="color: var(--text, #f8fafc); display: block;">Copilot IA Assistente</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Assistente comercial inteligente e de produtos</small>
             </div>
           </span>
           <div class="toggle-switch">
@@ -49,12 +58,12 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle);">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.1rem;">🚚</span>
             <div>
-              <strong style="color: var(--text-primary); display: block;">Cotador de Fretes</strong>
-              <small style="color: var(--text-muted); font-size: 0.74rem;">Simulação com regras de cubagem e transportadoras</small>
+              <strong style="color: var(--text, #f8fafc); display: block;">Cotador de Fretes</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Simulação com regras de cubagem e transportadoras</small>
             </div>
           </span>
           <div class="toggle-switch">
@@ -63,12 +72,12 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle);">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.1rem;">📦</span>
             <div>
-              <strong style="color: var(--text-primary); display: block;">Estoque / Chassis</strong>
-              <small style="color: var(--text-muted); font-size: 0.74rem;">Consulta e alocação de veículos disponíveis</small>
+              <strong style="color: var(--text, #f8fafc); display: block;">Estoque / Chassis</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Consulta e alocação de veículos disponíveis</small>
             </div>
           </span>
           <div class="toggle-switch">
@@ -77,12 +86,12 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle);">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.1rem;">🏷️</span>
             <div>
-              <strong style="color: var(--text-primary); display: block;">Catálogo de Produtos</strong>
-              <small style="color: var(--text-muted); font-size: 0.74rem;">Visualização de preços de venda e tabelas</small>
+              <strong style="color: var(--text, #f8fafc); display: block;">Catálogo de Produtos</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Visualização de preços de venda e tabelas</small>
             </div>
           </span>
           <div class="toggle-switch">
@@ -91,12 +100,26 @@
           </div>
         </label>
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle);">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
+          <span style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.1rem;">📑</span>
+            <div>
+              <strong style="color: var(--text, #f8fafc); display: block;">Gestão de Catálogos Personalizados</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Permite clonar matrizes, configurar margem e distribuir links (/c/)</small>
+            </div>
+          </span>
+          <div class="toggle-switch">
+            <input type="checkbox" name="perm_custom_catalogs" value="1" {% if p_custom_catalogs %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.1rem;">📊</span>
             <div>
-              <strong style="color: var(--text-primary); display: block;">Ver Vendas da Equipe Toda</strong>
-              <small style="color: var(--text-muted); font-size: 0.74rem;">Se desmarcado, visualiza apenas as próprias vendas</small>
+              <strong style="color: var(--text, #f8fafc); display: block;">Ver Vendas da Equipe Toda</strong>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Se desmarcado, visualiza apenas as próprias vendas</small>
             </div>
           </span>
           <div class="toggle-switch">
@@ -109,9 +132,10 @@
 
       <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
         <button type="button" class="btn secondary" onclick="closeModal('userPerms_{{ u.id }}')" style="padding: 10px 18px; border-radius: 10px;">Cancelar</button>
-        <button type="submit" style="background: var(--brand-emerald); color: #052e16; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25);">Salvar Permissões</button>
+        <button type="submit" style="background: var(--accent, #00e599); color: #052e16; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25);">Salvar Permissões</button>
       </div>
     </form>
   </div>
 </div>
 {% endfor %}
+{% endif %}

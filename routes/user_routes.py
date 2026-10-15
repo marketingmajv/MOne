@@ -117,6 +117,7 @@ def update_user_permissions(uid):
         "freight": bool(request.form.get("perm_freight")),
         "stock": bool(request.form.get("perm_stock")),
         "products": bool(request.form.get("perm_products")),
+        "custom_catalogs": bool(request.form.get("perm_custom_catalogs")),
         "all_sales": bool(request.form.get("perm_all_sales")),
     }
     with db() as conn:

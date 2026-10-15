@@ -5,8 +5,9 @@ Executa auditoria profunda antes de qualquer deploy:
 1. Paridade Estrita de Dependências (AST Scan vs requirements.txt)
 2. Compilação e Sintaxe Python Completa (Raiz, routes/, services/, scripts/)
 3. Integridade e Parsing dos Templates HTML/Jinja2 (Inclusive Subpastas)
-4. Teste Ativo de Rotas Comerciais e Canais de Venda (/outlet, /atacado, /showroom, /login)
-5. Verificação de Conexão com o Banco Supabase (IPv4 Pooler)
+4. Auditoria de UX/UI, Modais Centralizados e Esquema de Cores (scripts/ux_audit.py)
+5. Teste Ativo de Rotas Comerciais e Canais de Venda (/outlet, /atacado, /showroom, /login)
+6. Verificação de Conexão com o Banco Supabase (IPv4 Pooler)
 """
 
 from __future__ import annotations
@@ -198,9 +199,20 @@ def check_flask_commercial_routes() -> bool:
         return False
 
 
+def check_ux_ui_integrity() -> bool:
+    """Executa auditoria profunda de UX/UI nos templates (modais centralizados, contraste e cores)."""
+    print("🎨 [4/6] Auditoria de Integridade de UX/UI (Modais, Alinhamentos e Cores)...")
+    try:
+        from scripts.ux_audit import run_ux_audit
+        return run_ux_audit()
+    except Exception as e:
+        print(f"  ✗ ERRO na execução da auditoria de UX: {e}")
+        return False
+
+
 def check_database_config() -> bool:
     """Valida a configuração do Pooler IPv4 Supabase."""
-    print("🛡️ [5/5] Validação da configuração de banco de dados (IPv4 Pooler)...")
+    print("🛡️ [6/6] Validação da configuração de banco de dados (IPv4 Pooler)...")
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -221,6 +233,7 @@ def validate_all() -> bool:
         check_dependency_parity,
         check_python_syntax,
         check_templates,
+        check_ux_ui_integrity,
         check_flask_commercial_routes,
         check_database_config,
     ]
@@ -229,7 +242,7 @@ def validate_all() -> bool:
             print("\n❌ FALHA NA VALIDAÇÃO PRÉ-DEPLOY! Publicação interrompida por segurança.\n")
             return False
 
-    print("\n✅ TODAS AS 5 ETAPAS PREDITIVAS FORAM APROVADAS! Código 100% blindado para deploy.\n")
+    print("\n✅ TODAS AS 6 ETAPAS PREDITIVAS (INCLUINDO UX/UI) FORAM APROVADAS! Código 100% blindado para deploy.\n")
     return True
 
 

@@ -89,7 +89,7 @@
         <button type="button" 
                 class="btn" 
                 style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0;"
-                @click="selectedEmployee = '{{ front.employee_data.key if front.employee_data else '' }}'; showReportModal = true">
+                @click.stop="openReport('{{ front.employee_data.key if front.employee_data else '' }}')">
           Ver relatório completo →
         </button>
       </div>

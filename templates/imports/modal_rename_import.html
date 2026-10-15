@@ -11,7 +11,12 @@
           <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--muted);">O código de registro permanece protegido e imutável</p>
         </div>
       </div>
-      <button type="button" onclick="closeModal('renameImportModal')" style="background: none; border: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); padding: 4px 8px; border-radius: 6px;">×</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('renameImportModal')" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <form id="renameImportForm" method="post" action="" class="space-y-4" style="padding: 20px 22px;">

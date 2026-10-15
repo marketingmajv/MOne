@@ -35,70 +35,30 @@ def ensure_reports_schema():
 
     with db() as conn:
         pg = _is_pg(conn)
-        if pg:
-            stmts = [
-                """CREATE TABLE IF NOT EXISTS maj_report_cycles (
-                    id SERIAL PRIMARY KEY,
-                    cycle_code VARCHAR(30) UNIQUE NOT NULL,
-                    title VARCHAR(150) NOT NULL,
-                    start_date VARCHAR(30) NOT NULL,
-                    deadline TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-                    is_active BOOLEAN DEFAULT TRUE,
-                    notes TEXT DEFAULT '',
-                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );""",
-                """CREATE TABLE IF NOT EXISTS maj_employee_reports (
-                    id SERIAL PRIMARY KEY,
-                    cycle_id INTEGER NOT NULL,
-                    user_id INTEGER,
-                    employee_key VARCHAR(50) NOT NULL,
-                    employee_name VARCHAR(100) NOT NULL,
-                    role_title VARCHAR(150) NOT NULL,
-                    answers_json TEXT NOT NULL DEFAULT '{}',
-                    status VARCHAR(30) NOT NULL DEFAULT 'draft',
-                    submitted_at TIMESTAMP WITHOUT TIME ZONE,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(cycle_id, employee_key)
-                );"""
-            ]
-            for s in stmts:
-                try:
-                    conn.executescript(s)
-                    conn.commit()
-                except Exception as e:
-                    logger.debug("Schema stmt notice: %s", e)
-        else:
-            schema_sql = """
-            CREATE TABLE IF NOT EXISTS maj_report_cycles (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cycle_code TEXT UNIQUE NOT NULL,
-                title TEXT NOT NULL,
-                start_date TEXT NOT NULL,
-                deadline TIMESTAMP NOT NULL,
-                is_active BOOLEAN DEFAULT 1,
-                notes TEXT DEFAULT '',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE TABLE IF NOT EXISTS maj_employee_reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cycle_id INTEGER NOT NULL,
-                user_id INTEGER,
-                employee_key TEXT NOT NULL,
-                employee_name TEXT NOT NULL,
-                role_title TEXT NOT NULL,
-                answers_json TEXT NOT NULL DEFAULT '{}',
-                status TEXT NOT NULL DEFAULT 'draft',
-                submitted_at TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(cycle_id, employee_key)
-            );
-            """
+        cycle_tbl = """CREATE TABLE IF NOT EXISTS maj_report_cycles (
+            id SERIAL PRIMARY KEY, cycle_code VARCHAR(30) UNIQUE NOT NULL, title VARCHAR(150) NOT NULL,
+            start_date VARCHAR(30) NOT NULL, deadline TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            is_active BOOLEAN DEFAULT TRUE, notes TEXT DEFAULT '', created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );""" if pg else """CREATE TABLE IF NOT EXISTS maj_report_cycles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, cycle_code TEXT UNIQUE NOT NULL, title TEXT NOT NULL,
+            start_date TEXT NOT NULL, deadline TIMESTAMP NOT NULL, is_active BOOLEAN DEFAULT 1, notes TEXT DEFAULT '', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );"""
+        rep_tbl = """CREATE TABLE IF NOT EXISTS maj_employee_reports (
+            id SERIAL PRIMARY KEY, cycle_id INTEGER NOT NULL, user_id INTEGER, employee_key VARCHAR(50) NOT NULL,
+            employee_name VARCHAR(100) NOT NULL, role_title VARCHAR(150) NOT NULL, answers_json TEXT NOT NULL DEFAULT '{}',
+            status VARCHAR(30) NOT NULL DEFAULT 'draft', submitted_at TIMESTAMP WITHOUT TIME ZONE,
+            updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, UNIQUE(cycle_id, employee_key)
+        );""" if pg else """CREATE TABLE IF NOT EXISTS maj_employee_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, cycle_id INTEGER NOT NULL, user_id INTEGER, employee_key TEXT NOT NULL,
+            employee_name TEXT NOT NULL, role_title TEXT NOT NULL, answers_json TEXT NOT NULL DEFAULT '{}',
+            status TEXT NOT NULL DEFAULT 'draft', submitted_at TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(cycle_id, employee_key)
+        );"""
+        for stmt in [cycle_tbl, rep_tbl]:
             try:
-                conn.executescript(schema_sql)
+                conn.executescript(stmt)
                 conn.commit()
             except Exception as e:
-                logger.warning("Erro ao criar schema SQLite de relatórios: %s", e)
-
+                logger.debug("Schema stmt notice: %s", e)
         _reports_schema_ensured = True
 
 
@@ -174,6 +134,52 @@ def update_cycle_deadline(cycle_id: int, new_deadline_str: str) -> bool:
     except Exception as e:
         logger.error("Erro ao atualizar prazo do ciclo %s: %s", cycle_id, e)
         return False
+
+
+def get_all_cycles() -> List[Dict[str, Any]]:
+    """Retorna todos os ciclos ordenados do mais recente para o mais antigo."""
+    ensure_reports_schema()
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM maj_report_cycles ORDER BY start_date DESC, id DESC").fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
+    """Retorna o histórico de relatórios submetidos por um colaborador em todos os ciclos."""
+    ensure_reports_schema()
+    meta = get_reporting_employee_meta(employee_key)
+    with db() as conn:
+        pg = _is_pg(conn)
+        ph = "%s" if pg else "?"
+        sql = f"""SELECT r.*, c.cycle_code, c.title as cycle_title, c.start_date, c.deadline
+            FROM maj_employee_reports r
+            JOIN maj_report_cycles c ON r.cycle_id = c.id
+            WHERE r.employee_key = {ph}
+            ORDER BY c.start_date DESC, c.id DESC"""
+        rows = conn.execute(sql, (employee_key.lower().strip(),)).fetchall()
+        history = []
+        for r in rows:
+            d = dict(r)
+            try:
+                ans = json.loads(d.get("answers_json") or "{}")
+            except Exception:
+                ans = {}
+            d["answers"] = ans
+            sub = d.get("submitted_at")
+            d["submitted_at_fmt"] = sub.strftime("%d/%m/%Y às %H:%M") if hasattr(sub, "strftime") else (str(sub)[:16] if sub else "")
+            q_list = []
+            if meta:
+                for q in meta.get("questions", []):
+                    qid = q["id"]
+                    q_list.append({
+                        "id": qid,
+                        "label": q.get("label", qid),
+                        "help": q.get("help", ""),
+                        "answer": (ans.get(qid) or "").strip(),
+                    })
+            d["questions"] = q_list
+            history.append(d)
+        return history
 
 
 def get_employee_report(cycle_id: int, employee_key: str) -> Dict[str, Any]:
@@ -331,27 +337,13 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         status = rep.get("status") if rep else "pending"
         submitted_at = rep.get("submitted_at") if rep else None
 
-        if status == "submitted_on_time":
-            status_label = "Enviado no Prazo"
-            badge_class = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-            icon = "✅"
-            counts["submitted_on_time"] += 1
-        elif status == "submitted_late":
-            status_label = "Enviado com Atraso"
-            badge_class = "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-            icon = "⚠️"
-            counts["submitted_late"] += 1
-        elif status == "draft":
-            status_label = "Rascunho Salvo"
-            badge_class = "bg-sky-500/10 text-sky-400 border border-sky-500/30"
-            icon = "📝"
-            counts["draft"] += 1
-        else:
-            status = "pending"
-            status_label = "Pendente"
-            badge_class = "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-            icon = "⏳"
-            counts["pending"] += 1
+        status_map = {
+            "submitted_on_time": ("Enviado no Prazo", "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30", "✅"),
+            "submitted_late": ("Enviado com Atraso", "bg-amber-500/10 text-amber-400 border border-amber-500/30", "⚠️"),
+            "draft": ("Rascunho Salvo", "bg-sky-500/10 text-sky-400 border border-sky-500/30", "📝"),
+        }
+        status_label, badge_class, icon = status_map.get(status, ("Pendente", "bg-rose-500/10 text-rose-400 border border-rose-500/30", "⏳"))
+        counts[status if status in counts else "pending"] += 1
 
         # Percentual de respostas preenchidas
         total_q = len(meta.get("questions", []))
@@ -367,6 +359,21 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             status_label=status_label
         )
 
+        # Formatação amigável de data e lista estruturada de perguntas com respostas
+        submitted_at_fmt = ""
+        if submitted_at:
+            submitted_at_fmt = submitted_at.strftime("%d/%m/%Y às %H:%M") if hasattr(submitted_at, "strftime") else str(submitted_at)
+
+        q_list = []
+        for q in meta.get("questions", []):
+            qid = q["id"]
+            q_list.append({
+                "id": qid,
+                "label": q.get("label", qid),
+                "help": q.get("help", ""),
+                "answer": (answers.get(qid) or "").strip(),
+            })
+
         items.append({
             "key": key,
             "name": meta["name"],
@@ -378,12 +385,14 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "status_label": status_label,
             "badge_class": badge_class,
             "icon": icon,
-            "submitted_at": submitted_at,
+            "submitted_at": submitted_at_fmt,
             "answered_count": answered_q,
             "total_questions": total_q,
             "progress_percent": progress_pct,
             "whatsapp_url": wa_url,
             "answers": answers,
+            "questions": q_list,
+            "history": get_employee_history(key),
         })
 
     total_submitted = counts["submitted_on_time"] + counts["submitted_late"]
@@ -407,88 +416,41 @@ def get_monday_consolidation_briefing(cycle_id: int) -> Dict[str, Any]:
     emp_map = {e["key"]: e for e in summary["employees"]}
 
     # Organização por frentes críticas da reunião
-    critical_fronts = [
-        {
-            "front_title": "1. Faturamento, Caixa & Conciliação",
-            "owner": "Marisa",
-            "badge": "FINANCEIRO",
-            "badge_color": "green",
-            "employee_data": emp_map.get("marisa"),
-            "key_highlights": [
-                {"label": "Faturamento Relevante", "answer": emp_map.get("marisa", {}).get("answers", {}).get("faturamento_nfs")},
-                {"label": "Entradas Pendentes", "answer": emp_map.get("marisa", {}).get("answers", {}).get("entradas_pendentes")},
-                {"label": "Contas para Geysa", "answer": emp_map.get("marisa", {}).get("answers", {}).get("contas_vencimentos")},
-                {"label": "Piloto Mercado Pago", "answer": emp_map.get("marisa", {}).get("answers", {}).get("piloto_mercado_pago")},
-            ]
-        },
-        {
-            "front_title": "2. Estoque Físico, Galpões & Divergências",
-            "owner": "Jhon",
-            "badge": "ESTOQUE",
-            "badge_color": "amber",
-            "employee_data": emp_map.get("jhon"),
-            "key_highlights": [
-                {"label": "Contagem de Sexta", "answer": emp_map.get("jhon", {}).get("answers", {}).get("contagem_rotativa")},
-                {"label": "Divergências Investigadas", "answer": emp_map.get("jhon", {}).get("answers", {}).get("divergencias")},
-                {"label": "NFs de Demonstração", "answer": emp_map.get("jhon", {}).get("answers", {}).get("nfs_demonstracao")},
-                {"label": "Código de Barras", "answer": emp_map.get("jhon", {}).get("answers", {}).get("codigo_barras")},
-            ]
-        },
-        {
-            "front_title": "3. Oficina Técnica, Produtividade & Falhas",
-            "owner": "Ricardo",
-            "badge": "OFICINA",
-            "badge_color": "cyan",
-            "employee_data": emp_map.get("ricardo"),
-            "key_highlights": [
-                {"label": "Serviços Liberados", "answer": emp_map.get("ricardo", {}).get("answers", {}).get("servicos_concluidos")},
-                {"label": "OS Atrasadas / Pendentes", "answer": emp_map.get("ricardo", {}).get("answers", {}).get("os_pendentes")},
-                {"label": "Retrabalhos", "answer": emp_map.get("ricardo", {}).get("answers", {}).get("retrabalhos")},
-                {"label": "Defeitos Recorrentes", "answer": emp_map.get("ricardo", {}).get("answers", {}).get("defeitos_recorrentes")},
-                {"label": "Peças & Ferramentas", "answer": emp_map.get("ricardo", {}).get("answers", {}).get("necessidade_pecas")},
-            ]
-        },
-        {
-            "front_title": "4. Voz do Cliente, Vendas & Objeções",
-            "owner": "Luiza & Gabriel",
-            "badge": "COMERCIAL",
-            "badge_color": "emerald",
-            "employee_data": emp_map.get("luiza"),
-            "key_highlights": [
-                {"label": "Modelos Mais Procurados", "answer": emp_map.get("luiza", {}).get("answers", {}).get("modelos_procurados")},
-                {"label": "Objeções Comerciais", "answer": emp_map.get("luiza", {}).get("answers", {}).get("objecoes_perdas")},
-                {"label": "Preços Considerados Altos", "answer": emp_map.get("luiza", {}).get("answers", {}).get("precos_altos")},
-                {"label": "Sugestão da Semana", "answer": emp_map.get("luiza", {}).get("answers", {}).get("sugestao_comercial")},
-                {"label": "Atacado B2B (Gabriel)", "answer": emp_map.get("gabriel", {}).get("answers", {}).get("resultados_comerciais")},
-            ]
-        },
-        {
-            "front_title": "5. Pós-Venda, Garantias & Clientes Sensíveis",
-            "owner": "Léo",
-            "badge": "PÓS-VENDA",
-            "badge_color": "blue",
-            "employee_data": emp_map.get("leo"),
-            "key_highlights": [
-                {"label": "OS Pós-Venda", "answer": emp_map.get("leo", {}).get("answers", {}).get("os_abertas_concluidas")},
-                {"label": "Clientes Sensíveis / 48h+", "answer": emp_map.get("leo", {}).get("answers", {}).get("clientes_sensiveis")},
-                {"label": "Concessões Utilizadas", "answer": emp_map.get("leo", {}).get("answers", {}).get("concessoes_utilizadas")},
-                {"label": "Decisões da Gerência", "answer": emp_map.get("leo", {}).get("answers", {}).get("decisoes_necessarias")},
-            ]
-        },
-        {
-            "front_title": "6. Sistemas, Marketing & Desvios de Processo",
-            "owner": "Fauzer",
-            "badge": "SISTEMAS",
-            "badge_color": "purple",
-            "employee_data": emp_map.get("fauzer"),
-            "key_highlights": [
-                {"label": "Marketing & CPL", "answer": emp_map.get("fauzer", {}).get("answers", {}).get("marketing_investimento")},
-                {"label": "Sistemas & Bling/M-One", "answer": emp_map.get("fauzer", {}).get("answers", {}).get("processos_sistemas")},
-                {"label": "Falhas & Desvios", "answer": emp_map.get("fauzer", {}).get("answers", {}).get("falhas_desvios")},
-                {"label": "Decisões para Jam & Geysa", "answer": emp_map.get("fauzer", {}).get("answers", {}).get("pontos_decisao_diretoria")},
-            ]
-        }
+    front_defs = [
+        ("1. Faturamento, Caixa & Conciliação", "Marisa", "FINANCEIRO", "green", "marisa", [
+            ("Faturamento Relevante", "faturamento_nfs"), ("Entradas Pendentes", "entradas_pendentes"),
+            ("Contas para Geysa", "contas_vencimentos"), ("Piloto Mercado Pago", "piloto_mercado_pago")
+        ]),
+        ("2. Estoque Físico, Galpões & Divergências", "Jhon", "ESTOQUE", "amber", "jhon", [
+            ("Contagem de Sexta", "contagem_rotativa"), ("Divergências Investigadas", "divergencias"),
+            ("NFs de Demonstração", "nfs_demonstracao"), ("Código de Barras", "codigo_barras")
+        ]),
+        ("3. Oficina Técnica, Produtividade & Falhas", "Ricardo", "OFICINA", "cyan", "ricardo", [
+            ("Serviços Liberados", "servicos_concluidos"), ("OS Atrasadas / Pendentes", "os_pendentes"),
+            ("Retrabalhos", "retrabalhos"), ("Defeitos Recorrentes", "defeitos_recorrentes"), ("Peças & Ferramentas", "necessidade_pecas")
+        ]),
+        ("4. Voz do Cliente, Vendas & Objeções", "Luiza & Gabriel", "COMERCIAL", "emerald", "luiza", [
+            ("Modelos Mais Procurados", "modelos_procurados"), ("Objeções Comerciais", "objecoes_perdas"),
+            ("Preços Considerados Altos", "precos_altos"), ("Sugestão da Semana", "sugestao_comercial")
+        ]),
+        ("5. Pós-Venda, Garantias & Clientes Sensíveis", "Léo", "PÓS-VENDA", "blue", "leo", [
+            ("OS Pós-Venda", "os_abertas_concluidas"), ("Clientes Sensíveis / 48h+", "clientes_sensiveis"),
+            ("Concessões Utilizadas", "concessoes_utilizadas"), ("Decisões da Gerência", "decisoes_necessarias")
+        ]),
+        ("6. Sistemas, Marketing & Desvios de Processo", "Fauzer", "SISTEMAS", "purple", "fauzer", [
+            ("Marketing & CPL", "marketing_investimento"), ("Sistemas & Bling/M-One", "processos_sistemas"),
+            ("Falhas & Desvios", "falhas_desvios"), ("Decisões para Jam & Geysa", "pontos_decisao_diretoria")
+        ]),
     ]
+    critical_fronts = []
+    for title, owner, badge, color, emp_key, fields in front_defs:
+        emp = emp_map.get(emp_key, {})
+        ans = emp.get("answers", {})
+        critical_fronts.append({
+            "front_title": title, "owner": owner, "badge": badge, "badge_color": color,
+            "employee_data": emp_map.get(emp_key),
+            "key_highlights": [{"label": lbl, "answer": ans.get(fld)} for lbl, fld in fields]
+        })
 
     return {
         "cycle": summary["cycle"],

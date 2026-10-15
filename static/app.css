@@ -1486,22 +1486,45 @@ tr:hover td {
   color: var(--text);
 }
 
-.modal-head button {
-  border: 0;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: background 0.15s ease;
+/* Modal Close Button Standard - Centered Geometry */
+.modal-head button,
+.modal-close-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text, #f8fafc) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
 }
 
-.modal-head button:hover {
-  background: rgba(255, 255, 255, 0.15);
+.modal-head button:hover,
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.modal-head button svg,
+.modal-close-btn svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: auto !important;
+  pointer-events: none !important;
 }
 
 /* Modern Form Ergonomics & Inputs (Spacious & Clean) */

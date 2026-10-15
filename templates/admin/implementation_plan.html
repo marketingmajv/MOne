@@ -3,7 +3,9 @@
 {% block title %}Plano MAJ & Relatórios Semanais | M-One{% endblock %}
 
 {% block content %}
-<script id="employeesDataScript" type="application/json">{{ summary.employees|tojson|safe if summary is defined and summary else '[]' }}</script>
+<script>
+  window.__EMPLOYEES_DATA__ = {{ summary.employees|tojson|safe if (summary is defined and summary and summary.employees) else '[]' }};
+</script>
 
 <div class="content-body" x-data="{
   activeTab: '{{ active_tab }}',
@@ -11,7 +13,24 @@
   showDeadlineModal: false,
   showReportModal: false,
   selectedEmployee: 'marisa',
-  employeesData: JSON.parse(document.getElementById('employeesDataScript') ? document.getElementById('employeesDataScript').textContent : '[]')
+  selectedHistoryCycleId: null,
+  employeesData: window.__EMPLOYEES_DATA__ || [],
+  get currentEmployee() {
+    return (this.employeesData || []).find(e => e.key === this.selectedEmployee) || null;
+  },
+  get activeReportData() {
+    if (!this.currentEmployee) return null;
+    const hist = this.currentEmployee.history || [];
+    if (!hist.length) return this.currentEmployee;
+    if (!this.selectedHistoryCycleId) return hist[0];
+    return hist.find(h => h.cycle_id === this.selectedHistoryCycleId) || hist[0];
+  },
+  openReport(key) {
+    if (!key) return;
+    this.selectedEmployee = key;
+    this.selectedHistoryCycleId = null;
+    this.showReportModal = true;
+  }
 }">
 
   {% if not is_admin_viewer %}
@@ -44,10 +63,17 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; text-align: center; min-width: 140px;">
-            <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Ciclo Ativo</small>
-            <div class="comex-value-amber" style="font-size: 1.3rem; font-weight: 800;">{{ cycle.cycle_code }}</div>
-            <small style="font-size: 0.72rem; color: var(--text-dim); font-weight: 600;">{{ summary.deadline_str if summary else 'Sexta 18h' }}</small>
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; text-align: left; min-width: 175px;">
+            <label style="display: block; font-size: 0.68rem; text-transform: uppercase; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em; margin-bottom: 2px;">Ciclo Semanal</label>
+            <select style="background: transparent; border: none; font-size: 0.92rem; font-weight: 800; color: #d97706; cursor: pointer; outline: none; width: 100%; padding: 0;"
+                    onchange="window.location.href='{{ url_for('implementation_plan.index', tab=active_tab) }}' + (this.value ? '&cycle_id=' + this.value : '')">
+              {% for c in all_cycles %}
+              <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
+                {{ c.title }} ({{ c.cycle_code }})
+              </option>
+              {% endfor %}
+            </select>
+            <small style="font-size: 0.7rem; color: var(--text-dim); font-weight: 600; display: block; margin-top: 2px;">{{ summary.deadline_str if summary else 'Sexta 18h' }}</small>
           </div>
 
           <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; text-align: center; min-width: 140px;">
@@ -193,8 +219,7 @@
            @click.self="showDeadlineModal = false"
            @keydown.escape.window="showDeadlineModal = false">
         <div class="panel" 
-             style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);" 
-             @click.away="showDeadlineModal = false">
+             style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
             <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">
               Alterar Prazo Oficial de Entrega
@@ -245,16 +270,15 @@
            :style="showReportModal ? 'display: flex !important;' : 'display: none !important;'"
            @click.self="showReportModal = false"
            @keydown.escape.window="showReportModal = false">
-        <div class="plano-modal-box" 
-             @click.away="showReportModal = false">
+        <div class="plano-modal-box">
           
-          <template x-for="emp in employeesData.filter(e => e.key === selectedEmployee)" :key="emp.key">
+          <template x-if="currentEmployee">
             <div style="display: flex; flex-direction: column; max-height: 88vh; width: 100%; overflow: hidden;">
               <!-- Header Fixo do Modal -->
               <div class="plano-modal-header">
                 <div>
-                  <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);" x-text="'Relatório de ' + emp.name"></h3>
-                  <small class="muted" style="font-size: 0.82rem;" x-text="emp.role_title + ' • ' + emp.area"></small>
+                  <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);" x-text="'Relatório de ' + currentEmployee.name"></h3>
+                  <small class="muted" style="font-size: 0.82rem;" x-text="currentEmployee.role_title + ' • ' + currentEmployee.area"></small>
                 </div>
                 <button type="button" 
                         class="btn" 
@@ -267,38 +291,55 @@
 
               <!-- Corpo Rolável do Modal -->
               <div class="plano-modal-body">
-                <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <span class="badge" :class="emp.badge_class" x-text="emp.icon + ' ' + emp.status_label"></span>
-                  <small class="muted" x-text="emp.submitted_at ? 'Enviado em: ' + emp.submitted_at : 'Ainda não submetido'"></small>
+                <!-- Seletor de Histórico de Semanas se o funcionário tiver mais de 1 relatório -->
+                <div x-show="currentEmployee.history && currentEmployee.history.length > 1" style="margin-bottom: 16px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <small style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em;">
+                      📅 Histórico de Relatórios deste Colaborador (<span x-text="currentEmployee.history ? currentEmployee.history.length : 1"></span> Semanas):
+                    </small>
+                    <small class="muted" style="font-size: 0.72rem;">Clique para alternar entre as semanas</small>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <template x-for="h in (currentEmployee.history || [])" :key="h.cycle_id">
+                      <button type="button" 
+                              class="btn" 
+                              :style="(activeReportData && activeReportData.cycle_id === h.cycle_id) ? 'background: #e5a93b; color: #000; font-weight: 800; font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: none;' : 'background: var(--panel); color: var(--text); font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);'"
+                              @click="selectedHistoryCycleId = h.cycle_id">
+                        <span x-text="h.cycle_code"></span>
+                        <span style="font-size: 0.7rem; opacity: 0.85;" x-text="' (' + (h.submitted_at_fmt ? h.submitted_at_fmt.split(' ')[0] : 'Pendente') + ')'"></span>
+                      </button>
+                    </template>
+                  </div>
                 </div>
 
-                <!-- Respostas -->
+                <!-- Status e Data do Relatório Selecionado -->
+                <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <span class="badge" :class="activeReportData ? (activeReportData.status === 'submitted_on_time' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30') : ''" x-text="activeReportData ? (activeReportData.cycle_title + ' • ' + (activeReportData.status === 'submitted_on_time' ? '✅ Enviado no Prazo' : '⚠️ ' + activeReportData.status)) : ''"></span>
+                  <small class="muted" x-text="activeReportData && activeReportData.submitted_at_fmt ? 'Enviado em: ' + activeReportData.submitted_at_fmt : (currentEmployee.submitted_at ? 'Enviado em: ' + currentEmployee.submitted_at : 'Ainda não submetido')"></small>
+                </div>
+
+                <!-- Respostas organizadas por pergunta oficial da cartilha -->
                 <div style="display: flex; flex-direction: column; gap: 14px;">
-                  <template x-for="(val, key) in emp.answers" :key="key">
+                  <template x-for="q in (activeReportData ? (activeReportData.questions || []) : (currentEmployee.questions || []))" :key="q.id">
                     <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
-                      <div style="font-size: 0.76rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;" x-text="key.replaceAll('_', ' ')"></div>
-                      <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="val || '(Em branco)'"></div>
+                      <div style="font-size: 0.78rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;" x-text="q.label"></div>
+                      <div x-show="q.help" style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 8px; font-style: italic;" x-text="q.help"></div>
+                      <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="q.answer || '(Pendente de preenchimento)'"></div>
                     </div>
                   </template>
                   
-                  <div x-show="!Object.keys(emp.answers || {}).length" class="muted" style="text-align: center; padding: 24px; font-size: 0.88rem;">
+                  <div x-show="!activeReportData || !activeReportData.questions || !activeReportData.questions.length" class="muted" style="text-align: center; padding: 24px; font-size: 0.88rem;">
                     Nenhuma resposta enviada até o momento.
                   </div>
                 </div>
               </div>
 
               <!-- Rodapé Fixo do Modal -->
-              <div class="plano-modal-footer">
-                <a :href="emp.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: #25d366; color: #fff; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+              <div class="plano-modal-footer" style="display: flex; justify-content: flex-start; align-items: center;">
+                <a :href="currentEmployee.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: #25d366; color: #fff; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                   <span>💬</span>
                   <span>Chamar no WhatsApp</span>
                 </a>
-                <button type="button" 
-                        class="btn" 
-                        style="background: var(--panel2); color: var(--text); padding: 8px 20px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); font-weight: 600;" 
-                        @click="showReportModal = false">
-                  Fechar
-                </button>
               </div>
             </div>
           </template>

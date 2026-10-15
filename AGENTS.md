@@ -36,9 +36,9 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
 
 1. **Passo 01 — Varredura e Validação de Integridade do Código**:
    - Executar varredura profunda com o script `.venv/bin/python3 scripts/validate.py`.
-   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, templates Jinja2 e canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`).
+   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, integridade de templates Jinja2, **auditoria de UX/UI (modais centralizados e paleta de cores via `scripts/ux_audit.py`)**, e canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`).
    - Checar integridade da conexão Supabase IPv4 Pooler.
-   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe ou rota comercial, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
+   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe, UX ou rota comercial, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
 
 2. **Passo 02 — Git Commit e Push Automático**:
    - Verificar arquivos alterados ou pendentes (`git status -sb`).
@@ -47,7 +47,7 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
    - Executar `git push origin main` para acionar o deploy automático na Vercel.
 
 3. **Passo 03 — Relatório de Publicação e Smoke Test Online**:
-   - Resumo da varredura preditiva (status das 5 etapas).
+   - Resumo da varredura preditiva (status das 6 etapas).
    - Detalhes do commit enviado e lista de arquivos atualizados.
    - Executar Smoke Test ao vivo com `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 no ar.
    - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br`
@@ -87,7 +87,29 @@ Você deve combater ativamente o inchaço e a formação de monólitos de códig
 
 ---
 
-## Pendências e Roadmap de Arquitetura
+## Diretrizes Inegociáveis de UX/UI & Auditoria Pré-Entrega (Modais e Cores)
+Erros visuais de modais desalinhados e esquemas de cores bagunçados são proibidos no M-One:
+1. **Centralização e Isolamento Absoluto de Modais**:
+   - Todo modal implementado com Alpine.js dentro do layout administrativo (`base.html`) **DEVE OBRIGATORIAMENTE** ser envolvido com `<template x-teleport="body">`.
+   - Isso evita o *CSS containment trap* (quando o modal fica preso dentro de containers com `overflow`, `flex` ou margens, sendo empurrado para o canto esquerdo da tela).
+   - Utilizar a estrutura nativa padronizada do M-One:
+     - Overlay/Backdrop: `.modal.show` com `background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);`
+     - Caixa de conteúdo: `.modal-card` com `background: var(--panel); border: 1px solid var(--line); border-radius: 16px;`
+     - Cabeçalho: `.modal-head` com título `var(--text)` e subtítulo `var(--muted)`
+2. **Esquema de Cores & Contraste (Dark Theme First)**:
+   - **Proibido inputs brancos estourados**: Nunca usar `background: #fff` ou inputs desestilizados que assumam fundo branco do navegador. Todos os inputs, selects e textareas devem usar `class="form-input"` ou `background: var(--panel2); color: var(--text); border: 1px solid var(--line);`.
+   - **Proibido texto escuro sobre fundo escuro**: Todo texto, label e subtítulo deve usar explicitamente `var(--text, #f8fafc)` ou `var(--muted, #94a3b8)`. Texto preto (`#000`) só é permitido sobre fundos com contraste luminoso comprovado (ex: botões dourados/verdes `#e5a93b`, `#00cc88` ou `#00e599`).
+   - **Botões**: Ação principal com `class="btn primary"` e ação secundária/cancelar com `class="btn"`.
+3. **Alinhamento e Geometria Milimétrica do Botão Fechar ('X')**:
+   - **Proibido usar `.btn.sm` ou `.btn` no botão de fechar modal**: essas classes aplicam padding retangular assimétrico (`padding: 5px 12px`), empurrando o `x` para baixo e para a direita.
+   - **Proibido usar padding inline não-nulo** ou caracteres tipográficos crus (`&times;`, `×`, `x`) sem SVG geométrico, pois fontes sofrem distorção de baseline.
+   - **Padrão Obrigatório**: Utilizar sempre `class="modal-close-btn"` com SVG geométrico perfeitamente centralizado (`viewBox="0 0 24 24"` com duas linhas cruzadas) e `padding: 0; display: flex; align-items: center; justify-content: center;`.
+4. **Trava de Qualidade Automática Obrigatória**:
+   - Antes de considerar qualquer funcionalidade concluída, o agente **DEVE EXECUTAR**:
+     `.venv/bin/python3 scripts/ux_audit.py`
+   - Se houver qualquer erro crítico de contenção de modal, contraste ou alinhamento do botão 'X', a entrega é reprovada e deve ser corrigida imediatamente.
+
+---
 
 ### 📌 Padronização Global de Fontes de Dados e Automação 24/7 (Padrão Frete + Outlet)
 - **Diretriz**: Replicar a arquitetura da aba **Fontes de Dados** (presente no módulo de Fretes `/freight`) combinada com o **Painel Executivo e Motor de Automação 24/7** (desenvolvido no Outlet MAJ `/admin/outlet`) para todas as demais sessões operacionais do app.

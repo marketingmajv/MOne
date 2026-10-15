@@ -38,7 +38,9 @@
           <td>
             <div class="action-row-compact" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
               <button class="btn small" onclick="openModal('editUser_{{ u.id }}')">Editar</button>
-              <button type="button" class="btn small" style="background:rgba(56,189,248,0.15);border:1px solid #38bdf8;color:#38bdf8;" onclick="openModal('userPerms_{{ u.id }}')">🔐 Permissões</button>
+              {% if me.role == 'admin' %}
+                <button type="button" class="btn small" style="background:rgba(56,189,248,0.15);border:1px solid #38bdf8;color:#38bdf8;" onclick="openModal('userPerms_{{ u.id }}')">🔐 Permissões</button>
+              {% endif %}
               <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
                 <button class="btn small {{ 'warn-btn' if u.active else 'good-btn' }}">
                   {{ 'Desativar' if u.active else 'Ativar' }}
