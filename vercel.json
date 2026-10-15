@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30
-    }
-  },
   "builds": [
     {
       "src": "api/index.py",
