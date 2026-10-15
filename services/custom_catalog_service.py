@@ -349,9 +349,21 @@ def resolve_custom_catalog_products(catalog: Dict[str, Any]) -> List[Dict[str, A
             except Exception:
                 pass
 
-        # Parcelamento estimado se houver preço
-        inst_12 = round((final_price * 1.15) / 12.0, 2) if (show_price and final_price > 0) else 0.0
-        inst_18 = round((final_price * 1.22) / 18.0, 2) if (show_price and final_price > 0) else 0.0
+        # Produtos com preço zerado ou negativo devem ficar automaticamente "Sob Consulta"
+        if final_price <= 0.0:
+            show_price = False
+            final_price = 0.0
+
+        has_valid_price = show_price and (final_price > 0.0)
+
+        # Parcelamento estimado (apenas para Outlet/Varejo B2C com preço válido; Atacado é estritamente à vista)
+        is_atacado = str(matrix).strip().lower() == "atacado"
+        if not is_atacado and has_valid_price:
+            inst_12 = round((final_price * 1.15) / 12.0, 2)
+            inst_18 = round((final_price * 1.22) / 18.0, 2)
+        else:
+            inst_12 = 0.0
+            inst_18 = 0.0
 
         # Estoque
         stock_qty = item.get("stock_qty", 0)
@@ -362,9 +374,9 @@ def resolve_custom_catalog_products(catalog: Dict[str, Any]) -> List[Dict[str, A
         # Montagem da Mensagem do WhatsApp CTA
         product_name = item.get("name", "Veículo Elétrico")
         if custom_msg_tpl:
-            msg = custom_msg_tpl.replace("{produto}", product_name).replace("{preco}", f"R$ {final_price:,.2f}" if show_price else "").replace("{loja}", catalog_title)
+            msg = custom_msg_tpl.replace("{produto}", product_name).replace("{preco}", f"R$ {final_price:,.2f}" if has_valid_price else "").replace("{loja}", catalog_title)
         else:
-            if show_price and final_price > 0:
+            if has_valid_price:
                 msg = (
                     f"Olá! Vi o modelo *{product_name}* (R$ {final_price:,.2f}) no catálogo *{catalog_title}* "
                     f"e gostaria de consultar a disponibilidade e condições de pagamento! ⚡"
@@ -381,7 +393,7 @@ def resolve_custom_catalog_products(catalog: Dict[str, Any]) -> List[Dict[str, A
         p_item = dict(item)
         p_item.update({
             "computed_price": final_price,
-            "show_price": show_price,
+            "show_price": has_valid_price,
             "computed_installment_12": inst_12,
             "computed_installment_18": inst_18,
             "stock_qty": stock_qty,

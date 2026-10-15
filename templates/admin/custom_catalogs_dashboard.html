@@ -240,6 +240,14 @@
             </div>
           </div>
 
+          <!-- Aviso informativo quando Matriz for Atacado -->
+          <div x-show="form.source_matrix === 'atacado'" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(0, 204, 136, 0.08); border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.1rem;">⚡</span>
+            <span style="font-size: 0.8rem; color: #a7f3d0; font-weight: 600;">
+              <strong>Matriz Atacado CNPJ:</strong> Catálogos gerados a partir do Atacado operam estritamente com preços à vista CNPJ (sem parcelamento).
+            </span>
+          </div>
+
           <!-- Campo condicional de margem percentual -->
           <div x-show="form.pricing_mode === 'percentage_markup'" style="margin-bottom: 16px; padding: 14px; background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 10px;">
             <label style="display: block; font-size: 0.84rem; font-weight: 700; margin-bottom: 6px; color: #818cf8;">Margem Adicional sobre Todos os Produtos (%)</label>
