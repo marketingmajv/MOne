@@ -14,6 +14,7 @@ from routes.product_routes import product_bp
 from routes.import_routes import import_bp
 from routes.import_financial_routes import import_financial_bp
 from routes.import_document_routes import import_document_bp
+from routes.import_rules_routes import import_rules_bp
 from routes.bling_routes import bling_bp
 from routes.copilot_routes import copilot_bp
 from routes.user_routes import user_bp
@@ -48,6 +49,7 @@ ALL_BLUEPRINTS = [
     import_lifecycle_bp,
     import_financial_bp,
     import_document_bp,
+    import_rules_bp,
     import_settlement_bp,
     import_repository_bp,
     document_center_bp,

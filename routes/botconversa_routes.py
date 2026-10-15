@@ -16,7 +16,6 @@ from services.botconversa_service import (
     save_botconversa_config,
     test_botconversa_connection,
 )
-from scripts.generate_botconversa_diagnosis_pdf import build_diagnosis_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +75,10 @@ def get_diagnosis():
 
 @botconversa_bp.route("/generate-pdf", methods=["POST"])
 def generate_pdf():
-    """Aciona o gerador de PDF ReportLab e retorna os metadados do documento gerado."""
+    """Aciona o gerador de PDF ReportLab sob demanda e retorna os metadados do documento gerado."""
     days = int(request.args.get("days", 7))
     try:
+        from scripts.generate_botconversa_diagnosis_pdf import build_diagnosis_pdf
         pdf_path = build_diagnosis_pdf(days=days)
         filename = os.path.basename(pdf_path)
         return jsonify({

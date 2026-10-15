@@ -27,12 +27,14 @@ from services.outlet_service import (
     delete_outlet_item,
     ensure_outlet_schema,
     get_all_outlet_items,
+    get_all_outlet_settings,
     get_outlet_item_by_id_or_slug,
     get_outlet_setting,
     save_outlet_item,
     set_outlet_setting,
     slugify,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -69,19 +71,20 @@ def catalog():
     # Totalizadores para badges
     total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
 
-    raw_wa = get_outlet_setting("whatsapp_number", "5527996051538")
+    outlet_settings = get_all_outlet_settings()
+    raw_wa = outlet_settings.get("whatsapp_number") or "5527996051538"
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
-    whatsapp_message = get_outlet_setting(
+    whatsapp_message = outlet_settings.get(
         "whatsapp_message",
         "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"
     )
-    whatsapp_floating_message = get_outlet_setting(
+    whatsapp_floating_message = outlet_settings.get(
         "whatsapp_floating_message",
         "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de falar com um consultor."
     )
-    title = get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE")
-    subtitle = get_outlet_setting("outlet_subtitle", f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos")
-    urgency_text = get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
+    title = outlet_settings.get("outlet_title") or "OUTLET MAJ MOBILIDADE"
+    subtitle = outlet_settings.get("outlet_subtitle") or f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos"
+    urgency_text = outlet_settings.get("outlet_urgency_text") or "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X"
 
     # Extrair categorias únicas para filtros
     all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))

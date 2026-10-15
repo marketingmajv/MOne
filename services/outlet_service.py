@@ -44,6 +44,14 @@ def ensure_outlet_schema():
     with db() as conn:
         is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
         if is_pg:
+            try:
+                chk = conn.execute("SELECT to_regclass('public.outlet_items');").fetchone()
+                reg = chk.get("to_regclass") if isinstance(chk, dict) else (chk[0] if chk else None)
+                if reg:
+                    _outlet_schema_ensured = True
+                    return
+            except Exception:
+                pass
             statements = [
                 """CREATE TABLE IF NOT EXISTS outlet_items (
                     id SERIAL PRIMARY KEY,
@@ -143,6 +151,25 @@ def get_outlet_setting(key: str, default: str = "") -> str:
             val = row["value"] if isinstance(row, dict) else row[0]
             return val if val is not None else default
         return default
+
+
+def get_all_outlet_settings() -> dict[str, str]:
+    """Retorna todas as configurações do Outlet em uma única query otimizada."""
+    ensure_outlet_schema()
+    try:
+        with db() as conn:
+            rows = run_exec(conn, "SELECT key, value FROM outlet_settings").fetchall()
+            settings = {}
+            for row in rows:
+                k = row["key"] if isinstance(row, dict) else row[0]
+                v = row["value"] if isinstance(row, dict) else row[1]
+                if k:
+                    settings[str(k)] = str(v) if v is not None else ""
+            return settings
+    except Exception as e:
+        logger.warning("[get_all_outlet_settings error]: %s", e)
+        return {}
+
 
 
 def set_outlet_setting(key: str, value: str):
