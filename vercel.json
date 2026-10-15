@@ -12,6 +12,8 @@
       "config": {
         "includeFiles": [
           "templates/**",
+          "routes/**",
+          "services/**",
           "static/css/**",
           "static/js/**",
           "static/images/**",
