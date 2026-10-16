@@ -51,8 +51,8 @@ O agente usará o Python/Pillow para ler o arquivo original sem compressão, ger
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | **MAX 12 MAJ** | `max-12` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **GP 1000** | `gp-1000` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
-| **FLOW ONE** | `flow-one` | Scooter | 🟡 Arquivo 2K pronto no GDrive | ✅ 8 fotos prontas | 🎯 **Próximo da Fila** |
-| **CLASSIC 1000** | `classic-1000` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
+| **FLOW ONE** | `flow-one` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **CLASSIC 1000** | `classic-1000` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 🎯 **Próximo da Fila** |
 | **VITTÓRIA** | `vittoria` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **SPORT 701 SHORT**| `sport-701-short`| Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **NOVA** | `nova` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
@@ -190,11 +190,9 @@ O agente executará a validação de 6 etapas, criará o commit, fará o push pa
 
 ---
 
-## 📌 5. Próximo Passo Imediato Recomendado: FLOW ONE
+## 📌 5. Próximo Passo Imediato Recomendado: CLASSIC 1000
 
-O modelo **FLOW ONE** já possui o banner 2K pronto no Google Drive da MAJ:
-* 📁 **Arquivo Hero:** `/Users/macstudio-maj/Library/CloudStorage/GoogleDrive-marketingmajv@gmail.com/Meu Drive/M-ONE/SITE- MODELOS/OUT/FLOW ONE - topo 2k.jpeg`
-* 📁 **Fotos de Estúdio:** `public/images/flow-one/` (8 fotos já disponíveis)
-* ⚙️ **Especificações:** Motor 1000W, 32 km/h, 60V Lítio, freios hidráulicos e porta-capacete espaçoso.
-
-Basta pedir para o agente iniciar a replicação do **FLOW ONE**!
+O modelo **CLASSIC 1000** é o próximo da fila:
+* 📁 **Fotos de Estúdio:** `public/images/classic-1000/` (8 fotos já disponíveis)
+* ⚙️ **Especificações:** Motor 1000W, 32 km/h, 60V Lítio, estilo retrô clássico europeu.
+* 🎯 **Ação Necessária:** Apontar onde está o arquivo Hero Widescreen 2K no computador/Google Drive (pasta `Meu Drive/M-ONE/SITE- MODELOS/OUT/`).

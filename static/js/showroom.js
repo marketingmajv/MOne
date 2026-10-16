@@ -59,7 +59,11 @@
     // Banner Panorâmico Widescreen (Para modelos com foto widescreen de estúdio)
     const bannerElem = document.getElementById('max12PanoramicBanner');
     const heroStageElem = document.getElementById('hero');
-    const bannerMap = { 'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp' };
+    const bannerMap = {
+      'max-12': '/public/images/models/banners/max-12-banner.webp',
+      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
+      'flow-one': '/public/images/models/banners/flow-one-banner.webp'
+    };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
       const hasBanner = Boolean(bannerUrl);

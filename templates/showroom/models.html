@@ -162,7 +162,8 @@
     {% set current_slug = active_model.slug if active_model else 'max-12' %}
     {% set banner_lookup = {
       'max-12': '/public/images/models/banners/max-12-banner.webp',
-      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp'
+      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
+      'flow-one': '/public/images/models/banners/flow-one-banner.webp'
     } %}
     {% set active_banner = (active_model.banner_image if active_model and active_model.banner_image else banner_lookup.get(current_slug)) %}
     <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" style="display: {{ 'block' if active_banner else 'none' }}; opacity: {{ '1' if active_banner else '0' }};" aria-label="Apresentação Widescreen {{ active_model.modelo if active_model else '' }}">
