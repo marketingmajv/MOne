@@ -58,8 +58,8 @@ SLUG_ALIASES = {
     "H1": "h1",
 }
 
-# Modelos inativos por padrão (ex: H1 removido do catálogo público)
-DEFAULT_INACTIVE_SLUGS: Set[str] = {"h1"}
+# Modelos inativos por padrão (ex: H1 removido do catálogo público, sport-701-short e v80-pro)
+DEFAULT_INACTIVE_SLUGS: Set[str] = {"h1", "sport-701-short", "v80-pro"}
 
 _memory_cache: Optional[Dict[str, Any]] = None
 _last_sync_time: float = 0

@@ -58,13 +58,12 @@ O agente usará o Python/Pillow para ler o arquivo original sem compressão, ger
 | **NOVA** | `nova` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **RIDE ON** | `ride-on` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **M2** | `m2` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
-| **SPORT 701 SHORT**| `sport-701-short`| Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 🎯 **Próximo da Fila** |
-| **RZ 110** | `rz-110` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **M9 PRO** | `m9-pro` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **V80 PRO** | `v80-pro` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **M50 PRO** | `m50-pro` | Bike | ⏳ Aguardando apontamento | ✅ 5 fotos prontas | 📋 Aguardando banner |
-| **V20 ULTRA** | `v20-ultra` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **V8 MINI ULTRA**| `v8-mini` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
+| **M9 PRO** | `m9-pro` | Bike | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **V20 ULTRA** | `v20-ultra` | Bike | ✅ Ativo (2560x1440 R1) | ✅ 7 fotos estúdio (M9 PRO removida) | 🟢 **100% Concluído & Em Produção** |
+| **V8 MINI ULTRA**| `v8-mini` | Bike | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **M50 PRO** | `m50-pro` | Bike | ⏳ Imagem 2K disponível no Drive | ✅ 5 fotos prontas | 🎯 **Próximo da Fila** |
+| **SPORT 701 SHORT**| `sport-701-short`| Scooter | — | — | 🚫 **Oculto do Menu (Inativo)** |
+| **V80 PRO** | `v80-pro` | Bike | — | — | 🚫 **Oculto do Menu (Inativo)** |
 | **X15 PRO** | `x15-pro` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **JM 125** | `jm-125` | Moto | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **MANTIS** | `mantis` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |

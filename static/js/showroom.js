@@ -60,15 +60,12 @@
     const bannerElem = document.getElementById('max12PanoramicBanner');
     const heroStageElem = document.getElementById('hero');
     const bannerMap = {
-      'max-12': '/public/images/models/banners/max-12-banner.webp',
-      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
-      'flow-one': '/public/images/models/banners/flow-one-banner.webp',
-      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
-      'db-zero': '/public/images/models/banners/db-zero-banner.webp',
-      'vittoria': '/public/images/models/banners/vittoria-banner.webp',
-      'nova': '/public/images/models/banners/nova-banner.webp',
-      'ride-on': '/public/images/models/banners/ride-on-banner.webp',
-      'm2': '/public/images/models/banners/m2-banner.webp'
+      'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
+      'flow-one': '/public/images/models/banners/flow-one-banner.webp', 'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
+      'db-zero': '/public/images/models/banners/db-zero-banner.webp', 'vittoria': '/public/images/models/banners/vittoria-banner.webp',
+      'nova': '/public/images/models/banners/nova-banner.webp', 'ride-on': '/public/images/models/banners/ride-on-banner.webp',
+      'm2': '/public/images/models/banners/m2-banner.webp', 'm9-pro': '/public/images/models/banners/m9-pro-banner.webp',
+      'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp'
     };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
@@ -481,9 +478,8 @@
     const aut = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
     if (telemetryHasBeenRevealed) { animateTelemetryCountUp(false); }
     else {
-      const p = document.getElementById('bigMetricPower'); if (p) p.textContent = pot;
-      const v = document.getElementById('bigMetricSpeed'); if (v) v.textContent = vel;
-      const a = document.getElementById('bigMetricRange'); if (a) a.textContent = aut;
+      const p = document.getElementById('bigMetricPower'), v = document.getElementById('bigMetricSpeed'), a = document.getElementById('bigMetricRange');
+      if (p) p.textContent = pot; if (v) v.textContent = vel; if (a) a.textContent = aut;
     }
   }
 
