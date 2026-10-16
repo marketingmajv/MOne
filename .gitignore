@@ -16,7 +16,8 @@ scratch/
 scratch_*
 .DS_Store
 api/static/img/outlet/
-api/static/images/
+api/static/images/*
+!api/static/images/maj-logo-official*.png
 gogoro_*
 
 
