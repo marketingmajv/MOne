@@ -1,4 +1,4 @@
-# 🏍️ Plano de Replicagem e Modelos — Showroom MAJ Mobilidade
+# 🏍️ Plano de Replicagem — Showroom MAJ Mobilidade
 
 > **Documento Oficial de Handover e Continuidade Operacional**  
 > Destinado ao desenvolvedor/operador que assumirá a continuidade da criação e ativação dos modelos no Showroom MAJ (`/show-room/<slug>`).
