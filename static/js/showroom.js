@@ -1,16 +1,7 @@
-/**
- * MAJ MOBILIDADE — SHOWROOM ENGINE (SHOWROOM.JS)
- * Controla a navegação estilo Apple/Tesla, transições entre os 13 modelos,
- * simulação do cockpit iQ Touch HD, faróis Matrix e comparador dinâmico.
- */
-
+// MAJ MOBILIDADE — SHOWROOM ENGINE
 (function () {
   'use strict';
-
-  // Estado Global do Mostruário
-  let allModels = [];
-  let currentModel = null;
-  let currentCategory = 'all';
+  let allModels = [], currentModel = null, currentCategory = 'all';
 
   // 1. Carregamento dos Modelos da API /api/models
   async function loadModels() {
@@ -20,7 +11,12 @@
       allModels = data.models || [];
       if (allModels.length > 0) {
         renderModelCarousel(allModels);
-        selectModel(allModels[0].slug);
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const lastPart = parts[parts.length - 1];
+        const urlParams = new URLSearchParams(window.location.search);
+        const pSlug = urlParams.get('model') || (parts.length > 1 ? lastPart : null);
+        const initSlug = (pSlug && allModels.some((m) => m.slug === pSlug)) ? pSlug : allModels[0].slug;
+        selectModel(initSlug, false);
         initComparisonSelects();
       }
     } catch (err) {
@@ -38,16 +34,19 @@
       btn.className = `model-pill-item ${currentModel && currentModel.slug === m.slug ? 'active' : ''}`;
       btn.id = `pill-${m.slug}`;
       btn.innerHTML = `<span class="model-pill-dot"></span><span class="model-pill-name">${m.modelo}</span>`;
-      btn.addEventListener('click', () => selectModel(m.slug));
+      btn.addEventListener('click', () => selectModel(m.slug, true));
       nav.appendChild(btn);
     });
   }
 
   // 3. Seleção Dinâmica do Modelo (Zero Reload)
-  function selectModel(slug) {
+  function selectModel(slug, updateUrl = true) {
     const found = allModels.find((m) => m.slug === slug);
     if (!found) return;
     currentModel = found;
+    if (updateUrl && window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', `/show-room/${slug}`);
+    }
 
     // Atualizar classe ativa nas pílulas
     document.querySelectorAll('.model-pill-item').forEach((el) => el.classList.remove('active'));

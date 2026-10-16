@@ -103,9 +103,14 @@ def admin_models_page():
     return render_template("showroom/admin_models.html", me=me, models=models)
 
 
+@showroom_bp.route("/show-room", methods=["GET"])
+@showroom_bp.route("/show-room/<slug>", methods=["GET"])
+@showroom_bp.route("/showroom", methods=["GET"])
+@showroom_bp.route("/showroom/<slug>", methods=["GET"])
 @showroom_bp.route("/modelos", methods=["GET"])
-def showroom_models_page():
+@showroom_bp.route("/modelos/<slug>", methods=["GET"])
+def showroom_models_page(slug=None):
     """Mostruário e showroom imersivo de todos os modelos MAJ no estilo Gogoro Pulse."""
     models = get_all_models(include_inactive=False)
     cache_id = int(time.time())
-    return render_template("showroom/models.html", models=models, cache_id=cache_id)
+    return render_template("showroom/models.html", models=models, initial_slug=slug, cache_id=cache_id)

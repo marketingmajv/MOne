@@ -186,12 +186,12 @@ def check_flask_commercial_routes() -> bool:
                 return False
             print("  ✓ Canal Comercial /atacado: HTTP 200 OK")
 
-            # 4. Rota pública de Mostruário / Modelos
-            res_models = client.get("/modelos")
+            # 4. Rota pública de Mostruário / Modelos & Show-Room
+            res_models = client.get("/show-room")
             if res_models.status_code != 200:
-                print(f"  ✗ Falha no canal /modelos: HTTP {res_models.status_code}")
+                print(f"  ✗ Falha no canal /show-room: HTTP {res_models.status_code}")
                 return False
-            print("  ✓ Canal Comercial /modelos (Showroom): HTTP 200 OK")
+            print("  ✓ Canal Comercial /show-room (Showroom): HTTP 200 OK")
 
         return True
     except Exception as e:
