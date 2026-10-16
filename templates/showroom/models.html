@@ -16,9 +16,15 @@
     .showroom-header { position: fixed; top: 0; left: 0; width: 100%; height: 64px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); z-index: 1000; display: flex; align-items: center; }
     .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
     .brand-maj-logo { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #111114 !important; text-decoration: none !important; text-transform: lowercase; }
+    .brand-maj-logo-link { display: inline-flex; align-items: center; text-decoration: none !important; transition: opacity 0.2s ease, transform 0.2s ease; flex-shrink: 0; }
+    .brand-maj-logo-link:hover { opacity: 0.82; transform: translateY(-1px); }
+    .brand-maj-logo-img { height: 32px; max-height: 34px; width: auto; object-fit: contain; display: block; }
+    .brand-maj-logo-drawer { height: 28px; max-height: 30px; }
     .header-main-nav { display: flex; align-items: center; gap: 24px; }
     .header-main-nav .nav-link { font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #55585d !important; text-decoration: none !important; transition: color 0.2s; }
     .header-main-nav .nav-link:hover, .header-main-nav .nav-link.active { color: #111114 !important; }
+    .mobile-menu-toggle-btn { display: none; }
+    @media (max-width: 960px) { .header-main-nav, .header-actions { display: none !important; } .mobile-menu-toggle-btn { display: inline-flex !important; } .header-inner { padding: 0 16px !important; } }
     .model-subnav-bar { position: fixed; top: 64px; left: 0; width: 100%; height: 56px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.06); z-index: 999; display: flex; align-items: center; }
     .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; gap: 20px; }
     .subnav-category-pills { display: flex; gap: 6px; border-right: 1px solid rgba(0, 0, 0, 0.08); padding-right: 16px; flex-shrink: 0; }
@@ -51,28 +57,62 @@
   <!-- 1. Header Global Estilo Gogoro / Apple (Clean White Navbar) -->
   <header class="showroom-header">
     <div class="header-inner">
-      <a href="/modelos" class="brand-maj-logo">maj</a>
+      <a href="/modelos" class="brand-maj-logo-link" title="MAJ Mobilidade Elétrica">
+        <img src="/static/images/maj-logo-official.png" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img">
+      </a>
       
       <nav class="header-main-nav">
         <a href="#hero" class="nav-link active">MODELOS</a>
         <a href="#telemetry" class="nav-link">PROPULSÃO</a>
-        <a href="#cockpit" class="nav-link">COCKPIT</a>
-        <a href="#techDrawer" class="nav-link">ENGENHARIA</a>
+        <a href="#cockpit" class="nav-link">COCKPIT & ENGENHARIA</a>
         <a href="#gallery" class="nav-link">GALERIA</a>
         <a href="#comparison" class="nav-link">COMPARAR</a>
       </nav>
 
-      <div class="header-actions">
-        <a href="/admin/modelos" class="btn-admin-order" style="font-size: 11px; text-decoration: none; color: #555; background: #f0f0f4; border: 1px solid #d5d5dc; padding: 4px 10px; border-radius: 100px; font-weight: 600;">
-          ⚙️ Ordenar Produtos
-        </a>
-        <div class="sync-indicator">
-          <span class="sync-dot"></span>
-          <span>SHEETS 24/7 SINCRONIZADO</span>
-        </div>
-      </div>
+      <!-- Botão Menu Sanduíche Mobile -->
+      <button class="mobile-menu-toggle-btn" id="mobileMenuToggleBtn" onclick="toggleMobileNav(true)" aria-label="Abrir Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" stroke="#111114" stroke-width="2.2" fill="none" stroke-linecap="round">
+          <line x1="4" y1="7" x2="20" y2="7"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="17" x2="20" y2="17"></line>
+        </svg>
+      </button>
     </div>
   </header>
+
+  <!-- Drawer Lateral Off-Canvas Mobile -->
+  <div id="mobileNavDrawer" class="mobile-nav-drawer" onclick="toggleMobileNav(false)">
+    <div class="mobile-nav-backdrop"></div>
+    <div class="mobile-nav-panel" onclick="event.stopPropagation()">
+      <div class="mobile-nav-header">
+        <img src="/static/images/maj-logo-official.png" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img brand-maj-logo-drawer">
+        <button class="modal-close-btn mobile-nav-close" onclick="toggleMobileNav(false)" aria-label="Fechar Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="mobile-nav-links">
+        <a href="#hero" class="mobile-nav-link" onclick="toggleMobileNav(false)">
+          <span class="nav-icon">🏍️</span> MODELOS
+        </a>
+        <a href="#telemetry" class="mobile-nav-link" onclick="toggleMobileNav(false)">
+          <span class="nav-icon">⚡</span> PROPULSÃO
+        </a>
+        <a href="#cockpit" class="mobile-nav-link" onclick="toggleMobileNav(false)">
+          <span class="nav-icon">🎛️</span> COCKPIT & ENGENHARIA
+        </a>
+        <a href="#gallery" class="mobile-nav-link" onclick="toggleMobileNav(false)">
+          <span class="nav-icon">📸</span> GALERIA DE DETALHES
+        </a>
+        <a href="#comparison" class="mobile-nav-link" onclick="toggleMobileNav(false)">
+          <span class="nav-icon">⚖️</span> COMPARAR MODELOS
+        </a>
+      </nav>
+    </div>
+  </div>
 
   <!-- 2. Barra de Seleção de Modelos Estilo Apple / Gogoro (Subnav Elegante) -->
   <nav class="model-subnav-bar">
@@ -190,57 +230,58 @@
       </div>
     </section>
 
-    <!-- 5. Cockpit Panorâmico 10.25" Interativo -->
+    <!-- 5. Cockpit Digital & Telemetria de Engenharia Interativa -->
     <section class="section-cockpit-sim" id="cockpit">
-      <div class="hero-category-label">TELEMETRIA & INTERFACE</div>
-      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">Cockpit Digital Inteligente</h2>
-      <p style="color: var(--text-muted); max-width: 600px; margin: 12px auto 0;">
-        Painel de instrumentos digital multifuncional com telemetria ativa, indicador de carga e seletor de modos.
+      <div class="hero-category-label">TELEMETRIA & ENGENHARIA INTERATIVA</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">Cockpit Digital & Engenharia</h2>
+      <p style="color: var(--text-muted); max-width: 650px; margin: 12px auto 0;">
+        Painel de telemetria automotiva ativa. Selecione a área de engenharia abaixo para analisar o desempenho e as especificações técnicas diretamente no cockpit.
       </p>
 
       <div class="cockpit-bezel-frame">
         <div class="cockpit-screen-ui" id="cockpitScreenUI">
           <div class="hud-top-row">
-            <span id="hudModelName">MAJ MAX 12 MAJ</span>
-            <span style="color: var(--maj-lime); font-weight: 700;">SISTEMA OK</span>
-            <span id="hudBatteryInfo">BATERIA: 60V 20Ah • LiFePO₄</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="hud-pulse-live-dot"></span>
+              <span id="hudModelName" style="color: #fff; font-weight: 700; letter-spacing: 1px;">MAJ MAX 12 MAJ</span>
+            </div>
+            <span id="hudSystemStatus" style="color: var(--maj-lime); font-weight: 700; letter-spacing: 1.5px; font-size: 11px;">SISTEMA OK • TELEMETRIA ATIVA</span>
+            <span id="hudCategoryTag" style="color: var(--maj-cyan); font-family: var(--font-telemetry); letter-spacing: 1px; font-size: 11px; text-transform: uppercase;">MOTORIZAÇÃO & DESEMPENHO</span>
           </div>
 
           <div class="hud-center-stage">
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <div class="hud-speedometer-val" id="hudSpeedVal">32</div>
-              <div style="font-family: var(--font-telemetry); font-size: 13px; letter-spacing: 2px; color: var(--maj-cyan);">KM / H</div>
-              <div class="hud-mode-pill-active" id="hudModeBadge">NÍVEL 3 (MÁXIMA)</div>
+              <div class="hud-speedometer-val" id="hudMainVal">1000</div>
+              <div class="hud-unit-label" id="hudUnitLabel">WATTS</div>
+              <div class="hud-mode-pill-active" id="hudModeBadge">POTÊNCIA NOMINAL MÁXIMA</div>
             </div>
           </div>
 
-          <div class="hud-top-row" style="border-top: 1px solid rgba(255,255,255,0.08); border-bottom: none; padding-top: 10px; padding-bottom: 0;">
-            <span id="hudChassisInfo">ESTRUTURA: AÇO CARBONO • CARGA 180 KG</span>
-            <span id="hudBrakesInfo">FREIOS: HIDRÁULICOS D/T</span>
+          <div class="hud-specs-grid" id="hudSpecsGrid">
+            <!-- Especificações técnicas detalhadas renderizadas via showroom.js -->
           </div>
         </div>
       </div>
 
-      <div class="cockpit-controls-row">
-        <button class="cockpit-mode-btn" onclick="setCockpitMode('level1', '15', 'NÍVEL 1 ATIVO', '#00d7ff')">Nível 1 (15 km/h)</button>
-        <button class="cockpit-mode-btn" onclick="setCockpitMode('level2', '25', 'NÍVEL 2 ATIVO', '#28e1a5')">Nível 2 (25 km/h)</button>
-        <button class="cockpit-mode-btn active" id="btnCockpitLevel3" onclick="setCockpitMode('level3', '32', 'NÍVEL 3 (MÁXIMA)', '#e1ff32')">Nível 3 (32 km/h)</button>
-        <button class="cockpit-mode-btn" id="btnCockpitReverse" onclick="setCockpitMode('reverse', '5', 'MARCHA A RÉ (R)', '#ff5252')">Marcha a Ré (R)</button>
-        <button class="cockpit-mode-btn" onclick="setCockpitMode('standby', '0', 'VEÍCULO PARADO', '#ffffff')">Standby (0 km/h)</button>
-      </div>
-    </section>
-
-    <!-- 6. Expandable Technical Drawer -->
-    <section class="section-drawer-tech">
-      <button class="drawer-toggle-btn" onclick="toggleTechDrawer()">
-        <span>Explorar Ficha Técnica e Engenharia</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-
-      <div class="drawer-expandable-area" id="techDrawer">
-        <div class="tech-cards-carousel" id="techCardsCarousel">
-          <!-- Cards gerados dinamicamente via showroom.js -->
-        </div>
+      <div class="cockpit-controls-row" id="cockpitTechControls">
+        <button class="cockpit-mode-btn active" id="btnCatMotorizacao" onclick="setCockpitCategory('motorizacao')">
+          <span>⚡</span> Motorização & Desempenho
+        </button>
+        <button class="cockpit-mode-btn" id="btnCatBateria" onclick="setCockpitCategory('bateria')">
+          <span>🔋</span> Bateria & Autonomia
+        </button>
+        <button class="cockpit-mode-btn" id="btnCatChassi" onclick="setCockpitCategory('chassi')">
+          <span>🛡️</span> Chassi & Dimensões
+        </button>
+        <button class="cockpit-mode-btn" id="btnCatSeguranca" onclick="setCockpitCategory('seguranca')">
+          <span>🛑</span> Segurança & Freios
+        </button>
+        <button class="cockpit-mode-btn" id="btnCatConforto" onclick="setCockpitCategory('conforto')">
+          <span>🛵</span> Ergonomia & Conforto
+        </button>
+        <button class="cockpit-mode-btn" id="btnCatGarantia" onclick="setCockpitCategory('garantia')">
+          <span>📜</span> Garantia & Regulamentação
+        </button>
       </div>
     </section>
 
@@ -248,12 +289,45 @@
     <section class="section-gallery-vignette" id="gallery">
       <div class="hero-category-label">ENSAIO FOTOGRÁFICO OFICIAL</div>
       <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 52px); text-transform: uppercase;">Galeria de Detalhes</h2>
-      <p style="color: var(--text-muted); margin-top: 8px;">Fotos reais de estúdio do veículo em alta resolução.</p>
+      <p style="color: var(--text-muted); margin-top: 8px;">Fotos reais de estúdio do veículo em alta resolução. Clique em qualquer foto para ampliar com detalhes.</p>
 
-      <div class="gallery-scroller" id="galleryScroller">
-        <!-- Fotos do ensaio geradas dinamicamente via showroom.js -->
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Fotos do ensaio geradas dinamicamente em grid via showroom.js -->
       </div>
     </section>
+
+    <!-- Modal Lightbox Interativo de Fotos em Alta Resolução -->
+    <div id="galleryLightboxModal" class="gallery-lightbox-modal" onclick="closeGalleryLightbox(event)" style="display: none;">
+      <div class="gallery-lightbox-backdrop"></div>
+      <div class="gallery-lightbox-content" onclick="event.stopPropagation()">
+        <button class="modal-close-btn gallery-lightbox-close" onclick="closeGalleryLightbox()" title="Fechar (Esc)" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <button class="gallery-nav-btn prev" onclick="navigateGalleryLightbox(-1)" title="Foto Anterior (←)" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="gallery-lightbox-stage">
+          <img id="galleryLightboxImg" src="" alt="Detalhe do Veículo" class="gallery-lightbox-img">
+          <div class="gallery-lightbox-caption">
+            <span id="galleryLightboxModelName">MAJ MAX 12</span>
+            <span id="galleryLightboxCounter">Foto 1 de 8</span>
+          </div>
+        </div>
+
+        <button class="gallery-nav-btn next" onclick="navigateGalleryLightbox(1)" title="Próxima Foto (→)" aria-label="Próxima">
+          <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
 
     <!-- 8. Matriz Comparativa Interativa -->
     <section class="section-comparison-matrix" id="comparison">
