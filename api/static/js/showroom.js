@@ -65,7 +65,8 @@
       'db-zero': '/public/images/models/banners/db-zero-banner.webp', 'vittoria': '/public/images/models/banners/vittoria-banner.webp',
       'nova': '/public/images/models/banners/nova-banner.webp', 'ride-on': '/public/images/models/banners/ride-on-banner.webp',
       'm2': '/public/images/models/banners/m2-banner.webp', 'm9-pro': '/public/images/models/banners/m9-pro-banner.webp',
-      'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp'
+      'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
+      'rz-110': '/public/images/models/banners/rz-110-banner.webp'
     };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {

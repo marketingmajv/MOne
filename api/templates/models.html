@@ -113,7 +113,8 @@
       'm2': '/public/images/models/banners/m2-banner.webp',
       'm9-pro': '/public/images/models/banners/m9-pro-banner.webp',
       'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp',
-      'v8-mini': '/public/images/models/banners/v8-mini-banner.webp'
+      'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
+      'rz-110': '/public/images/models/banners/rz-110-banner.webp'
     } %}
     {% set active_banner = (active_model.banner_image if active_model and active_model.banner_image else banner_lookup.get(current_slug)) %}
     <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" style="display: {{ 'block' if active_banner else 'none' }}; opacity: {{ '1' if active_banner else '0' }};" aria-label="Apresentação Widescreen {{ active_model.modelo if active_model else '' }}">

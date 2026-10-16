@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-16T19:32:31Z",
+  "updated_at": "2026-10-16T19:42:40Z",
   "total_models": 14,
   "total_all": 17,
   "categories": [
@@ -703,9 +703,9 @@
           "Observações da equipe": ""
         }
       },
-      "banner_image": "",
+      "banner_image": "/public/images/models/banners/rz-110-banner.webp",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
-      "hero_image": "/public/images/models/cutouts/rz-110.png",
+      "hero_image": "/public/images/models/banners/rz-110-banner.webp",
       "images": [
         "/public/images/rz-110/rz-110-01.jpg",
         "/public/images/rz-110/rz-110-02.jpg",
@@ -2508,9 +2508,9 @@
           "Observações da equipe": ""
         }
       },
-      "banner_image": "",
+      "banner_image": "/public/images/models/banners/rz-110-banner.webp",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
-      "hero_image": "/public/images/models/cutouts/rz-110.png",
+      "hero_image": "/public/images/models/banners/rz-110-banner.webp",
       "images": [
         "/public/images/rz-110/rz-110-01.jpg",
         "/public/images/rz-110/rz-110-02.jpg",
