@@ -113,4 +113,15 @@ def showroom_models_page(slug=None):
     """Mostruário e showroom imersivo de todos os modelos MAJ no estilo Gogoro Pulse."""
     models = get_all_models(include_inactive=False)
     cache_id = int(time.time())
-    return render_template("showroom/models.html", models=models, initial_slug=slug, cache_id=cache_id)
+    active_model = None
+    if slug:
+        active_model = next((m for m in models if m.get("slug") == slug), None)
+    if not active_model and models:
+        active_model = models[0]
+    return render_template(
+        "showroom/models.html",
+        models=models,
+        active_model=active_model,
+        initial_slug=slug or (active_model.get("slug") if active_model else None),
+        cache_id=cache_id,
+    )
