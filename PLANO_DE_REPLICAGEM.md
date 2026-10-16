@@ -53,22 +53,22 @@ O agente usará o Python/Pillow para ler o arquivo original sem compressão, ger
 | **GP 1000** | `gp-1000` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **FLOW ONE** | `flow-one` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **CLASSIC 1000** | `classic-1000` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
-| **VITTÓRIA** | `vittoria` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 🎯 **Próximo da Fila** |
-| **SPORT 701 SHORT**| `sport-701-short`| Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **NOVA** | `nova` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
+| **DB-ZERO** | `db-zero` | Scooter | ✅ Ativo (2560x1440) | ✅ 6 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **VITTÓRIA** | `vittoria` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **NOVA** | `nova` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **RIDE ON** | `ride-on` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **M2** | `m2` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
+| **SPORT 701 SHORT**| `sport-701-short`| Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 🎯 **Próximo da Fila** |
 | **RZ 110** | `rz-110` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **RIDE ON** | `ride-on` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **M9 PRO** | `m9-pro` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **V80 PRO** | `v80-pro` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **M50 PRO** | `m50-pro` | Bike | ⏳ Aguardando apontamento | ✅ 5 fotos prontas | 📋 Aguardando banner |
 | **V20 ULTRA** | `v20-ultra` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **V8 MINI ULTRA**| `v8-mini` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **X15 PRO** | `x15-pro` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **M2** | `m2` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **JM 125** | `jm-125` | Moto | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **MANTIS** | `mantis` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
 | **Q8** | `q8` | Bike | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
-| **DB-ZERO** | `db-zero` | Scooter | ⏳ Aguardando apontamento | ✅ 6 fotos prontas | 📋 Aguardando banner |
 
 ---
 

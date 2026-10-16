@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-16T18:03:55Z",
-  "total_models": 14,
-  "total_all": 15,
+  "updated_at": "2026-10-16T18:56:07Z",
+  "total_models": 16,
+  "total_all": 17,
   "categories": [
     "Scooter",
     "Bike"
@@ -98,8 +98,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/max-12-banner.webp",
       "cutout_image": "/public/images/models/cutouts/max-12.png",
-      "hero_image": "/public/images/models/cutouts/max-12.png",
+      "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
         "/public/images/max-12/max-12-01.jpg",
         "/public/images/max-12/max-12-02.jpg",
@@ -218,8 +219,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/classic-1000-banner.webp",
       "cutout_image": "/public/images/models/cutouts/classic-1000.png",
-      "hero_image": "/public/images/models/cutouts/classic-1000.png",
+      "hero_image": "/public/images/models/banners/classic-1000-banner.webp",
       "images": [
         "/public/images/classic-1000/classic-1000-01.jpg",
         "/public/images/classic-1000/classic-1000-02.jpg",
@@ -338,8 +340,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/vittoria-banner.webp",
       "cutout_image": "/public/images/models/cutouts/vittoria.png",
-      "hero_image": "/public/images/models/cutouts/vittoria.png",
+      "hero_image": "/public/images/models/banners/vittoria-banner.webp",
       "images": [
         "/public/images/vittoria/vittoria-01.jpg",
         "/public/images/vittoria/vittoria-02.jpg",
@@ -458,6 +461,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/sport-701-short.png",
       "hero_image": "/public/images/models/cutouts/sport-701-short.png",
       "images": [
@@ -578,8 +582,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/flow-one-banner.webp",
       "cutout_image": "/public/images/models/cutouts/flow-one.png",
-      "hero_image": "/public/images/models/cutouts/flow-one.png",
+      "hero_image": "/public/images/models/banners/flow-one-banner.webp",
       "images": [
         "/public/images/flow-one/flow-one-01.jpg",
         "/public/images/flow-one/flow-one-02.jpg",
@@ -698,8 +703,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/nova-banner.webp",
       "cutout_image": "/public/images/models/cutouts/nova.png",
-      "hero_image": "/public/images/models/cutouts/nova.png",
+      "hero_image": "/public/images/models/banners/nova-banner.webp",
       "images": [
         "/public/images/nova/nova-01.jpg",
         "/public/images/nova/nova-02.jpg",
@@ -818,6 +824,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
       "hero_image": "/public/images/models/cutouts/rz-110.png",
       "images": [
@@ -938,8 +945,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/ride-on-banner.webp",
       "cutout_image": "/public/images/models/cutouts/ride-on.png",
-      "hero_image": "/public/images/models/cutouts/ride-on.png",
+      "hero_image": "/public/images/models/banners/ride-on-banner.webp",
       "images": [
         "/public/images/ride-on/ride-on-01.jpg",
         "/public/images/ride-on/ride-on-02.jpg",
@@ -1058,6 +1066,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/m9-pro.png",
       "hero_image": "/public/images/models/cutouts/m9-pro.png",
       "images": [
@@ -1178,6 +1187,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v80-pro.png",
       "hero_image": "/public/images/models/cutouts/v80-pro.png",
       "images": [
@@ -1298,6 +1308,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
       "hero_image": "/public/images/models/cutouts/m50-pro.png",
       "images": [
@@ -1415,6 +1426,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v20-ultra.png",
       "hero_image": "/public/images/models/cutouts/v20-ultra.png",
       "images": [
@@ -1535,6 +1547,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v8-mini.png",
       "hero_image": "/public/images/models/cutouts/v8-mini.png",
       "images": [
@@ -1562,6 +1575,123 @@
         "diferencial": "Dimensões compactas e aro 16 que favorecem a adaptação e a condução por pessoas de menor estatura, além de facilitar manobras, transporte e armazenamento.",
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \n\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
+      }
+    },
+    {
+      "categoria": "Scooter",
+      "modelo": "DB-ZERO",
+      "slug": "db-zero",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/db-zero-banner.webp",
+      "hero_image": "/public/images/models/banners/db-zero-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/db-zero/db-zero-01.jpg",
+        "/public/images/db-zero/db-zero-02.jpg",
+        "/public/images/db-zero/db-zero-03.jpg",
+        "/public/images/db-zero/db-zero-04.jpg",
+        "/public/images/db-zero/db-zero-05.jpg",
+        "/public/images/db-zero/db-zero-06.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5098",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Sim",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "150",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "65kg",
+          "Comprimento (cm)": "165",
+          "Largura (cm)": "68",
+          "Altura (cm)": "110",
+          "Altura do assento (cm)": "74",
+          "Porta-objetos / baú": "Porta-Objetos Integrado",
+          "Conforto e ergonomia": "Design futurista ergonômico, peso reduzido, linhas esportivas em Silver Black e pilotagem leve.",
+          "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem futurista e iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Tambor / Hidráulico",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e estilo futurista com máxima economia.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo futurista, agilidade no trânsito e praticidade.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "150kg",
+          "Cores": "Silver Black, Grafite",
+          "Preço referência (R$)": "8490",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
+          "Pontos fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "Na linha MAJ, a DB-ZERO destaca-se pelo visual futurista compacto e leveza de condução.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "150",
+        "peso_kg": "65kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Tambor / Hidráulico",
+        "diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
+        "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
       }
     },
     {
@@ -1681,6 +1811,125 @@
         "diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
         "pontos_fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah."
+      }
+    },
+    {
+      "categoria": "Scooter",
+      "modelo": "M2",
+      "slug": "m2",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/m2-banner.webp",
+      "hero_image": "/public/images/models/banners/m2-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/m2/m2-01.jpg",
+        "/public/images/m2/m2-02.jpg",
+        "/public/images/m2/m2-03.jpg",
+        "/public/images/m2/m2-04.jpg",
+        "/public/images/m2/m2-05.jpg",
+        "/public/images/m2/m2-06.jpg",
+        "/public/images/m2/m2-07.jpg",
+        "/public/images/m2/m2-08.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5088",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Não",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "160",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "80kg",
+          "Comprimento (cm)": "165",
+          "Largura (cm)": "45",
+          "Altura (cm)": "85",
+          "Altura do assento (cm)": "72",
+          "Porta-objetos / baú": "Porta-Objetos Integrado",
+          "Conforto e ergonomia": "Design urbano contemporâneo, ergonomia refinada, condução equilibrada e ágil.",
+          "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem aerodinâmica e iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Hidráulico a Disco",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e máxima economia com visual elegante.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo contemporâneo e mobilidade eficiente.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "160kg",
+          "Cores": "Preto, Branco, Cinza",
+          "Preço referência (R$)": "10256",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
+          "Pontos fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "A MAJ M2 destaca-se pelos freios a disco duplo e excelente agilidade para o dia a dia.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "160",
+        "peso_kg": "80kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Hidráulico a Disco",
+        "diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
+        "pontos_fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED."
       }
     }
   ],
@@ -1776,8 +2025,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/max-12-banner.webp",
       "cutout_image": "/public/images/models/cutouts/max-12.png",
-      "hero_image": "/public/images/models/cutouts/max-12.png",
+      "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
         "/public/images/max-12/max-12-01.jpg",
         "/public/images/max-12/max-12-02.jpg",
@@ -1896,8 +2146,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/classic-1000-banner.webp",
       "cutout_image": "/public/images/models/cutouts/classic-1000.png",
-      "hero_image": "/public/images/models/cutouts/classic-1000.png",
+      "hero_image": "/public/images/models/banners/classic-1000-banner.webp",
       "images": [
         "/public/images/classic-1000/classic-1000-01.jpg",
         "/public/images/classic-1000/classic-1000-02.jpg",
@@ -2016,8 +2267,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/vittoria-banner.webp",
       "cutout_image": "/public/images/models/cutouts/vittoria.png",
-      "hero_image": "/public/images/models/cutouts/vittoria.png",
+      "hero_image": "/public/images/models/banners/vittoria-banner.webp",
       "images": [
         "/public/images/vittoria/vittoria-01.jpg",
         "/public/images/vittoria/vittoria-02.jpg",
@@ -2136,6 +2388,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/sport-701-short.png",
       "hero_image": "/public/images/models/cutouts/sport-701-short.png",
       "images": [
@@ -2256,8 +2509,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/flow-one-banner.webp",
       "cutout_image": "/public/images/models/cutouts/flow-one.png",
-      "hero_image": "/public/images/models/cutouts/flow-one.png",
+      "hero_image": "/public/images/models/banners/flow-one-banner.webp",
       "images": [
         "/public/images/flow-one/flow-one-01.jpg",
         "/public/images/flow-one/flow-one-02.jpg",
@@ -2376,8 +2630,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/nova-banner.webp",
       "cutout_image": "/public/images/models/cutouts/nova.png",
-      "hero_image": "/public/images/models/cutouts/nova.png",
+      "hero_image": "/public/images/models/banners/nova-banner.webp",
       "images": [
         "/public/images/nova/nova-01.jpg",
         "/public/images/nova/nova-02.jpg",
@@ -2496,6 +2751,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
       "hero_image": "/public/images/models/cutouts/rz-110.png",
       "images": [
@@ -2616,8 +2872,9 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "/public/images/models/banners/ride-on-banner.webp",
       "cutout_image": "/public/images/models/cutouts/ride-on.png",
-      "hero_image": "/public/images/models/cutouts/ride-on.png",
+      "hero_image": "/public/images/models/banners/ride-on-banner.webp",
       "images": [
         "/public/images/ride-on/ride-on-01.jpg",
         "/public/images/ride-on/ride-on-02.jpg",
@@ -2736,6 +2993,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/m9-pro.png",
       "hero_image": "/public/images/models/cutouts/m9-pro.png",
       "images": [
@@ -2856,6 +3114,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v80-pro.png",
       "hero_image": "/public/images/models/cutouts/v80-pro.png",
       "images": [
@@ -2976,6 +3235,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
       "hero_image": "/public/images/models/cutouts/m50-pro.png",
       "images": [
@@ -3093,6 +3353,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v20-ultra.png",
       "hero_image": "/public/images/models/cutouts/v20-ultra.png",
       "images": [
@@ -3213,6 +3474,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v8-mini.png",
       "hero_image": "/public/images/models/cutouts/v8-mini.png",
       "images": [
@@ -3240,6 +3502,123 @@
         "diferencial": "Dimensões compactas e aro 16 que favorecem a adaptação e a condução por pessoas de menor estatura, além de facilitar manobras, transporte e armazenamento.",
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \n\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
+      }
+    },
+    {
+      "categoria": "Scooter",
+      "modelo": "DB-ZERO",
+      "slug": "db-zero",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/db-zero-banner.webp",
+      "hero_image": "/public/images/models/banners/db-zero-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/db-zero/db-zero-01.jpg",
+        "/public/images/db-zero/db-zero-02.jpg",
+        "/public/images/db-zero/db-zero-03.jpg",
+        "/public/images/db-zero/db-zero-04.jpg",
+        "/public/images/db-zero/db-zero-05.jpg",
+        "/public/images/db-zero/db-zero-06.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5098",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Sim",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "150",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "65kg",
+          "Comprimento (cm)": "165",
+          "Largura (cm)": "68",
+          "Altura (cm)": "110",
+          "Altura do assento (cm)": "74",
+          "Porta-objetos / baú": "Porta-Objetos Integrado",
+          "Conforto e ergonomia": "Design futurista ergonômico, peso reduzido, linhas esportivas em Silver Black e pilotagem leve.",
+          "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem futurista e iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Tambor / Hidráulico",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e estilo futurista com máxima economia.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo futurista, agilidade no trânsito e praticidade.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "150kg",
+          "Cores": "Silver Black, Grafite",
+          "Preço referência (R$)": "8490",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
+          "Pontos fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "Na linha MAJ, a DB-ZERO destaca-se pelo visual futurista compacto e leveza de condução.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "150",
+        "peso_kg": "65kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Tambor / Hidráulico",
+        "diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
+        "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
       }
     },
     {
@@ -3362,6 +3741,125 @@
       }
     },
     {
+      "categoria": "Scooter",
+      "modelo": "M2",
+      "slug": "m2",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/m2-banner.webp",
+      "hero_image": "/public/images/models/banners/m2-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/m2/m2-01.jpg",
+        "/public/images/m2/m2-02.jpg",
+        "/public/images/m2/m2-03.jpg",
+        "/public/images/m2/m2-04.jpg",
+        "/public/images/m2/m2-05.jpg",
+        "/public/images/m2/m2-06.jpg",
+        "/public/images/m2/m2-07.jpg",
+        "/public/images/m2/m2-08.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5088",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Não",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "160",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "80kg",
+          "Comprimento (cm)": "165",
+          "Largura (cm)": "45",
+          "Altura (cm)": "85",
+          "Altura do assento (cm)": "72",
+          "Porta-objetos / baú": "Porta-Objetos Integrado",
+          "Conforto e ergonomia": "Design urbano contemporâneo, ergonomia refinada, condução equilibrada e ágil.",
+          "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem aerodinâmica e iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Hidráulico a Disco",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e máxima economia com visual elegante.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo contemporâneo e mobilidade eficiente.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "160kg",
+          "Cores": "Preto, Branco, Cinza",
+          "Preço referência (R$)": "10256",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
+          "Pontos fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "A MAJ M2 destaca-se pelos freios a disco duplo e excelente agilidade para o dia a dia.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "160",
+        "peso_kg": "80kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Hidráulico a Disco",
+        "diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
+        "pontos_fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED."
+      }
+    },
+    {
       "categoria": "Triciclo",
       "modelo": "H1",
       "slug": "h1",
@@ -3452,6 +3950,7 @@
           "Observações da equipe": ""
         }
       },
+      "banner_image": "",
       "cutout_image": "",
       "hero_image": "",
       "images": [],

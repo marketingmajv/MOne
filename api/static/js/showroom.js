@@ -63,7 +63,12 @@
       'max-12': '/public/images/models/banners/max-12-banner.webp',
       'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
       'flow-one': '/public/images/models/banners/flow-one-banner.webp',
-      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp'
+      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
+      'db-zero': '/public/images/models/banners/db-zero-banner.webp',
+      'vittoria': '/public/images/models/banners/vittoria-banner.webp',
+      'nova': '/public/images/models/banners/nova-banner.webp',
+      'ride-on': '/public/images/models/banners/ride-on-banner.webp',
+      'm2': '/public/images/models/banners/m2-banner.webp'
     };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
@@ -309,12 +314,7 @@
       const card = document.createElement('div');
       card.className = 'gallery-photo-card';
       card.onclick = () => openGalleryLightbox(idx);
-      card.innerHTML = `
-        <img src="${url}" alt="${model.modelo} - Foto ${idx + 1}" loading="lazy">
-        <div class="gallery-photo-card-hover-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
-        </div>
-      `;
+      card.innerHTML = `<img src="${url}" alt="${model.modelo} - Foto ${idx + 1}" loading="lazy"><div class="gallery-photo-card-hover-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg></div>`;
       grid.appendChild(card);
     });
   }

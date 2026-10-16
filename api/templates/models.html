@@ -41,22 +41,15 @@
   <style>
     html, body { background-color: #ffffff !important; color: #111114 !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
     .showroom-header { position: fixed; top: 0; left: 0; width: 100%; height: 64px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); z-index: 1000; display: flex; align-items: center; }
-    .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+    .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; position: relative; }
     .brand-maj-logo { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #111114 !important; text-decoration: none !important; text-transform: lowercase; }
-    .brand-maj-logo-link { display: inline-flex; align-items: center; text-decoration: none !important; transition: opacity 0.2s ease, transform 0.2s ease; flex-shrink: 0; }
+    .brand-maj-logo-link { display: inline-flex; align-items: center; text-decoration: none !important; transition: opacity 0.2s ease, transform 0.2s ease; flex-shrink: 0; z-index: 2; }
     .brand-maj-logo-link:hover { opacity: 0.82; transform: translateY(-1px); }
     .brand-maj-logo-img { height: 32px; max-height: 34px; width: auto; object-fit: contain; display: block; }
-    .brand-maj-logo-drawer { height: 28px; max-height: 30px; }
-    .header-main-nav { display: flex; align-items: center; gap: 24px; }
-    .header-main-nav .nav-link { font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #55585d !important; text-decoration: none !important; transition: color 0.2s; }
-    .header-main-nav .nav-link:hover, .header-main-nav .nav-link.active { color: #111114 !important; }
-    .mobile-menu-toggle-btn { display: none; }
-    @media (max-width: 960px) { .header-main-nav, .header-actions { display: none !important; } .mobile-menu-toggle-btn { display: inline-flex !important; } .header-inner { padding: 0 16px !important; } }
+    .header-center-title { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #111114; white-space: nowrap; pointer-events: none; z-index: 1; }
+    @media (max-width: 768px) { .header-center-title { font-size: 13px; letter-spacing: 0.3px; } .header-inner { padding: 0 16px !important; } }
     .model-subnav-bar { position: fixed; top: 64px; left: 0; width: 100%; height: 56px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.06); z-index: 999; display: flex; align-items: center; }
-    .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; gap: 20px; }
-    .subnav-category-pills { display: flex; gap: 6px; border-right: 1px solid rgba(0, 0, 0, 0.08); padding-right: 16px; flex-shrink: 0; }
-    .cat-filter-btn { background: transparent; color: #666; border: 1px solid transparent; padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; cursor: pointer; }
-    .cat-filter-btn.active { background: #f0f0f3; color: #111114; }
+    .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; }
     .subnav-models-track { display: flex !important; flex-direction: row !important; gap: 8px; overflow-x: auto; white-space: nowrap; flex: 1; padding: 4px 0; scrollbar-width: none; }
     .subnav-models-track::-webkit-scrollbar { display: none; }
     .model-pill-item { display: inline-flex !important; align-items: center; gap: 8px; background: transparent; border: 1px solid transparent; border-radius: 100px; padding: 6px 14px; color: #55585d; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; }
@@ -88,67 +81,15 @@
         <img src="/static/img/maj-logo-official.png" onerror="this.onerror=null; this.src='/static/images/maj-logo-official.png'" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img">
       </a>
       
-      <nav class="header-main-nav">
-        <a href="#hero" class="nav-link active">MODELOS</a>
-        <a href="#telemetry" class="nav-link">PROPULSÃO</a>
-        <a href="#cockpit" class="nav-link">FICHA TÉCNICA</a>
-        <a href="#gallery" class="nav-link">GALERIA</a>
-        <a href="#comparison" class="nav-link">COMPARAR</a>
-      </nav>
+      <div class="header-center-title">Show-room MAJ Mobilidade</div>
 
-      <!-- Botão Menu Sanduíche Mobile -->
-      <button class="mobile-menu-toggle-btn" id="mobileMenuToggleBtn" onclick="toggleMobileNav(true)" aria-label="Abrir Menu">
-        <svg viewBox="0 0 24 24" width="22" height="22" stroke="#111114" stroke-width="2.2" fill="none" stroke-linecap="round">
-          <line x1="4" y1="7" x2="20" y2="7"></line>
-          <line x1="4" y1="12" x2="20" y2="12"></line>
-          <line x1="4" y1="17" x2="20" y2="17"></line>
-        </svg>
-      </button>
+      <div style="width: 32px;" aria-hidden="true"></div>
     </div>
   </header>
-
-  <!-- Drawer Lateral Off-Canvas Mobile -->
-  <div id="mobileNavDrawer" class="mobile-nav-drawer" onclick="toggleMobileNav(false)">
-    <div class="mobile-nav-backdrop"></div>
-    <div class="mobile-nav-panel" onclick="event.stopPropagation()">
-      <div class="mobile-nav-header">
-        <img src="/static/img/maj-logo-official.png" onerror="this.onerror=null; this.src='/static/images/maj-logo-official.png'" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img brand-maj-logo-drawer">
-        <button class="modal-close-btn mobile-nav-close" onclick="toggleMobileNav(false)" aria-label="Fechar Menu">
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <nav class="mobile-nav-links">
-        <a href="#hero" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">🏍️</span> MODELOS
-        </a>
-        <a href="#telemetry" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">⚡</span> PROPULSÃO
-        </a>
-        <a href="#cockpit" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">🎛️</span> FICHA TÉCNICA
-        </a>
-        <a href="#gallery" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">📸</span> GALERIA DE DETALHES
-        </a>
-        <a href="#comparison" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">⚖️</span> COMPARAR MODELOS
-        </a>
-      </nav>
-    </div>
-  </div>
 
   <!-- 2. Barra de Seleção de Modelos Estilo Apple / Gogoro (Subnav Elegante) -->
   <nav class="model-subnav-bar">
     <div class="subnav-inner">
-      <div class="subnav-category-pills">
-        <button class="cat-filter-btn active" onclick="filterCategory('all')">TODOS (13)</button>
-        <button class="cat-filter-btn" onclick="filterCategory('scooter')">SCOOTERS (8)</button>
-        <button class="cat-filter-btn" onclick="filterCategory('bike')">BIKES (5)</button>
-      </div>
       <div class="subnav-models-track" id="modelsCarouselNav">
         <!-- Pílulas dos modelos geradas via showroom.js -->
       </div>
@@ -164,7 +105,12 @@
       'max-12': '/public/images/models/banners/max-12-banner.webp',
       'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
       'flow-one': '/public/images/models/banners/flow-one-banner.webp',
-      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp'
+      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
+      'db-zero': '/public/images/models/banners/db-zero-banner.webp',
+      'vittoria': '/public/images/models/banners/vittoria-banner.webp',
+      'nova': '/public/images/models/banners/nova-banner.webp',
+      'ride-on': '/public/images/models/banners/ride-on-banner.webp',
+      'm2': '/public/images/models/banners/m2-banner.webp'
     } %}
     {% set active_banner = (active_model.banner_image if active_model and active_model.banner_image else banner_lookup.get(current_slug)) %}
     <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" style="display: {{ 'block' if active_banner else 'none' }}; opacity: {{ '1' if active_banner else '0' }};" aria-label="Apresentação Widescreen {{ active_model.modelo if active_model else '' }}">

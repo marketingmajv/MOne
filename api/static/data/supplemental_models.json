@@ -101,5 +101,209 @@
         "Observações da equipe": ""
       }
     }
+  },
+  {
+    "categoria": "Scooter",
+    "modelo": "DB-ZERO",
+    "slug": "db-zero",
+    "is_active": true,
+    "banner_image": "/public/images/models/banners/db-zero-banner.webp",
+    "hero_image": "/public/images/models/banners/db-zero-banner.webp",
+    "cutout_image": "",
+    "images": [
+      "/public/images/db-zero/db-zero-01.jpg",
+      "/public/images/db-zero/db-zero-02.jpg",
+      "/public/images/db-zero/db-zero-03.jpg",
+      "/public/images/db-zero/db-zero-04.jpg",
+      "/public/images/db-zero/db-zero-05.jpg",
+      "/public/images/db-zero/db-zero-06.jpg"
+    ],
+    "sections": {
+      "Identificação": {
+        "Marca": "Garow",
+        "Versão / ano": "2026",
+        "Código interno": "MSKU5098",
+        "Status": "Ativo",
+        "Responsável": "MAJ Engenharia",
+        "Última atualização": "2026-10-16 00:00:00"
+      },
+      "Desempenho": {
+        "Potência nominal (W)": "1000",
+        "Velocidade máxima (km/h)": "32",
+        "Modos de condução": "3 niveis",
+        "Possui ré?": "Sim",
+        "Inclinação recomendada (%)": "Não informado",
+        "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+      },
+      "Bateria e autonomia": {
+        "Química / tipo": "Bateria de Lítio",
+        "Voltagem (V)": "60v",
+        "Capacidade (Ah)": "20ah",
+        "Capacidade (Wh)": "1200WH",
+        "Bateria removível?": "Sim",
+        "Autonomia conservadora (km)": "35km",
+        "Autonomia máxima estimada (km)": "45",
+        "Tempo de recarga": "6 a 8 horas",
+        "Carregador": "60v 3ah Bivolt Inteligente",
+        "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+        "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+      },
+      "Estrutura e conforto": {
+        "Carga máxima (kg)": "150",
+        "Ocupantes homologados": "2",
+        "Ocupantes recomendados": "2",
+        "Peso do veículo (kg)": "65kg",
+        "Comprimento (cm)": "165",
+        "Largura (cm)": "68",
+        "Altura (cm)": "110",
+        "Altura do assento (cm)": "74",
+        "Porta-objetos / baú": "Porta-Objetos Integrado",
+        "Conforto e ergonomia": "Design futurista ergonômico, peso reduzido, linhas esportivas em Silver Black e pilotagem leve.",
+        "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem futurista e iluminação Full LED."
+      },
+      "Segurança e componentes": {
+        "Freio dianteiro": "Hidráulico a Disco",
+        "Freio traseiro": "Tambor / Hidráulico",
+        "Suspensão dianteira": "Sim",
+        "Suspensão traseira": "Sim",
+        "Pneu / aro": "Aro 10 Tubeless",
+        "Calibragem ideal dianteira (PSI)": "28",
+        "Calibragem ideal traseira (PSI)": "32",
+        "Iluminação": "Conjunto Óptico Full LED com DRL",
+        "Alarme": "Sim",
+        "Trava": "Trava de guidão",
+        "Câmbio / marchas": "Não",
+        "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+        "Fonte técnica": ""
+      },
+      "Uso e comercial": {
+        "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e estilo futurista com máxima economia.",
+        "Não recomendado para": "Não recomendado para menores de 16 anos.",
+        "Principal diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
+        "Perfil do cliente": "Adultos e jovens que buscam estilo futurista, agilidade no trânsito e praticidade.",
+        "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+        "Transporte de carga": "150kg",
+        "Cores": "Silver Black, Grafite",
+        "Preço referência (R$)": "8490",
+        "Garantia do veículo": "180 dias",
+        "Garantia da bateria": "1 ano com revisões obrigatórias",
+        "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+        "Prazo de entrega": "Pronta entrega",
+        "Exige CNH?": "Não",
+        "Exige emplacamento?": "Não",
+        "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+      },
+      "Texto livre": {
+        "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
+        "Pontos fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah.",
+        "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+        "Comparação com outros modelos": "Na linha MAJ, a DB-ZERO destaca-se pelo visual futurista compacto e leveza de condução.",
+        "Acessórios e opcionais": "Consultar equipe de vendas.",
+        "Observações da equipe": ""
+      }
+    }
+  },
+  {
+    "categoria": "Scooter",
+    "modelo": "M2",
+    "slug": "m2",
+    "is_active": true,
+    "banner_image": "/public/images/models/banners/m2-banner.webp",
+    "hero_image": "/public/images/models/banners/m2-banner.webp",
+    "cutout_image": "",
+    "images": [
+      "/public/images/m2/m2-01.jpg",
+      "/public/images/m2/m2-02.jpg",
+      "/public/images/m2/m2-03.jpg",
+      "/public/images/m2/m2-04.jpg",
+      "/public/images/m2/m2-05.jpg",
+      "/public/images/m2/m2-06.jpg",
+      "/public/images/m2/m2-07.jpg",
+      "/public/images/m2/m2-08.jpg"
+    ],
+    "sections": {
+      "Identificação": {
+        "Marca": "Garow",
+        "Versão / ano": "2026",
+        "Código interno": "MSKU5088",
+        "Status": "Ativo",
+        "Responsável": "MAJ Engenharia",
+        "Última atualização": "2026-10-16 00:00:00"
+      },
+      "Desempenho": {
+        "Potência nominal (W)": "1000",
+        "Velocidade máxima (km/h)": "32",
+        "Modos de condução": "3 niveis",
+        "Possui ré?": "Não",
+        "Inclinação recomendada (%)": "Não informado",
+        "Observações de desempenho": "Motor Brushless de 1000W com excelente resposta de torque instantâneo, compatível com ladeiras urbanas e condução esportiva ágil."
+      },
+      "Bateria e autonomia": {
+        "Química / tipo": "Bateria de Lítio",
+        "Voltagem (V)": "60v",
+        "Capacidade (Ah)": "20ah",
+        "Capacidade (Wh)": "1200WH",
+        "Bateria removível?": "Sim",
+        "Autonomia conservadora (km)": "35km",
+        "Autonomia máxima estimada (km)": "45",
+        "Tempo de recarga": "6 a 8 horas",
+        "Carregador": "60v 3ah Bivolt Inteligente",
+        "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+        "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+      },
+      "Estrutura e conforto": {
+        "Carga máxima (kg)": "160",
+        "Ocupantes homologados": "2",
+        "Ocupantes recomendados": "2",
+        "Peso do veículo (kg)": "80kg",
+        "Comprimento (cm)": "165",
+        "Largura (cm)": "45",
+        "Altura (cm)": "85",
+        "Altura do assento (cm)": "72",
+        "Porta-objetos / baú": "Porta-Objetos Integrado",
+        "Conforto e ergonomia": "Design urbano contemporâneo, ergonomia refinada, condução equilibrada e ágil.",
+        "Observações estruturais": "Chassi reforçado em aço carbono de alta durabilidade, carenagem aerodinâmica e iluminação Full LED."
+      },
+      "Segurança e componentes": {
+        "Freio dianteiro": "Hidráulico a Disco",
+        "Freio traseiro": "Hidráulico a Disco",
+        "Suspensão dianteira": "Sim",
+        "Suspensão traseira": "Sim",
+        "Pneu / aro": "Aro 10 Tubeless",
+        "Calibragem ideal dianteira (PSI)": "28",
+        "Calibragem ideal traseira (PSI)": "32",
+        "Iluminação": "Conjunto Óptico Full LED com DRL",
+        "Alarme": "Sim",
+        "Trava": "Trava de guidão",
+        "Câmbio / marchas": "Não",
+        "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+        "Fonte técnica": ""
+      },
+      "Uso e comercial": {
+        "Ideal para": "Deslocamento urbano diário, agilidade no trânsito e máxima economia com visual elegante.",
+        "Não recomendado para": "Não recomendado para menores de 16 anos.",
+        "Principal diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
+        "Perfil do cliente": "Adultos e jovens que buscam estilo contemporâneo e mobilidade eficiente.",
+        "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+        "Transporte de carga": "160kg",
+        "Cores": "Preto, Branco, Cinza",
+        "Preço referência (R$)": "10256",
+        "Garantia do veículo": "180 dias",
+        "Garantia da bateria": "1 ano com revisões obrigatórias",
+        "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+        "Prazo de entrega": "Pronta entrega",
+        "Exige CNH?": "Não",
+        "Exige emplacamento?": "Não",
+        "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+      },
+      "Texto livre": {
+        "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
+        "Pontos fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED.",
+        "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+        "Comparação com outros modelos": "A MAJ M2 destaca-se pelos freios a disco duplo e excelente agilidade para o dia a dia.",
+        "Acessórios e opcionais": "Consultar equipe de vendas.",
+        "Observações da equipe": ""
+      }
+    }
   }
 ]

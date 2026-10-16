@@ -35,6 +35,12 @@ SLUG_ALIASES = {
     "MAX 12 MAJ": "max-12",
     "GP 1000": "gp-1000",
     "GP1000": "gp-1000",
+    "DB-ZERO": "db-zero",
+    "DB ZERO": "db-zero",
+    "DBZERO": "db-zero",
+    "M2": "m2",
+    "M 2": "m2",
+    "SCOOTER M2": "m2",
     "VITTÓRIA": "vittoria",
     "VITTORIA": "vittoria",
     "SPORT 701 SHORT": "sport-701-short",
@@ -224,8 +230,10 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                     slug = normalize_slug(name)
                     cutout_file = BASE_DIR / "public" / "images" / "models" / "cutouts" / f"{slug}.png"
                     cutout_url = f"/public/images/models/cutouts/{slug}.png" if cutout_file.exists() else ""
+                    banner_file = BASE_DIR / "public" / "images" / "models" / "banners" / f"{slug}-banner.webp"
+                    banner_url = f"/public/images/models/banners/{slug}-banner.webp" if banner_file.exists() else ""
                     images = find_model_images(slug)
-                    hero_url = cutout_url if cutout_url else (images[0] if images else "")
+                    hero_url = banner_url if banner_url else (cutout_url if cutout_url else (images[0] if images else ""))
 
                     models_dict[m_key] = {
                         "categoria": cat,
@@ -233,6 +241,7 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                         "slug": slug,
                         "is_active": slug not in inactive_slugs,
                         "sections": {},
+                        "banner_image": banner_url,
                         "cutout_image": cutout_url,
                         "hero_image": hero_url,
                         "images": images,
