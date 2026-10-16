@@ -713,6 +713,58 @@ main.showroom-viewport {
   background: var(--maj-cyan);
 }
 
+.telemetry-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.telemetry-card-top-row .telemetry-eyebrow {
+  margin-bottom: 0;
+}
+
+.telemetry-sticker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: linear-gradient(135deg, rgba(0, 229, 153, 0.18) 0%, rgba(0, 215, 255, 0.12) 100%);
+  border: 1px solid rgba(0, 229, 153, 0.55);
+  border-radius: 100px;
+  color: #00e599;
+  font-family: var(--font-telemetry);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px rgba(0, 229, 153, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: stickerPulseGlow 3s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+.telemetry-sticker-badge .sticker-icon {
+  color: #00e599;
+  flex-shrink: 0;
+}
+
+@keyframes stickerPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(0, 229, 153, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 229, 153, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(0, 229, 153, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(0, 229, 153, 0.9);
+  }
+}
+
+.telemetry-big-card.telemetry-card-cnh::before {
+  background: linear-gradient(180deg, #00e599 0%, var(--maj-cyan) 100%);
+}
+
 .telemetry-eyebrow {
   font-family: var(--font-telemetry);
   font-size: 11px;
