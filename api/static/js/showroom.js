@@ -176,13 +176,13 @@
         ],
       },
       conforto: {
-        tag: 'ERGONOMIA & CONFORTO',
-        mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'PILOTAGEM CONFORTÁVEL', badgeColor: '#00d7ff',
+        tag: 'CAPACIDADE DE PASSAGEIROS',
+        mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'CAPACIDADE PARA 2 OCUPANTES', badgeColor: '#00d7ff',
         items: [
           { lbl: 'Compartimento', val: pObj.toLowerCase() === 'não' ? 'Não disponível' : (pObj.toLowerCase().includes('baú') ? 'Baú Incluso' : 'Porta-Objetos Integrado') },
           { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' },
           { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' },
-          { lbl: 'Restrições de Uso', val: 'Menores de 16 anos (Vias urbanas)' },
+          { lbl: 'Acomodação', val: 'Assento duplo com encosto' },
         ],
       },
       garantia: {
@@ -245,7 +245,7 @@
     const hudModelName = document.getElementById('hudModelName');
     if (hudModelName) {
       const up = model.modelo.toUpperCase();
-      hudModelName.textContent = up.startsWith('MAJ') ? up : `MAJ ${up}`;
+      hudModelName.textContent = up.includes('MAJ') ? up : `MAJ ${up}`;
     }
     renderCockpitCategoryView(model, activeCockpitCategory, cockpitHasBeenRevealed);
   }
