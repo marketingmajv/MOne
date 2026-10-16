@@ -158,14 +158,21 @@
   <!-- 3. Viewport Principal -->
   <main class="showroom-viewport">
     
-    <!-- Banner Panorâmico Full-Width Widescreen (Exclusivo MAX 12 MAJ) -->
-    <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" aria-label="Apresentação Widescreen MAX 12 MAJ">
+    <!-- Banner Panorâmico Full-Width Widescreen (Para modelos com foto widescreen de estúdio) -->
+    {% set current_slug = active_model.slug if active_model else 'max-12' %}
+    {% set banner_lookup = {
+      'max-12': '/public/images/models/banners/max-12-banner.webp',
+      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp'
+    } %}
+    {% set active_banner = (active_model.banner_image if active_model and active_model.banner_image else banner_lookup.get(current_slug)) %}
+    <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" style="display: {{ 'block' if active_banner else 'none' }}; opacity: {{ '1' if active_banner else '0' }};" aria-label="Apresentação Widescreen {{ active_model.modelo if active_model else '' }}">
       <div class="model-panoramic-banner-container">
-        <picture>
-          <source srcset="/public/images/models/banners/max-12-banner.webp?v=20261013_2k" type="image/webp">
+        <picture id="modelPanoramicPicture">
+          <source id="modelPanoramicSource" srcset="{{ active_banner or '/public/images/models/banners/max-12-banner.webp' }}?v=20261016_2k" type="image/webp">
           <img 
-            src="/public/images/models/banners/max-12-banner.webp?v=20261013_2k" 
-            alt="MAX 12 MAJ - E-Scooter Urbana de Alta Performance" 
+            id="modelPanoramicImg"
+            src="{{ active_banner or '/public/images/models/banners/max-12-banner.webp' }}?v=20261016_2k" 
+            alt="{{ active_model.modelo if active_model else 'MAX 12 MAJ' }} - E-Scooter Urbana de Alta Performance" 
             class="model-panoramic-banner-img"
             loading="eager"
             decoding="async"
@@ -175,7 +182,7 @@
     </section>
 
     <!-- Hero Estúdio Branco Cinematográfico (Idêntico ao Gogoro Pulse) -->
-    <section class="hero-studio-stage" id="hero" style="display: none;">
+    <section class="hero-studio-stage" id="hero" style="display: {{ 'none' if active_banner else 'flex' }};">
       
       <!-- Letreiro Gigante Arquitetural de Fundo (Atrás do Veículo) -->
       <div class="hero-giant-backdrop" aria-hidden="true">

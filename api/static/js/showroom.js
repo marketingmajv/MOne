@@ -56,14 +56,21 @@
       activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
-    // Atualizar Banner Panorâmico Widescreen (Exclusivo MAX 12 MAJ)
+    // Banner Panorâmico Widescreen (Para modelos com foto widescreen de estúdio)
     const bannerElem = document.getElementById('max12PanoramicBanner');
     const heroStageElem = document.getElementById('hero');
-    const isMax12 = slug === 'max-12' || (found.modelo && found.modelo.toUpperCase().includes('MAX 12'));
+    const bannerMap = { 'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp' };
+    const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
-      bannerElem.style.display = isMax12 ? 'block' : 'none';
-      bannerElem.style.opacity = isMax12 ? '1' : '0';
-      if (heroStageElem) heroStageElem.style.display = isMax12 ? 'none' : 'flex';
+      const hasBanner = Boolean(bannerUrl);
+      bannerElem.style.display = hasBanner ? 'block' : 'none';
+      bannerElem.style.opacity = hasBanner ? '1' : '0';
+      if (hasBanner) {
+        const pSource = document.getElementById('modelPanoramicSource'), pImg = document.getElementById('modelPanoramicImg');
+        if (pSource) pSource.srcset = `${bannerUrl}?v=20261016_2k`;
+        if (pImg) { pImg.src = `${bannerUrl}?v=20261016_2k`; pImg.alt = `${found.modelo} - MAJ Mobilidade`; }
+      }
+      if (heroStageElem) heroStageElem.style.display = hasBanner ? 'none' : 'flex';
     }
 
     // 1. Atualizar Hero
@@ -256,10 +263,7 @@
     const tagEl = document.getElementById('hudCategoryTag');
     if (tagEl) { tagEl.textContent = data.tag; tagEl.style.color = data.badgeColor || 'var(--maj-cyan)'; }
     const badgeEl = document.getElementById('hudModeBadge');
-    if (badgeEl) {
-      badgeEl.textContent = data.badge;
-      badgeEl.style.color = badgeEl.style.borderColor = data.badgeColor || 'var(--maj-cyan)';
-    }
+    if (badgeEl) { badgeEl.textContent = data.badge; badgeEl.style.color = badgeEl.style.borderColor = data.badgeColor || 'var(--maj-cyan)'; }
     const mainValEl = document.getElementById('hudMainVal'), unitEl = document.getElementById('hudUnitLabel');
     if (shouldAnimate) {
       animateCockpitDisplay(mainValEl, unitEl, data, 700);
@@ -316,10 +320,8 @@
   window.openGalleryLightbox = function (index) {
     if (!currentGalleryPhotos.length) return;
     currentLightboxIndex = (index + currentGalleryPhotos.length) % currentGalleryPhotos.length;
-    const img = document.getElementById('galleryLightboxImg');
-    const modelName = document.getElementById('galleryLightboxModelName');
-    const counter = document.getElementById('galleryLightboxCounter');
-    const modal = document.getElementById('galleryLightboxModal');
+    const img = document.getElementById('galleryLightboxImg'), modelName = document.getElementById('galleryLightboxModelName');
+    const counter = document.getElementById('galleryLightboxCounter'), modal = document.getElementById('galleryLightboxModal');
     if (img) img.src = currentGalleryPhotos[currentLightboxIndex];
     if (modelName && currentModel) modelName.textContent = `MAJ ${currentModel.modelo.toUpperCase()}`;
     if (counter) counter.textContent = `Foto ${currentLightboxIndex + 1} de ${currentGalleryPhotos.length}`;

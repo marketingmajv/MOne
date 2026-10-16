@@ -33,6 +33,8 @@ SHEET_URL = (
 # Mapeamento oficial de slugs para diretórios de fotos existentes em public/images/
 SLUG_ALIASES = {
     "MAX 12 MAJ": "max-12",
+    "GP 1000": "gp-1000",
+    "GP1000": "gp-1000",
     "VITTÓRIA": "vittoria",
     "VITTORIA": "vittoria",
     "SPORT 701 SHORT": "sport-701-short",
@@ -252,6 +254,19 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                         sheet_data[h] = ""
 
                 models_dict[m_key]["sections"][sheet] = sheet_data
+
+        # Mesclar modelos suplementares locais se não constarem na planilha
+        for supp_path in [BASE_DIR / "static" / "data" / "supplemental_models.json", BASE_DIR / "api" / "static" / "data" / "supplemental_models.json"]:
+            if supp_path.is_file():
+                try:
+                    with open(supp_path, "r", encoding="utf-8") as sf:
+                        for sm in json.load(sf):
+                            sk = sm.get("modelo", "").upper()
+                            if sk and sk not in models_dict:
+                                models_dict[sk] = sm
+                    break
+                except Exception:
+                    pass
 
         # Enriquecer cada modelo com as métricas canônicas (Apenas Potência Nominal)
         final_list = []

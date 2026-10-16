@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-16T16:13:54Z",
-  "total_models": 13,
-  "total_all": 14,
+  "updated_at": "2026-10-16T17:25:25Z",
+  "total_models": 14,
+  "total_all": 15,
   "categories": [
     "Scooter",
     "Bike"
@@ -1563,6 +1563,125 @@
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \n\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
       }
+    },
+    {
+      "categoria": "Scooter",
+      "modelo": "GP 1000",
+      "slug": "gp-1000",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/gp-1000-banner.webp",
+      "hero_image": "/public/images/models/banners/gp-1000-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/gp-1000/gp-1000-01.jpg",
+        "/public/images/gp-1000/gp-1000-02.jpg",
+        "/public/images/gp-1000/gp-1000-03.jpg",
+        "/public/images/gp-1000/gp-1000-04.jpg",
+        "/public/images/gp-1000/gp-1000-05.jpg",
+        "/public/images/gp-1000/gp-1000-06.jpg",
+        "/public/images/gp-1000/gp-1000-07.jpg",
+        "/public/images/gp-1000/gp-1000-08.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5095",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Sim",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W de alta performance, compatível com ladeiras urbanas e pilotagem ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "150",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "68kg",
+          "Comprimento (cm)": "168",
+          "Largura (cm)": "70",
+          "Altura (cm)": "115",
+          "Altura do assento (cm)": "75",
+          "Porta-objetos / baú": "Baú Traseiro Integrado",
+          "Conforto e ergonomia": "Excelente — postura ergonômica esportiva, assento duplo acolchoado e baú traseiro integrado de série.",
+          "Observações estruturais": "Chassi tubular em aço carbono reforçado com acabamento esportivo e carenagem frontal com iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Tambor / Hidráulico",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Lazer, deslocamento urbano ágil, trabalho e trajetos diários com máxima economia e praticidade de bagagem.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo esportivo, agilidade no trânsito e praticidade.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "150kg",
+          "Cores": "Preto, Branco",
+          "Preço referência (R$)": "8990",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
+          "Pontos fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "Na linha MAJ, a GP 1000 combina estética esportiva moderna com a conveniência imediata do baú traseiro integrado, oferecendo agilidade superior.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "150",
+        "peso_kg": "68kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Tambor / Hidráulico",
+        "diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
+        "pontos_fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah."
+      }
     }
   ],
   "all_models": [
@@ -3121,6 +3240,125 @@
         "diferencial": "Dimensões compactas e aro 16 que favorecem a adaptação e a condução por pessoas de menor estatura, além de facilitar manobras, transporte e armazenamento.",
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \n\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
+      }
+    },
+    {
+      "categoria": "Scooter",
+      "modelo": "GP 1000",
+      "slug": "gp-1000",
+      "is_active": true,
+      "banner_image": "/public/images/models/banners/gp-1000-banner.webp",
+      "hero_image": "/public/images/models/banners/gp-1000-banner.webp",
+      "cutout_image": "",
+      "images": [
+        "/public/images/gp-1000/gp-1000-01.jpg",
+        "/public/images/gp-1000/gp-1000-02.jpg",
+        "/public/images/gp-1000/gp-1000-03.jpg",
+        "/public/images/gp-1000/gp-1000-04.jpg",
+        "/public/images/gp-1000/gp-1000-05.jpg",
+        "/public/images/gp-1000/gp-1000-06.jpg",
+        "/public/images/gp-1000/gp-1000-07.jpg",
+        "/public/images/gp-1000/gp-1000-08.jpg"
+      ],
+      "sections": {
+        "Identificação": {
+          "Marca": "Garow",
+          "Versão / ano": "2026",
+          "Código interno": "MSKU5095",
+          "Status": "Ativo",
+          "Responsável": "MAJ Engenharia",
+          "Última atualização": "2026-10-16 00:00:00"
+        },
+        "Desempenho": {
+          "Potência nominal (W)": "1000",
+          "Velocidade máxima (km/h)": "32",
+          "Modos de condução": "3 niveis",
+          "Possui ré?": "Sim",
+          "Inclinação recomendada (%)": "Não informado",
+          "Observações de desempenho": "Motor Brushless de 1000W de alta performance, compatível com ladeiras urbanas e pilotagem ágil."
+        },
+        "Bateria e autonomia": {
+          "Química / tipo": "Bateria de Lítio",
+          "Voltagem (V)": "60v",
+          "Capacidade (Ah)": "20ah",
+          "Capacidade (Wh)": "1200WH",
+          "Bateria removível?": "Sim",
+          "Autonomia conservadora (km)": "35km",
+          "Autonomia máxima estimada (km)": "45",
+          "Tempo de recarga": "6 a 8 horas",
+          "Carregador": "60v 3ah Bivolt Inteligente",
+          "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
+          "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
+        },
+        "Estrutura e conforto": {
+          "Carga máxima (kg)": "150",
+          "Ocupantes homologados": "2",
+          "Ocupantes recomendados": "2",
+          "Peso do veículo (kg)": "68kg",
+          "Comprimento (cm)": "168",
+          "Largura (cm)": "70",
+          "Altura (cm)": "115",
+          "Altura do assento (cm)": "75",
+          "Porta-objetos / baú": "Baú Traseiro Integrado",
+          "Conforto e ergonomia": "Excelente — postura ergonômica esportiva, assento duplo acolchoado e baú traseiro integrado de série.",
+          "Observações estruturais": "Chassi tubular em aço carbono reforçado com acabamento esportivo e carenagem frontal com iluminação Full LED."
+        },
+        "Segurança e componentes": {
+          "Freio dianteiro": "Hidráulico a Disco",
+          "Freio traseiro": "Tambor / Hidráulico",
+          "Suspensão dianteira": "Sim",
+          "Suspensão traseira": "Sim",
+          "Pneu / aro": "Aro 10 Tubeless",
+          "Calibragem ideal dianteira (PSI)": "28",
+          "Calibragem ideal traseira (PSI)": "32",
+          "Iluminação": "Conjunto Óptico Full LED com DRL",
+          "Alarme": "Sim",
+          "Trava": "Trava de guidão",
+          "Câmbio / marchas": "Não",
+          "Itens de segurança adicionais": "Retrovisores esportivos aerodinâmicos",
+          "Fonte técnica": ""
+        },
+        "Uso e comercial": {
+          "Ideal para": "Lazer, deslocamento urbano ágil, trabalho e trajetos diários com máxima economia e praticidade de bagagem.",
+          "Não recomendado para": "Não recomendado para menores de 16 anos.",
+          "Principal diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
+          "Perfil do cliente": "Adultos e jovens que buscam estilo esportivo, agilidade no trânsito e praticidade.",
+          "Subidas: limite e condições": "Compatível com ladeiras urbanas",
+          "Transporte de carga": "150kg",
+          "Cores": "Preto, Branco",
+          "Preço referência (R$)": "8990",
+          "Garantia do veículo": "180 dias",
+          "Garantia da bateria": "1 ano com revisões obrigatórias",
+          "Assistência técnica": "Autorizada Maj Mobilidade Elétrica",
+          "Prazo de entrega": "Pronta entrega",
+          "Exige CNH?": "Não",
+          "Exige emplacamento?": "Não",
+          "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
+        },
+        "Texto livre": {
+          "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
+          "Pontos fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah.",
+          "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+          "Comparação com outros modelos": "Na linha MAJ, a GP 1000 combina estética esportiva moderna com a conveniência imediata do baú traseiro integrado, oferecendo agilidade superior.",
+          "Acessórios e opcionais": "Consultar equipe de vendas.",
+          "Observações da equipe": ""
+        }
+      },
+      "metrics": {
+        "potencia_nominal_w": "1000",
+        "velocidade_max_kmh": "32",
+        "autonomia_conservadora_km": "35km",
+        "autonomia_maxima_km": "45",
+        "voltagem_v": "60v",
+        "capacidade_ah": "20ah",
+        "capacidade_wh": "1200WH",
+        "quimica_bateria": "Bateria de Lítio",
+        "carga_maxima_kg": "150",
+        "peso_kg": "68kg",
+        "freios": "Diant: Hidráulico a Disco / Tras: Tambor / Hidráulico",
+        "diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
+        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
+        "pontos_fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah."
       }
     },
     {
