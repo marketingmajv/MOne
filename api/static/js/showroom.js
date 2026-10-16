@@ -62,7 +62,8 @@
     const bannerMap = {
       'max-12': '/public/images/models/banners/max-12-banner.webp',
       'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
-      'flow-one': '/public/images/models/banners/flow-one-banner.webp'
+      'flow-one': '/public/images/models/banners/flow-one-banner.webp',
+      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp'
     };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
@@ -254,10 +255,7 @@
   function updateCockpitForModel(model) {
     if (!model) return;
     const hudModelName = document.getElementById('hudModelName');
-    if (hudModelName) {
-      const up = model.modelo.toUpperCase();
-      hudModelName.textContent = up.includes('MAJ') ? up : `MAJ ${up}`;
-    }
+    if (hudModelName) { const up = model.modelo.toUpperCase(); hudModelName.textContent = up.includes('MAJ') ? up : `MAJ ${up}`; }
     renderCockpitCategoryView(model, activeCockpitCategory, cockpitHasBeenRevealed);
   }
 
