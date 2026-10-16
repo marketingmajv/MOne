@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-16T15:42:54Z",
+  "updated_at": "2026-10-16T16:00:32Z",
   "total_models": 13,
   "total_all": 14,
   "categories": [
@@ -108,8 +108,7 @@
         "/public/images/max-12/max-12-05.jpg",
         "/public/images/max-12/max-12-06.jpg",
         "/public/images/max-12/max-12-07.jpg",
-        "/public/images/max-12/max-12-08.jpg",
-        "/public/images/max-12/max-12-original.png"
+        "/public/images/max-12/max-12-08.jpg"
       ],
       "metrics": {
         "potencia_nominal_w": "1000",
@@ -1668,8 +1667,7 @@
         "/public/images/max-12/max-12-05.jpg",
         "/public/images/max-12/max-12-06.jpg",
         "/public/images/max-12/max-12-07.jpg",
-        "/public/images/max-12/max-12-08.jpg",
-        "/public/images/max-12/max-12-original.png"
+        "/public/images/max-12/max-12-08.jpg"
       ],
       "metrics": {
         "potencia_nominal_w": "1000",

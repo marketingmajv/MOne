@@ -169,7 +169,7 @@ def find_model_images(slug: str) -> List[str]:
     for d in search_dirs:
         if d.is_dir():
             for f in sorted(d.glob("*.jpg")) + sorted(d.glob("*.png")) + sorted(d.glob("*.webp")):
-                if f.name.startswith("."):
+                if f.name.startswith(".") or "original" in f.name.lower() or "banner" in f.name.lower():
                     continue
                 images.append(f"/static/images/{slug}/{f.name}" if "static" in str(d) else f"/public/images/{slug}/{f.name}")
             if images:

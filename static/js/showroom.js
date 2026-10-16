@@ -292,7 +292,7 @@
     const grid = document.getElementById('galleryGrid') || document.getElementById('galleryScroller');
     if (!grid) return;
     grid.innerHTML = '';
-    currentGalleryPhotos = model.images || [];
+    currentGalleryPhotos = (model.images || []).filter((u) => !u.includes('original') && !u.includes('banner'));
 
     if (currentGalleryPhotos.length === 0) {
       grid.innerHTML = '<p style="color: var(--text-muted); padding: 40px; grid-column: 1 / -1;">Fotos do ensaio em processamento.</p>';
