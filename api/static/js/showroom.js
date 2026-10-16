@@ -201,6 +201,45 @@
   }
 
   // 5. Atualização do Cockpit Digital & Engenharia
+  function animateCockpitDisplay(mainEl, unitEl, data, dur = 700) {
+    if (mainEl) {
+      if (typeof data.mainVal === 'number') {
+        mainEl.classList.remove('is-string-val');
+        animateCountUp(mainEl, 0, data.mainVal, dur);
+      } else {
+        mainEl.classList.add('is-string-val');
+        const m = String(data.mainVal).match(/^(\d+)([a-zA-Z]+)\s+(\d+)([a-zA-Z]+)$/i);
+        if (m) {
+          const t1 = parseInt(m[1], 10), u1 = m[2], t2 = parseInt(m[3], 10), u2 = m[4], id = Math.random().toString(), t0 = performance.now();
+          mainEl.dataset.animId = id;
+          function tick(now) {
+            if (mainEl.dataset.animId !== id) return;
+            const p = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+            mainEl.textContent = `${Math.floor(t1 * e)}${u1} ${Math.floor(t2 * e)}${u2}`;
+            if (p < 1) requestAnimationFrame(tick);
+            else mainEl.textContent = data.mainVal;
+          }
+          requestAnimationFrame(tick);
+        } else { mainEl.textContent = data.mainVal; }
+      }
+    }
+    if (unitEl) {
+      const uM = String(data.unit).match(/^(\d+)\s+(.+)$/);
+      if (uM) {
+        const uEnd = parseInt(uM[1], 10), uRest = uM[2], uId = Math.random().toString(), u0 = performance.now();
+        unitEl.dataset.animId = uId;
+        function uTick(now) {
+          if (unitEl.dataset.animId !== uId) return;
+          const p = Math.min((now - u0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+          unitEl.textContent = `${Math.floor(uEnd * e)} ${uRest}`;
+          if (p < 1) requestAnimationFrame(uTick);
+          else unitEl.textContent = data.unit;
+        }
+        requestAnimationFrame(uTick);
+      } else { unitEl.textContent = data.unit; }
+    }
+  }
+
   function updateCockpitForModel(model) {
     if (!model) return;
     const hudModelName = document.getElementById('hudModelName');
@@ -208,47 +247,32 @@
       const up = model.modelo.toUpperCase();
       hudModelName.textContent = up.startsWith('MAJ') ? up : `MAJ ${up}`;
     }
-    renderCockpitCategoryView(model, activeCockpitCategory);
+    renderCockpitCategoryView(model, activeCockpitCategory, cockpitHasBeenRevealed);
   }
 
-  function renderCockpitCategoryView(model, catKey) {
+  function renderCockpitCategoryView(model, catKey, shouldAnimate = true) {
     if (!model) return;
     const data = getCategoryTelemetryData(model, catKey);
-
     const tagEl = document.getElementById('hudCategoryTag');
     if (tagEl) { tagEl.textContent = data.tag; tagEl.style.color = data.badgeColor || 'var(--maj-cyan)'; }
-
-    const unitEl = document.getElementById('hudUnitLabel');
-    if (unitEl) unitEl.textContent = data.unit;
-
     const badgeEl = document.getElementById('hudModeBadge');
     if (badgeEl) {
       badgeEl.textContent = data.badge;
-      badgeEl.style.color = data.badgeColor || 'var(--maj-cyan)';
-      badgeEl.style.borderColor = data.badgeColor || 'var(--maj-cyan)';
+      badgeEl.style.color = badgeEl.style.borderColor = data.badgeColor || 'var(--maj-cyan)';
     }
-
-    const mainValEl = document.getElementById('hudMainVal');
-    if (mainValEl) {
-      if (typeof data.mainVal === 'number') {
-        mainValEl.classList.remove('is-string-val');
-        const cur = parseInt(mainValEl.textContent.replace(/[^\d]/g, ''), 10) || 0;
-        if (cockpitHasBeenRevealed) animateCountUp(mainValEl, cur, data.mainVal, 750, 0);
-        else mainValEl.textContent = data.mainVal;
-      } else {
-        mainValEl.classList.add('is-string-val');
+    const mainValEl = document.getElementById('hudMainVal'), unitEl = document.getElementById('hudUnitLabel');
+    if (shouldAnimate) {
+      animateCockpitDisplay(mainValEl, unitEl, data, 700);
+    } else {
+      if (mainValEl) {
+        mainValEl.classList.toggle('is-string-val', typeof data.mainVal !== 'number');
         mainValEl.textContent = data.mainVal;
       }
+      if (unitEl) unitEl.textContent = data.unit;
     }
-
     const gridEl = document.getElementById('hudSpecsGrid');
     if (gridEl) {
-      gridEl.innerHTML = data.items.map((it) => `
-        <div class="hud-spec-card">
-          <span class="lbl">${it.lbl}</span>
-          <span class="val">${it.val}</span>
-        </div>
-      `).join('');
+      gridEl.innerHTML = data.items.map((it) => `<div class="hud-spec-card"><span class="lbl">${it.lbl}</span><span class="val">${it.val}</span></div>`).join('');
     }
   }
 
@@ -257,9 +281,7 @@
     document.querySelectorAll('#cockpitTechControls .cockpit-mode-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(catKey));
     });
-    if (currentModel) {
-      renderCockpitCategoryView(currentModel, catKey);
-    }
+    if (currentModel) renderCockpitCategoryView(currentModel, catKey, true);
   };
 
   // 6. Renderização da Galeria de Fotos em Grid com Lightbox Interativo
@@ -401,18 +423,11 @@
         entries.forEach((e) => {
           if (e.isIntersecting && !cockpitHasBeenRevealed) {
             cockpitHasBeenRevealed = true;
-            if (currentModel) {
-              const data = getCategoryTelemetryData(currentModel, activeCockpitCategory);
-              const hud = document.getElementById('hudMainVal');
-              if (hud) {
-                hud.textContent = '0';
-                animateCountUp(hud, 0, data.mainVal, 850, 0);
-              }
-            }
+            if (currentModel) renderCockpitCategoryView(currentModel, activeCockpitCategory, true);
             obs.disconnect();
           }
         });
-      }, { threshold: 0.2 });
+      }, { threshold: 0.15 });
       obsCockpit.observe(secCockpit);
     }
   }
@@ -421,23 +436,15 @@
     if (!element) return;
     const end = Math.round(endVal), start = Math.round(startVal);
     element.dataset.animTarget = end;
-
     setTimeout(() => {
       if (parseInt(element.dataset.animTarget, 10) !== end) return;
       let startTime = null;
       function step(timestamp) {
         if (!startTime) startTime = timestamp;
-        const elapsed = timestamp - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        element.textContent = Math.floor(start + (end - start) * ease);
-
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          element.textContent = end;
-          if (typeof onComplete === 'function') onComplete();
-        }
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        element.textContent = Math.floor(start + (end - start) * (1 - Math.pow(1 - progress, 3)));
+        if (progress < 1) requestAnimationFrame(step);
+        else { element.textContent = end; if (typeof onComplete === 'function') onComplete(); }
       }
       requestAnimationFrame(step);
     }, delay);
@@ -446,47 +453,33 @@
   function animateTelemetryCountUp(fromZero = false) {
     if (!currentModel) return;
     const m = currentModel.metrics || {};
-    const potVal = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-    const velVal = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    const autVal = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
-
-    const bigPot = document.getElementById('bigMetricPower');
-    const bigVel = document.getElementById('bigMetricSpeed');
-    const bigAut = document.getElementById('bigMetricRange');
-
+    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+    const vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const aut = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
+    const pEl = document.getElementById('bigMetricPower'), vEl = document.getElementById('bigMetricSpeed'), aEl = document.getElementById('bigMetricRange');
     if (fromZero) {
-      animateCountUp(bigPot, 0, potVal, 1300, 50);
-      animateCountUp(bigVel, 0, velVal, 1200, 200);
-      animateCountUp(bigAut, 0, autVal, 1200, 350);
+      animateCountUp(pEl, 0, pot, 1300, 50); animateCountUp(vEl, 0, vel, 1200, 200); animateCountUp(aEl, 0, aut, 1200, 350);
     } else {
-      const curPot = bigPot ? (parseInt(bigPot.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      const curVel = bigVel ? (parseInt(bigVel.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      const curAut = bigAut ? (parseInt(bigAut.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      animateCountUp(bigPot, curPot, potVal, 800, 0);
-      animateCountUp(bigVel, curVel, velVal, 750, 0);
-      animateCountUp(bigAut, curAut, autVal, 750, 0);
+      const cP = pEl ? (parseInt(pEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      const cV = vEl ? (parseInt(vEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      const cA = aEl ? (parseInt(aEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      animateCountUp(pEl, cP, pot, 800); animateCountUp(vEl, cV, vel, 750); animateCountUp(aEl, cA, aut, 750);
     }
   }
 
   function updateTelemetryBigCards(model) {
     const s = model.sections || {}, m = model.metrics || {};
-    const potSub = document.getElementById('bigMetricPowerSub');
-    if (potSub) potSub.textContent = s['Desempenho']?.['Observações de desempenho'] || 'Motor de alta performance calibrado para rendimento e subidas urbanas.';
-    const speedSub = document.getElementById('bigMetricSpeedSub');
-    if (speedSub) speedSub.textContent = `Velocidade máxima homologada de ${m.velocidade_max_kmh || '32'} km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.`;
-    const rangeSub = document.getElementById('bigMetricRangeSub');
-    if (rangeSub) rangeSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg trafegando em condições ideais.`;
-
-    const potVal = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-    const velVal = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    const autVal = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
-
-    if (telemetryHasBeenRevealed) {
-      animateTelemetryCountUp(false);
-    } else {
-      const p = document.getElementById('bigMetricPower'); if (p) p.textContent = potVal;
-      const v = document.getElementById('bigMetricSpeed'); if (v) v.textContent = velVal;
-      const a = document.getElementById('bigMetricRange'); if (a) a.textContent = autVal;
+    const pSub = document.getElementById('bigMetricPowerSub'); if (pSub) pSub.textContent = s['Desempenho']?.['Observações de desempenho'] || 'Motor de alta performance calibrado para rendimento e subidas urbanas.';
+    const sSub = document.getElementById('bigMetricSpeedSub'); if (sSub) sSub.textContent = `Velocidade máxima homologada de ${m.velocidade_max_kmh || '32'} km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.`;
+    const rSub = document.getElementById('bigMetricRangeSub'); if (rSub) rSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg trafegando em condições ideais.`;
+    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
+    const vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const aut = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
+    if (telemetryHasBeenRevealed) { animateTelemetryCountUp(false); }
+    else {
+      const p = document.getElementById('bigMetricPower'); if (p) p.textContent = pot;
+      const v = document.getElementById('bigMetricSpeed'); if (v) v.textContent = vel;
+      const a = document.getElementById('bigMetricRange'); if (a) a.textContent = aut;
     }
   }
 
