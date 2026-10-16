@@ -27,6 +27,7 @@ O agente DEVE executar imediatamente o **Protocolo START** em 3 etapas sequencia
      - Diagnóstico de monólitos (arquivos críticos detectados).
      - Link para teste local: `http://localhost:5001`
      - Link oficial de produção: `https://m-one.majmobilidade.com.br`
+     - Plano de Replicagem e Modelos (Showroom): `PLANO_DE_REPLICAGEM_E_MODELOS.md`
 
 ---
 

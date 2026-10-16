@@ -53,6 +53,7 @@ Apresentar ao usuário um relatório estruturado contendo:
 4. **Links Diretos para Teste**:
    - 💻 **Ambiente Local**: `http://localhost:5001`
    - 🚀 **Produção Oficial**: `https://m-one.majmobilidade.com.br`
+   - 🏍️ **Showroom & Replicagem de Modelos**: Consultar `PLANO_DE_REPLICAGEM_E_MODELOS.md`
 5. **Credenciais Rápidas**:
    - `jam` / `MOne2026!` (Diretoria / Administrador)
    - `fauzer` / `MOne2026!` (Diretoria / Administrador)
