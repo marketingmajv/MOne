@@ -78,6 +78,8 @@
 
     const descElem = document.getElementById('heroModelDesc');
     if (descElem) descElem.textContent = found.metrics.diferencial || found.metrics.descricao_livre || 'Projeto de mobilidade elétrica urbana de alta eficiência, robustez e pilotagem suave.';
+    const eyeLbl = document.getElementById('cockpitEyebrowLabel');
+    if (eyeLbl) eyeLbl.textContent = `CONHEÇA A FUNDO A ${found.modelo.toUpperCase()}`;
 
     // Foto Hero e Reflexo
     const imgElem = document.getElementById('heroVehicleImg');
@@ -126,30 +128,31 @@
     const lG = s['Estrutura e conforto']?.['Largura (cm)'] || '76';
     const alt = s['Estrutura e conforto']?.['Altura (cm)'] || '130';
     const ass = s['Estrutura e conforto']?.['Altura do assento (cm)'] || '76';
-    const quim = (s['Bateria e autonomia']?.['Química / tipo'] || '').includes('LiFePO') ? 'LiFePO₄' : 'Lítio';
+    const capWh = parseInt(String(m.capacidade_wh || '1200').replace(/[^\d]/g, ''), 10) || 1200;
+    const vStr = `${m.voltagem_v || '60V'} ${m.capacidade_ah || '20Ah'}`;
+    const pObj = s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Porta-Objetos';
 
     const categories = {
       motorizacao: {
         tag: 'MOTORIZAÇÃO & DESEMPENHO',
         mainVal: parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000,
-        unit: 'WATTS',
-        badge: 'POTÊNCIA NOMINAL MÁXIMA',
-        badgeColor: '#00d7ff',
+        unit: 'WATTS', badge: 'POTÊNCIA NOMINAL MÁXIMA', badgeColor: '#00d7ff',
         items: [
           { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` },
           { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
           { lbl: 'Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' },
-          { lbl: 'Subidas / Relevo', val: s['Uso e comercial']?.['Subidas: limite e condições'] || 'Subidas íngremes' },
+          { lbl: 'Subidas / Relevo', val: 'Compatível com ladeiras urbanas' },
         ],
       },
       bateria: {
         tag: 'BATERIA & AUTONOMIA',
-        mainVal: parseInt(String(m.capacidade_wh || '1200').replace(/[^\d]/g, ''), 10) || 1200,
-        unit: 'WH (CAPACIDADE)',
-        badge: `BATERIA: ${m.voltagem_v || '60V'} ${m.capacidade_ah || '20Ah'} • ${quim}`,
+        mainVal: vStr,
+        unit: `${capWh} WH (CAPACIDADE)`,
+        badge: `BATERIA DE LÍTIO • ${capWh} WH`,
         badgeColor: '#28e1a5',
         items: [
-          { lbl: 'Química da Bateria', val: quim }, { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` },
+          { lbl: 'Química da Bateria', val: 'Lítio de alta densidade' },
+          { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` },
           { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
           { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' },
         ],
@@ -157,20 +160,15 @@
       chassi: {
         tag: 'CHASSI & ESTRUTURA',
         mainVal: parseInt(String(m.carga_maxima_kg || '180').replace(/[^\d]/g, ''), 10) || 180,
-        unit: 'KG CARGA MÁXIMA',
-        badge: 'ESTRUTURA AÇO CARBONO',
-        badgeColor: '#e1ff32',
+        unit: 'KG CARGA MÁXIMA', badge: 'ESTRUTURA AÇO CARBONO', badgeColor: '#e1ff32',
         items: [
-          { lbl: 'Dimensões (C×L×A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm` },
+          { lbl: 'Dimensões (C×L×A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm do solo` },
           { lbl: 'Peso do Veículo', val: `${m.peso_kg || '75'} kg` }, { lbl: 'Ocupantes', val: `${s['Estrutura e conforto']?.['Ocupantes homologados'] || '2'} pessoas` },
         ],
       },
       seguranca: {
         tag: 'SEGURANÇA & FREIOS',
-        mainVal: 100,
-        unit: '% SISTEMA HIDRÁULICO',
-        badge: `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase(),
-        badgeColor: '#ff5252',
+        mainVal: 100, unit: '% SISTEMA HIDRÁULICO', badge: `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase(), badgeColor: '#ff5252',
         items: [
           { lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' },
           { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' },
@@ -179,26 +177,22 @@
       },
       conforto: {
         tag: 'ERGONOMIA & CONFORTO',
-        mainVal: 2,
-        unit: 'ASSENTOS HOMOLOGADOS',
-        badge: 'PILOTAGEM CONFORTÁVEL',
-        badgeColor: '#00d7ff',
+        mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'PILOTAGEM CONFORTÁVEL', badgeColor: '#00d7ff',
         items: [
-          { lbl: 'Porta-Objetos', val: s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Porta-objetos' },
-          { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' }, { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' },
-          { lbl: 'Restrições', val: s['Uso e comercial']?.['Não recomendado para'] || 'Menores de 16 anos' },
+          { lbl: 'Compartimento', val: pObj.toLowerCase() === 'não' ? 'Não disponível' : (pObj.toLowerCase().includes('baú') ? 'Baú Incluso' : 'Porta-Objetos Integrado') },
+          { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' },
+          { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' },
+          { lbl: 'Restrições de Uso', val: 'Menores de 16 anos (Vias urbanas)' },
         ],
       },
       garantia: {
         tag: 'GARANTIA & HOMOLOGAÇÃO',
-        mainVal: 180,
-        unit: 'DIAS GARANTIA OFICIAL',
-        badge: 'CONTRAN 996/2023 DISPENSA CNH',
-        badgeColor: '#e1ff32',
+        mainVal: 180, unit: 'DIAS GARANTIA OFICIAL', badge: 'GARANTIA MAJ MOBILIDADE ELÉTRICA', badgeColor: '#e1ff32',
         items: [
-          { lbl: 'Garantia Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias' },
-          { lbl: 'Garantia Bateria', val: '1 ano com revisões' }, { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' },
-          { lbl: 'Emplacamento?', val: 'Não exigido' },
+          { lbl: 'Garantia Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias de fábrica' },
+          { lbl: 'Garantia Bateria', val: '1 ano com revisões' },
+          { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' },
+          { lbl: 'Emplacamento?', val: 'Não exigido (Dispensa legal)' },
         ],
       },
     };
@@ -210,8 +204,10 @@
   function updateCockpitForModel(model) {
     if (!model) return;
     const hudModelName = document.getElementById('hudModelName');
-    if (hudModelName) hudModelName.textContent = `MAJ ${model.modelo.toUpperCase()}`;
-
+    if (hudModelName) {
+      const up = model.modelo.toUpperCase();
+      hudModelName.textContent = up.startsWith('MAJ') ? up : `MAJ ${up}`;
+    }
     renderCockpitCategoryView(model, activeCockpitCategory);
   }
 
@@ -234,9 +230,15 @@
 
     const mainValEl = document.getElementById('hudMainVal');
     if (mainValEl) {
-      const cur = parseInt(mainValEl.textContent.replace(/[^\d]/g, ''), 10) || 0;
-      if (cockpitHasBeenRevealed) animateCountUp(mainValEl, cur, data.mainVal, 750, 0);
-      else mainValEl.textContent = data.mainVal;
+      if (typeof data.mainVal === 'number') {
+        mainValEl.classList.remove('is-string-val');
+        const cur = parseInt(mainValEl.textContent.replace(/[^\d]/g, ''), 10) || 0;
+        if (cockpitHasBeenRevealed) animateCountUp(mainValEl, cur, data.mainVal, 750, 0);
+        else mainValEl.textContent = data.mainVal;
+      } else {
+        mainValEl.classList.add('is-string-val');
+        mainValEl.textContent = data.mainVal;
+      }
     }
 
     const gridEl = document.getElementById('hudSpecsGrid');
@@ -473,7 +475,7 @@
     const speedSub = document.getElementById('bigMetricSpeedSub');
     if (speedSub) speedSub.textContent = `Velocidade máxima homologada de ${m.velocidade_max_kmh || '32'} km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.`;
     const rangeSub = document.getElementById('bigMetricRangeSub');
-    if (rangeSub) rangeSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg em piso plano, seco e pavimentado.`;
+    if (rangeSub) rangeSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg trafegando em condições ideais.`;
 
     const potVal = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
     const velVal = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;

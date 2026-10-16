@@ -91,7 +91,7 @@
       <nav class="header-main-nav">
         <a href="#hero" class="nav-link active">MODELOS</a>
         <a href="#telemetry" class="nav-link">PROPULSÃO</a>
-        <a href="#cockpit" class="nav-link">COCKPIT & ENGENHARIA</a>
+        <a href="#cockpit" class="nav-link">FICHA TÉCNICA</a>
         <a href="#gallery" class="nav-link">GALERIA</a>
         <a href="#comparison" class="nav-link">COMPARAR</a>
       </nav>
@@ -129,7 +129,7 @@
           <span class="nav-icon">⚡</span> PROPULSÃO
         </a>
         <a href="#cockpit" class="mobile-nav-link" onclick="toggleMobileNav(false)">
-          <span class="nav-icon">🎛️</span> COCKPIT & ENGENHARIA
+          <span class="nav-icon">🎛️</span> FICHA TÉCNICA
         </a>
         <a href="#gallery" class="mobile-nav-link" onclick="toggleMobileNav(false)">
           <span class="nav-icon">📸</span> GALERIA DE DETALHES
@@ -260,7 +260,7 @@
             <span id="bigMetricRange">50</span><span class="telemetry-huge-unit">KM</span>
           </div>
           <p class="telemetry-card-desc" id="bigMetricRangeSub">
-            (Até 50 km de autonomia). Avaliação realizada com piloto de ~75 kg em piso plano, seco e pavimentado.
+            (Até 50 km de autonomia). Avaliação realizada com piloto de ~75 kg trafegando em condições ideais.
           </p>
         </div>
       </div>
@@ -268,10 +268,10 @@
 
     <!-- 5. Cockpit Digital & Telemetria de Engenharia Interativa -->
     <section class="section-cockpit-sim" id="cockpit">
-      <div class="hero-category-label">TELEMETRIA & ENGENHARIA INTERATIVA</div>
-      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">Cockpit Digital & Engenharia</h2>
+      <div class="hero-category-label" id="cockpitEyebrowLabel">CONHEÇA A FUNDO A {{ active_model.modelo if active_model else 'MAX 12 MAJ' }}</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">FICHA TÉCNICA</h2>
       <p style="color: var(--text-muted); max-width: 650px; margin: 12px auto 0;">
-        Painel de telemetria automotiva ativa. Selecione a área de engenharia abaixo para analisar o desempenho e as especificações técnicas diretamente no cockpit.
+        Ficha técnica oficial e especificações de engenharia. Selecione uma seção abaixo para consultar os dados detalhados, motorização e componentes diretamente no painel interativo.
       </p>
 
       <div class="cockpit-bezel-frame">
@@ -279,9 +279,9 @@
           <div class="hud-top-row">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="hud-pulse-live-dot"></span>
-              <span id="hudModelName" style="color: #fff; font-weight: 700; letter-spacing: 1px;">MAJ MAX 12 MAJ</span>
+              <span id="hudModelName" style="color: #fff; font-weight: 700; letter-spacing: 1px;">MAJ MAX 12</span>
             </div>
-            <span id="hudSystemStatus" style="color: var(--maj-lime); font-weight: 700; letter-spacing: 1.5px; font-size: 11px;">SISTEMA OK • TELEMETRIA ATIVA</span>
+            <span id="hudSystemStatus" style="color: var(--maj-lime); font-weight: 700; letter-spacing: 1.5px; font-size: 11px;">MAJ MOBILIDADE ELÉTRICA</span>
             <span id="hudCategoryTag" style="color: var(--maj-cyan); font-family: var(--font-telemetry); letter-spacing: 1px; font-size: 11px; text-transform: uppercase;">MOTORIZAÇÃO & DESEMPENHO</span>
           </div>
 

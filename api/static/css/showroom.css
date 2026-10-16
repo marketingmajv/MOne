@@ -944,6 +944,11 @@ main.showroom-viewport {
   text-shadow: 0 0 35px rgba(255, 80, 80, 0.75), 0 0 15px #ffffff;
 }
 
+.hud-speedometer-val.is-string-val {
+  font-size: clamp(38px, 6vw, 68px);
+  letter-spacing: -1px;
+}
+
 .hud-unit-label {
   font-family: var(--font-telemetry);
   font-size: 13px;
@@ -1013,6 +1018,8 @@ main.showroom-viewport {
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  min-height: 68px;
   gap: 4px;
   backdrop-filter: blur(6px);
   transition: all 0.3s ease;
@@ -1029,19 +1036,23 @@ main.showroom-viewport {
   font-family: var(--font-telemetry);
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .hud-spec-card .val {
   font-family: var(--font-telemetry);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.3px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .cockpit-controls-row {
