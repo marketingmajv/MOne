@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-16T19:42:40Z",
+  "updated_at": "2026-10-18T02:36:54Z",
   "total_models": 14,
   "total_all": 17,
   "categories": [
@@ -1066,9 +1066,9 @@
           "Observações da equipe": ""
         }
       },
-      "banner_image": "",
+      "banner_image": "/public/images/models/banners/m50-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
-      "hero_image": "/public/images/models/cutouts/m50-pro.png",
+      "hero_image": "/public/images/models/banners/m50-pro-banner.webp",
       "images": [
         "/public/images/m50-pro/m50-pro-01.jpg",
         "/public/images/m50-pro/m50-pro-02.jpg",
@@ -2992,9 +2992,9 @@
           "Observações da equipe": ""
         }
       },
-      "banner_image": "",
+      "banner_image": "/public/images/models/banners/m50-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
-      "hero_image": "/public/images/models/cutouts/m50-pro.png",
+      "hero_image": "/public/images/models/banners/m50-pro-banner.webp",
       "images": [
         "/public/images/m50-pro/m50-pro-01.jpg",
         "/public/images/m50-pro/m50-pro-02.jpg",

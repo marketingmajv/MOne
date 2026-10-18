@@ -24,12 +24,14 @@
     }
   }
 
-  // 2. Renderização da Barra Seletora de Modelos
+  // 2. Renderização da Barra Seletora de Modelos (Separador entre Scooters & Bikes)
   function renderModelCarousel(modelsToRender) {
     const nav = document.getElementById('modelsCarouselNav');
     if (!nav) return;
     nav.innerHTML = '';
-    modelsToRender.forEach((m) => {
+    const scooters = modelsToRender.filter((m) => (m.categoria || '').toLowerCase() !== 'bike');
+    const bikes = modelsToRender.filter((m) => (m.categoria || '').toLowerCase() === 'bike');
+    const renderPills = (list) => list.forEach((m) => {
       const btn = document.createElement('button');
       btn.className = `model-pill-item ${currentModel && currentModel.slug === m.slug ? 'active' : ''}`;
       btn.id = `pill-${m.slug}`;
@@ -37,6 +39,14 @@
       btn.addEventListener('click', () => selectModel(m.slug, true));
       nav.appendChild(btn);
     });
+    renderPills(scooters);
+    if (scooters.length && bikes.length) {
+      const sep = document.createElement('div');
+      sep.className = 'subnav-group-separator'; sep.setAttribute('aria-hidden', 'true');
+      nav.appendChild(sep);
+    }
+    renderPills(bikes);
+    updateSubnavArrowsState();
   }
 
   // 3. Seleção Dinâmica do Modelo (Zero Reload)
@@ -54,19 +64,18 @@
     if (activePill) {
       activePill.classList.add('active');
       activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      setTimeout(updateSubnavArrowsState, 350);
     }
 
     // Banner Panorâmico Widescreen (Para modelos com foto widescreen de estúdio)
     const bannerElem = document.getElementById('max12PanoramicBanner');
     const heroStageElem = document.getElementById('hero');
     const bannerMap = {
-      'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
-      'flow-one': '/public/images/models/banners/flow-one-banner.webp', 'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
-      'db-zero': '/public/images/models/banners/db-zero-banner.webp', 'vittoria': '/public/images/models/banners/vittoria-banner.webp',
-      'nova': '/public/images/models/banners/nova-banner.webp', 'ride-on': '/public/images/models/banners/ride-on-banner.webp',
-      'm2': '/public/images/models/banners/m2-banner.webp', 'm9-pro': '/public/images/models/banners/m9-pro-banner.webp',
-      'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
-      'rz-110': '/public/images/models/banners/rz-110-banner.webp'
+      'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp', 'flow-one': '/public/images/models/banners/flow-one-banner.webp',
+      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp', 'db-zero': '/public/images/models/banners/db-zero-banner.webp', 'vittoria': '/public/images/models/banners/vittoria-banner.webp',
+      'nova': '/public/images/models/banners/nova-banner.webp', 'ride-on': '/public/images/models/banners/ride-on-banner.webp', 'm2': '/public/images/models/banners/m2-banner.webp',
+      'm9-pro': '/public/images/models/banners/m9-pro-banner.webp', 'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
+      'rz-110': '/public/images/models/banners/rz-110-banner.webp', 'm50-pro': '/public/images/models/banners/m50-pro-banner.webp'
     };
     const bannerUrl = found.banner_image || bannerMap[slug];
     if (bannerElem) {
@@ -81,7 +90,21 @@
       if (heroStageElem) heroStageElem.style.display = hasBanner ? 'none' : 'flex';
     }
 
-    // 1. Atualizar Hero
+    // 1. Atualizar Hero e Bloco Editorial de Identidade
+    const idTitle = document.getElementById('identityModelTitle');
+    const idDiff = document.getElementById('identityModelDiff');
+    const idBadge = document.getElementById('identityCategoryBadge');
+    if (idTitle) { idTitle.style.opacity = '0'; setTimeout(() => { idTitle.textContent = found.modelo; idTitle.style.opacity = '1'; }, 120); }
+    if (idDiff) {
+      const dTxt = found.sections?.['Uso e comercial']?.['Principal diferencial'] || found.metrics.diferencial || found.metrics.descricao_livre || 'Mobilidade elétrica urbana de alta eficiência e robustez.';
+      idDiff.style.opacity = '0'; setTimeout(() => { idDiff.textContent = dTxt; idDiff.style.opacity = '1'; }, 120);
+    }
+    if (idBadge) idBadge.textContent = `${(found.categoria || 'Scooter').toUpperCase()} ELÉTRICA MAJ`;
+
+    if (updateUrl && window.innerWidth <= 768 && window.scrollY > 100) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     const catLabel = document.getElementById('heroCategoryLabel');
     if (catLabel) catLabel.textContent = `MAJ ELECTRIC ${found.categoria.toUpperCase()}`;
 
@@ -116,11 +139,9 @@
     if (taglineHead) taglineHead.textContent = `ALTA PERFORMANCE ${found.categoria.toUpperCase() === 'BIKE' ? 'E-BIKE' : 'SCOOTER'}.`;
 
     // 2. Telemetria Hero
-    const heroPot = document.getElementById('heroTelemetryPower');
+    const heroPot = document.getElementById('heroTelemetryPower'), heroVel = document.getElementById('heroTelemetrySpeed'), heroAut = document.getElementById('heroTelemetryRange');
     if (heroPot) heroPot.textContent = found.metrics.potencia_nominal_w ? `${found.metrics.potencia_nominal_w}W` : '1.000W';
-    const heroVel = document.getElementById('heroTelemetrySpeed');
     if (heroVel) heroVel.textContent = found.metrics.velocidade_max_kmh ? `${found.metrics.velocidade_max_kmh} km/h` : '32 km/h';
-    const heroAut = document.getElementById('heroTelemetryRange');
     if (heroAut) heroAut.textContent = found.metrics.autonomia_maxima_km ? `Até ${found.metrics.autonomia_maxima_km} km` : 'Até 50 km';
 
     updateTelemetryBigCards(found);
@@ -139,42 +160,30 @@
 
   function getCategoryTelemetryData(model, catKey) {
     const s = model.sections || {}, m = model.metrics || {};
-    const cL = s['Estrutura e conforto']?.['Comprimento (cm)'] || '170';
-    const lG = s['Estrutura e conforto']?.['Largura (cm)'] || '76';
-    const alt = s['Estrutura e conforto']?.['Altura (cm)'] || '130';
-    const ass = s['Estrutura e conforto']?.['Altura do assento (cm)'] || '76';
-    const capWh = parseInt(String(m.capacidade_wh || '1200').replace(/[^\d]/g, ''), 10) || 1200;
-    const vStr = `${m.voltagem_v || '60V'} ${m.capacidade_ah || '20Ah'}`;
-    const pObj = s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Porta-Objetos';
+    const cL = s['Estrutura e conforto']?.['Comprimento (cm)'] || '170', lG = s['Estrutura e conforto']?.['Largura (cm)'] || '76';
+    const alt = s['Estrutura e conforto']?.['Altura (cm)'] || '130', ass = s['Estrutura e conforto']?.['Altura do assento (cm)'] || '76';
+    const capWh = Math.round(parseFloat(m.capacidade_wh || '') || (parseFloat(m.voltagem_v || '0') * parseFloat(m.capacidade_ah || '0')) || 1200);
+    const vStr = `${m.voltagem_v || '60V'} ${m.capacidade_ah || '20Ah'}`, pObj = s['Estrutura e conforto']?.['Porta-objetos / baú'] || 'Porta-Objetos';
 
     const categories = {
       motorizacao: {
-        tag: 'MOTORIZAÇÃO & DESEMPENHO',
-        mainVal: parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000,
+        tag: 'MOTORIZAÇÃO & DESEMPENHO', mainVal: parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000,
         unit: 'WATTS', badge: 'POTÊNCIA NOMINAL MÁXIMA', badgeColor: '#00d7ff',
         items: [
-          { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` },
-          { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
-          { lbl: 'Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' },
-          { lbl: 'Subidas / Relevo', val: 'Compatível com ladeiras urbanas' },
+          { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` }, { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
+          { lbl: 'Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' }, { lbl: 'Subidas / Relevo', val: 'Compatível com ladeiras urbanas' },
         ],
       },
       bateria: {
-        tag: 'BATERIA & AUTONOMIA',
-        mainVal: vStr,
-        unit: `${capWh} WH (CAPACIDADE)`,
-        badge: `BATERIA DE LÍTIO • ${capWh} WH`,
-        badgeColor: '#28e1a5',
+        tag: 'BATERIA & AUTONOMIA', mainVal: vStr, unit: `${capWh} WH (CAPACIDADE)`,
+        badge: `BATERIA DE LÍTIO • ${capWh} WH`, badgeColor: '#28e1a5',
         items: [
-          { lbl: 'Química da Bateria', val: 'Lítio de alta densidade' },
-          { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` },
-          { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' },
-          { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' },
+          { lbl: 'Química da Bateria', val: 'Lítio de alta densidade' }, { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` },
+          { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' }, { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' },
         ],
       },
       chassi: {
-        tag: 'CHASSI & ESTRUTURA',
-        mainVal: parseInt(String(m.carga_maxima_kg || '180').replace(/[^\d]/g, ''), 10) || 180,
+        tag: 'CHASSI & ESTRUTURA', mainVal: parseInt(String(m.carga_maxima_kg || '180').replace(/[^\d]/g, ''), 10) || 180,
         unit: 'KG CARGA MÁXIMA', badge: 'ESTRUTURA AÇO CARBONO', badgeColor: '#e1ff32',
         items: [
           { lbl: 'Dimensões (C×L×A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm do solo` },
@@ -182,32 +191,24 @@
         ],
       },
       seguranca: {
-        tag: 'SEGURANÇA & FREIOS',
-        mainVal: 100, unit: '% SISTEMA HIDRÁULICO', badge: `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase(), badgeColor: '#ff5252',
+        tag: 'SEGURANÇA & FREIOS', mainVal: 100, unit: '% SISTEMA HIDRÁULICO', badge: `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase(), badgeColor: '#ff5252',
         items: [
-          { lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' },
-          { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' },
+          { lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' }, { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' },
           { lbl: 'Suspensão', val: 'Duplo amortecedor hidráulico' }, { lbl: 'Alarme / LED', val: 'Alarme sonoro & Faróis LED' },
         ],
       },
       conforto: {
-        tag: 'CAPACIDADE DE PASSAGEIROS',
-        mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'CAPACIDADE PARA 2 OCUPANTES', badgeColor: '#00d7ff',
+        tag: 'CAPACIDADE DE PASSAGEIROS', mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'CAPACIDADE PARA 2 OCUPANTES', badgeColor: '#00d7ff',
         items: [
           { lbl: 'Compartimento', val: pObj.toLowerCase() === 'não' ? 'Não disponível' : (pObj.toLowerCase().includes('baú') ? 'Baú Incluso' : 'Porta-Objetos Integrado') },
-          { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' },
-          { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' },
-          { lbl: 'Acomodação', val: 'Assento duplo com encosto' },
+          { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' }, { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' }, { lbl: 'Acomodação', val: 'Assento duplo com encosto' },
         ],
       },
       garantia: {
-        tag: 'GARANTIA & HOMOLOGAÇÃO',
-        mainVal: 180, unit: 'DIAS GARANTIA OFICIAL', badge: 'GARANTIA MAJ MOBILIDADE ELÉTRICA', badgeColor: '#e1ff32',
+        tag: 'GARANTIA & HOMOLOGAÇÃO', mainVal: 180, unit: 'DIAS GARANTIA OFICIAL', badge: 'GARANTIA MAJ MOBILIDADE ELÉTRICA', badgeColor: '#e1ff32',
         items: [
-          { lbl: 'Garantia Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias de fábrica' },
-          { lbl: 'Garantia Bateria', val: '1 ano com revisões' },
-          { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' },
-          { lbl: 'Emplacamento?', val: 'Não exigido (Dispensa legal)' },
+          { lbl: 'Garantia Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias de fábrica' }, { lbl: 'Garantia Bateria', val: '1 ano com revisões' },
+          { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' }, { lbl: 'Emplacamento?', val: 'Não exigido (Dispensa legal)' },
         ],
       },
     };
@@ -219,8 +220,7 @@
   function animateCockpitDisplay(mainEl, unitEl, data, dur = 700) {
     if (mainEl) {
       if (typeof data.mainVal === 'number') {
-        mainEl.classList.remove('is-string-val');
-        animateCountUp(mainEl, 0, data.mainVal, dur);
+        mainEl.classList.remove('is-string-val'); animateCountUp(mainEl, 0, data.mainVal, dur);
       } else {
         mainEl.classList.add('is-string-val');
         const m = String(data.mainVal).match(/^(\d+)([a-zA-Z]+)\s+(\d+)([a-zA-Z]+)$/i);
@@ -231,8 +231,7 @@
             if (mainEl.dataset.animId !== id) return;
             const p = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
             mainEl.textContent = `${Math.floor(t1 * e)}${u1} ${Math.floor(t2 * e)}${u2}`;
-            if (p < 1) requestAnimationFrame(tick);
-            else mainEl.textContent = data.mainVal;
+            if (p < 1) requestAnimationFrame(tick); else mainEl.textContent = data.mainVal;
           }
           requestAnimationFrame(tick);
         } else { mainEl.textContent = data.mainVal; }
@@ -247,8 +246,7 @@
           if (unitEl.dataset.animId !== uId) return;
           const p = Math.min((now - u0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
           unitEl.textContent = `${Math.floor(uEnd * e)} ${uRest}`;
-          if (p < 1) requestAnimationFrame(uTick);
-          else unitEl.textContent = data.unit;
+          if (p < 1) requestAnimationFrame(uTick); else unitEl.textContent = data.unit;
         }
         requestAnimationFrame(uTick);
       } else { unitEl.textContent = data.unit; }
@@ -273,16 +271,11 @@
     if (shouldAnimate) {
       animateCockpitDisplay(mainValEl, unitEl, data, 700);
     } else {
-      if (mainValEl) {
-        mainValEl.classList.toggle('is-string-val', typeof data.mainVal !== 'number');
-        mainValEl.textContent = data.mainVal;
-      }
+      if (mainValEl) { mainValEl.classList.toggle('is-string-val', typeof data.mainVal !== 'number'); mainValEl.textContent = data.mainVal; }
       if (unitEl) unitEl.textContent = data.unit;
     }
     const gridEl = document.getElementById('hudSpecsGrid');
-    if (gridEl) {
-      gridEl.innerHTML = data.items.map((it) => `<div class="hud-spec-card"><span class="lbl">${it.lbl}</span><span class="val">${it.val}</span></div>`).join('');
-    }
+    if (gridEl) gridEl.innerHTML = data.items.map((it) => `<div class="hud-spec-card"><span class="lbl">${it.lbl}</span><span class="val">${it.val}</span></div>`).join('');
   }
 
   window.setCockpitCategory = function (catKey) {
@@ -347,8 +340,7 @@
     if (e.key === 'Escape') { closeGalleryLightbox(); toggleMobileNav(false); }
     const modal = document.getElementById('galleryLightboxModal');
     if (!modal || modal.style.display === 'none') return;
-    if (e.key === 'ArrowLeft') openGalleryLightbox(currentLightboxIndex - 1);
-    else if (e.key === 'ArrowRight') openGalleryLightbox(currentLightboxIndex + 1);
+    if (e.key === 'ArrowLeft') openGalleryLightbox(currentLightboxIndex - 1); else if (e.key === 'ArrowRight') openGalleryLightbox(currentLightboxIndex + 1);
   });
 
   // 10. Filtro por Categoria
@@ -367,10 +359,7 @@
     const sel = document.getElementById('compareModelSelect');
     if (!sel) return;
     sel.innerHTML = allModels.map(m => `<option value="${m.slug}">${m.categoria}: ${m.modelo}</option>`).join('');
-    if (allModels.length > 1) {
-      sel.selectedIndex = 1;
-      updateComparisonSecondCol(allModels[1]);
-    }
+    if (allModels.length > 1) { sel.selectedIndex = 1; updateComparisonSecondCol(allModels[1]); }
     sel.addEventListener('change', (e) => {
       const chosen = allModels.find((m) => m.slug === e.target.value);
       if (chosen) updateComparisonSecondCol(chosen);
@@ -382,16 +371,11 @@
     if (colHeader) colHeader.textContent = model.modelo;
     const m = model.metrics || {};
     const map = {
-      potencia_nominal_w: m.potencia_nominal_w ? `${m.potencia_nominal_w}W` : '1000W',
-      velocidade_max_kmh: m.velocidade_max_kmh ? `${m.velocidade_max_kmh} km/h` : '32 km/h',
-      autonomia_maxima_km: `Até ${m.autonomia_maxima_km || '50'} km`,
-      carga_maxima_kg: m.carga_maxima_kg ? `${m.carga_maxima_kg} kg` : '180 kg',
+      potencia_nominal_w: m.potencia_nominal_w ? `${m.potencia_nominal_w}W` : '1000W', velocidade_max_kmh: m.velocidade_max_kmh ? `${m.velocidade_max_kmh} km/h` : '32 km/h',
+      autonomia_maxima_km: `Até ${m.autonomia_maxima_km || '50'} km`, carga_maxima_kg: m.carga_maxima_kg ? `${m.carga_maxima_kg} kg` : '180 kg',
       peso_kg: m.peso_kg || '75 kg', freios: m.freios || 'Hidráulico',
     };
-    Object.entries(map).forEach(([f, val]) => {
-      const el = document.getElementById(`comp-${prefix}-${f}`);
-      if (el) el.textContent = val;
-    });
+    Object.entries(map).forEach(([f, val]) => { const el = document.getElementById(`comp-${prefix}-${f}`); if (el) el.textContent = val; });
   }
   function updateComparisonActiveCol(model) { updateComparisonCol('active', model); }
   function updateComparisonSecondCol(model) { updateComparisonCol('second', model); }
@@ -401,9 +385,7 @@
   let cockpitHasBeenRevealed = false;
 
   function initShowroomScrollObservers() {
-    const secTel = document.getElementById('telemetry');
-    const grid = document.querySelector('.telemetry-grid-wrapper');
-    const cards = document.querySelectorAll('.telemetry-big-card');
+    const secTel = document.getElementById('telemetry'), grid = document.querySelector('.telemetry-grid-wrapper'), cards = document.querySelectorAll('.telemetry-big-card');
     if (secTel && grid && cards.length > 0) {
       grid.classList.add('anim-ready');
       const obsTel = new IntersectionObserver((entries, obs) => {
@@ -455,38 +437,58 @@
   function animateTelemetryCountUp(fromZero = false) {
     if (!currentModel) return;
     const m = currentModel.metrics || {};
-    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-    const vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    const aut = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
-    const pEl = document.getElementById('bigMetricPower'), vEl = document.getElementById('bigMetricSpeed'), aEl = document.getElementById('bigMetricRange');
+    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000, vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
+    const whVal = Math.round(parseFloat(m.capacidade_wh || '') || (parseFloat(m.voltagem_v || '0') * parseFloat(m.capacidade_ah || '0')) || 1200);
+    const pEl = document.getElementById('bigMetricPower'), vEl = document.getElementById('bigMetricSpeed'), wEl = document.getElementById('bigMetricBatteryWh');
     if (fromZero) {
-      animateCountUp(pEl, 0, pot, 1300, 50); animateCountUp(vEl, 0, vel, 1200, 200); animateCountUp(aEl, 0, aut, 1200, 350);
+      animateCountUp(pEl, 0, pot, 1300, 50); animateCountUp(vEl, 0, vel, 1200, 200); animateCountUp(wEl, 0, whVal, 1200, 350);
     } else {
-      const cP = pEl ? (parseInt(pEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      const cV = vEl ? (parseInt(vEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      const cA = aEl ? (parseInt(aEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
-      animateCountUp(pEl, cP, pot, 800); animateCountUp(vEl, cV, vel, 750); animateCountUp(aEl, cA, aut, 750);
+      const cP = pEl ? (parseInt(pEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0, cV = vEl ? (parseInt(vEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0, cW = wEl ? (parseInt(wEl.textContent.replace(/[^\d]/g, ''), 10) || 0) : 0;
+      animateCountUp(pEl, cP, pot, 800); animateCountUp(vEl, cV, vel, 750); animateCountUp(wEl, cW, whVal, 750);
     }
   }
 
   function updateTelemetryBigCards(model) {
     const s = model.sections || {}, m = model.metrics || {};
-    const pSub = document.getElementById('bigMetricPowerSub'); if (pSub) pSub.textContent = s['Desempenho']?.['Observações de desempenho'] || 'Motor de alta performance calibrado para rendimento e subidas urbanas.';
-    const sSub = document.getElementById('bigMetricSpeedSub'); if (sSub) sSub.textContent = `Velocidade máxima homologada de ${m.velocidade_max_kmh || '32'} km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.`;
-    const rSub = document.getElementById('bigMetricRangeSub'); if (rSub) rSub.textContent = `(Até ${m.autonomia_maxima_km || '50'} km de autonomia). Avaliação realizada com piloto de ~75 kg trafegando em condições ideais.`;
-    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000;
-    const vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    const aut = parseInt(String(m.autonomia_maxima_km || '50').replace(/[^\d]/g, ''), 10) || 50;
+    const pSub = document.getElementById('bigMetricPowerSub'); if (pSub) pSub.textContent = s['Desempenho']?.['Observações de desempenho'] || 'Motor calibrado para rendimento e subidas urbanas.';
+    const sSub = document.getElementById('bigMetricSpeedSub'); if (sSub) sSub.textContent = `Velocidade homologada de ${m.velocidade_max_kmh || '32'} km/h. Dispensa CNH e emplacamento (CONTRAN 996).`;
+    const bV = document.getElementById('bigMetricBatteryVolts'), bWh = document.getElementById('bigMetricBatteryWh'), bSub = document.getElementById('bigMetricBatterySub');
+    const vAh = `${String(m.voltagem_v || '60').toUpperCase().replace('V', '').trim()}V ${String(m.capacidade_ah || '20').toUpperCase().replace('AH', '').trim()}`;
+    const whVal = Math.round(parseFloat(m.capacidade_wh || '') || (parseFloat(m.voltagem_v || '0') * parseFloat(m.capacidade_ah || '0')) || 1200);
+    if (bV) bV.textContent = vAh;
+    if (bWh) bWh.textContent = whVal;
+    if (bSub) bSub.textContent = `Bateria de lítio de ${whVal} Wh. Autonomia estimada de até ${m.autonomia_maxima_km || '50'} km em ciclo urbano.`;
+    const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000, vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
     if (telemetryHasBeenRevealed) { animateTelemetryCountUp(false); }
     else {
-      const p = document.getElementById('bigMetricPower'), v = document.getElementById('bigMetricSpeed'), a = document.getElementById('bigMetricRange');
-      if (p) p.textContent = pot; if (v) v.textContent = vel; if (a) a.textContent = aut;
+      const p = document.getElementById('bigMetricPower'), v = document.getElementById('bigMetricSpeed');
+      if (p) p.textContent = pot; if (v) v.textContent = vel;
     }
+  }
+
+  // 8. Controles de Rolagem da Subnav (Setas Esquerda / Direita)
+  function initSubnavArrows() {
+    const nav = document.getElementById('modelsCarouselNav');
+    const prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
+    if (!nav) return;
+    if (prev) prev.onclick = () => { nav.scrollBy({ left: -260, behavior: 'smooth' }); setTimeout(updateSubnavArrowsState, 350); };
+    if (next) next.onclick = () => { nav.scrollBy({ left: 260, behavior: 'smooth' }); setTimeout(updateSubnavArrowsState, 350); };
+    nav.addEventListener('scroll', updateSubnavArrowsState, { passive: true });
+    window.addEventListener('resize', updateSubnavArrowsState, { passive: true });
+  }
+
+  function updateSubnavArrowsState() {
+    const nav = document.getElementById('modelsCarouselNav');
+    const prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
+    if (!nav) return;
+    if (prev) prev.classList.toggle('is-hidden', nav.scrollLeft <= 5);
+    if (next) next.classList.toggle('is-hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 5);
   }
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
     loadModels();
     initShowroomScrollObservers();
+    initSubnavArrows();
   });
 })();

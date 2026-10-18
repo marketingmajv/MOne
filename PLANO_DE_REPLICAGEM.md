@@ -62,7 +62,7 @@ O agente usará o Python/Pillow para ler o arquivo original sem compressão, ger
 | **V20 ULTRA** | `v20-ultra` | Bike | ✅ Ativo (2560x1440 R1) | ✅ 7 fotos estúdio (M9 PRO removida) | 🟢 **100% Concluído & Em Produção** |
 | **V8 MINI ULTRA**| `v8-mini` | Bike | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **RZ 110** | `rz-110` | Scooter | ✅ Ativo (2560x1440) | ✅ 8 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
-| **M50 PRO** | `m50-pro` | Bike | ⏳ Imagem 2K disponível no Drive | ✅ 5 fotos prontas | 🎯 **Próximo da Fila** |
+| **M50 PRO** | `m50-pro` | Bike | ✅ Ativo (2560x1440) | ✅ 5 fotos estúdio | 🟢 **100% Concluído & Em Produção** |
 | **SPORT 701 SHORT**| `sport-701-short`| Scooter | — | — | 🚫 **Oculto do Menu (Inativo)** |
 | **V80 PRO** | `v80-pro` | Bike | — | — | 🚫 **Oculto do Menu (Inativo)** |
 | **X15 PRO** | `x15-pro` | Scooter | ⏳ Aguardando apontamento | ✅ 8 fotos prontas | 📋 Aguardando banner |
@@ -190,9 +190,9 @@ O agente executará a validação de 6 etapas, criará o commit, fará o push pa
 
 ---
 
-## 📌 5. Próximo Passo Imediato Recomendado: VITTÓRIA
+## 📌 5. Próximo Passo Imediato Recomendado: X15 PRO
 
-O modelo **VITTÓRIA** é o próximo da fila:
-* 📁 **Fotos de Estúdio:** `public/images/vittoria/` (8 fotos já disponíveis)
-* ⚙️ **Especificações:** Motor 1000W, 32 km/h, 60V Lítio, acabamento elegante branco perolizado.
-* 🎯 **Ação Necessária:** Apontar onde está o arquivo Hero Widescreen 2K no computador/Google Drive (pasta `Meu Drive/M-ONE/SITE- MODELOS/OUT/`).
+O modelo **X15 PRO** é o próximo da fila:
+* 📁 **Fotos de Estúdio:** `public/images/x15-pro/` (8 fotos já disponíveis)
+* ⚙️ **Especificações:** Scooter com motor de alto torque, 32 km/h, freios a disco, bateria de lítio.
+* 🎯 **Ação Necessária:** Apontar o banner 2K ou exportar master 2560x1440 para `H:\Meu Drive\M-ONE\SITE- MODELOS\OUT\`.
