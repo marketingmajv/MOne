@@ -1,7 +1,7 @@
 {
-  "enabled": true,
+  "enabled": false,
   "interval_seconds": 30,
   "auto_pause_seconds": 45,
   "transition_effect": "slide_apple",
-  "updated_at": "2026-10-19T14:20:00Z"
+  "updated_at": "2026-10-19T14:46:00Z"
 }

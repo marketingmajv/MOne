@@ -113,6 +113,7 @@
   }
 
   function updateBadgeState() {
+    document.body.classList.toggle('tv-kiosk-active', isTvModeActive);
     if (!tvBadgeEl || !tvBadgeTextEl) return;
 
     if (!isTvModeActive) {

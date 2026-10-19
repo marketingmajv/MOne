@@ -154,8 +154,9 @@
     // 5. Atualizar Galeria de Fotos
     renderGalleryPhotos(found);
 
-    // 6. Atualizar Linha do Comparador
+    // 6. Atualizar Linha do Comparador e WhatsApp Flutuante
     updateComparisonActiveCol(found);
+    updateFloatingWhatsApp(found.modelo);
   }
 
   let activeCockpitCategory = 'motorizacao';
@@ -472,6 +473,14 @@
     if (next) next.classList.toggle('is-hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 5);
   }
 
+  function updateFloatingWhatsApp(modelName) {
+    const btn = document.getElementById('floatingWhatsAppBtn');
+    if (!btn) return;
+    const phone = '5527996051538';
+    const text = modelName ? `Olá! Estou vendo o modelo ${modelName} no Showroom MAJ e gostaria de mais informações.` : 'Olá! Estou no Showroom MAJ e gostaria de mais informações.';
+    btn.href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+  }
+
   // Expor controles públicos para o Modo TV e automações
   window.selectShowroomModel = selectModel;
   window.getShowroomModels = () => allModels;
@@ -479,8 +488,6 @@
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
-    loadModels();
-    initShowroomScrollObservers();
-    initSubnavArrows();
+    loadModels(); initShowroomScrollObservers(); initSubnavArrows(); updateFloatingWhatsApp(null);
   });
 })();
