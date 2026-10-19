@@ -24,6 +24,8 @@ STATUS_FILE = BASE_DIR / "static" / "data" / "model_status.json"
 API_STATUS_FILE = BASE_DIR / "api" / "static" / "data" / "model_status.json"
 ORDER_FILE = BASE_DIR / "static" / "data" / "models_order.json"
 API_ORDER_FILE = BASE_DIR / "api" / "static" / "data" / "models_order.json"
+KIOSK_FILE = BASE_DIR / "static" / "data" / "models_kiosk.json"
+API_KIOSK_FILE = BASE_DIR / "api" / "static" / "data" / "models_kiosk.json"
 
 SHEET_URL = (
     "https://docs.google.com/spreadsheets/d/"
@@ -117,36 +119,121 @@ def set_model_active_status(slug: str, is_active: bool) -> bool:
     return True
 
 
-def load_models_order() -> List[str]:
-    """Carrega a ordem customizada dos modelos a partir do arquivo persistente."""
+DEFAULT_MENU_CONFIG = {
+    "mode": "category",
+    "category_order": ["Scooter", "Bike"],
+    "order": [],
+    "category_items": {
+        "Scooter": [],
+        "Bike": []
+    }
+}
+
+
+def load_menu_config() -> Dict[str, Any]:
+    """Carrega a configuração completa de modo de menu e ordenação."""
     for p in [ORDER_FILE, API_ORDER_FILE]:
         if p.is_file():
             try:
                 with open(p, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    if isinstance(data, list):
-                        return [str(s).strip().lower() for s in data if str(s).strip()]
+                    if isinstance(data, dict):
+                        cfg = dict(DEFAULT_MENU_CONFIG)
+                        cfg.update(data)
+                        return cfg
+                    elif isinstance(data, list):
+                        cfg = dict(DEFAULT_MENU_CONFIG)
+                        cfg["order"] = [str(s).strip().lower() for s in data if str(s).strip()]
+                        return cfg
             except Exception as e:
                 logger.warning(f"Erro ao ler {p}: {e}")
-    return []
+    return dict(DEFAULT_MENU_CONFIG)
 
 
-def save_models_order(order_slugs: List[str]) -> bool:
-    """Salva a ordem customizada dos modelos e sincroniza o cache em memória."""
+def load_models_order() -> List[str]:
+    """Carrega a lista de slugs ordenada (retrocompatibilidade)."""
+    return load_menu_config().get("order", [])
+
+
+def save_menu_config(config: Any) -> bool:
+    """Salva as configurações de modo de menu (categoria vs livre) e suas ordens."""
     global _memory_cache, _last_sync_time
-    clean_order = [str(s).strip().lower() for s in order_slugs if str(s).strip()]
+    if isinstance(config, list):
+        cfg = dict(DEFAULT_MENU_CONFIG)
+        cfg["order"] = [str(s).strip().lower() for s in config if str(s).strip()]
+    elif isinstance(config, dict):
+        cfg = dict(DEFAULT_MENU_CONFIG)
+        cfg.update(config)
+        cfg["mode"] = "free" if config.get("mode") == "free" else "category"
+        if "category_order" in config and isinstance(config["category_order"], list):
+            cfg["category_order"] = [str(c).strip() for c in config["category_order"] if str(c).strip()]
+        if "order" in config and isinstance(config["order"], list):
+            cfg["order"] = [str(s).strip().lower() for s in config["order"] if str(s).strip()]
+    else:
+        return False
+
     for p in [ORDER_FILE, API_ORDER_FILE]:
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
             with open(p, "w", encoding="utf-8") as f:
-                json.dump(clean_order, f, ensure_ascii=False, indent=2)
+                json.dump(cfg, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.error(f"Erro ao salvar ordem em {p}: {e}")
+            logger.error(f"Erro ao salvar ordem/menu em {p}: {e}")
             return False
+
     _memory_cache = None
     _last_sync_time = 0
     sync_models_from_sheets(force=True)
     return True
+
+
+def save_models_order(order_slugs: List[str]) -> bool:
+    """Salva a ordem customizada dos modelos."""
+    return save_menu_config(order_slugs)
+
+
+DEFAULT_KIOSK_SETTINGS = {
+    "enabled": True,
+    "interval_seconds": 30,
+    "auto_pause_seconds": 45,
+    "transition_effect": "slide_apple",
+}
+
+
+def load_kiosk_settings() -> Dict[str, Any]:
+    """Carrega as configurações do Modo TV / Kiosk da vitrine."""
+    for p in [KIOSK_FILE, API_KIOSK_FILE]:
+        if p.is_file():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        merged = dict(DEFAULT_KIOSK_SETTINGS)
+                        merged.update(data)
+                        return merged
+            except Exception as e:
+                logger.warning(f"Erro ao ler {p}: {e}")
+    return dict(DEFAULT_KIOSK_SETTINGS)
+
+
+def save_kiosk_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
+    """Salva as configurações do Modo TV / Kiosk da vitrine."""
+    curr = load_kiosk_settings()
+    curr.update({
+        "enabled": bool(settings.get("enabled", curr.get("enabled", True))),
+        "interval_seconds": max(5, min(300, int(settings.get("interval_seconds", curr.get("interval_seconds", 30))))),
+        "auto_pause_seconds": max(10, min(300, int(settings.get("auto_pause_seconds", curr.get("auto_pause_seconds", 45))))),
+        "transition_effect": str(settings.get("transition_effect", curr.get("transition_effect", "slide_apple"))),
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    })
+    for p in [KIOSK_FILE, API_KIOSK_FILE]:
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(curr, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Erro ao salvar configurações do kiosk em {p}: {e}")
+    return curr
 
 
 def normalize_slug(name: str) -> str:
@@ -311,18 +398,24 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
             }
             final_list.append(m_val)
 
-        # Ordenar por Ordem Customizada (se definida) ou por Categoria/Nome
-        custom_order = load_models_order()
-        if custom_order:
-            order_map = {slug: idx for idx, slug in enumerate(custom_order)}
-            category_order = {"Scooter": 1, "Bike": 2, "Triciclo": 3}
+        # Ordenar por Modo de Menu (Categoria vs Livre/Aleatório)
+        menu_cfg = load_menu_config()
+        mode = menu_cfg.get("mode", "category")
+        cat_order_list = menu_cfg.get("category_order") or ["Scooter", "Bike"]
+        cat_order_map = {cat.lower(): idx + 1 for idx, cat in enumerate(cat_order_list)}
+        custom_order = menu_cfg.get("order", [])
+        order_map = {slug: idx for idx, slug in enumerate(custom_order)}
+
+        if mode == "free" and custom_order:
+            final_list.sort(key=lambda x: (order_map.get(x["slug"], 999), x["modelo"]))
+        elif custom_order:
             final_list.sort(key=lambda x: (
-                order_map.get(x["slug"], 900 + category_order.get(x["categoria"], 99)),
+                cat_order_map.get((x.get("categoria") or "").lower(), 99),
+                order_map.get(x["slug"], 900),
                 x["modelo"]
             ))
         else:
-            category_order = {"Scooter": 1, "Bike": 2, "Triciclo": 3}
-            final_list.sort(key=lambda x: (category_order.get(x["categoria"], 99), x["modelo"]))
+            final_list.sort(key=lambda x: (cat_order_map.get((x.get("categoria") or "").lower(), 99), x["modelo"]))
 
         active_models = [m for m in final_list if m["is_active"]]
 
@@ -330,6 +423,8 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "total_models": len(active_models),
             "total_all": len(final_list),
+            "menu_mode": mode,
+            "category_order": cat_order_list,
             "categories": list(dict.fromkeys(m["categoria"] for m in active_models if m["categoria"])),
             "models": active_models,
             "all_models": final_list,

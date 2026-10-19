@@ -949,6 +949,14 @@ main.showroom-viewport {
   letter-spacing: -1px;
 }
 
+.hud-speedometer-val.is-multiline {
+  font-size: clamp(20px, 3.8vw, 36px) !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.8px !important;
+  white-space: pre-line !important;
+  text-align: center !important;
+}
+
 .hud-unit-label {
   font-family: var(--font-telemetry);
   font-size: 13px;
@@ -1413,4 +1421,95 @@ main.showroom-viewport {
   .header-right-slot { width: 56px !important; }
   .cockpit-bezel-frame { min-height: 420px !important; }
   .hud-speedometer-val { font-size: 46px !important; }
+}
+
+/* 12. Modo TV / Vitrine Automática (Kiosk Engine) */
+.tv-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.tv-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--maj-cyan, #00d7ff), var(--maj-lime, #e1ff32));
+  box-shadow: 0 0 10px rgba(0, 215, 255, 0.85), 0 0 20px rgba(225, 255, 50, 0.5);
+  transition: width 0.08s linear;
+}
+
+.tv-kiosk-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: rgba(10, 15, 25, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 215, 255, 0.4);
+  border-radius: 100px;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-telemetry, monospace);
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 16px rgba(0, 215, 255, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tv-kiosk-badge:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: var(--maj-cyan, #00d7ff);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 22px rgba(0, 215, 255, 0.45);
+}
+
+.tv-kiosk-dot {
+  width: 7.5px;
+  height: 7.5px;
+  border-radius: 50%;
+  background: #00e599;
+  box-shadow: 0 0 8px #00e599;
+  animation: tvDotPulse 1.6s infinite ease-in-out;
+}
+
+.tv-kiosk-badge.is-paused {
+  border-color: rgba(255, 170, 0, 0.5);
+  background: rgba(28, 20, 10, 0.92);
+}
+
+.tv-kiosk-badge.is-paused .tv-kiosk-dot {
+  background: #ffaa00;
+  box-shadow: 0 0 8px #ffaa00;
+  animation: none;
+}
+
+.tv-kiosk-badge.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+}
+
+@keyframes tvDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+@media (max-width: 768px) {
+  .tv-kiosk-badge {
+    bottom: 16px;
+    right: 16px;
+    padding: 6px 14px;
+    font-size: 10.5px;
+  }
 }

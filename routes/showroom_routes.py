@@ -15,6 +15,10 @@ from services.maj_models_sync_service import (
     set_model_active_status,
     save_models_order,
     load_models_order,
+    load_menu_config,
+    save_menu_config,
+    load_kiosk_settings,
+    save_kiosk_settings,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,9 +37,12 @@ def api_list_models():
 
     models = get_all_models(include_inactive=include_inactive)
     categories = list(dict.fromkeys(m["categoria"] for m in models if m.get("categoria")))
+    menu_cfg = load_menu_config()
 
     return jsonify({
         "total_models": len(models),
+        "menu_mode": menu_cfg.get("mode", "category"),
+        "category_order": menu_cfg.get("category_order", ["Scooter", "Bike"]),
         "categories": categories,
         "models": models,
     }), 200
@@ -66,17 +73,17 @@ def api_set_model_status(slug):
 
 @showroom_bp.route("/api/models/order", methods=["POST"])
 def api_save_models_order():
-    """Salva a nova ordem de exibição dos modelos enviada pelo painel administrativo."""
+    """Salva a nova ordem e modo de exibição dos modelos (menu por categoria vs livre)."""
     body = request.get_json(silent=True) or {}
-    order = body.get("order", [])
-    if not isinstance(order, list):
-        return jsonify({"error": "Formato inválido. 'order' deve ser uma lista de slugs."}), 400
+    success = save_menu_config(body)
+    if not success:
+        return jsonify({"error": "Formato inválido ao salvar configuração do menu."}), 400
 
-    save_models_order(order)
+    cfg = load_menu_config()
     return jsonify({
         "status": "success",
-        "message": "Ordem dos produtos atualizada com sucesso.",
-        "order": order,
+        "message": "Configurações e ordenação do menu atualizadas com sucesso.",
+        "menu_config": cfg,
     }), 200
 
 
@@ -92,6 +99,26 @@ def api_sync_models():
     }), 200
 
 
+@showroom_bp.route("/api/models/kiosk-settings", methods=["GET"])
+def api_get_kiosk_settings():
+    """Retorna configurações do Modo TV / Kiosk do showroom."""
+    return jsonify(load_kiosk_settings()), 200
+
+
+@showroom_bp.route("/api/models/kiosk-settings", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_save_kiosk_settings():
+    """Atualiza configurações do Modo TV / Kiosk do showroom."""
+    body = request.get_json(silent=True) or {}
+    updated = save_kiosk_settings(body)
+    return jsonify({
+        "status": "success",
+        "message": "Configurações do Modo TV atualizadas com sucesso.",
+        "settings": updated,
+    }), 200
+
+
 @showroom_bp.route("/admin/models", methods=["GET"])
 @showroom_bp.route("/admin/modelos", methods=["GET"])
 @login_required
@@ -100,7 +127,15 @@ def admin_models_page():
     """Painel de Gestão e Ordenação de Produtos no Mostruário da MAJ."""
     me = current_user()
     models = get_all_models(include_inactive=True)
-    return render_template("showroom/admin_models.html", me=me, models=models)
+    kiosk_settings = load_kiosk_settings()
+    menu_config = load_menu_config()
+    return render_template(
+        "showroom/admin_models.html",
+        me=me,
+        models=models,
+        kiosk_settings=kiosk_settings,
+        menu_config=menu_config,
+    )
 
 
 @showroom_bp.route("/show-room", methods=["GET"])
@@ -118,10 +153,12 @@ def showroom_models_page(slug=None):
         active_model = next((m for m in models if m.get("slug") == slug), None)
     if not active_model and models:
         active_model = models[0]
+    kiosk_settings = load_kiosk_settings()
     return render_template(
         "showroom/models.html",
         models=models,
         active_model=active_model,
         initial_slug=slug or (active_model.get("slug") if active_model else None),
+        kiosk_settings=kiosk_settings,
         cache_id=cache_id,
     )

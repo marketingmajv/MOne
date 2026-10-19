@@ -34,6 +34,9 @@
           <span class="badge" style="font-weight: 700; background: rgba(0, 229, 153, 0.18); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.4);">
             🟢 Operação Ao Vivo
           </span>
+          <a href="/show-room?tv=1" target="_blank" class="badge" style="text-decoration:none;font-weight:700;background:rgba(0,215,255,0.18);color:#00d7ff;border:1px solid rgba(0,215,255,0.4);" title="Abrir vitrine automática na TV da loja">
+            📺 Modo TV Loja ↗
+          </a>
         </div>
         <p class="bento-hero-desc" style="margin: 0; font-size: 0.88rem; max-width: 560px;">
           Inteligência unificada de estoques em pátio, catálogos Atacado e Outlet, simulações de frete cubado e rastreabilidade logística.
@@ -334,12 +337,15 @@
 <div style="display: grid; grid-template-columns: 1.4fr 1.6fr; gap: 20px; margin-bottom: 24px; align-items: stretch;">
   <!-- SHOWROOM: MODELOS POPULARES -->
   <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 0;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
       <div>
         <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text);">🛵 Veículos em Pátio (Destaques)</h3>
         <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.78rem;">Modelos líderes de procura e pronta entrega</p>
       </div>
-      <a href="{{ url_for('admin_outlet') }}" style="font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600;">Ver Catálogo ↗</a>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <a href="/show-room?tv=1" target="_blank" class="badge" style="text-decoration: none; font-weight: 700; background: rgba(0,215,255,0.18); color: #00d7ff; border: 1px solid rgba(0,215,255,0.4);" title="Abrir vitrine na TV da loja">📺 Modo TV ↗</a>
+        <a href="/admin/models" style="font-size: 0.75rem; color: var(--accent); text-decoration: none; font-weight: 600;">Gerenciar Modelos ↗</a>
+      </div>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">

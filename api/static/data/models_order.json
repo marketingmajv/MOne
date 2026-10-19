@@ -1,15 +1,30 @@
-[
-  "max-12",
-  "classic-1000",
-  "vittoria",
-  "sport-701-short",
-  "flow-one",
-  "nova",
-  "rz-110",
-  "ride-on",
-  "m9-pro",
-  "v80-pro",
-  "m50-pro",
-  "v20-ultra",
-  "v8-mini"
-]
+{
+  "mode": "free",
+  "category_order": [
+    "Scooter",
+    "Bike"
+  ],
+  "order": [
+    "max-12",
+    "m9-pro",
+    "flow-one",
+    "m50-pro",
+    "classic-1000",
+    "v20-ultra",
+    "db-zero",
+    "gp-1000",
+    "m2",
+    "nova",
+    "v8-mini",
+    "ride-on",
+    "v80-pro",
+    "rz-110",
+    "sport-701-short",
+    "vittoria",
+    "h1"
+  ],
+  "category_items": {
+    "Scooter": [],
+    "Bike": []
+  }
+}

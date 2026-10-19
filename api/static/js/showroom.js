@@ -1,7 +1,7 @@
 // MAJ MOBILIDADE — SHOWROOM ENGINE
 (function () {
   'use strict';
-  let allModels = [], currentModel = null, currentCategory = 'all';
+  let allModels = [], currentModel = null, currentCategory = 'all', menuMode = 'category', categoryOrder = ['Scooter', 'Bike'];
 
   // 1. Carregamento dos Modelos da API /api/models
   async function loadModels() {
@@ -9,10 +9,11 @@
       const response = await fetch('/api/models');
       const data = await response.json();
       allModels = data.models || [];
+      menuMode = data.menu_mode || 'category';
+      categoryOrder = data.category_order || ['Scooter', 'Bike'];
       if (allModels.length > 0) {
         renderModelCarousel(allModels);
-        const parts = window.location.pathname.split('/').filter(Boolean);
-        const lastPart = parts[parts.length - 1];
+        const parts = window.location.pathname.split('/').filter(Boolean), lastPart = parts[parts.length - 1];
         const urlParams = new URLSearchParams(window.location.search);
         const pSlug = urlParams.get('model') || (parts.length > 1 ? lastPart : null);
         const initSlug = (pSlug && allModels.some((m) => m.slug === pSlug)) ? pSlug : allModels[0].slug;
@@ -24,35 +25,43 @@
     }
   }
 
-  // 2. Renderização da Barra Seletora de Modelos (Separador entre Scooters & Bikes)
+  // 2. Renderização da Barra Seletora (Menu por Categoria ou Menu Livre)
   function renderModelCarousel(modelsToRender) {
     const nav = document.getElementById('modelsCarouselNav');
     if (!nav) return;
     nav.innerHTML = '';
-    const scooters = modelsToRender.filter((m) => (m.categoria || '').toLowerCase() !== 'bike');
-    const bikes = modelsToRender.filter((m) => (m.categoria || '').toLowerCase() === 'bike');
-    const renderPills = (list) => list.forEach((m) => {
+    const createPill = (m, isFree) => {
       const btn = document.createElement('button');
       btn.className = `model-pill-item ${currentModel && currentModel.slug === m.slug ? 'active' : ''}`;
       btn.id = `pill-${m.slug}`;
-      btn.innerHTML = `<span class="model-pill-dot"></span><span class="model-pill-name">${m.modelo}</span>`;
+      const isBike = (m.categoria || '').toLowerCase() === 'bike';
+      const dotStyle = isFree ? `style="background:${isBike ? '#e1ff32' : '#00d7ff'};box-shadow:0 0 6px ${isBike ? '#e1ff32' : '#00d7ff'};"` : '';
+      btn.innerHTML = `<span class="model-pill-dot" ${dotStyle}></span><span class="model-pill-name">${m.modelo}</span>`;
       btn.addEventListener('click', () => selectModel(m.slug, true));
-      nav.appendChild(btn);
-    });
-    renderPills(scooters);
-    if (scooters.length && bikes.length) {
-      const sep = document.createElement('div');
-      sep.className = 'subnav-group-separator'; sep.setAttribute('aria-hidden', 'true');
-      nav.appendChild(sep);
+      return btn;
+    };
+
+    if (menuMode === 'free') {
+      modelsToRender.forEach((m) => nav.appendChild(createPill(m, true)));
+    } else {
+      const cats = (categoryOrder.length ? categoryOrder : ['Scooter', 'Bike']);
+      const groups = cats.map((cat) => ({ cat, items: modelsToRender.filter((m) => (m.categoria || '').toLowerCase() === cat.toLowerCase()) })).filter((g) => g.items.length > 0);
+      groups.forEach((g, idx) => {
+        g.items.forEach((m) => nav.appendChild(createPill(m, false)));
+        if (idx < groups.length - 1) {
+          const sep = document.createElement('div'); sep.className = 'subnav-group-separator'; sep.setAttribute('aria-hidden', 'true');
+          nav.appendChild(sep);
+        }
+      });
     }
-    renderPills(bikes);
     updateSubnavArrowsState();
   }
 
-  // 3. Seleção Dinâmica do Modelo (Zero Reload)
-  function selectModel(slug, updateUrl = true) {
+  // 3. Seleção Dinâmica do Modelo (Zero Reload com Deslize Lateral Apple Switcher)
+  function selectModel(slug, updateUrl = true, dir = 1) {
     const found = allModels.find((m) => m.slug === slug);
     if (!found) return;
+    const isNext = dir >= 0;
     currentModel = found;
     if (updateUrl && window.history && window.history.replaceState) {
       window.history.replaceState(null, '', `/show-room/${slug}`);
@@ -61,15 +70,10 @@
     // Atualizar classe ativa nas pílulas
     document.querySelectorAll('.model-pill-item').forEach((el) => el.classList.remove('active'));
     const activePill = document.getElementById(`pill-${slug}`);
-    if (activePill) {
-      activePill.classList.add('active');
-      activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      setTimeout(updateSubnavArrowsState, 350);
-    }
+    if (activePill) { activePill.classList.add('active'); activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); setTimeout(updateSubnavArrowsState, 350); }
 
-    // Banner Panorâmico Widescreen (Para modelos com foto widescreen de estúdio)
-    const bannerElem = document.getElementById('max12PanoramicBanner');
-    const heroStageElem = document.getElementById('hero');
+    // Banner Panorâmico Widescreen (Com Deslize Lateral de Estúdio)
+    const bannerElem = document.getElementById('max12PanoramicBanner'), heroStageElem = document.getElementById('hero');
     const bannerMap = {
       'max-12': '/public/images/models/banners/max-12-banner.webp', 'gp-1000': '/public/images/models/banners/gp-1000-banner.webp', 'flow-one': '/public/images/models/banners/flow-one-banner.webp',
       'classic-1000': '/public/images/models/banners/classic-1000-banner.webp', 'db-zero': '/public/images/models/banners/db-zero-banner.webp', 'vittoria': '/public/images/models/banners/vittoria-banner.webp',
@@ -77,61 +81,59 @@
       'm9-pro': '/public/images/models/banners/m9-pro-banner.webp', 'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
       'rz-110': '/public/images/models/banners/rz-110-banner.webp', 'm50-pro': '/public/images/models/banners/m50-pro-banner.webp'
     };
-    const bannerUrl = found.banner_image || bannerMap[slug];
+    const bannerUrl = found.banner_image || bannerMap[slug], offX = isNext ? 40 : -40;
     if (bannerElem) {
       const hasBanner = Boolean(bannerUrl);
-      bannerElem.style.display = hasBanner ? 'block' : 'none';
-      bannerElem.style.opacity = hasBanner ? '1' : '0';
       if (hasBanner) {
         const pSource = document.getElementById('modelPanoramicSource'), pImg = document.getElementById('modelPanoramicImg');
-        if (pSource) pSource.srcset = `${bannerUrl}?v=20261016_2k`;
-        if (pImg) { pImg.src = `${bannerUrl}?v=20261016_2k`; pImg.alt = `${found.modelo} - MAJ Mobilidade`; }
+        if (pImg) {
+          pImg.style.transition = 'opacity 0.22s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+          pImg.style.opacity = '0'; pImg.style.transform = `translateX(${-offX}px)`;
+          setTimeout(() => {
+            if (pSource) pSource.srcset = `${bannerUrl}?v=20261016_2k`;
+            pImg.src = `${bannerUrl}?v=20261016_2k`; pImg.alt = `${found.modelo} - MAJ Mobilidade`;
+            pImg.style.transform = `translateX(${offX}px)`;
+            requestAnimationFrame(() => { pImg.style.opacity = '1'; pImg.style.transform = 'translateX(0)'; });
+          }, 150);
+        }
       }
+      bannerElem.style.display = hasBanner ? 'block' : 'none';
+      bannerElem.style.opacity = hasBanner ? '1' : '0';
       if (heroStageElem) heroStageElem.style.display = hasBanner ? 'none' : 'flex';
     }
 
-    // 1. Atualizar Hero e Bloco Editorial de Identidade
-    const idTitle = document.getElementById('identityModelTitle');
-    const idDiff = document.getElementById('identityModelDiff');
-    const idBadge = document.getElementById('identityCategoryBadge');
-    if (idTitle) { idTitle.style.opacity = '0'; setTimeout(() => { idTitle.textContent = found.modelo; idTitle.style.opacity = '1'; }, 120); }
+    // 1. Atualizar Hero e Bloco Editorial de Identidade (Deslize suave)
+    const idTitle = document.getElementById('identityModelTitle'), idDiff = document.getElementById('identityModelDiff'), idBadge = document.getElementById('identityCategoryBadge');
+    if (idTitle) {
+      idTitle.style.transition = 'opacity 0.2s ease, transform 0.35s ease'; idTitle.style.opacity = '0'; idTitle.style.transform = `translateX(${offX / 2}px)`;
+      setTimeout(() => { idTitle.textContent = found.modelo; idTitle.style.opacity = '1'; idTitle.style.transform = 'translateX(0)'; }, 130);
+    }
     if (idDiff) {
       const dTxt = found.sections?.['Uso e comercial']?.['Principal diferencial'] || found.metrics.diferencial || found.metrics.descricao_livre || 'Mobilidade elétrica urbana de alta eficiência e robustez.';
-      idDiff.style.opacity = '0'; setTimeout(() => { idDiff.textContent = dTxt; idDiff.style.opacity = '1'; }, 120);
+      idDiff.style.opacity = '0'; setTimeout(() => { idDiff.textContent = dTxt; idDiff.style.opacity = '1'; }, 130);
     }
     if (idBadge) idBadge.textContent = `${(found.categoria || 'Scooter').toUpperCase()} ELÉTRICA MAJ`;
 
-    if (updateUrl && window.innerWidth <= 768 && window.scrollY > 100) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    if (updateUrl && window.innerWidth <= 768 && window.scrollY > 100) window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    const catLabel = document.getElementById('heroCategoryLabel');
-    if (catLabel) catLabel.textContent = `MAJ ELECTRIC ${found.categoria.toUpperCase()}`;
+    const catLabel = document.getElementById('heroCategoryLabel'); if (catLabel) catLabel.textContent = `MAJ ELECTRIC ${found.categoria.toUpperCase()}`;
+    const titleElem = document.getElementById('heroModelTitle'); if (titleElem) { titleElem.style.opacity = '0'; setTimeout(() => { titleElem.textContent = found.modelo; titleElem.style.opacity = '1'; }, 150); }
+    const descElem = document.getElementById('heroModelDesc'); if (descElem) descElem.textContent = found.metrics.diferencial || found.metrics.descricao_livre || 'Projeto de mobilidade elétrica urbana de alta eficiência, robustez e pilotagem suave.';
+    const eyeLbl = document.getElementById('cockpitEyebrowLabel'); if (eyeLbl) eyeLbl.textContent = `CONHEÇA A FUNDO A ${found.modelo.toUpperCase()}`;
 
-    const titleElem = document.getElementById('heroModelTitle');
-    if (titleElem) {
-      titleElem.style.opacity = '0';
-      setTimeout(() => { titleElem.textContent = found.modelo; titleElem.style.opacity = '1'; }, 150);
-    }
-
-    const descElem = document.getElementById('heroModelDesc');
-    if (descElem) descElem.textContent = found.metrics.diferencial || found.metrics.descricao_livre || 'Projeto de mobilidade elétrica urbana de alta eficiência, robustez e pilotagem suave.';
-    const eyeLbl = document.getElementById('cockpitEyebrowLabel');
-    if (eyeLbl) eyeLbl.textContent = `CONHEÇA A FUNDO A ${found.modelo.toUpperCase()}`;
-
-    // Foto Hero e Reflexo
-    const imgElem = document.getElementById('heroVehicleImg');
-    const reflElem = document.getElementById('heroVehicleReflection');
+    // Foto Hero e Reflexo (Deslize Lateral Contínuo Apple Switcher)
+    const imgElem = document.getElementById('heroVehicleImg'), reflElem = document.getElementById('heroVehicleReflection');
     const heroSrc = found.cutout_image || (found.images && found.images[0]) || '/static/images/hero-fallback.png';
     if (imgElem) {
+      imgElem.style.transition = 'opacity 0.22s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
       imgElem.style.opacity = '0';
-      imgElem.style.transform = 'scale(0.96)';
+      imgElem.style.transform = `translateX(${-offX}px) scale(0.97)`;
       setTimeout(() => {
         imgElem.src = heroSrc + (heroSrc.includes('?') ? '&' : '?') + 'v=3';
         imgElem.alt = found.modelo;
-        imgElem.style.opacity = '1';
-        imgElem.style.transform = 'scale(1)';
-      }, 160);
+        imgElem.style.transform = `translateX(${offX}px) scale(0.97)`;
+        requestAnimationFrame(() => { imgElem.style.opacity = '1'; imgElem.style.transform = 'translateX(0) scale(1)'; });
+      }, 150);
     }
     if (reflElem) reflElem.src = heroSrc;
 
@@ -169,60 +171,60 @@
       motorizacao: {
         tag: 'MOTORIZAÇÃO & DESEMPENHO', mainVal: parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000,
         unit: 'WATTS', badge: 'POTÊNCIA NOMINAL MÁXIMA', badgeColor: '#00d7ff',
-        items: [
-          { lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` }, { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' },
-          { lbl: 'Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' }, { lbl: 'Subidas / Relevo', val: 'Compatível com ladeiras urbanas' },
-        ],
+        items: [{ lbl: 'Velocidade Máxima', val: `${m.velocidade_max_kmh || '32'} km/h` }, { lbl: 'Modos de Condução', val: s['Desempenho']?.['Modos de condução'] || '3 níveis' }, { lbl: 'Marcha a Ré?', val: s['Desempenho']?.['Possui ré?'] || 'Sim' }, { lbl: 'Subidas / Relevo', val: 'Compatível com ladeiras urbanas' }]
       },
       bateria: {
-        tag: 'BATERIA & AUTONOMIA', mainVal: vStr, unit: `${capWh} WH (CAPACIDADE)`,
-        badge: `BATERIA DE LÍTIO • ${capWh} WH`, badgeColor: '#28e1a5',
-        items: [
-          { lbl: 'Química da Bateria', val: 'Lítio de alta densidade' }, { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` },
-          { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' }, { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' },
-        ],
+        tag: 'BATERIA & AUTONOMIA', mainVal: vStr, unit: `${capWh} WH (CAPACIDADE)`, badge: `BATERIA DE LÍTIO • ${capWh} WH`, badgeColor: '#28e1a5',
+        items: [{ lbl: 'Química da Bateria', val: 'Lítio de alta densidade' }, { lbl: 'Autonomia Estimada', val: `Até ${m.autonomia_maxima_km || '50'} km` }, { lbl: 'Bateria Removível?', val: s['Bateria e autonomia']?.['Bateria removível?'] || 'Sim' }, { lbl: 'Carregador Oficial', val: s['Bateria e autonomia']?.['Carregador'] || '60V 2A' }]
       },
       chassi: {
-        tag: 'CHASSI & ESTRUTURA', mainVal: parseInt(String(m.carga_maxima_kg || '180').replace(/[^\d]/g, ''), 10) || 180,
-        unit: 'KG CARGA MÁXIMA', badge: 'ESTRUTURA AÇO CARBONO', badgeColor: '#e1ff32',
-        items: [
-          { lbl: 'Dimensões (C×L×A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm do solo` },
-          { lbl: 'Peso do Veículo', val: `${m.peso_kg || '75'} kg` }, { lbl: 'Ocupantes', val: `${s['Estrutura e conforto']?.['Ocupantes homologados'] || '2'} pessoas` },
-        ],
+        tag: 'CHASSI & ESTRUTURA', mainVal: parseInt(String(m.carga_maxima_kg || '180').replace(/[^\d]/g, ''), 10) || 180, unit: 'KG CARGA MÁXIMA', badge: 'ESTRUTURA AÇO CARBONO', badgeColor: '#e1ff32',
+        items: [{ lbl: 'Dimensões (C×L×A)', val: `${cL} × ${lG} × ${alt} cm` }, { lbl: 'Altura do Assento', val: `${ass} cm do solo` }, { lbl: 'Peso do Veículo', val: `${m.peso_kg || '75'} kg` }, { lbl: 'Ocupantes', val: `${s['Estrutura e conforto']?.['Ocupantes homologados'] || '2'} pessoas` }]
       },
       seguranca: {
         tag: 'SEGURANÇA & FREIOS', mainVal: 100, unit: '% SISTEMA HIDRÁULICO', badge: `FREIOS: ${m.freios || 'HIDRÁULICOS D/T'}`.toUpperCase(), badgeColor: '#ff5252',
-        items: [
-          { lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' }, { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' },
-          { lbl: 'Suspensão', val: 'Duplo amortecedor hidráulico' }, { lbl: 'Alarme / LED', val: 'Alarme sonoro & Faróis LED' },
-        ],
+        items: [{ lbl: 'Freio Dianteiro', val: s['Segurança e componentes']?.['Freio dianteiro'] || 'Hidráulico' }, { lbl: 'Freio Traseiro', val: s['Segurança e componentes']?.['Freio traseiro'] || 'Hidráulico' }, { lbl: 'Suspensão', val: 'Duplo amortecedor hidráulico' }, { lbl: 'Alarme / LED', val: 'Alarme sonoro & Faróis LED' }]
       },
       conforto: {
         tag: 'CAPACIDADE DE PASSAGEIROS', mainVal: 2, unit: 'ASSENTOS HOMOLOGADOS', badge: 'CAPACIDADE PARA 2 OCUPANTES', badgeColor: '#00d7ff',
-        items: [
-          { lbl: 'Compartimento', val: pObj.toLowerCase() === 'não' ? 'Não disponível' : (pObj.toLowerCase().includes('baú') ? 'Baú Incluso' : 'Porta-Objetos Integrado') },
-          { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' }, { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' }, { lbl: 'Acomodação', val: 'Assento duplo com encosto' },
-        ],
+        items: [{ lbl: 'Compartimento', val: pObj.toLowerCase() === 'não' ? 'Não disponível' : (pObj.toLowerCase().includes('baú') ? 'Baú Incluso' : 'Porta-Objetos Integrado') }, { lbl: 'Ergonomia', val: 'Pilotagem ereta e confortável' }, { lbl: 'Perfil de Uso', val: 'Deslocamentos urbanos' }, { lbl: 'Acomodação', val: 'Assento duplo com encosto' }]
       },
       garantia: {
-        tag: 'GARANTIA & HOMOLOGAÇÃO', mainVal: 180, unit: 'DIAS GARANTIA OFICIAL', badge: 'GARANTIA MAJ MOBILIDADE ELÉTRICA', badgeColor: '#e1ff32',
-        items: [
-          { lbl: 'Garantia Veículo', val: s['Uso e comercial']?.['Garantia do veículo'] || '180 dias de fábrica' }, { lbl: 'Garantia Bateria', val: '1 ano com revisões' },
-          { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' }, { lbl: 'Emplacamento?', val: 'Não exigido (Dispensa legal)' },
-        ],
-      },
+        tag: 'GARANTIA & HOMOLOGAÇÃO', mainVal: 'GARANTIA\nMAJ MOBILIDADE', unit: 'COBERTURA OFICIAL DE FÁBRICA', badge: 'GARANTIA MAJ MOBILIDADE ELÉTRICA', badgeColor: '#e1ff32', isScramble: true,
+        items: [{ lbl: 'Garantia Veículo', val: 'Garantia MAJ Mobilidade' }, { lbl: 'Garantia Bateria', val: '1 ano com revisões' }, { lbl: 'Exige CNH?', val: 'Não exigido (Dispensa legal)' }, { lbl: 'Emplacamento?', val: 'Não exigido (Dispensa legal)' }]
+      }
     };
 
     return categories[catKey] || categories.motorizacao;
   }
 
+  function scrambleText(el, target, dur = 900) {
+    if (!el) return;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%#*&/<>[]';
+    const id = Math.random().toString(), t0 = performance.now(), lines = target.split('\n');
+    el.dataset.animId = id;
+    function frame(now) {
+      if (el.dataset.animId !== id) return;
+      const p = Math.min((now - t0) / dur, 1);
+      el.innerText = lines.map((line) => {
+        const rev = Math.floor(line.length * p);
+        return line.split('').map((c, i) => (c === ' ' ? ' ' : (i < rev ? c : chars[Math.floor(Math.random() * chars.length)]))).join('');
+      }).join('\n');
+      if (p < 1) requestAnimationFrame(frame); else el.innerText = target;
+    }
+    requestAnimationFrame(frame);
+  }
+
   // 5. Atualização do Cockpit Digital & Engenharia
   function animateCockpitDisplay(mainEl, unitEl, data, dur = 700) {
     if (mainEl) {
-      if (typeof data.mainVal === 'number') {
-        mainEl.classList.remove('is-string-val'); animateCountUp(mainEl, 0, data.mainVal, dur);
+      if (data.isScramble) {
+        mainEl.classList.add('is-string-val', 'is-multiline');
+        scrambleText(mainEl, String(data.mainVal), 900);
+      } else if (typeof data.mainVal === 'number') {
+        mainEl.classList.remove('is-string-val', 'is-multiline'); animateCountUp(mainEl, 0, data.mainVal, dur);
       } else {
-        mainEl.classList.add('is-string-val');
+        mainEl.classList.add('is-string-val'); mainEl.classList.remove('is-multiline');
         const m = String(data.mainVal).match(/^(\d+)([a-zA-Z]+)\s+(\d+)([a-zA-Z]+)$/i);
         if (m) {
           const t1 = parseInt(m[1], 10), u1 = m[2], t2 = parseInt(m[3], 10), u2 = m[4], id = Math.random().toString(), t0 = performance.now();
@@ -271,7 +273,11 @@
     if (shouldAnimate) {
       animateCockpitDisplay(mainValEl, unitEl, data, 700);
     } else {
-      if (mainValEl) { mainValEl.classList.toggle('is-string-val', typeof data.mainVal !== 'number'); mainValEl.textContent = data.mainVal; }
+      if (mainValEl) {
+        mainValEl.classList.toggle('is-string-val', typeof data.mainVal !== 'number');
+        mainValEl.classList.toggle('is-multiline', Boolean(data.isScramble));
+        mainValEl.innerText = data.mainVal;
+      }
       if (unitEl) unitEl.textContent = data.unit;
     }
     const gridEl = document.getElementById('hudSpecsGrid');
@@ -323,21 +329,14 @@
     if (modal) modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   };
-
   window.closeGalleryLightbox = function (e) {
     if (e && e.target && e.target.closest('.gallery-lightbox-content') && !e.target.closest('.gallery-lightbox-close')) return;
     const modal = document.getElementById('galleryLightboxModal');
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = '';
   };
-
   window.navigateGalleryLightbox = (dir) => openGalleryLightbox(currentLightboxIndex + dir);
-  window.toggleMobileNav = (isOpen) => {
-    const drawer = document.getElementById('mobileNavDrawer');
-    if (drawer) drawer.classList.toggle('open', isOpen);
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-  };
-
+  window.toggleMobileNav = (isOpen) => { const d = document.getElementById('mobileNavDrawer'); if (d) d.classList.toggle('open', isOpen); document.body.style.overflow = isOpen ? 'hidden' : ''; };
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { closeGalleryLightbox(); toggleMobileNav(false); }
     const modal = document.getElementById('galleryLightboxModal');
@@ -350,7 +349,6 @@
     currentCategory = cat;
     document.querySelectorAll('.cat-filter-btn, .cat-tab-btn').forEach((b) => b.classList.remove('active'));
     if (window.event && window.event.target) window.event.target.classList.add('active');
-
     const filtered = cat === 'all' ? allModels : allModels.filter((m) => m.categoria.toLowerCase() === cat.toLowerCase());
     renderModelCarousel(filtered);
     if (filtered.length > 0) selectModel(filtered[0].slug);
@@ -360,12 +358,9 @@
   function initComparisonSelects() {
     const sel = document.getElementById('compareModelSelect');
     if (!sel) return;
-    sel.innerHTML = allModels.map(m => `<option value="${m.slug}">${m.categoria}: ${m.modelo}</option>`).join('');
+    sel.innerHTML = allModels.map((m) => `<option value="${m.slug}">${m.categoria}: ${m.modelo}</option>`).join('');
     if (allModels.length > 1) { sel.selectedIndex = 1; updateComparisonSecondCol(allModels[1]); }
-    sel.addEventListener('change', (e) => {
-      const chosen = allModels.find((m) => m.slug === e.target.value);
-      if (chosen) updateComparisonSecondCol(chosen);
-    });
+    sel.addEventListener('change', (e) => { const chosen = allModels.find((m) => m.slug === e.target.value); if (chosen) updateComparisonSecondCol(chosen); });
   }
 
   function updateComparisonCol(prefix, model) {
@@ -379,12 +374,10 @@
     };
     Object.entries(map).forEach(([f, val]) => { const el = document.getElementById(`comp-${prefix}-${f}`); if (el) el.textContent = val; });
   }
-  function updateComparisonActiveCol(model) { updateComparisonCol('active', model); }
-  function updateComparisonSecondCol(model) { updateComparisonCol('second', model); }
+  const updateComparisonActiveCol = (m) => updateComparisonCol('active', m), updateComparisonSecondCol = (m) => updateComparisonCol('second', m);
 
   // 7. Animações de Entrada em Cascata & Scroll Observers
-  let telemetryHasBeenRevealed = false;
-  let cockpitHasBeenRevealed = false;
+  let telemetryHasBeenRevealed = false, cockpitHasBeenRevealed = false;
 
   function initShowroomScrollObservers() {
     const secTel = document.getElementById('telemetry'), grid = document.querySelector('.telemetry-grid-wrapper'), cards = document.querySelectorAll('.telemetry-big-card');
@@ -425,9 +418,9 @@
     setTimeout(() => {
       if (parseInt(element.dataset.animTarget, 10) !== end) return;
       let startTime = null;
-      function step(timestamp) {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
+      function step(now) {
+        if (!startTime) startTime = now;
+        const progress = Math.min((now - startTime) / duration, 1);
         element.textContent = Math.floor(start + (end - start) * (1 - Math.pow(1 - progress, 3)));
         if (progress < 1) requestAnimationFrame(step);
         else { element.textContent = end; if (typeof onComplete === 'function') onComplete(); }
@@ -457,35 +450,32 @@
     const bV = document.getElementById('bigMetricBatteryVolts'), bWh = document.getElementById('bigMetricBatteryWh'), bSub = document.getElementById('bigMetricBatterySub');
     const vAh = `${String(m.voltagem_v || '60').toUpperCase().replace('V', '').trim()}V ${String(m.capacidade_ah || '20').toUpperCase().replace('AH', '').trim()}`;
     const whVal = Math.round(parseFloat(m.capacidade_wh || '') || (parseFloat(m.voltagem_v || '0') * parseFloat(m.capacidade_ah || '0')) || 1200);
-    if (bV) bV.textContent = vAh;
-    if (bWh) bWh.textContent = whVal;
+    if (bV) bV.textContent = vAh; if (bWh) bWh.textContent = whVal;
     if (bSub) bSub.textContent = `Bateria de lítio de ${whVal} Wh. Autonomia estimada de até ${m.autonomia_maxima_km || '50'} km em ciclo urbano.`;
     const pot = parseInt(String(m.potencia_nominal_w || '1000').replace(/[^\d]/g, ''), 10) || 1000, vel = parseInt(String(m.velocidade_max_kmh || '32').replace(/[^\d]/g, ''), 10) || 32;
-    if (telemetryHasBeenRevealed) { animateTelemetryCountUp(false); }
-    else {
-      const p = document.getElementById('bigMetricPower'), v = document.getElementById('bigMetricSpeed');
-      if (p) p.textContent = pot; if (v) v.textContent = vel;
-    }
+    if (telemetryHasBeenRevealed) animateTelemetryCountUp(false);
+    else { const p = document.getElementById('bigMetricPower'), v = document.getElementById('bigMetricSpeed'); if (p) p.textContent = pot; if (v) v.textContent = vel; }
   }
 
-  // 8. Controles de Rolagem da Subnav (Setas Esquerda / Direita)
   function initSubnavArrows() {
-    const nav = document.getElementById('modelsCarouselNav');
-    const prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
+    const nav = document.getElementById('modelsCarouselNav'), prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
     if (!nav) return;
     if (prev) prev.onclick = () => { nav.scrollBy({ left: -260, behavior: 'smooth' }); setTimeout(updateSubnavArrowsState, 350); };
     if (next) next.onclick = () => { nav.scrollBy({ left: 260, behavior: 'smooth' }); setTimeout(updateSubnavArrowsState, 350); };
     nav.addEventListener('scroll', updateSubnavArrowsState, { passive: true });
     window.addEventListener('resize', updateSubnavArrowsState, { passive: true });
   }
-
   function updateSubnavArrowsState() {
-    const nav = document.getElementById('modelsCarouselNav');
-    const prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
+    const nav = document.getElementById('modelsCarouselNav'), prev = document.getElementById('subnavArrowPrev'), next = document.getElementById('subnavArrowNext');
     if (!nav) return;
     if (prev) prev.classList.toggle('is-hidden', nav.scrollLeft <= 5);
     if (next) next.classList.toggle('is-hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 5);
   }
+
+  // Expor controles públicos para o Modo TV e automações
+  window.selectShowroomModel = selectModel;
+  window.getShowroomModels = () => allModels;
+  window.getCurrentShowroomModel = () => currentModel;
 
   // Inicialização no DOM Ready
   document.addEventListener('DOMContentLoaded', () => {
