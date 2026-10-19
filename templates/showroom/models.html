@@ -46,8 +46,10 @@
     .brand-maj-logo-link { display: inline-flex; align-items: center; text-decoration: none !important; transition: opacity 0.2s ease, transform 0.2s ease; flex-shrink: 0; z-index: 2; }
     .brand-maj-logo-link:hover { opacity: 0.82; transform: translateY(-1px); }
     .brand-maj-logo-img { height: 32px; max-height: 34px; width: auto; object-fit: contain; display: block; }
-    .header-center-title { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #111114; white-space: nowrap; pointer-events: none; z-index: 1; }
-    @media (max-width: 768px) { .header-center-title { font-size: 13px; letter-spacing: 0.3px; } .header-inner { padding: 0 16px !important; } }
+    .header-center-title { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #111114; white-space: nowrap; pointer-events: none; z-index: 1; text-align: center; }
+    .header-title-full { display: inline; }
+    .header-title-mobile { display: none; }
+    .header-right-slot { width: 75px; flex-shrink: 0; }
     .model-subnav-bar { position: fixed; top: 64px; left: 0; width: 100%; height: 56px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.06); z-index: 999; display: flex; align-items: center; }
     .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; position: relative; gap: 6px; }
     .subnav-arrow-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.08); color: #111114; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); cursor: pointer; flex-shrink: 0; transition: opacity 0.2s ease, transform 0.15s ease, background 0.2s ease; z-index: 3; padding: 0; }
@@ -62,7 +64,6 @@
     .model-pill-item.active { background: #111114 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); }
     .model-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #999; }
     .model-pill-item.active .model-pill-dot { background: #ffffff; }
-    main.showroom-viewport { margin-top: 120px; }
     .hero-studio-stage { position: relative; min-height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 36%, #ffffff 0%, #f6f6f9 55%, #eaeaf0 100%); overflow: hidden; padding: 20px 20px 60px; }
     .hero-giant-backdrop { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; z-index: 1; pointer-events: none; user-select: none; }
     .hero-giant-title { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: clamp(84px, 17vw, 250px); font-weight: 800; letter-spacing: 0.08em; line-height: 0.82; text-transform: uppercase; color: #111114; white-space: nowrap; display: inline-block; }
@@ -80,6 +81,28 @@
     .identity-model-title { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: clamp(34px, 6vw, 56px); font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; color: #111114; margin: 0; line-height: 1.05; transition: opacity 0.15s ease; }
     .identity-model-diff { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: #55585d; max-width: 680px; margin: 8px auto 0; transition: opacity 0.15s ease; }
     .telemetry-badge-wh { background: rgba(16, 185, 129, 0.1) !important; color: #059669 !important; font-weight: 800 !important; }
+    main.showroom-viewport { margin-top: 120px; }
+    @media (max-width: 768px) {
+      .showroom-header { height: 56px !important; }
+      .header-inner { padding: 0 16px !important; }
+      .brand-maj-logo-img { height: 26px !important; max-height: 28px !important; }
+      .header-title-full { display: none !important; }
+      .header-title-mobile { display: inline !important; }
+      .header-center-title { font-size: 12px !important; letter-spacing: 1.2px !important; max-width: calc(100% - 140px) !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+      .header-right-slot { width: 60px !important; }
+      .model-subnav-bar { top: 56px !important; height: 50px !important; }
+      .subnav-inner { padding: 0 16px !important; gap: 0 !important; }
+      .subnav-arrow-btn { display: none !important; }
+      .subnav-models-track { padding: 4px 0 !important; gap: 8px !important; -webkit-overflow-scrolling: touch; }
+      .model-pill-item { padding: 6px 13px !important; font-size: 11.5px !important; }
+      main.showroom-viewport { margin-top: 106px !important; }
+      .hero-studio-stage { min-height: calc(100vh - 106px) !important; }
+    }
+    @media (max-width: 400px) {
+      .brand-maj-logo-img { height: 24px !important; max-height: 26px !important; }
+      .header-center-title { font-size: 11.5px !important; letter-spacing: 0.8px !important; }
+      .header-right-slot { width: 56px !important; }
+    }
   </style>
 
   <link rel="stylesheet" href="/static/css/showroom.css?v={{ cache_id or 1 }}">
@@ -93,9 +116,12 @@
         <img src="/static/img/maj-logo-official.png" onerror="this.onerror=null; this.src='/static/images/maj-logo-official.png'" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img">
       </a>
       
-      <div class="header-center-title">Show-room MAJ Mobilidade</div>
+      <div class="header-center-title">
+        <span class="header-title-full">Show-room MAJ Mobilidade</span>
+        <span class="header-title-mobile">Show-room</span>
+      </div>
 
-      <div style="width: 32px;" aria-hidden="true"></div>
+      <div class="header-right-slot" aria-hidden="true"></div>
     </div>
   </header>
 
