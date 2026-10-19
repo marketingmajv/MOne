@@ -15,8 +15,15 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
+
+FUSO_BRASILIA = timezone(timedelta(hours=-3))
+
+
+def obter_agora_brasilia() -> datetime:
+    """Retorna datetime no fuso horário oficial de Brasília (UTC-3)."""
+    return datetime.now(FUSO_BRASILIA)
 
 from database import db
 from services.prospector_service import (
@@ -54,7 +61,7 @@ MODOS_INFO = {
         "rotulo": "Lote Noturno (Madrugada)",
         "descricao": "1 disparo diário às 06:00 com lote maior para a esteira amanhecer cheia.",
         "horarios": ["06:00"],
-        "limite_sugerido": 60,
+        "limite_sugerido": 70,
     },
     "custom": {
         "rotulo": "Personalizado / Sob Demanda",
@@ -137,12 +144,14 @@ def verificar_se_deve_executar(cfg: Dict[str, Any]) -> Tuple[bool, str]:
     if job.get("running"):
         return False, "Já existe uma busca em execução no momento."
 
-    agora = datetime.now()
+    agora = obter_agora_brasilia()
     ultimo_ciclo_str = cfg.get("ultimo_ciclo")
     ultimo_dt = None
     if ultimo_ciclo_str:
         try:
             ultimo_dt = datetime.fromisoformat(ultimo_ciclo_str)
+            if ultimo_dt.tzinfo is None:
+                ultimo_dt = ultimo_dt.replace(tzinfo=FUSO_BRASILIA)
         except Exception:
             ultimo_dt = None
 
@@ -208,7 +217,7 @@ def executar_ciclo_automacao(forcar: bool = False) -> Dict[str, Any]:
 
     # Atualiza carrossel e telemetria
     proximo_indice = indice + 1
-    agora_iso = datetime.now().isoformat()
+    agora_iso = obter_agora_brasilia().isoformat()
     total_auto = cfg.get("total_auto", 0) + limite
 
     set_prospector_config("automacao_indice_rotacao", str(proximo_indice), "Índice do Carrossel de Cidades")
