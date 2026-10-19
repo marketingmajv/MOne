@@ -41,10 +41,13 @@ from services.prospector_sync_service import (
 
 logger = logging.getLogger(__name__)
 
-prospector_bp = Blueprint("prospector", __name__, url_prefix="/admin/prospeccao")
+prospector_bp = Blueprint("prospector", __name__)
 
 
-@prospector_bp.route("", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao/", methods=["GET"])
+@prospector_bp.route("/prospeccao", methods=["GET"])
+@prospector_bp.route("/prospeccao/", methods=["GET"])
 @login_required
 @roles_required("admin", "support", "sales")
 def index():
@@ -115,7 +118,7 @@ def index():
 # APIS OPERACIONAIS (AJAX / ALPINES JS)
 # -------------------------------------------------------------------------
 
-@prospector_bp.route("/api/buscar", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/buscar", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def iniciar_busca():
@@ -141,7 +144,7 @@ def iniciar_busca():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@prospector_bp.route("/api/status", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao/api/status", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
 def status_busca():
@@ -149,7 +152,7 @@ def status_busca():
     return jsonify({"status": "success", "job": obter_status_job()})
 
 
-@prospector_bp.route("/api/sync-sheets", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/sync-sheets", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def sync_sheets():
@@ -163,7 +166,7 @@ def sync_sheets():
     return jsonify({"status": "error", "message": msg}), 500
 
 
-@prospector_bp.route("/export-meta-lookalike", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao/export-meta-lookalike", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
 def export_meta():
@@ -177,7 +180,7 @@ def export_meta():
     )
 
 
-@prospector_bp.route("/api/config", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/config", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def salvar_configuracoes():
@@ -195,7 +198,7 @@ def salvar_configuracoes():
     return jsonify({"status": "success", "message": "Configurações salvas com sucesso!"})
 
 
-@prospector_bp.route("/api/nichos", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/nichos", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def salvar_nicho():
@@ -235,7 +238,7 @@ def salvar_nicho():
     return jsonify({"status": "success", "message": "Nicho cadastrado/atualizado com sucesso!"})
 
 
-@prospector_bp.route("/api/lead/<lead_id>", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao/api/lead/<lead_id>", methods=["GET"])
 @login_required
 @roles_required("admin", "support", "sales")
 def detalhe_lead(lead_id: str):
@@ -247,7 +250,7 @@ def detalhe_lead(lead_id: str):
         return jsonify({"status": "success", "lead": dict(row)})
 
 
-@prospector_bp.route("/api/lead/<lead_id>/status", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/lead/<lead_id>/status", methods=["POST"])
 @login_required
 @roles_required("admin", "support", "sales")
 def atualizar_status_lead(lead_id: str):
@@ -272,7 +275,7 @@ def atualizar_status_lead(lead_id: str):
     return jsonify({"status": "success", "message": "Status atualizado com sucesso!"})
 
 
-@prospector_bp.route("/api/lead/<lead_id>/prospectar", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/lead/<lead_id>/prospectar", methods=["POST"])
 @login_required
 @roles_required("admin", "support", "sales")
 def registrar_prospeccao(lead_id: str):
@@ -314,7 +317,7 @@ def registrar_prospeccao(lead_id: str):
     })
 
 
-@prospector_bp.route("/api/vendedor/phone", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/vendedor/phone", methods=["POST"])
 @login_required
 @roles_required("admin", "support", "sales")
 def salvar_telefone_vendedor():
@@ -334,7 +337,7 @@ def salvar_telefone_vendedor():
 # CENTRAL DE AUTOMAÇÃO 24/7 & CRON JOBS
 # -------------------------------------------------------------------------
 
-@prospector_bp.route("/api/automacao", methods=["GET"])
+@prospector_bp.route("/admin/prospeccao/api/automacao", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
 def get_automacao_api():
@@ -342,7 +345,7 @@ def get_automacao_api():
     return jsonify({"status": "success", "config": obter_config_automacao()})
 
 
-@prospector_bp.route("/api/automacao", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/automacao", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def salvar_automacao_api():
@@ -353,7 +356,7 @@ def salvar_automacao_api():
     return jsonify({"status": "success", "message": "Diretrizes de automação gravadas com sucesso!", "config": obter_config_automacao()})
 
 
-@prospector_bp.route("/api/automacao/executar-agora", methods=["POST"])
+@prospector_bp.route("/admin/prospeccao/api/automacao/executar-agora", methods=["POST"])
 @login_required
 @roles_required("admin", "support")
 def executar_agora_automacao_api():
@@ -365,6 +368,7 @@ def executar_agora_automacao_api():
 
 @prospector_bp.route("/cron/prospector-sync", methods=["GET", "POST"])
 @prospector_bp.route("/api/cron/prospector-sync", methods=["GET", "POST"])
+@prospector_bp.route("/admin/prospeccao/cron-sync", methods=["GET", "POST"])
 def cron_prospector_sync():
     """Endpoint chamado automaticamente por Vercel Cron ou cron local."""
     forcar = request.args.get("forcar") == "1"
