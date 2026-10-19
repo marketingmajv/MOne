@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block title %}Prospecção de Leads | M-One{% endblock %}
+{% block page_title %}Prospecção de Leads{% endblock %}
+{% block page_subtitle %}Máquina Automatizada de Descoberta, Qualificação e Abordagem Comercial B2B{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261019_05">
+<script src="{{ url_for('static', filename='js/prospector-automacao.js') }}?v=20261019_05"></script>
+<script src="{{ url_for('static', filename='js/prospector.js') }}?v=20261019_05"></script>
+{% endblock %}
+
+{% block top_actions %}
+{% if not is_seller %}
+<a href="?tab=radar" class="btn primary" @click.prevent="$dispatch('abrir-aba-radar')">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+  </svg>
+  <span>Nova Prospecção</span>
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="prospector-app" x-data="prospectorApp('{{ active_tab }}', '{{ default_nicho }}', '{{ sheets_url }}', {{ vendedor_atual.id or 0 }}, '{{ (vendedor_atual.name or vendedor_atual.username or '')|replace('\'', '\\\'') }}', '{{ (vendedor_atual.phone or '')|replace('\'', '\\\'') }}', {{ 'true' if is_seller else 'false' }})" @abrir-aba-radar.window="setTab('radar')">
+  <!-- Toast / Alerta de Ação -->
+  <div x-show="alertaMsg" x-cloak class="alert-banner" style="border-left: 4px solid #0070F3; margin-bottom: 12px;">
+    <div class="alert-banner-text" x-text="alertaMsg"></div>
+    <button type="button" class="btn sm" @click="alertaMsg = ''">✕</button>
+  </div>
+
+  <!-- Top KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-label">Total no Banco</span>
+      <strong class="kpi-val">{{ metricas.total_leads }}</strong>
+      <small class="kpi-sub">Leads Capturados</small>
+    </div>
+    <div class="kpi-card highlight-success">
+      <span class="kpi-label">Disponíveis p/ Abordar</span>
+      <strong class="kpi-val">{{ metricas.disponiveis }}</strong>
+      <small class="kpi-sub">Ainda não acionados</small>
+    </div>
+    <div class="kpi-card highlight-info">
+      <span class="kpi-label">Já Prospectados</span>
+      <strong class="kpi-val">{{ metricas.prospectados }}</strong>
+      <small class="kpi-sub">Acionados por vendedores</small>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Qualificados Classe A & B</span>
+      <strong class="kpi-val">{{ metricas.classe_a + metricas.classe_b }}</strong>
+      <small class="kpi-sub">{{ metricas.classe_a }} Classe A | {{ metricas.classe_b }} Classe B</small>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-header">
+    <button type="button" class="tab-btn" :class="{ 'active': tab === 'capturados' }" @click="setTab('capturados')">
+      📋 Leads Qualificados Capturados ({{ total_leads }})
+    </button>
+    {% if not is_seller %}
+    <button type="button" class="tab-btn" :class="{ 'active': tab === 'radar' }" @click="setTab('radar')">
+      🎯 Radar de Prospecção
+    </button>
+    <button type="button" class="tab-btn" :class="{ 'active': tab === 'integracoes' }" @click="setTab('integracoes')">
+      ⚡ Automação 24/7 & Integrações
+      <span class="tab-badge-status" :class="automacao.ativo ? 'badge-on' : 'badge-off'" x-text="automacao.ativo ? '🟢 ' + getRotuloCurtoModo(automacao.modo) : '⏸️ Pausado'"></span>
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- ABA 1: LEADS QUALIFICADOS CAPTURADOS -->
+  <div x-show="tab === 'capturados'" class="tab-pane">
+    <div class="panel">
+      <!-- Filtros Rápidos de Prospecção -->
+      <div class="quick-filter-pills">
+        <a href="{{ url_for('prospector.index', tab='capturados', filtro_rapido='all', nicho=nicho_filtro, classe=classe_filtro, busca=termo_busca) }}" class="pill-btn {{ 'active' if filtro_rapido == 'all' else '' }}">
+          📋 Todos os Leads ({{ metricas.total_leads }})
+        </a>
+        <a href="{{ url_for('prospector.index', tab='capturados', filtro_rapido='disponiveis', nicho=nicho_filtro, classe=classe_filtro, busca=termo_busca) }}" class="pill-btn pill-disponivel {{ 'active' if filtro_rapido == 'disponiveis' else '' }}">
+          🟢 Apenas Disponíveis ({{ metricas.disponiveis }})
+        </a>
+        <a href="{{ url_for('prospector.index', tab='capturados', filtro_rapido='meus', nicho=nicho_filtro, classe=classe_filtro, busca=termo_busca) }}" class="pill-btn pill-meus {{ 'active' if filtro_rapido == 'meus' else '' }}">
+          👤 Prospectados por Mim
+        </a>
+        <a href="{{ url_for('prospector.index', tab='capturados', filtro_rapido='prospectados', nicho=nicho_filtro, classe=classe_filtro, busca=termo_busca) }}" class="pill-btn pill-prospectados {{ 'active' if filtro_rapido == 'prospectados' else '' }}">
+          💬 Já Prospectados Geral ({{ metricas.prospectados }})
+        </a>
+      </div>
+
+      <!-- Filtros Detalhados -->
+      <form method="GET" action="{{ url_for('prospector.index') }}" class="filters-bar">
+        <input type="hidden" name="tab" value="capturados">
+        <input type="hidden" name="filtro_rapido" value="{{ filtro_rapido }}">
+        <div class="filter-item">
+          <label>Nicho:</label>
+          <select name="nicho" class="form-input" onchange="this.form.submit()">
+            <option value="all" {% if nicho_filtro == 'all' %}selected{% endif %}>Todos os Nichos</option>
+            {% for n in nichos %}
+            <option value="{{ n.slug }}" {% if nicho_filtro == n.slug %}selected{% endif %}>{{ n.rotulo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Classe:</label>
+          <select name="classe" class="form-input" onchange="this.form.submit()">
+            <option value="all" {% if classe_filtro == 'all' %}selected{% endif %}>Todas as Classes</option>
+            <option value="A" {% if classe_filtro == 'A' %}selected{% endif %}>Classe A (Top Fit)</option>
+            <option value="B" {% if classe_filtro == 'B' %}selected{% endif %}>Classe B (Bom Fit)</option>
+            <option value="C" {% if classe_filtro == 'C' %}selected{% endif %}>Classe C (Regular)</option>
+            <option value="D" {% if classe_filtro == 'D' %}selected{% endif %}>Classe D (Baixo Fit)</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Status Contato:</label>
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="all" {% if status_filtro == 'all' %}selected{% endif %}>Todos os Status</option>
+            <option value="novo" {% if status_filtro == 'novo' %}selected{% endif %}>Novo / Disponível</option>
+            <option value="prospectado" {% if status_filtro == 'prospectado' %}selected{% endif %}>Prospectado</option>
+            <option value="contatado" {% if status_filtro == 'contatado' %}selected{% endif %}>Contatado</option>
+            <option value="em_negociacao" {% if status_filtro == 'em_negociacao' %}selected{% endif %}>Em Negociação</option>
+            <option value="convertido" {% if status_filtro == 'convertido' %}selected{% endif %}>Convertido</option>
+            <option value="descartado" {% if status_filtro == 'descartado' %}selected{% endif %}>Descartado</option>
+          </select>
+        </div>
+        <div class="filter-item flex-grow">
+          <label>Busca:</label>
+          <input type="text" name="busca" value="{{ termo_busca }}" placeholder="Buscar por nome, sócio, cidade..." class="form-input">
+        </div>
+        <div class="filter-actions">
+          <label class="checkbox-label">
+            <input type="checkbox" name="whatsapp_only" value="1" {% if apenas_wa %}checked{% endif %} onchange="this.form.submit()">
+            <span>Só com WhatsApp</span>
+          </label>
+          <button type="submit" class="btn primary sm">Filtrar</button>
+          {% if nicho_filtro != 'all' or classe_filtro != 'all' or status_filtro != 'all' or filtro_rapido != 'all' or termo_busca or apenas_wa %}
+          <a href="{{ url_for('prospector.index', tab='capturados') }}" class="btn sm">Limpar</a>
+          {% endif %}
+        </div>
+      </form>
+
+      <!-- Tabela de Leads -->
+      <div class="table-responsive">
+        <table class="leads-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;">Classe</th>
+              <th>Empresa & Decisor</th>
+              <th>Nicho & Praça</th>
+              <th>Contatos</th>
+              <th>Raio-X IA</th>
+              <th>Status</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if leads %}
+              {% for l in leads %}
+              <tr class="lead-row" id="lead-row-{{ l.id }}">
+                <td>
+                  <div class="score-badge badge-{{ l.classificacao|lower }}" title="Score: {{ l.score }}/100">
+                    <strong>{{ l.classificacao }}</strong>
+                    <span>{{ l.score }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="company-cell">
+                    <strong class="company-name">{{ l.nome }}</strong>
+                    {% if l.decisor_nome %}
+                    <span class="decisor-tag">👤 <strong>{{ l.decisor_nome }}</strong> ({{ l.decisor_cargo or 'Sócio' }})</span>
+                    {% elif l.razao_social %}
+                    <span class="corporate-name">{{ l.razao_social }}</span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td>
+                  <span class="nicho-tag">{{ l.nicho_slug }}</span>
+                  <small class="location-text">📍 {{ l.cidade or l.praca or '-' }}</small>
+                </td>
+                <td>
+                  <div class="contact-badges">
+                    {% if l.whatsapp %}
+                    <a href="https://wa.me/{{ l.whatsapp }}" target="_blank" class="contact-pill wa" title="Abrir WhatsApp">
+                      🟢 {{ l.whatsapp }}
+                    </a>
+                    {% elif l.telefone_google %}
+                    <span class="contact-pill phone" title="Telefone Google Maps">📞 {{ l.telefone_google }}</span>
+                    {% endif %}
+                    {% set lead_mail = l.email or (l.emails[0] if l.emails else '') %}
+                    {% if lead_mail %}
+                    <a href="mailto:{{ lead_mail }}" class="contact-pill email" title="Enviar E-mail: {{ lead_mail }}">
+                      ✉️ {{ lead_mail }}
+                    </a>
+                    {% endif %}
+                    {% if l.site %}
+                    <a href="{{ l.site }}" target="_blank" class="contact-pill site" title="Visitar Site">🌐 Site</a>
+                    {% endif %}
+                    {% if l.instagram %}
+                    <a href="{{ l.instagram }}" target="_blank" class="contact-pill ig" title="Instagram">📸 IG</a>
+                    {% endif %}
+                  </div>
+                </td>
+                <td>
+                  <p class="summary-snippet">{{ l.resumo_ia or 'Aguardando enriquecimento...' }}</p>
+                </td>
+                <td>
+                  {% if l.status_contato == 'prospectado' %}
+                  <div class="prospectado-cell">
+                    <span class="status-badge status-prospectado">💬 Prospectado</span>
+                    <small class="vendedor-nome-sub" title="Abordado em {{ l.prospectado_em or '' }}">👤 {{ l.prospectado_por_nome or 'Vendedor' }}</small>
+                  </div>
+                  {% elif l.status_contato == 'novo' or not l.status_contato %}
+                  <span class="status-badge status-novo">🟢 Disponível</span>
+                  {% else %}
+                  <span class="status-badge status-{{ l.status_contato }}">{{ l.status_contato|replace('_', ' ')|capitalize }}</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right;">
+                  <button type="button" class="btn sm primary prospectar-btn" @click="abrirProspectar('{{ l.id }}')">
+                    🚀 Prospectar
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" class="empty-state">
+                  <div style="text-align: center; padding: 30px;">
+                    <p style="font-size: 15px; font-weight: 600; color: var(--muted, #64748b); margin-bottom: 12px;">Nenhum lead encontrado com os filtros selecionados.</p>
+                    {% if not is_seller %}
+                    <button type="button" class="btn primary" @click="setTab('radar')">🎯 Disparar Nova Varredura</button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      {% if total_pages > 1 %}
+      <div class="pagination-bar">
+        <span>Página {{ page }} de {{ total_pages }} ({{ total_leads }} leads)</span>
+        <div class="page-buttons">
+          {% if page > 1 %}
+          <a href="{{ url_for('prospector.index', tab='capturados', page=page-1, nicho=nicho_filtro, classe=classe_filtro, status=status_filtro, filtro_rapido=filtro_rapido, busca=termo_busca) }}" class="btn sm">Anterior</a>
+          {% endif %}
+          {% if page < total_pages %}
+          <a href="{{ url_for('prospector.index', tab='capturados', page=page+1, nicho=nicho_filtro, classe=classe_filtro, status=status_filtro, filtro_rapido=filtro_rapido, busca=termo_busca) }}" class="btn sm">Próxima</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not is_seller %}
+  <!-- ABA 2: RADAR DE PROSPECÇÃO (ADMIN / SUPPORT) -->
+  <div x-show="tab === 'radar'" class="tab-pane">
+    <div class="radar-grid">
+      <!-- Formulário de Disparo -->
+      <div class="panel form-panel">
+        <h3 class="panel-title">🎯 Disparar Nova Varredura de Mercado</h3>
+        <p class="panel-desc">Selecione o segmento e a praça desejada para acionar o robô de descoberta no Google Maps com enriquecimento da Receita e IA.</p>
+
+        <!-- Banner de Status do Motor -->
+        {% if apify_configured %}
+        <div class="alert-banner" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3);">
+          <div class="alert-banner-text">
+            <strong style="color: #10b981;">🟢 Motor Google Maps Ativo (Apify):</strong> Busca oficial ao vivo com os créditos gratuitos mensais.
+          </div>
+        </div>
+        {% else %}
+        <div class="alert-banner">
+          <div class="alert-banner-text">
+            <strong>💡 Modo Prospecção Inteligente (Gemini IA):</strong> Coletando empresas locais reais da praça. Para busca direta no Google Maps ao vivo, cadastre seu token gratuito do Apify na aba <em>Automação 24/7 & Integrações</em>.
+          </div>
+          <button type="button" class="btn sm" @click="setTab('integracoes')">Configurar Token</button>
+        </div>
+        {% endif %}
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">Nicho Comercial:</label>
+          <select x-model="radarForm.nicho" class="form-input">
+            {% for n in nichos %}
+            <option value="{{ n.slug }}">{{ n.rotulo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">Cidade / Estado (Praça Alvo):</label>
+          <input type="text" x-model="radarForm.praca" placeholder="Ex: Vitória ES, Belo Horizonte MG, Campinas SP" class="form-input">
+          <div class="quick-pills">
+            <span class="pill-label">Sugestões rápidas:</span>
+            <button type="button" class="quick-pill" @click="radarForm.praca = 'Vitória ES'">Vitória ES</button>
+            <button type="button" class="quick-pill" @click="radarForm.praca = 'Vila Velha ES'">Vila Velha ES</button>
+            <button type="button" class="quick-pill" @click="radarForm.praca = 'Serra ES'">Serra ES</button>
+            <button type="button" class="quick-pill" @click="radarForm.praca = 'Belo Horizonte MG'">Belo Horizonte MG</button>
+            <button type="button" class="quick-pill" @click="radarForm.praca = 'Campinas SP'">Campinas SP</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">Volume de Leads por Busca:</label>
+          <div class="volume-selector">
+            <label class="radio-card" :class="{ 'selected': radarForm.limite === 10 }">
+              <input type="radio" name="limite" :value="10" x-model.number="radarForm.limite">
+              <strong>10 Leads</strong>
+              <small>Rápido (~30s)</small>
+            </label>
+            <label class="radio-card" :class="{ 'selected': radarForm.limite === 25 }">
+              <input type="radio" name="limite" :value="25" x-model.number="radarForm.limite">
+              <strong>25 Leads</strong>
+              <small>Equilibrado (~1m)</small>
+            </label>
+            <label class="radio-card" :class="{ 'selected': radarForm.limite === 50 }">
+              <input type="radio" name="limite" :value="50" x-model.number="radarForm.limite">
+              <strong>50 Leads</strong>
+              <small>Varredura Completa</small>
+            </label>
+          </div>
+        </div>
+
+        <button type="button" class="btn primary" style="width: 100%; justify-content: center; padding: 12px;" :disabled="radarLoading || jobStatus.running" @click="iniciarBusca()">
+          <span x-show="!radarLoading && !jobStatus.running">⚡ Iniciar Robô de Descoberta</span>
+          <span x-show="radarLoading || jobStatus.running">🛰️ Processando Varredura...</span>
+        </button>
+      </div>
+
+      <!-- Monitor em Tempo Real -->
+      <div class="panel monitor-panel">
+        <h3 class="panel-title">🛰️ Monitor do Robô em Tempo Real</h3>
+        <p class="panel-desc">Acompanhe a thread de execução do motor de IA coletando, auditando CNPJ e calculando score.</p>
+
+        <div class="monitor-card">
+          <div class="monitor-header">
+            <span class="status-indicator" :class="{ 'pulsing': jobStatus.running }"></span>
+            <strong x-text="jobStatus.running ? 'Robô Ativo' : (jobStatus.completed ? 'Última Execução Concluída' : 'Pronto para Disparo')"></strong>
+          </div>
+
+          <div class="progress-wrap" x-show="jobStatus.running || jobStatus.completed">
+            <div class="progress-info">
+              <span x-text="jobStatus.current_lead || 'Aguardando início...'"></span>
+              <strong x-text="`${jobStatus.processed || 0}/${jobStatus.total || 0}`"></strong>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" :style="`width: ${jobStatus.total > 0 ? (jobStatus.processed / jobStatus.total) * 100 : 0}%;`"></div>
+            </div>
+          </div>
+
+          <div class="monitor-details" style="font-size: 12px; color: var(--muted, #64748b); line-height: 1.6;">
+            <div>Nicho: <strong x-text="jobStatus.nicho || 'Não iniciado'"></strong></div>
+            <div>Praça: <strong x-text="jobStatus.praca || 'Não informada'"></strong></div>
+            <div x-show="jobStatus.error" style="color: #ef4444; font-weight: 700; margin-top: 6px;" x-text="`Erro: ${jobStatus.error}`"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA 3: AUTOMAÇÃO 24/7 & INTEGRAÇÕES (ADMIN / SUPPORT) -->
+  <div x-show="tab === 'integracoes'" class="tab-pane">
+    <!-- Subtemplate Central de Automação 24/7 & Carrossel Regional -->
+    {% include 'admin/prospector_automacao.html' %}
+
+    <div class="integrations-grid" style="margin-top: 24px;">
+      <!-- Google Sheets Sincronização -->
+      <div class="panel">
+        <h3 class="panel-title">📊 Planilha Google Sheets dos Vendedores</h3>
+        <p class="panel-desc">Sincroniza automaticamente a base qualificada para a planilha de trabalho da equipe comercial via Webhook Apps Script.</p>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">Webhook Apps Script URL:</label>
+          <input type="text" x-model="configForm.sheets_url" placeholder="https://script.google.com/macros/s/.../exec" class="form-input">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn" @click="salvarConfiguracoes()">Salvar URL</button>
+          <button type="button" class="btn primary" :disabled="syncLoading" @click="sincronizarSheets()">
+            <span x-show="!syncLoading">⚡ Sincronizar Agora na Planilha</span>
+            <span x-show="syncLoading">Sincronizando...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Meta Ads Lookalike -->
+      <div class="panel">
+        <h3 class="panel-title">🎯 Meta Ads Lookalike (Públicos Semelhantes)</h3>
+        <p class="panel-desc">Baixe a base de leads em formato CSV pronto para subir no Gerenciador de Anúncios da Meta e criar públicos Lookalike com alta precisão.</p>
+
+        <div class="lookalike-info">
+          <ul>
+            <li>✓ Colunas padronizadas: <code>fn, ln, phone, email, ct, st, country, zip</code></li>
+            <li>✓ Telefones formatados em E.164 internacional (+55...)</li>
+            <li>✓ Filtro automático de decisores e sócios auditados</li>
+          </ul>
+        </div>
+
+        <a href="{{ url_for('prospector.export_meta') }}" class="btn primary" download>
+          📥 Baixar CSV para Meta Lookalike
+        </a>
+      </div>
+
+      <!-- Credenciais Apify -->
+      <div class="panel">
+        <h3 class="panel-title">🔑 Chave de Coleta (Apify Token)</h3>
+        <p class="panel-desc">Token do Apify para buscar empresas no Google Maps (compass~crawler-google-places). Usufrui dos $5 gratuitos mensais.</p>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">APIFY_TOKEN:</label>
+          <input type="password" x-model="configForm.apify_token" placeholder="apify_api_..." class="form-input">
+        </div>
+
+        <button type="button" class="btn" @click="salvarConfiguracoes()">Gravar Token</button>
+      </div>
+
+      <!-- Gerenciamento de Nichos -->
+      <div class="panel">
+        <h3 class="panel-title">🏷️ Nichos e Segmentos Cadastrados</h3>
+        <p class="panel-desc">Segmentos pré-configurados para a MAJ Mobilidade Elétrica.</p>
+        <div class="niches-list">
+          {% for n in nichos %}
+          <div class="niche-card">
+            <div>
+              <strong>{{ n.rotulo }}</strong>
+              <small style="display: block; color: var(--muted, #64748b);">Slug: <code>{{ n.slug }}</code></small>
+            </div>
+            <span class="badge-active">Ativo</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Modal Ficha do Lead & Gancho Comercial IA -->
+  {% include 'admin/prospector_modal.html' %}
+</div>
+{% endblock %}

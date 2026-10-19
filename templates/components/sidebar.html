@@ -12,6 +12,7 @@
 {% set can_outlet = me and me.role in ['admin','support'] %}
 {% set can_atacado = me and me.role in ['admin','support'] %}
 {% set can_showroom = me and me.role in ['admin','support'] %}
+{% set can_prospector = me and me.role in ['admin','support','sales'] %}
 {% set has_comercial = True %}
 
 {% set can_stock = me and user_has_permission(me, 'stock', default_for_sales=True) %}
@@ -43,6 +44,7 @@
 {% set is_active_outlet = ('outlet' in full_ep) %}
 {% set is_active_atacado = ('atacado' in full_ep) %}
 {% set is_active_showroom = ('showroom' in full_ep or 'model' in full_ep) %}
+{% set is_active_prospector = ('prospector' in full_ep or 'prospeccao' in full_ep) %}
 
 {% set is_active_stock = (ep == 'stock') %}
 {% set is_active_freight = (ep == 'freight') %}
@@ -232,6 +234,15 @@
           <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
         </svg>
         <span>Modelos & Showroom</span>
+      </a>
+      {% endif %}
+
+      {% if can_prospector %}
+      <a href="{{ url_for('prospector.index') }}" class="nav-item {{ 'active' if is_active_prospector else '' }}" title="Máquina de Leads e Prospecção Qualificada">
+        <svg class="nav-icon" style="color: #38bdf8;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>Prospecção de Leads</span>
       </a>
       {% endif %}
     </div>
