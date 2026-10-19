@@ -97,12 +97,33 @@
       .model-pill-item { padding: 6px 13px !important; font-size: 11.5px !important; }
       main.showroom-viewport { margin-top: 106px !important; }
       .hero-studio-stage { min-height: calc(100vh - 106px) !important; }
+      .section-cockpit-sim { padding: 32px 14px 44px !important; }
+      .cockpit-bezel-frame { min-height: 440px !important; border-radius: 18px !important; border-width: 5px !important; margin-top: 18px !important; }
+      .cockpit-screen-ui { padding: 16px 14px !important; }
+      .hud-center-stage { margin: 10px 0 !important; }
+      .hud-speedometer-val { font-size: 52px !important; line-height: 1 !important; }
+      .hud-specs-grid { gap: 8px !important; padding-top: 10px !important; }
+      .hud-spec-card { padding: 8px 10px !important; }
+      .cockpit-controls-wrapper { margin-top: 16px !important; overflow: hidden !important; width: 100% !important; padding: 4px 0 !important; }
+      .cockpit-controls-wrapper::before, .cockpit-controls-wrapper::after { content: ""; position: absolute; top: 0; bottom: 0; width: 22px; z-index: 5; pointer-events: none; }
+      .cockpit-controls-wrapper::before { left: 0; background: linear-gradient(to right, rgba(7, 7, 9, 0.95), transparent); }
+      .cockpit-controls-wrapper::after { right: 0; background: linear-gradient(to left, rgba(7, 7, 9, 0.95), transparent); }
+      .cockpit-controls-row { flex-wrap: nowrap !important; overflow-x: auto !important; justify-content: flex-start !important; padding: 4px 16px !important; gap: 8px !important; scrollbar-width: none !important; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; width: 100% !important; }
+      .cockpit-controls-row::-webkit-scrollbar { display: none !important; }
+      .cockpit-mode-btn { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 11.5px !important; border-radius: 100px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+      .btn-cat-text-full { display: none !important; }
+      .btn-cat-text-short { display: inline !important; }
     }
     @media (max-width: 400px) {
       .brand-maj-logo-img { height: 24px !important; max-height: 26px !important; }
       .header-center-title { font-size: 11.5px !important; letter-spacing: 0.8px !important; }
       .header-right-slot { width: 56px !important; }
+      .cockpit-bezel-frame { min-height: 420px !important; }
+      .hud-speedometer-val { font-size: 46px !important; }
     }
+    .cockpit-controls-wrapper { position: relative; width: 100%; max-width: 1200px; margin: 24px auto 0; display: flex; justify-content: center; }
+    .btn-cat-text-full { display: inline; }
+    .btn-cat-text-short { display: none; }
   </style>
 
   <link rel="stylesheet" href="/static/css/showroom.css?v={{ cache_id or 1 }}">
@@ -326,25 +347,39 @@
         </div>
       </div>
 
-      <div class="cockpit-controls-row" id="cockpitTechControls">
-        <button class="cockpit-mode-btn active" id="btnCatMotorizacao" onclick="setCockpitCategory('motorizacao')">
-          <span>⚡</span> Motorização & Desempenho
-        </button>
-        <button class="cockpit-mode-btn" id="btnCatBateria" onclick="setCockpitCategory('bateria')">
-          <span>🔋</span> Bateria & Autonomia
-        </button>
-        <button class="cockpit-mode-btn" id="btnCatChassi" onclick="setCockpitCategory('chassi')">
-          <span>🛡️</span> Chassi & Dimensões
-        </button>
-        <button class="cockpit-mode-btn" id="btnCatSeguranca" onclick="setCockpitCategory('seguranca')">
-          <span>🛑</span> Segurança & Freios
-        </button>
-        <button class="cockpit-mode-btn" id="btnCatConforto" onclick="setCockpitCategory('conforto')">
-          <span>👥</span> Capacidade de Passageiros
-        </button>
-        <button class="cockpit-mode-btn" id="btnCatGarantia" onclick="setCockpitCategory('garantia')">
-          <span>📜</span> Garantia & Regulamentação
-        </button>
+      <div class="cockpit-controls-wrapper">
+        <div class="cockpit-controls-row" id="cockpitTechControls">
+          <button class="cockpit-mode-btn active" id="btnCatMotorizacao" onclick="setCockpitCategory('motorizacao')">
+            <span class="btn-cat-icon">⚡</span>
+            <span class="btn-cat-text-full">Motorização & Desempenho</span>
+            <span class="btn-cat-text-short">Motorização</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatBateria" onclick="setCockpitCategory('bateria')">
+            <span class="btn-cat-icon">🔋</span>
+            <span class="btn-cat-text-full">Bateria & Autonomia</span>
+            <span class="btn-cat-text-short">Bateria</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatChassi" onclick="setCockpitCategory('chassi')">
+            <span class="btn-cat-icon">🛡️</span>
+            <span class="btn-cat-text-full">Chassi & Dimensões</span>
+            <span class="btn-cat-text-short">Chassi</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatSeguranca" onclick="setCockpitCategory('seguranca')">
+            <span class="btn-cat-icon">🛑</span>
+            <span class="btn-cat-text-full">Segurança & Freios</span>
+            <span class="btn-cat-text-short">Freios</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatConforto" onclick="setCockpitCategory('conforto')">
+            <span class="btn-cat-icon">👥</span>
+            <span class="btn-cat-text-full">Capacidade de Passageiros</span>
+            <span class="btn-cat-text-short">Conforto</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatGarantia" onclick="setCockpitCategory('garantia')">
+            <span class="btn-cat-icon">📜</span>
+            <span class="btn-cat-text-full">Garantia & Regulamentação</span>
+            <span class="btn-cat-text-short">Garantia</span>
+          </button>
+        </div>
       </div>
     </section>
 

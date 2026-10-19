@@ -281,7 +281,9 @@
   window.setCockpitCategory = function (catKey) {
     activeCockpitCategory = catKey;
     document.querySelectorAll('#cockpitTechControls .cockpit-mode-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(catKey));
+      const isAct = Boolean(btn.getAttribute('onclick')?.includes(catKey));
+      btn.classList.toggle('active', isAct);
+      if (isAct && window.innerWidth <= 768) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     });
     if (currentModel) renderCockpitCategoryView(currentModel, catKey, true);
   };
