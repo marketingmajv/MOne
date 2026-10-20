@@ -590,6 +590,19 @@ button, input, select, textarea {
 /* ==========================================================================
    Bento Grid & Cockpit Executivo (2026)
    ========================================================================== */
+.cockpit-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+.cockpit-top-grid > * {
+  min-width: 0;
+}
+.radar-panel, .radar-feed, .radar-item {
+  min-width: 0;
+}
 .bento-hero {
   border-radius: var(--radius-lg);
   padding: 24px 28px;

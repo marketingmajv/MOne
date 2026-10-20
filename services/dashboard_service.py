@@ -14,11 +14,20 @@ import json
 from decimal import Decimal
 from typing import Any, Dict, List
 from database import db
+from services.user_permission_service import user_has_permission_check
 
 
 def get_dashboard_operational_data(user: dict | None) -> Dict[str, Any]:
-    """Retorna dados executivos e operacionais reais para a Visão Geral."""
-    is_admin = bool(user and user.get("role") in ["admin", "support", "finance"])
+    """Retorna dados executivos e operacionais reais para a Visão Geral respeitando permissões granulares."""
+    can_see_financial = user_has_permission_check(user, "fiscal") or user_has_permission_check(user, "payments")
+    can_see_imports = user_has_permission_check(user, "imports")
+    can_see_audit = user_has_permission_check(user, "audit_logs")
+    can_see_outlet = user_has_permission_check(user, "outlet")
+    can_see_atacado = user_has_permission_check(user, "atacado")
+    can_see_custom_catalogs = user_has_permission_check(user, "custom_catalogs")
+    can_see_freight = user_has_permission_check(user, "freight")
+    can_see_stock = user_has_permission_check(user, "stock")
+    is_admin = can_see_financial and can_see_imports
 
     with db() as conn:
         # 1. Atacado B2B
@@ -154,19 +163,49 @@ def get_dashboard_operational_data(user: dict | None) -> Dict[str, Any]:
         except Exception:
             recent_quotes = []
 
-        # 9. Atividades Recentes do Log
+        # 9. Atividades Recentes do Log (Respeitando Sigilo e Segurança)
         recent_activities = []
         try:
-            acts = conn.execute(
-                """
-                SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') as user_name
-                FROM audit_log a
-                LEFT JOIN users u ON u.id = a.user_id
-                ORDER BY a.id DESC
-                LIMIT 6
-                """
-            ).fetchall()
-            recent_activities = [dict(a) for a in acts]
+            if can_see_audit:
+                acts = conn.execute(
+                    """
+                    SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') as user_name
+                    FROM audit_log a
+                    LEFT JOIN users u ON u.id = a.user_id
+                    ORDER BY a.id DESC
+                    LIMIT 6
+                    """
+                ).fetchall()
+            else:
+                acts = conn.execute(
+                    """
+                    SELECT a.action, a.detail, a.created_at, COALESCE(u.name, 'Sistema') as user_name
+                    FROM audit_log a
+                    LEFT JOIN users u ON u.id = a.user_id
+                    WHERE a.action NOT LIKE 'user.%%' 
+                      AND a.action NOT LIKE 'auth.%%' 
+                      AND a.action NOT LIKE 'backup.%%' 
+                      AND a.action NOT LIKE 'infra.%%'
+                      AND a.action NOT LIKE 'connections.%%'
+                    ORDER BY a.id DESC
+                    LIMIT 6
+                    """
+                ).fetchall()
+
+            for a in acts:
+                item = dict(a)
+                det = str(item.get("detail") or item.get("user_name") or "")
+                if "perms:{" in det or "permissions" in det:
+                    det = "Permissões de acesso atualizadas"
+                elif "quote=" in det:
+                    parts = [p.strip() for p in det.split(";") if p.strip()]
+                    cust = next((p.replace("customer=", "") for p in parts if "customer=" in p), "")
+                    cep = next((p.replace("cep=", "CEP ") for p in parts if "cep=" in p), "")
+                    det = f"{cust} • {cep}".strip(" • ") or det
+                elif len(det) > 60:
+                    det = det[:57] + "..."
+                item["clean_detail"] = det
+                recent_activities.append(item)
         except Exception:
             recent_activities = []
 
@@ -206,4 +245,12 @@ def get_dashboard_operational_data(user: dict | None) -> Dict[str, Any]:
         "recent_quotes": recent_quotes,
         "recent_activities": recent_activities,
         "is_admin_or_support": is_admin,
+        "can_see_imports": can_see_imports,
+        "can_see_financial": can_see_financial,
+        "can_see_audit": can_see_audit,
+        "can_see_outlet": can_see_outlet,
+        "can_see_atacado": can_see_atacado,
+        "can_see_custom_catalogs": can_see_custom_catalogs,
+        "can_see_freight": can_see_freight,
+        "can_see_stock": can_see_stock,
     }
