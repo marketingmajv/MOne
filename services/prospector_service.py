@@ -151,7 +151,7 @@ def buscar_google_maps_apify(query: str, max_results: int = 10, custom_token: Op
 def buscar_empresas_gemini_fallback(query: str, max_results: int = 10) -> List[Dict[str, Any]]:
     """Gera amostragem de empresas reais locais via Gemini quando o Apify Token não está configurado."""
     prompt = f"""Especialista em inteligência de vendas B2B Brasil.
-Liste até {min(max_results, 10)} empresas comerciais reais (lojas físicas, revendas, oficinas, comércios ativos) para a busca: "{query}".
+Liste até {min(max_results, 25)} empresas comerciais reais (lojas físicas, revendas, oficinas, comércios ativos) para a busca: "{query}".
 Retorne ESTRITAMENTE um array JSON de objetos:
 [
   {{
@@ -357,10 +357,23 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                 raise ValueError(f"Nicho '{nicho_slug}' não encontrado.")
 
             termos = nicho_cfg.get("termos") or [nicho_cfg.get("rotulo")]
-            termo = termos[0]
-            query = f"{termo} em {praca}"
+            lugares: List[Dict[str, Any]] = []
+            seen_names = set()
+            for t_item in termos:
+                if len(lugares) >= limite:
+                    break
+                restante = limite - len(lugares)
+                query = f"{t_item} em {praca}"
+                sub = buscar_google_maps_apify(query, max_results=min(restante, 25))
+                for sl in sub:
+                    nm = (sl.get("nome") or "").strip().lower()
+                    if nm and nm not in seen_names:
+                        seen_names.add(nm)
+                        sl["termo_busca"] = t_item
+                        lugares.append(sl)
+                        if len(lugares) >= limite:
+                            break
 
-            lugares = buscar_google_maps_apify(query, max_results=limite)
             with _JOB_LOCK:
                 _CURRENT_JOB["total"] = len(lugares)
 
@@ -414,7 +427,7 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                             updated_at = NOW();
                         """,
                         [
-                            p["google_id"], nicho_slug, praca, termo, p["nome"], p["categoria"], p["endereco"], p["cidade"], None, p["lat"], p["lng"],
+                            p["google_id"], nicho_slug, praca, p.get("termo_busca", "loja de motos"), p["nome"], p["categoria"], p["endereco"], p["cidade"], None, p["lat"], p["lng"],
                             p["google_maps_url"], p["avaliacao"], p["total_avaliacoes"], p["telefone_google"], p["site"], site_info["site_status"], site_info["site_vivo"],
                             site_info["site_titulo"], site_info["whatsapp"] or p["telefone_google"], email_principal, emails_consolidados, site_info["instagram"],
                             cnpj_info.get("cnpj") if cnpj_info else None, cnpj_info.get("razao_social") if cnpj_info else None, cnpj_info.get("nome_fantasia") if cnpj_info else None,
