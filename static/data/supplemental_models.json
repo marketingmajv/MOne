@@ -36,14 +36,14 @@
       },
       "Bateria e autonomia": {
         "Química / tipo": "Bateria de Lítio",
-        "Voltagem (V)": "60v",
-        "Capacidade (Ah)": "20ah",
-        "Capacidade (Wh)": "1200WH",
+        "Voltagem (V)": "72V",
+        "Capacidade (Ah)": "30Ah",
+        "Capacidade (Wh)": "2160Wh",
         "Bateria removível?": "Sim",
-        "Autonomia conservadora (km)": "35km",
-        "Autonomia máxima estimada (km)": "45",
+        "Autonomia conservadora (km)": "50km",
+        "Autonomia máxima estimada (km)": "65",
         "Tempo de recarga": "6 a 8 horas",
-        "Carregador": "60v 3ah Bivolt Inteligente",
+        "Carregador": "72V 3A Bivolt Inteligente",
         "Condições do teste": "Avaliação realizada com piloto de 75 kg em piso plano e seco, bateria totalmente carregada.",
         "Fonte da informação": "Especificações técnicas oficiais MAJ Mobilidade Elétrica."
       },
@@ -78,7 +78,7 @@
       "Uso e comercial": {
         "Ideal para": "Lazer, deslocamento urbano ágil, trabalho e trajetos diários com máxima economia e praticidade de bagagem.",
         "Não recomendado para": "Não recomendado para menores de 16 anos.",
-        "Principal diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 60V.",
+        "Principal diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 72V 30Ah.",
         "Perfil do cliente": "Adultos e jovens que buscam estilo esportivo, agilidade no trânsito e praticidade.",
         "Subidas: limite e condições": "Compatível com ladeiras urbanas",
         "Transporte de carga": "150kg",
@@ -93,9 +93,9 @@
         "Observação legal / fonte": "Garantia MAJ Mobilidade Elétrica"
       },
       "Texto livre": {
-        "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
-        "Pontos fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 60V 20Ah.",
-        "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 35 km por carga.",
+        "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 65 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
+        "Pontos fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 72V 30Ah (2.160 Wh).",
+        "Limitações": "Planejar rotas dentro da autonomia conservadora estimada de 50 km por carga.",
         "Comparação com outros modelos": "Na linha MAJ, a GP 1000 combina estética esportiva moderna com a conveniência imediata do baú traseiro integrado, oferecendo agilidade superior.",
         "Acessórios e opcionais": "Consultar equipe de vendas.",
         "Observações da equipe": ""

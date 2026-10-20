@@ -290,8 +290,8 @@ MODEL_SPECS = {
         "specs": {
             "Motor": "1000W Brushless High Efficiency",
             "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km",
-            "Bateria": "60V Lítio",
+            "Autonomia": "Até 65 km",
+            "Bateria": "72V 30Ah Lítio",
             "Freios": "Disco hidráulico"
         },
         "badge": "ESPORTIVA",
