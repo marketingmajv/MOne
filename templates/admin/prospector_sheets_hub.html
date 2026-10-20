@@ -1,138 +1,212 @@
-<!-- Central Google Sheets Hub (M-One Prospecção) -->
-<div class="sheets-hub-card" x-data="{ configAberta: false, salvandoSheets: false, sheetsUrlInput: '{{ google_sheets_url }}', webhookUrlInput: '{{ sheets_url }}' }">
-  <div class="sheets-hub-main">
-    <div class="sheets-hub-info">
-      <div class="sheets-hub-badge-row">
-        <span class="sheets-badge-pill sheets-badge-brand">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="8" y1="13" x2="16" y2="13"></line>
-            <line x1="8" y1="17" x2="16" y2="17"></line>
-            <line x1="10" y1="9" x2="10" y2="9"></line>
-          </svg>
-          Google Sheets Oficial
-        </span>
-        <span class="sheets-badge-pill sheets-badge-leads">
-          🟢 <strong>{{ total_leads }}</strong> leads capturados prontos
-        </span>
-        <span class="sheets-badge-pill sheets-badge-account" title="Conta Google Master">
-          ✉️ marketingmajv@gmail.com
-        </span>
+<!-- CENTRAL DE SINCRONIZAÇÃO GOOGLE SHEETS — PADRÃO M-ONE (Padrão Frete + Outlet) -->
+<div class="panel" 
+     x-data="{ 
+       configAberta: false, 
+       salvandoSheets: false, 
+       sheetsUrlInput: '{{ google_sheets_url }}', 
+       webhookUrlInput: '{{ sheets_url }}',
+       copiado: false,
+       copiarLink() {
+         if (!this.sheetsUrlInput) return;
+         navigator.clipboard.writeText(this.sheetsUrlInput);
+         this.copiado = true;
+         setTimeout(() => { this.copiado = false; }, 2000);
+       },
+       salvarConfig() {
+         this.salvandoSheets = true;
+         fetch('/admin/prospeccao/api/google-sheets', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+           body: JSON.stringify({ google_sheets_url: this.sheetsUrlInput, sheets_webhook_url: this.webhookUrlInput, csrf_token: getCsrfToken() })
+         })
+         .then(r => r.json())
+         .then(d => {
+           this.salvandoSheets = false;
+           if (d.status === 'success') {
+             alert('✅ Configurações da Planilha salvas com sucesso!');
+             window.location.reload();
+           } else {
+             alert('Erro: ' + (d.message || 'Falha ao salvar'));
+           }
+         })
+         .catch(e => {
+           this.salvandoSheets = false;
+           alert('Erro de rede: ' + e);
+         });
+       }
+     }"
+     style="position: relative; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--line); background: var(--panel); border-left: 4px solid var(--accent, #00E599); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.06));">
+
+  <!-- Linha Superior Decorativa (Padrão M-One) -->
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent, #00E599), #0ea5e9, #6366f1);"></div>
+
+  <!-- CABEÇALHO DO CARD: ÍCONE, TÍTULO, BADGES E STATUS -->
+  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px;">
+    
+    <!-- Lado Esquerdo: Ícone + Título + Badges -->
+    <div style="display: flex; align-items: center; gap: 14px; min-width: 280px; flex: 1;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 229, 153, 0.12); border: 1px solid rgba(0, 229, 153, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
+        📊
       </div>
-      <h3 class="sheets-hub-title">Central de Sincronização & Planilha Google Sheets</h3>
-      <p class="sheets-hub-desc">
-        Acesse sua planilha ao vivo, faça o download imediato da base formatada em Excel/CSV ou dispare a sincronização automática.
-      </p>
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.3px;">
+            Planilha Oficial Google Sheets (Leads Comerciais)
+          </h3>
+          
+          <span class="badge" style="font-size: 0.74rem; font-weight: 700; padding: 3px 10px; background: rgba(0, 229, 153, 0.12); color: var(--accent, #00E599); border: 1px solid rgba(0, 229, 153, 0.3); border-radius: 99px; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #00E599); box-shadow: 0 0 6px var(--accent, #00E599);"></span>
+            <span>{{ total_leads }} Leads Capturados</span>
+          </span>
+
+          <span class="badge" style="font-size: 0.74rem; font-weight: 600; padding: 3px 10px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); border-radius: 99px; display: inline-flex; align-items: center; gap: 5px;">
+            <span>✉️</span>
+            <span>marketingmajv@gmail.com</span>
+          </span>
+        </div>
+        <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.4;">
+          Planilha oficial compartilhada para acompanhamento da equipe de vendas, exportação formatada e sincronização.
+        </p>
+      </div>
     </div>
 
-    <!-- Ações Rápidas de Exportação e Sincronização -->
-    <div class="sheets-hub-actions">
-      {% if google_sheets_url %}
-      <a href="{{ google_sheets_url }}" target="_blank" rel="noopener noreferrer" class="sheets-action-btn sheets-btn-external" title="Abrir planilha no Google Sheets">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <span>Abrir Planilha Sheets ↗</span>
-      </a>
-      {% endif %}
-
-      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='xlsx') }}" class="sheets-action-btn sheets-btn-excel" title="Baixar arquivo Excel (.xlsx) já com colunas formatadas e cabeçalho MAJ">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>Exportar Excel (.xlsx)</span>
-      </a>
-
-      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='csv') }}" class="sheets-action-btn sheets-btn-csv" title="Baixar arquivo CSV compatível com Google Sheets e Excel">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-        </svg>
-        <span>Exportar CSV</span>
-      </a>
-
+    <!-- Lado Direito: Ações Rápidas de Sincronização -->
+    <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
       {% if not is_seller %}
-      <button type="button" class="sheets-action-btn sheets-btn-sync" :disabled="syncLoading" @click="sincronizarSheets()" title="Disparar sincronização direta via Webhook Apps Script">
-        <span x-show="!syncLoading" style="display: inline-flex; align-items: center; gap: 6px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          Sincronizar ao Vivo
-        </span>
-        <span x-show="syncLoading" style="display: inline-flex; align-items: center; gap: 6px;">
-          <svg class="spinner-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="2" x2="12" y2="6"></line>
-            <line x1="12" y1="18" x2="12" y2="22"></line>
-            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-            <line x1="2" y1="12" x2="6" y2="12"></line>
-            <line x1="18" y1="12" x2="22" y2="12"></line>
-            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-          </svg>
-          Sincronizando...
-        </span>
+      <button type="button" 
+              class="btn sm" 
+              :disabled="syncLoading" 
+              @click="sincronizarSheets()" 
+              style="border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: var(--accent, #00E599); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; cursor: pointer;"
+              title="Disparar sincronização via Webhook Apps Script">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #00E599);"></span>
+        <span x-show="!syncLoading">⚡ Sincronizar ao Vivo</span>
+        <span x-show="syncLoading">Sincronizando...</span>
       </button>
 
-      <button type="button" class="sheets-action-btn sheets-btn-gear" @click="configAberta = !configAberta" title="Configurar URL da Planilha ou Webhook">
-        ⚙️ <span x-text="configAberta ? 'Fechar' : 'Configurar'"></span>
+      <button type="button" 
+              class="btn sm" 
+              @click="configAberta = !configAberta" 
+              style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; cursor: pointer;">
+        <span x-text="configAberta ? 'Fechar' : '⚙️ Webhook'">⚙️ Webhook</span>
       </button>
       {% endif %}
     </div>
+
+  </div>
+
+  <!-- LINHA DE URL DA PLANILHA NO PADRÃO FREIGHT / M-ONE -->
+  <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px;">
+    
+    <!-- Input com a URL oficial da planilha -->
+    <div style="flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;">
+      <span style="position: absolute; left: 12px; font-size: 0.85rem; color: var(--muted); pointer-events: none;">
+        🔗
+      </span>
+      <input type="url" 
+             x-model="sheetsUrlInput" 
+             placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing" 
+             class="form-input" 
+             style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.78rem; font-family: monospace; border-radius: 8px; height: 38px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
+    </div>
+
+    <!-- Botões de Ação na URL -->
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      {% if not is_seller %}
+      <button type="button" 
+              class="btn sm" 
+              :disabled="salvandoSheets" 
+              @click="salvarConfig()" 
+              style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span x-text="salvandoSheets ? 'Salvando...' : 'Salvar Link'">Salvar Link</span>
+      </button>
+      {% endif %}
+
+      <button type="button" 
+              class="btn sm" 
+              @click="copiarLink()" 
+              style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"
+              title="Copiar URL da Planilha">
+        <span x-text="copiado ? '✓ Copiado!' : '📋 Copiar'">📋 Copiar</span>
+      </button>
+
+      {% if google_sheets_url %}
+      <a href="{{ google_sheets_url }}" 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         class="btn sm" 
+         style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent, #00E599); border-color: rgba(0, 229, 153, 0.35); background: rgba(0, 229, 153, 0.05); text-decoration: none;">
+        <span>Abrir no Sheets</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- BARRA DE EXPORTAÇÃO DIRETA DE LEADS -->
+  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px;">
+    
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <span style="font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+        📥 Exportação Imediata:
+      </span>
+
+      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='xlsx') }}" 
+         class="btn primary sm" 
+         style="font-size: 0.8rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; text-decoration: none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Baixar Excel (.xlsx) Formatado</span>
+      </a>
+
+      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='csv') }}" 
+         class="btn sm" 
+         style="font-size: 0.8rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Baixar CSV</span>
+      </a>
+    </div>
+
+    <!-- Dica de Importação -->
+    <div style="font-size: 0.74rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;">
+      <span>💡</span>
+      <span>No Sheets: <strong>Arquivo > Importar > Fazer upload</strong> do Excel baixado.</span>
+    </div>
+
   </div>
 
   {% if not is_seller %}
-  <!-- Painel Expansível de Configuração da Planilha -->
-  <div x-show="configAberta" x-cloak class="sheets-config-drawer" x-transition>
-    <div class="sheets-config-grid">
-      <div class="sheets-config-field">
-        <label>🔗 Link da Planilha Google Sheets (Visualização / Compartilhamento):</label>
-        <input type="url" x-model="sheetsUrlInput" class="form-input" placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing">
-        <small class="sheets-field-tip">Planilha compartilhada na conta <strong>marketingmajv@gmail.com</strong>.</small>
+  <!-- CONTEÚDO EXPANSÍVEL: WEBHOOK APPS SCRIPT (x-show="configAberta") -->
+  <div x-show="configAberta" 
+       x-cloak
+       x-transition
+       style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 12px;">
+      <div>
+        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">
+          ⚡ Webhook URL do Google Apps Script (Sincronização 24/7):
+        </label>
+        <input type="url" 
+               x-model="webhookUrlInput" 
+               placeholder="https://script.google.com/macros/s/.../exec" 
+               class="form-input" 
+               style="width: 100%; font-size: 0.78rem; font-family: monospace; height: 38px; border-radius: 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
+        <small style="font-size: 0.7rem; color: var(--muted); margin-top: 4px; display: block;">
+          Cole aqui o Web App publicado no Google Apps Script vinculado à sua planilha.
+        </small>
       </div>
-      <div class="sheets-config-field">
-        <label>⚡ Webhook Apps Script (Opcional p/ Sincronização Automática direta):</label>
-        <input type="url" x-model="webhookUrlInput" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
-        <small class="sheets-field-tip">Cole a URL do seu Webhook Apps Script implantado como Web App.</small>
+      <div style="display: flex; align-items: flex-end;">
+        <button type="button" 
+                class="btn primary sm" 
+                :disabled="salvandoSheets" 
+                @click="salvarConfig()" 
+                style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 16px; border-radius: 8px; cursor: pointer;">
+          <span x-text="salvandoSheets ? 'Gravando...' : '💾 Salvar Webhook'">💾 Salvar Webhook</span>
+        </button>
       </div>
-    </div>
-    <div class="sheets-config-actions">
-      <button type="button" class="btn primary sm" :disabled="salvandoSheets" @click="
-        salvandoSheets = true;
-        fetch('/admin/prospeccao/api/google-sheets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-          body: JSON.stringify({ google_sheets_url: sheetsUrlInput, sheets_webhook_url: webhookUrlInput, csrf_token: getCsrfToken() })
-        })
-        .then(r => r.json())
-        .then(d => {
-          salvandoSheets = false;
-          if (d.status === 'success') {
-            alert('✅ Planilha configurada com sucesso!');
-            window.location.reload();
-          } else {
-            alert('Erro: ' + d.message);
-          }
-        })
-        .catch(e => {
-          salvandoSheets = false;
-          alert('Erro de rede: ' + e);
-        });
-      ">
-        <span x-show="!salvandoSheets">💾 Salvar Links da Planilha</span>
-        <span x-show="salvandoSheets">Salvando...</span>
-      </button>
-      <span class="sheets-quick-help-text">
-        💡 <em>Dica de Importação Rápida:</em> Baixe o arquivo <strong>Excel (.xlsx)</strong> acima e na planilha do Google clique em <strong>Arquivo > Importar > Fazer Upload</strong> para preencher todas as 19 colunas instantaneamente.
-      </span>
     </div>
   </div>
   {% endif %}
+
 </div>
