@@ -47,6 +47,23 @@
     </div>
   </div>
 
+  {% if is_impersonating %}
+  <div class="impersonation-bar" style="background: linear-gradient(90deg, #581c87, #7e22ce); color: #ffffff; padding: 10px 20px; font-size: 0.84rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999999; box-shadow: 0 4px 14px rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.2);">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.15rem;">👁️</span>
+      <span>
+        Modo Espelho Ativo: Você está navegando como <strong>{{ me.name }}</strong> (<code class="mono" style="color: #fbcfe8; background: rgba(0,0,0,0.25); padding: 2px 6px; border-radius: 4px;">@{{ me.username }}</code> • Perfil: <em>{{ role_labels.get(me.role, me.role) }}</em>). Vendo o M-One exatamente como ela.
+      </span>
+    </div>
+    <form method="post" action="{{ url_for('user.stop_impersonating') }}" style="margin: 0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" style="background: #ffffff; color: #581c87; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
+        <span>↩️</span> Sair do Modo Espelho
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
   <div class="app-shell">
     {% include 'components/sidebar.html' %}
 

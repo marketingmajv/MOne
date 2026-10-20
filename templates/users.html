@@ -40,6 +40,12 @@
               <button class="btn small" onclick="openModal('editUser_{{ u.id }}')">Editar</button>
               {% if me.role == 'admin' %}
                 <button type="button" class="btn small" style="background:rgba(56,189,248,0.15);border:1px solid #38bdf8;color:#38bdf8;" onclick="openModal('userPerms_{{ u.id }}')">🔐 Permissões</button>
+                {% if u.id != me.id %}
+                  <form method="post" action="{{ url_for('user.impersonate_user', uid=u.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn small" style="background:rgba(168,85,247,0.15);border:1px solid #a855f7;color:#c084fc;" title="Navegar no M-One como {{ u.name }}">👁️ Espelhar</button>
+                  </form>
+                {% endif %}
               {% endif %}
               <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
                 <button class="btn small {{ 'warn-btn' if u.active else 'good-btn' }}">

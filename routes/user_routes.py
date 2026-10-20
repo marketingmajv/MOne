@@ -140,3 +140,47 @@ def update_user_permissions(uid):
     audit("user.permissions_updated", f"user_id={uid}; perms={json.dumps(perms)}")
     flash("Permissões do usuário atualizadas com sucesso.", "success")
     return redirect(url_for("users"))
+
+
+@user_bp.route("/users/<int:uid>/impersonate", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def impersonate_user(uid):
+    """Permite à Diretoria espelhar a sessão de qualquer usuário para auditoria de visão e permissões."""
+    current_uid = session.get("user_id")
+    if uid == current_uid:
+        flash("Você já está navegando com este usuário.", "info")
+        return redirect(url_for("users"))
+
+    with db() as conn:
+        target = conn.execute("SELECT * FROM users WHERE id=%s AND active=TRUE", (uid,)).fetchone()
+
+    if not target:
+        flash("Usuário não encontrado ou inativo.", "danger")
+        return redirect(url_for("users"))
+
+    # Guarda o ID do administrador original para restauração
+    if not session.get("original_admin_id"):
+        session["original_admin_id"] = current_uid
+
+    session["user_id"] = target["id"]
+    audit("user.impersonate", f"admin_id={session.get('original_admin_id')}; target_id={uid}; username={target['username']}")
+    flash(f"👁️ Modo Espelho ativado: Você agora está navegando exatamente como {target['name']} (@{target['username']}).", "info")
+    return redirect(url_for("dashboard"))
+
+
+@user_bp.route("/users/stop-impersonating", methods=["GET", "POST"])
+@login_required
+def stop_impersonating():
+    """Restaura a sessão do administrador original após o espelhamento."""
+    original_admin_id = session.get("original_admin_id")
+    if not original_admin_id:
+        flash("Nenhuma sessão espelhada ativa.", "info")
+        return redirect(url_for("dashboard"))
+
+    session["user_id"] = original_admin_id
+    session.pop("original_admin_id", None)
+    audit("user.stop_impersonating", f"admin_id={original_admin_id}")
+    flash("↩️ Você retornou com segurança ao seu perfil de Administrador.", "success")
+    return redirect(url_for("users"))
+

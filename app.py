@@ -148,6 +148,7 @@ def custom_static(filename):
 @app.context_processor
 def inject_globals():
     u = current_user()
+    orig_admin_id = session.get("original_admin_id")
     return {
         "current_user": u,
         "me": u,
@@ -156,6 +157,8 @@ def inject_globals():
         "user_has_permission": user_has_permission,
         "csrf_token": generate_csrf_token,
         "app_version": get_version_info(),
+        "is_impersonating": bool(orig_admin_id),
+        "original_admin_id": orig_admin_id,
     }
 
 
