@@ -76,7 +76,14 @@
       <button type="button" 
               class="btn sm" 
               :disabled="syncLoading" 
-              @click="sincronizarSheets()" 
+              @click="
+                if (!webhookUrlInput) {
+                  configAberta = true;
+                  modalSheetsAberto = true;
+                } else {
+                  sincronizarSheets();
+                }
+              " 
               style="border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: var(--accent, #00E599); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; cursor: pointer;"
               title="Disparar sincronização via Webhook Apps Script">
         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #00E599);"></span>

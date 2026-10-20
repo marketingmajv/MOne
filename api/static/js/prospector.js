@@ -15,6 +15,10 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
     syncLoading: false,
     prospectandoLoading: false,
     modalAberto: false,
+    modalSheetsAberto: false,
+    scriptCopiado: false,
+    salvandoWebhookModal: false,
+    webhookModalInput: sheetsUrl || '',
     leadSelecionado: null,
     mensagemEditavel: '',
     alertaMsg: '',
@@ -138,6 +142,11 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
     },
 
     async sincronizarSheets() {
+      // Se não houver webhook configurado, abre diretamente o assistente guiado
+      if (!this.configForm.sheets_url && !this.webhookModalInput) {
+        this.modalSheetsAberto = true;
+        return;
+      }
       this.syncLoading = true;
       try {
         const csrf = getCsrfToken();
@@ -154,12 +163,53 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
           alert('✅ ' + data.message);
           window.location.reload();
         } else {
-          alert('Erro na sincronização: ' + (data.message || data.error));
+          // Se for pendência de configuração do webhook, abre o assistente amigável
+          if ((data.message || '').toLowerCase().includes('webhook')) {
+            this.modalSheetsAberto = true;
+          } else {
+            alert('Erro na sincronização: ' + (data.message || data.error));
+          }
         }
       } catch (err) {
         alert('Falha na conexão: ' + err);
       } finally {
         this.syncLoading = false;
+      }
+    },
+
+    copiarScriptAppsScript() {
+      const code = `function doPost(e) {\\n  try {\\n    const rawData = e.postData.contents;\\n    const payload = JSON.parse(rawData);\\n    const leads = payload.leads || [];\\n    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();\\n    if (sheet.getLastRow() === 0) {\\n      sheet.appendRow([\\n        "ID M-One", "Data Captura", "Classe", "Score", "Empresa", "Decisor / Sócio",\\n        "Cargo Decisor", "Outros Sócios", "WhatsApp", "E-mail", "Nicho", "Cidade",\\n        "UF", "Endereço", "Site", "Instagram", "CNPJ", "Porte", "Raio-X (Resumo IA)",\\n        "Gancho Comercial", "Status do Contato", "Notas do Vendedor"\\n      ]);\\n      sheet.getRange(1, 1, 1, 22).setFontWeight("bold").setBackground("#0f172a").setFontColor("#38bdf8");\\n    }\\n    const lastRow = sheet.getLastRow();\\n    const existingIds = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat().map(String) : [];\\n    leads.forEach(lead => {\\n      const idStr = String(lead.id);\\n      const rowIdx = existingIds.indexOf(idStr);\\n      const rowData = [\\n        idStr, lead.data_captura || "", lead.classe || "D", lead.score || 0,\\n        lead.empresa || "", lead.decisor || "", lead.decisor_cargo || "",\\n        lead.outros_socios || "", lead.whatsapp || "", lead.email || "",\\n        lead.nicho || "", lead.cidade || "", lead.uf || "", lead.endereco || "",\\n        lead.site || "", lead.instagram || "", lead.cnpj || "", lead.porte || "",\\n        lead.resumo_ia || "", lead.gancho_comercial || "", lead.status_contato || "Novo", ""\\n      ];\\n      if (rowIdx !== -1) {\\n        sheet.getRange(rowIdx + 2, 1, 1, rowData.length).setValues([rowData]);\\n      } else {\\n        sheet.appendRow(rowData);\\n      }\\n    });\\n    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: leads.length })).setMimeType(ContentService.MimeType.JSON);\\n  } catch (err) {\\n    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);\\n  }\\n}`;
+      navigator.clipboard.writeText(code);
+      this.scriptCopiado = true;
+      setTimeout(() => { this.scriptCopiado = false; }, 3000);
+    },
+
+    async salvarWebhookEExecutar() {
+      if (!this.webhookModalInput || !this.webhookModalInput.trim()) {
+        alert('Por favor, cole a URL do Webhook do Google Apps Script.');
+        return;
+      }
+      this.salvandoWebhookModal = true;
+      try {
+        const csrf = getCsrfToken();
+        const resp = await fetch('/admin/prospeccao/api/google-sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+          body: JSON.stringify({ sheets_webhook_url: this.webhookModalInput, csrf_token: csrf })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+          this.configForm.sheets_url = this.webhookModalInput;
+          this.modalSheetsAberto = false;
+          // Dispara a sincronização imediatamente com a nova URL
+          await this.sincronizarSheets();
+        } else {
+          alert('Erro ao salvar: ' + data.message);
+        }
+      } catch (e) {
+        alert('Erro: ' + e);
+      } finally {
+        this.salvandoWebhookModal = false;
       }
     },
 
