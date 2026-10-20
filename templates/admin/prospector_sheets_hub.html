@@ -1,6 +1,8 @@
-<!-- CENTRAL DE SINCRONIZAÇÃO GOOGLE SHEETS — PADRÃO M-ONE (Padrão Frete + Outlet) -->
+<!-- CENTRAL DE SINCRONIZAÇÃO GOOGLE SHEETS EM GAVETA EXPANSÍVEL — PADRÃO M-ONE -->
 <div class="panel" 
+     id="gaveta-sheets-hub"
      x-data="{ 
+       gavetaAberta: false,
        configAberta: false, 
        salvandoSheets: false, 
        sheetsUrlInput: '{{ google_sheets_url }}', 
@@ -35,185 +37,234 @@
          });
        }
      }"
-     style="position: relative; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--line); background: var(--panel); border-left: 4px solid var(--accent, #00E599); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.06));">
+     @toggle-sheets-hub.window="gavetaAberta = !gavetaAberta"
+     style="position: relative; overflow: hidden; margin-bottom: 20px; border: 1px solid var(--line); background: var(--panel); border-left: 4px solid var(--accent, #00E599); border-radius: 14px; padding: 0; box-shadow: var(--shadow-sm, 0 2px 8px rgba(0,0,0,0.06)); transition: all 0.25s ease;">
 
   <!-- Linha Superior Decorativa (Padrão M-One) -->
   <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent, #00E599), #0ea5e9, #6366f1);"></div>
 
-  <!-- CABEÇALHO DO CARD: ÍCONE, TÍTULO, BADGES E STATUS -->
-  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px;">
+  <!-- CABEÇALHO DA GAVETA (Sempre Visível & Clicável para Alternar) -->
+  <div @click="gavetaAberta = !gavetaAberta"
+       style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 20px; cursor: pointer; user-select: none; transition: background 0.15s ease;"
+       onmouseover="this.style.background='rgba(255,255,255,0.02)'" 
+       onmouseout="this.style.background='transparent'">
     
-    <!-- Lado Esquerdo: Ícone + Título + Badges -->
+    <!-- Lado Esquerdo: Ícone + Título + Badges + Resumo Rápido -->
     <div style="display: flex; align-items: center; gap: 14px; min-width: 280px; flex: 1;">
-      <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 229, 153, 0.12); border: 1px solid rgba(0, 229, 153, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
+      <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 229, 153, 0.12); border: 1px solid rgba(0, 229, 153, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
         📊
       </div>
       <div>
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.3px;">
+          <h3 style="margin: 0; font-size: 0.98rem; font-weight: 700; color: var(--text); letter-spacing: -0.2px;">
             Planilha Oficial Google Sheets (Leads Comerciais)
           </h3>
           
-          <span class="badge" style="font-size: 0.74rem; font-weight: 700; padding: 3px 10px; background: rgba(0, 229, 153, 0.12); color: var(--accent, #00E599); border: 1px solid rgba(0, 229, 153, 0.3); border-radius: 99px; display: inline-flex; align-items: center; gap: 6px;">
+          <span class="badge" style="font-size: 0.72rem; font-weight: 700; padding: 2px 9px; background: rgba(0, 229, 153, 0.12); color: var(--accent, #00E599); border: 1px solid rgba(0, 229, 153, 0.3); border-radius: 99px; display: inline-flex; align-items: center; gap: 5px;">
             <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #00E599); box-shadow: 0 0 6px var(--accent, #00E599);"></span>
             <span>{{ total_leads }} Leads Capturados</span>
           </span>
 
-          <span class="badge" style="font-size: 0.74rem; font-weight: 600; padding: 3px 10px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); border-radius: 99px; display: inline-flex; align-items: center; gap: 5px;">
+          <span class="badge" style="font-size: 0.72rem; font-weight: 600; padding: 2px 9px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); border-radius: 99px; display: inline-flex; align-items: center; gap: 5px;">
             <span>✉️</span>
             <span>marketingmajv@gmail.com</span>
           </span>
         </div>
-        <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.4;">
-          Planilha oficial compartilhada para acompanhamento da equipe de vendas, exportação formatada e sincronização.
+        <p style="margin: 3px 0 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.3;" x-show="!gavetaAberta">
+          Clique para expandir links oficiais, exportações Excel/CSV e webhook 24/7.
+        </p>
+        <p style="margin: 3px 0 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.3;" x-show="gavetaAberta" x-cloak>
+          Planilha oficial compartilhada para acompanhamento da equipe de vendas e sincronização.
         </p>
       </div>
     </div>
 
-    <!-- Lado Direito: Ações Rápidas de Sincronização -->
-    <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+    <!-- Lado Direito: Ações Rápidas & Botão de Expansão da Gaveta -->
+    <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;" @click.stop>
+      {% if google_sheets_url %}
+      <a href="{{ google_sheets_url }}" 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         class="btn sm" 
+         style="height: 34px; font-size: 0.78rem; font-weight: 600; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; color: var(--accent, #00E599); border-color: rgba(0, 229, 153, 0.35); background: rgba(0, 229, 153, 0.06); text-decoration: none;"
+         title="Abrir planilha no Google Drive em nova guia">
+        <span>Abrir no Sheets</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      {% endif %}
+
       {% if not is_seller %}
       <button type="button" 
               class="btn sm" 
               :disabled="syncLoading" 
               @click="
                 if (!webhookUrlInput) {
+                  gavetaAberta = true;
                   configAberta = true;
-                  modalSheetsAberto = true;
                 } else {
                   sincronizarSheets();
                 }
               " 
-              style="border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: var(--accent, #00E599); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; cursor: pointer;"
+              style="border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.08); color: var(--accent, #00E599); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; cursor: pointer;"
               title="Disparar sincronização via Webhook Apps Script">
         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent, #00E599);"></span>
         <span x-show="!syncLoading">⚡ Sincronizar ao Vivo</span>
         <span x-show="syncLoading">Sincronizando...</span>
       </button>
+      {% endif %}
 
+      <!-- Botão de Expandir / Recolher Gaveta -->
       <button type="button" 
               class="btn sm" 
-              @click="configAberta = !configAberta" 
-              style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; cursor: pointer;">
-        <span x-text="configAberta ? 'Fechar' : '⚙️ Webhook'">⚙️ Webhook</span>
+              @click="gavetaAberta = !gavetaAberta" 
+              style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); cursor: pointer; font-weight: 600; font-size: 0.78rem;">
+        <span x-text="gavetaAberta ? 'Recolher Gaveta' : 'Expandir Gaveta'">Expandir Gaveta</span>
+        <svg :style="gavetaAberta ? 'transform: rotate(180deg); transition: transform 0.25s;' : 'transition: transform 0.25s;'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
       </button>
-      {% endif %}
     </div>
 
   </div>
 
-  <!-- LINHA DE URL DA PLANILHA NO PADRÃO FREIGHT / M-ONE -->
-  <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px;">
-    
-    <!-- Input com a URL oficial da planilha -->
-    <div style="flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;">
-      <span style="position: absolute; left: 12px; font-size: 0.85rem; color: var(--muted); pointer-events: none;">
-        🔗
-      </span>
-      <input type="url" 
-             x-model="sheetsUrlInput" 
-             placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing" 
-             class="form-input" 
-             style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.78rem; font-family: monospace; border-radius: 8px; height: 38px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
-    </div>
-
-    <!-- Botões de Ação na URL -->
-    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-      {% if not is_seller %}
-      <button type="button" 
-              class="btn sm" 
-              :disabled="salvandoSheets" 
-              @click="salvarConfig()" 
-              style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        <span x-text="salvandoSheets ? 'Salvando...' : 'Salvar Link'">Salvar Link</span>
-      </button>
-      {% endif %}
-
-      <button type="button" 
-              class="btn sm" 
-              @click="copiarLink()" 
-              style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"
-              title="Copiar URL da Planilha">
-        <span x-text="copiado ? '✓ Copiado!' : '📋 Copiar'">📋 Copiar</span>
-      </button>
-
-      {% if google_sheets_url %}
-      <a href="{{ google_sheets_url }}" 
-         target="_blank" 
-         rel="noopener noreferrer" 
-         class="btn sm" 
-         style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent, #00E599); border-color: rgba(0, 229, 153, 0.35); background: rgba(0, 229, 153, 0.05); text-decoration: none;">
-        <span>Abrir no Sheets</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-      {% endif %}
-    </div>
-
-  </div>
-
-  <!-- BARRA DE EXPORTAÇÃO DIRETA DE LEADS -->
-  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px;">
-    
-    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-      <span style="font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
-        📥 Exportação Imediata:
-      </span>
-
-      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='xlsx') }}" 
-         class="btn primary sm" 
-         style="font-size: 0.8rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; text-decoration: none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>Baixar Excel (.xlsx) Formatado</span>
-      </a>
-
-      <a href="{{ url_for('prospector.exportar_planilha_leads', formato='csv') }}" 
-         class="btn sm" 
-         style="font-size: 0.8rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <span>Baixar CSV</span>
-      </a>
-    </div>
-
-    <!-- Dica de Importação -->
-    <div style="font-size: 0.74rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;">
-      <span>💡</span>
-      <span>No Sheets: <strong>Arquivo > Importar > Fazer upload</strong> do Excel baixado.</span>
-    </div>
-
-  </div>
-
-  {% if not is_seller %}
-  <!-- CONTEÚDO EXPANSÍVEL: WEBHOOK APPS SCRIPT (x-show="configAberta") -->
-  <div x-show="configAberta" 
+  <!-- CONTEÚDO DA GAVETA EXPANSÍVEL (x-show="gavetaAberta") -->
+  <div x-show="gavetaAberta" 
        x-cloak
-       x-transition
-       style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line);">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 12px;">
-      <div>
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text); display: block; margin-bottom: 6px;">
-          ⚡ Webhook URL do Google Apps Script (Sincronização 24/7):
-        </label>
+       x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="opacity-0 transform -translate-y-2"
+       x-transition:enter-end="opacity-100 transform translate-y-0"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 transform translate-y-0"
+       x-transition:leave-end="opacity-0 transform -translate-y-2"
+       style="padding: 16px 20px 20px 20px; border-top: 1px solid var(--line); background: rgba(0, 0, 0, 0.08);">
+
+    <!-- LINHA DE URL DA PLANILHA NO PADRÃO FREIGHT / M-ONE -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px;">
+      
+      <!-- Input com a URL oficial da planilha -->
+      <div style="flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;">
+        <span style="position: absolute; left: 12px; font-size: 0.85rem; color: var(--muted); pointer-events: none;">
+          🔗
+        </span>
         <input type="url" 
-               x-model="webhookUrlInput" 
-               placeholder="https://script.google.com/macros/s/.../exec" 
+               x-model="sheetsUrlInput" 
+               placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing" 
                class="form-input" 
-               style="width: 100%; font-size: 0.78rem; font-family: monospace; height: 38px; border-radius: 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
-        <small style="font-size: 0.7rem; color: var(--muted); margin-top: 4px; display: block;">
-          Cole aqui o Web App publicado no Google Apps Script vinculado à sua planilha.
-        </small>
+               style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.78rem; font-family: monospace; border-radius: 8px; height: 38px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
       </div>
-      <div style="display: flex; align-items: flex-end;">
+
+      <!-- Botões de Ação na URL -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        {% if not is_seller %}
         <button type="button" 
-                class="btn primary sm" 
+                class="btn sm" 
                 :disabled="salvandoSheets" 
                 @click="salvarConfig()" 
-                style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 16px; border-radius: 8px; cursor: pointer;">
-          <span x-text="salvandoSheets ? 'Gravando...' : '💾 Salvar Webhook'">💾 Salvar Webhook</span>
+                style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span x-text="salvandoSheets ? 'Salvando...' : 'Salvar Link'">Salvar Link</span>
+        </button>
+        {% endif %}
+
+        <button type="button" 
+                class="btn sm" 
+                @click="copiarLink()" 
+                style="height: 38px; font-size: 0.8rem; font-weight: 600; padding: 0 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"
+                title="Copiar URL da Planilha">
+          <span x-text="copiado ? '✓ Copiado!' : '📋 Copiar'">📋 Copiar</span>
+        </button>
+
+        {% if google_sheets_url %}
+        <a href="{{ google_sheets_url }}" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="btn sm" 
+           style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent, #00E599); border-color: rgba(0, 229, 153, 0.35); background: rgba(0, 229, 153, 0.05); text-decoration: none;">
+          <span>Abrir no Sheets</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- BARRA DE EXPORTAÇÃO DIRETA DE LEADS -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px;">
+      
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span style="font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">
+          📥 Exportação Imediata:
+        </span>
+
+        <a href="{{ url_for('prospector.exportar_planilha_leads', formato='xlsx') }}" 
+           class="btn primary sm" 
+           style="font-size: 0.8rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; text-decoration: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Baixar Excel (.xlsx) Formatado</span>
+        </a>
+
+        <a href="{{ url_for('prospector.exportar_planilha_leads', formato='csv') }}" 
+           class="btn sm" 
+           style="font-size: 0.8rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Baixar CSV</span>
+        </a>
+      </div>
+
+      <!-- Dica de Importação -->
+      <div style="font-size: 0.74rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;">
+        <span>💡</span>
+        <span>No Sheets: <strong>Arquivo > Importar > Fazer upload</strong> do Excel baixado.</span>
+      </div>
+
+    </div>
+
+    {% if not is_seller %}
+    <!-- CONTEÚDO DE CONFIGURAÇÃO DE WEBHOOK (EXPANSÍVEL) -->
+    <div style="padding: 12px 14px; background: var(--panel2); border: 1px dashed var(--line); border-radius: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 6px;">
+          <span>⚙️</span> Webhook Apps Script (Sincronização 24/7 na Nuvem)
+        </span>
+        <button type="button" 
+                @click="configAberta = !configAberta" 
+                style="background: transparent; border: none; color: var(--accent, #00E599); font-size: 0.74rem; font-weight: 600; cursor: pointer; text-decoration: underline;">
+          <span x-text="configAberta ? 'Ocultar Detalhes' : 'Configurar URL do Script'">Configurar URL do Script</span>
         </button>
       </div>
+
+      <div x-show="configAberta" 
+           x-cloak
+           x-transition
+           style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+          <div>
+            <label style="font-size: 0.74rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 5px;">
+              URL do Web App Publicado:
+            </label>
+            <input type="url" 
+                   x-model="webhookUrlInput" 
+                   placeholder="https://script.google.com/macros/s/.../exec" 
+                   class="form-input" 
+                   style="width: 100%; font-size: 0.78rem; font-family: monospace; height: 38px; border-radius: 8px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
+            <small style="font-size: 0.7rem; color: var(--muted); margin-top: 4px; display: block;">
+              Cole aqui a URL de execução gerada pela publicação do Google Apps Script.
+            </small>
+          </div>
+          <div style="display: flex; align-items: flex-start; padding-top: 22px;">
+            <button type="button" 
+                    class="btn primary sm" 
+                    :disabled="salvandoSheets" 
+                    @click="salvarConfig()" 
+                    style="height: 38px; font-size: 0.8rem; font-weight: 700; padding: 0 16px; border-radius: 8px; cursor: pointer;">
+              <span x-text="salvandoSheets ? 'Gravando...' : '💾 Salvar Webhook'">💾 Salvar Webhook</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+    {% endif %}
+
   </div>
-  {% endif %}
 
 </div>

@@ -11,6 +11,10 @@
 {% endblock %}
 
 {% block top_actions %}
+<button type="button" class="btn" onclick="window.dispatchEvent(new CustomEvent('toggle-sheets-hub'))" title="Abrir ou recolher a gaveta da Planilha Google Sheets" style="display: inline-flex; align-items: center; gap: 6px;">
+  <span>📊</span>
+  <span>Planilha & Exportações</span>
+</button>
 {% if not is_seller %}
 <a href="?tab=radar" class="btn primary" @click.prevent="$dispatch('abrir-aba-radar')">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
