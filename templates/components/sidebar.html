@@ -5,35 +5,38 @@
 {% set ep = (request.endpoint or '').split('.')[-1] %}
 {% set full_ep = request.endpoint or '' %}
 
-{# Verificações de permissão #}
-{% set can_copilot = me and user_has_permission(me, 'copilot', default_for_sales=True) %}
+{# Verificações de permissão granulares centralizadas #}
+{% set can_copilot = me and user_has_permission(me, 'copilot') %}
+{% set can_sales = me and user_has_permission(me, 'sales') %}
+{% set can_custom_catalogs = me and user_has_permission(me, 'custom_catalogs') %}
+{% set can_outlet = me and user_has_permission(me, 'outlet') %}
+{% set can_atacado = me and user_has_permission(me, 'atacado') %}
+{% set can_showroom = me and user_has_permission(me, 'showroom') %}
+{% set can_prospector = me and user_has_permission(me, 'prospector') %}
+{% set has_comercial = can_sales or can_custom_catalogs or can_outlet or can_atacado or can_showroom or can_prospector %}
 
-{% set can_custom_catalogs = me and (me.role in ['admin','support'] or user_has_permission(me, 'custom_catalogs', default_for_sales=False)) %}
-{% set can_outlet = me and me.role in ['admin','support'] %}
-{% set can_atacado = me and me.role in ['admin','support'] %}
-{% set can_showroom = me and me.role in ['admin','support'] %}
-{% set can_prospector = me and me.role in ['admin','support','sales'] %}
-{% set has_comercial = True %}
-
-{% set can_stock = me and user_has_permission(me, 'stock', default_for_sales=True) %}
-{% set can_freight = me and user_has_permission(me, 'freight', default_for_sales=True) %}
-{% set can_imports = me and me.role in ['admin','support'] %}
-{% set can_products = me and (me.role in ['admin','finance','stock','support'] or user_has_permission(me, 'products', default_for_sales=False)) %}
+{% set can_stock = me and user_has_permission(me, 'stock') %}
+{% set can_freight = me and user_has_permission(me, 'freight') %}
+{% set can_imports = me and user_has_permission(me, 'imports') %}
+{% set can_products = me and user_has_permission(me, 'products') %}
 {% set has_logistica = can_stock or can_freight or can_imports or can_products %}
 
-{% set can_payments = me and me.role in ['admin','finance','support'] %}
-{% set can_fiscal = me and me.role in ['admin','support','finance'] %}
+{% set can_payments = me and user_has_permission(me, 'payments') %}
+{% set can_fiscal = me and user_has_permission(me, 'fiscal') %}
 {% set has_financeiro = can_payments or can_fiscal %}
 
-{% set can_docs = me and me.role in ['admin','support'] %}
-{% set can_plan = me is defined and me is not none %}
-{% set can_users = me and me.role in ['admin','support'] %}
-{% set can_audit = me and me.role in ['admin','support'] %}
+{% set can_docs = me and user_has_permission(me, 'document_center') %}
+{% set can_plan = me and user_has_permission(me, 'implementation_plan') %}
+{% set can_users = me and user_has_permission(me, 'users') %}
+{% set can_audit = me and user_has_permission(me, 'audit_logs') %}
 {% set has_governanca = can_docs or can_plan or can_users or can_audit %}
 
-{% set can_sys = me and (me.role in ['admin','support'] or me.username in ['jam', 'fauzer']) %}
-{% set can_infra = me and me.username in ['jam', 'fauzer'] %}
-{% set has_sistema = can_sys or can_infra %}
+{% set can_datasources = me and user_has_permission(me, 'data_sources') %}
+{% set can_connections = me and user_has_permission(me, 'connections') %}
+{% set can_bling = me and user_has_permission(me, 'bling') %}
+{% set can_backups = me and user_has_permission(me, 'backups') %}
+{% set can_infra = me and user_has_permission(me, 'infra') %}
+{% set has_sistema = can_datasources or can_connections or can_bling or can_backups or can_infra %}
 
 {# Ativação de rotas #}
 {% set is_active_dashboard = (ep == 'dashboard') %}
@@ -194,12 +197,14 @@
     <div class="nav-section">
       <div class="nav-section-label">COMERCIAL & VENDAS</div>
 
+      {% if can_sales %}
       <a href="{{ url_for('sales') }}" class="nav-item {{ 'active' if is_active_sales else '' }}" title="Painel de Vendas e Pedidos">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
         </svg>
         <span>Vendas</span>
       </a>
+      {% endif %}
 
       {% if can_custom_catalogs %}
       <a href="{{ url_for('custom_catalog.admin_dashboard') }}" class="nav-item {{ 'active' if is_active_custom_catalog else '' }}" title="Gestão e Distribuição de Catálogos Personalizados">
@@ -355,6 +360,8 @@
         </svg>
         <span>Gestão de Usuários</span>
       </a>
+      {% endif %}
+      {% if can_audit %}
       <a href="{{ url_for('audit_logs') }}" class="nav-item {{ 'active' if is_active_audit else '' }}" title="Trilha de Auditoria e Segurança">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -372,14 +379,16 @@
     <div class="nav-section">
       <div class="nav-section-label">INTEGRAÇÕES & SISTEMA</div>
 
-      {% if can_sys %}
+      {% if can_datasources %}
       <a href="{{ url_for('data_sources.data_sources_hub') }}" class="nav-item {{ 'active' if is_active_datasources else '' }}" title="Fontes de Dados e Automação Contínua 24/7">
         <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>
         </svg>
         <span>Fontes de Dados (24/7)</span>
       </a>
+      {% endif %}
 
+      {% if can_connections %}
       <a href="{{ url_for('connections.connections_hub') }}" class="nav-item {{ 'active' if is_active_connections else '' }}" title="Central de Conexões e APIs">
         <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
@@ -387,7 +396,9 @@
         </svg>
         <span>Conexões</span>
       </a>
+      {% endif %}
 
+      {% if can_bling %}
       <a href="{{ url_for('integrations_bling') }}" class="nav-item {{ 'active' if is_active_bling else '' }}" title="Integração ERP Bling">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -395,7 +406,9 @@
         </svg>
         <span>Bling ERP</span>
       </a>
+      {% endif %}
 
+      {% if can_backups %}
       <a href="{{ url_for('backups.backups_dashboard') }}" class="nav-item {{ 'active' if is_active_backups else '' }}" title="Backups Físicos e Snapshots">
         <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>

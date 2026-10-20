@@ -11,6 +11,14 @@ from routes.helpers import (
 user_bp = Blueprint("user", __name__)
 
 
+from services.user_permission_service import (
+    ALL_PERMISSIONS,
+    PERMISSIONS_CATEGORIES,
+    get_user_effective_permissions,
+    get_role_preset,
+)
+
+
 @user_bp.route("/users", methods=["GET", "POST"])
 @login_required
 @roles_required("admin", "support")
@@ -33,7 +41,15 @@ def users():
         return redirect(url_for("users"))
     with db() as conn:
         rows = conn.execute("SELECT * FROM users ORDER BY name").fetchall()
-    return render_template("users.html", users=rows)
+        user_list = [dict(r) for r in rows]
+    return render_template(
+        "users.html",
+        users=user_list,
+        all_permissions=ALL_PERMISSIONS,
+        permissions_categories=PERMISSIONS_CATEGORIES,
+        get_user_effective_permissions=get_user_effective_permissions,
+        get_role_preset=get_role_preset,
+    )
 
 
 @user_bp.route("/users/<int:uid>/toggle", methods=["POST"])
@@ -112,14 +128,9 @@ def delete_user(uid):
 @login_required
 @roles_required("admin")
 def update_user_permissions(uid):
-    perms = {
-        "copilot": bool(request.form.get("perm_copilot")),
-        "freight": bool(request.form.get("perm_freight")),
-        "stock": bool(request.form.get("perm_stock")),
-        "products": bool(request.form.get("perm_products")),
-        "custom_catalogs": bool(request.form.get("perm_custom_catalogs")),
-        "all_sales": bool(request.form.get("perm_all_sales")),
-    }
+    perms = {}
+    for perm_key in ALL_PERMISSIONS:
+        perms[perm_key] = bool(request.form.get(f"perm_{perm_key}"))
     with db() as conn:
         conn.execute(
             "UPDATE users SET custom_permissions = %s WHERE id = %s",

@@ -146,34 +146,37 @@ def roles_required(*roles):
     return decorator
 
 
+def permission_required(permission_key: str):
+    """Garante que o usuário tenha autorização explícita para o módulo solicitado."""
+    def decorator(fn):
+        @wraps(fn)
+        def inner(*args, **kwargs):
+            u = current_user()
+            if not u or not user_has_permission(u, permission_key):
+                flash(f"Você não tem permissão para acessar este módulo.", "danger")
+                return redirect(url_for("dashboard"))
+            return fn(*args, **kwargs)
+        return inner
+    return decorator
+
+
 def user_has_permission(u: dict | None, permission_key: str, default_for_sales: bool = False) -> bool:
-    """
-    Verifica se o usuário tem permissão para acessar determinado módulo.
-    Gestores ('admin', 'support') têm acesso total irrestrito a tudo.
-    Para outros perfis, consulta custom_permissions (JSON) ou assume default_for_sales.
-    """
-    if not u:
-        return False
-    if u.get("role") in ["admin", "support"] or str(u.get("username", "")).strip().lower() in ["jam", "fauzer"]:
-        return True
-
-    perms = u.get("custom_permissions") or {}
-    if isinstance(perms, str):
-        try:
-            perms = json.loads(perms)
-        except Exception:
-            perms = {}
-
-    if permission_key in perms:
-        return bool(perms[permission_key])
-
-    # Defaults específicos para vendedores (Fretes, Estoque e Copilot IA liberados por padrão)
-    if u.get("role") == "sales":
-        if permission_key in ["freight", "stock", "copilot"]:
+    """Verifica se o usuário tem permissão para acessar determinado módulo via user_permission_service."""
+    try:
+        from services.user_permission_service import user_has_permission_check
+        return user_has_permission_check(u, permission_key, default_for_sales)
+    except Exception:
+        if not u:
+            return False
+        if str(u.get("username", "")).strip().lower() in ["jam", "fauzer"]:
             return True
-        return default_for_sales
-
-    return default_for_sales
+        perms = u.get("custom_permissions") or {}
+        if isinstance(perms, str):
+            try: perms = json.loads(perms)
+            except Exception: perms = {}
+        if permission_key in perms:
+            return bool(perms[permission_key])
+        return (u.get("role") == "admin")
 
 
 

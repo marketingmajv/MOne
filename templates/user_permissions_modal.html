@@ -1,141 +1,157 @@
-<!-- MODAL: PERMISSÕES PERSONALIZADAS DO USUÁRIO (ACESSO EXCLUSIVO: ADMIN) -->
+<!-- MODAL: AUDITORIA E PERMISSÕES GRANULARES POR USUÁRIO (EXCLUSIVO: ADMIN) -->
 {% if me and me.role == 'admin' %}
 {% for u in users %}
-{% set perms = u.custom_permissions or {} %}
-{% if perms is string %}
-  {# Se veio como string json do sqlite ou psycopg2 legado #}
-  {% set p_copilot = 'copilot": false' not in perms %}
-  {% set p_freight = 'freight": false' not in perms %}
-  {% set p_stock = 'stock": false' not in perms %}
-  {% set p_products = 'products": true' in perms or u.role in ['admin', 'support', 'stock', 'finance'] %}
-  {% set p_all_sales = 'all_sales": true' in perms or u.role in ['admin', 'support', 'finance'] %}
-  {% set p_custom_catalogs = 'custom_catalogs": true' in perms or u.role in ['admin', 'support'] %}
-{% else %}
-  {% set p_copilot = perms.get('copilot') if perms.get('copilot') is not none else True %}
-  {% set p_freight = perms.get('freight') if perms.get('freight') is not none else True %}
-  {% set p_stock = perms.get('stock') if perms.get('stock') is not none else True %}
-  {% set p_products = perms.get('products') if perms.get('products') is not none else (u.role in ['admin', 'support', 'stock', 'finance']) %}
-  {% set p_all_sales = perms.get('all_sales') if perms.get('all_sales') is not none else (u.role in ['admin', 'support', 'finance']) %}
-  {% set p_custom_catalogs = perms.get('custom_catalogs') if perms.get('custom_catalogs') is not none else (u.role in ['admin', 'support']) %}
-{% endif %}
+{% set eff_perms = get_user_effective_permissions(u) %}
 
 <div class="modal" id="userPerms_{{ u.id }}" onclick="if(event.target === this) closeModal('userPerms_{{ u.id }}')">
-  <div class="modal-card" style="max-width: 520px; background: var(--surface-card, #121722); border: 1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius: 18px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-    <div class="modal-head" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); padding-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+  <div class="modal-card" style="max-width: 680px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; background: var(--surface-card, #121722); border: 1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); overflow: hidden; padding: 0;">
+    
+    <!-- Modal Header (Fixo) -->
+    <div class="modal-head" style="margin: 0; border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--surface-card, #121722);">
       <div>
-        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text, #f8fafc); letter-spacing: -0.02em;">🔐 Permissões: {{ u.name }}</h3>
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text, #f8fafc); letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px;">
+          <span>🔐</span> Permissões: {{ u.name }}
+        </h3>
         <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--muted, #94a3b8);">
           Usuário: <code class="mono" style="color: var(--accent, #00e599); font-weight: 600;">@{{ u.username }}</code> • Perfil: <strong>{{ role_labels.get(u.role, u.role) }}</strong>
         </p>
       </div>
-      <button type="button" class="modal-close-btn" onclick="closeModal('userPerms_{{ u.id }}')" title="Fechar modal" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <button type="button" class="modal-close-btn" onclick="closeModal('userPerms_{{ u.id }}')" title="Fechar modal" aria-label="Fechar" style="padding: 0; border: none; background: transparent; cursor: pointer; color: var(--muted, #94a3b8); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
 
-    <form method="post" action="{{ url_for('user.update_user_permissions', uid=u.id) }}">
+    <!-- Form & Controls -->
+    <form id="permsForm_{{ u.id }}" method="post" action="{{ url_for('user.update_user_permissions', uid=u.id) }}" style="display: flex; flex-direction: column; flex: 1; min-height: 0; margin: 0;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <p style="font-size: 0.82rem; color: var(--muted, #94a3b8); margin: 0 0 16px 0; line-height: 1.4;">
-        Ative ou desative os módulos operacionais autorizados para este usuário:
-      </p>
 
-      <div style="display: flex; flex-direction: column; gap: 8px; background: var(--surface-subtle, rgba(255,255,255,0.03)); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+      <!-- Subheader com Ações Rápidas / Presets (Fixo) -->
+      <div style="padding: 12px 24px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+        <div>
+          <span style="font-size: 0.8rem; color: var(--muted, #94a3b8); font-weight: 500;">
+            Ative ou desative os módulos operacionais autorizados:
+          </span>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <button type="button" style="font-size: 0.74rem; font-weight: 600; padding: 5px 10px; border-radius: 8px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #38bdf8; cursor: pointer;" onclick="applyUserRolePreset('permsForm_{{ u.id }}', '{{ u.role }}')">
+            ✨ Padrão do Cargo
+          </button>
+          <button type="button" style="font-size: 0.74rem; font-weight: 600; padding: 5px 10px; border-radius: 8px; background: rgba(0,229,153,0.12); border: 1px solid rgba(0,229,153,0.3); color: var(--accent, #00e599); cursor: pointer;" onclick="setAllPerms('permsForm_{{ u.id }}', true)">
+            🟢 Liberar Tudo
+          </button>
+          <button type="button" style="font-size: 0.74rem; font-weight: 600; padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: var(--muted, #94a3b8); cursor: pointer;" onclick="setAllPerms('permsForm_{{ u.id }}', false)">
+            ⚪ Bloquear Tudo
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Categories Area -->
+      <div style="flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 14px;">
         
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px;">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">⚡</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Copilot IA Assistente</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Assistente comercial inteligente e de produtos</small>
-            </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_copilot" value="1" {% if p_copilot %}checked{% endif %}>
-            <span class="toggle-slider"></span>
+        {% if u.username in ['jam', 'fauzer'] %}
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; border-radius: 10px; padding: 10px 14px; font-size: 0.78rem; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.1rem;">👑</span>
+          <div style="line-height: 1.35;">
+            <strong>Fundador Mestre:</strong> Este usuário possui bypass de superadmin com acesso total irrestrito nativo. As preferências abaixo servem como customização prévia.
           </div>
-        </label>
+        </div>
+        {% endif %}
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">🚚</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Cotador de Fretes</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Simulação com regras de cubagem e transportadoras</small>
+        {% for cat in permissions_categories %}
+        <div class="perm-category-card" style="background: var(--surface-subtle, rgba(255,255,255,0.02)); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          
+          <!-- Category Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.06));">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">{{ cat.icon }}</span>
+              <div>
+                <strong style="color: var(--text, #f8fafc); font-size: 0.88rem; letter-spacing: -0.01em;">{{ cat.label }}</strong>
+                <small style="display: block; color: var(--muted, #94a3b8); font-size: 0.72rem; line-height: 1.2;">{{ cat.description }}</small>
+              </div>
             </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_freight" value="1" {% if p_freight %}checked{% endif %}>
-            <span class="toggle-slider"></span>
+            <button type="button" style="font-size: 0.7rem; font-weight: 500; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--muted, #94a3b8); border: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); cursor: pointer;" onclick="toggleCategoryPerms('permsForm_{{ u.id }}', '{{ cat.id }}')">
+              Inverter Grupo
+            </button>
           </div>
-        </label>
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">📦</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Estoque / Chassis</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Consulta e alocação de veículos disponíveis</small>
+          <!-- Permission Rows -->
+          {% for p_key, p_meta in all_permissions.items() if p_meta.category == cat.id %}
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer; padding: 8px 10px; border-radius: 8px; margin: 0; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+            <span style="display: flex; align-items: center; gap: 10px; max-width: 82%;">
+              <span style="font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0;">{{ p_meta.icon }}</span>
+              <div>
+                <strong style="color: var(--text, #f8fafc); display: block; font-size: 0.85rem; line-height: 1.25;">{{ p_meta.label }}</strong>
+                <small style="color: var(--muted, #94a3b8); font-size: 0.73rem; line-height: 1.25; display: block;">{{ p_meta.description }}</small>
+              </div>
+            </span>
+            <div class="toggle-switch">
+              <input type="checkbox" name="perm_{{ p_key }}" data-cat="{{ cat.id }}" data-key="{{ p_key }}" value="1" {% if eff_perms.get(p_key) %}checked{% endif %}>
+              <span class="toggle-slider"></span>
             </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_stock" value="1" {% if p_stock %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
+          </label>
+          {% endfor %}
 
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">🏷️</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Catálogo de Produtos</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Visualização de preços de venda e tabelas</small>
-            </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_products" value="1" {% if p_products %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
-
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">📑</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Gestão de Catálogos Personalizados</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Permite clonar matrizes, configurar margem e distribuir links (/c/)</small>
-            </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_custom_catalogs" value="1" {% if p_custom_catalogs %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
-
-        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; cursor: pointer; padding: 8px 6px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.08));">
-          <span style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">📊</span>
-            <div>
-              <strong style="color: var(--text, #f8fafc); display: block;">Ver Vendas da Equipe Toda</strong>
-              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Se desmarcado, visualiza apenas as próprias vendas</small>
-            </div>
-          </span>
-          <div class="toggle-switch">
-            <input type="checkbox" name="perm_all_sales" value="1" {% if p_all_sales %}checked{% endif %}>
-            <span class="toggle-slider"></span>
-          </div>
-        </label>
+        </div>
+        {% endfor %}
 
       </div>
 
-      <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button type="button" class="btn secondary" onclick="closeModal('userPerms_{{ u.id }}')" style="padding: 10px 18px; border-radius: 10px;">Cancelar</button>
-        <button type="submit" style="background: var(--accent, #00e599); color: #052e16; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25);">Salvar Permissões</button>
+      <!-- Modal Footer (Fixo) -->
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); background: var(--surface-card, #121722); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.74rem; color: var(--muted, #94a3b8);">
+          🛡️ As permissões gravadas têm efeito imediato no acesso do usuário.
+        </span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" class="btn secondary" onclick="closeModal('userPerms_{{ u.id }}')" style="padding: 8px 16px; border-radius: 9px; font-size: 0.84rem;">Cancelar</button>
+          <button type="submit" style="background: var(--accent, #00e599); color: #052e16; font-weight: 700; font-size: 0.86rem; padding: 8px 20px; border-radius: 9px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25);">
+            Salvar Permissões
+          </button>
+        </div>
       </div>
+
     </form>
   </div>
 </div>
 {% endfor %}
+
+<!-- Script de Controle Client-Side de Permissões -->
+<script>
+window.rolePresets = window.rolePresets || {
+  {% for r in ['admin', 'support', 'finance', 'stock', 'sales'] %}
+  '{{ r }}': {{ get_role_preset(r)|tojson }},
+  {% endfor %}
+};
+
+function setAllPerms(formId, state) {
+  var form = document.getElementById(formId);
+  if (!form) return;
+  var cbs = form.querySelectorAll('input[type="checkbox"][data-cat]');
+  cbs.forEach(function(cb) { cb.checked = state; });
+}
+
+function toggleCategoryPerms(formId, catId) {
+  var form = document.getElementById(formId);
+  if (!form) return;
+  var cbs = form.querySelectorAll('input[type="checkbox"][data-cat="' + catId + '"]');
+  var anyUnchecked = false;
+  cbs.forEach(function(cb) {
+    if (!cb.checked) anyUnchecked = true;
+  });
+  cbs.forEach(function(cb) { cb.checked = anyUnchecked; });
+}
+
+function applyUserRolePreset(formId, role) {
+  var form = document.getElementById(formId);
+  if (!form) return;
+  var preset = (window.rolePresets && window.rolePresets[role]) || {};
+  var cbs = form.querySelectorAll('input[type="checkbox"][data-cat]');
+  cbs.forEach(function(cb) {
+    var key = cb.getAttribute('data-key');
+    cb.checked = Boolean(preset[key]);
+  });
+}
+</script>
 {% endif %}
