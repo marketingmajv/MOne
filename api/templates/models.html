@@ -13,7 +13,7 @@
     <meta property="og:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
     <meta name="twitter:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
     {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
-    {% set abs_share_img = share_img if share_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ share_img) %}
+    {% set abs_share_img = share_img if share_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ share_img ~ '?v=20261020') %}
     <meta property="og:image" content="{{ abs_share_img }}">
     <meta property="og:image:secure_url" content="{{ abs_share_img }}">
     <meta property="og:image:type" content="image/jpeg">
@@ -29,16 +29,16 @@
     <meta name="description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
     <meta property="og:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
     <meta name="twitter:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
-    <meta property="og:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
-    <meta property="og:image:secure_url" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
+    <meta property="og:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
+    <meta property="og:image:secure_url" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="675">
-    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
+    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
   {% endif %}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MAJ Mobilidade Elétrica">
-  <meta property="og:url" content="{{ request.base_url }}">
+  <meta property="og:url" content="{{ request.url }}">
   <meta name="twitter:card" content="summary_large_image">
   
   <!-- Favicon Oficial MAJ Mobilidade Elétrica -->
