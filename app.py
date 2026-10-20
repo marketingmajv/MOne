@@ -145,6 +145,11 @@ def custom_static(filename):
     }), 404
 
 
+@app.route('/favicon.ico')
+def favicon():
+    return custom_static('favicon.ico')
+
+
 @app.context_processor
 def inject_globals():
     u = current_user()

@@ -32,17 +32,25 @@
           </div>
         </div>
 
-        <!-- Se o vendedor não tem telefone cadastrado -->
-        <div x-show="!vendedorPhone" class="alert-banner" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.35); margin-bottom: 16px; padding: 10px 14px;">
-          <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-            <div class="alert-banner-text" style="font-size: 12.5px;">
-              <strong>📱 Cadastre seu WhatsApp de Vendedor:</strong> Ele fica registrado no seu perfil comercial do M-One.
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <input type="text" x-model="vendedorPhoneTemp" placeholder="Ex: 5527999998888" class="form-input sm" style="max-width: 220px;">
-              <button type="button" class="btn primary sm" @click="salvarMeuTelefone()">Salvar WhatsApp</button>
-            </div>
+        <!-- Se o vendedor não tem WhatsApp cadastrado no perfil -->
+        <div x-show="!vendedorPhone" class="alert-banner" style="background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); margin-bottom: 16px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div class="alert-banner-text" style="font-size: 12.5px; color: #fbbf24;">
+            <strong>📱 WhatsApp Comercial Não Cadastrado:</strong> Cadastre seu número no seu perfil para assinar as mensagens de abordagem comercial aos clientes.
           </div>
+          <button type="button" class="btn sm" onclick="openProfileModal()" style="background: rgba(0, 229, 153, 0.15); border: 1px solid var(--accent, #00E599); color: var(--accent, #00E599); font-weight: 700; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;">
+            ⚙️ Cadastrar no Meu Perfil
+          </button>
+        </div>
+
+        <!-- Se o vendedor tem WhatsApp cadastrado no perfil -->
+        <div x-show="vendedorPhone" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px;">
+          <div style="display: flex; align-items: center; gap: 6px; color: var(--muted);">
+            <span>📱 Abordagem assinada com seu WhatsApp:</span>
+            <strong style="color: var(--accent, #00E599); font-family: monospace;" x-text="vendedorPhone"></strong>
+          </div>
+          <button type="button" onclick="openProfileModal()" style="background: none; border: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 11.5px; padding: 0;">
+            Alterar no perfil
+          </button>
         </div>
 
         <!-- DADOS CADASTRAIS & DECISOR -->

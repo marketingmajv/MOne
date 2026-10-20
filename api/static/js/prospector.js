@@ -315,14 +315,14 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
       }
       try {
         const csrf = getCsrfToken();
-        const resp = await fetch('/admin/prospeccao/api/vendedor/phone', {
+        const resp = await fetch('/profile/phone', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
           body: JSON.stringify({ phone: this.vendedorPhoneTemp.trim(), csrf_token: csrf })
         });
         const data = await resp.json();
         if (data.status === 'success') {
-          this.vendedorPhone = this.vendedorPhoneTemp.trim();
+          this.vendedorPhone = data.phone || this.vendedorPhoneTemp.trim();
           alert('✅ ' + data.message);
           if (this.leadSelecionado) {
             this.montarMensagemInicial(this.leadSelecionado);
@@ -337,6 +337,12 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
 
     async enviarWhatsAppEProspectar() {
       if (!this.leadSelecionado) return;
+
+      if (!this.vendedorPhone) {
+        alert('⚠️ Você ainda não cadastrou seu WhatsApp Comercial no seu perfil. Por favor, cadastre seu número para iniciar abordagens.');
+        if (typeof openProfileModal === 'function') openProfileModal();
+        return;
+      }
 
       const rawPhone = this.leadSelecionado.whatsapp || this.leadSelecionado.telefone_google;
       if (!rawPhone) {

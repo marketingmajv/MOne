@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
 from database import db
 from routes.helpers import audit, hash_password, login_required, verify_password
@@ -117,4 +117,25 @@ def change_password():
         conn.commit()
     audit("auth.password_changed", "")
     flash("Senha alterada.", "success")
+    return redirect(request.referrer or url_for("dashboard"))
+
+
+@auth_bp.route("/profile/phone", methods=["POST"])
+@login_required
+def update_profile_phone():
+    """Atualiza o WhatsApp comercial do usuário autenticado no seu perfil."""
+    raw_phone = request.form.get("phone", "") or (request.get_json(silent=True) or {}).get("phone", "")
+    phone = "".join(ch for ch in str(raw_phone) if ch.isdigit())
+    if len(phone) < 10 or len(phone) > 14:
+        if request.is_json:
+            return jsonify({"status": "error", "message": "Telefone inválido. Informe DDD + número (ex: 27999157162)."}), 400
+        flash("Telefone inválido. Informe DDD + número com pelo menos 10 dígitos.", "danger")
+        return redirect(request.referrer or url_for("dashboard"))
+    with db() as conn:
+        conn.execute("UPDATE users SET phone = %s WHERE id = %s", (phone, session["user_id"]))
+        conn.commit()
+    audit("user.phone_updated", f"user_id={session['user_id']}; phone={phone}")
+    if request.is_json:
+        return jsonify({"status": "success", "message": "WhatsApp comercial atualizado com sucesso!", "phone": phone})
+    flash("WhatsApp comercial atualizado com sucesso!", "success")
     return redirect(request.referrer or url_for("dashboard"))

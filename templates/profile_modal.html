@@ -15,7 +15,51 @@
           </p>
         </div>
       </div>
-      <button type="button" onclick="closeProfileModal()" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+      <button type="button" class="modal-close-btn" onclick="closeProfileModal()" style="border: 1px solid var(--border-subtle); background: var(--surface-subtle); color: var(--text-muted); width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <!-- SEÇÃO: WHATSAPP COMERCIAL -->
+    <div style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 22px; margin-bottom: 18px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(0, 229, 153, 0.12); color: var(--brand-emerald); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+            📱
+          </div>
+          <div>
+            <strong style="font-size: 0.95rem; color: var(--text-primary); display: block;">Meu WhatsApp Comercial</strong>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Número oficial utilizado nas abordagens do sistema e prospecção</span>
+          </div>
+        </div>
+        {% if me and me.phone %}
+        <span style="background: rgba(0, 229, 153, 0.12); color: var(--brand-emerald); font-size: 0.74rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(0, 229, 153, 0.3);">
+          🟢 {{ me.phone }}
+        </span>
+        {% else %}
+        <span style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; font-size: 0.74rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(245, 158, 11, 0.3);">
+          ⚠️ Não Cadastrado
+        </span>
+        {% endif %}
+      </div>
+
+      <form method="post" action="{{ url_for('auth.update_profile_phone') }}" style="display: flex; flex-direction: column; gap: 12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">
+            Número do WhatsApp (com DDD)
+          </label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="tel" name="phone" value="{{ me.phone if me and me.phone else '' }}" required placeholder="Ex.: 27999157162 ou (27) 99915-7162" class="form-input" style="flex: 1; padding: 11px 14px; font-size: 0.9rem; font-family: monospace;">
+            <button type="submit" style="background: var(--brand-emerald); color: #052e16; font-weight: 700; font-size: 0.85rem; padding: 11px 18px; border-radius: 10px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 229, 153, 0.25); white-space: nowrap; transition: all 0.2s;">
+              Salvar WhatsApp
+            </button>
+          </div>
+          <span style="display: block; font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;">
+            Informe o DDD e o número completo. Este número assinará todas as abordagens comerciais geradas por você no M-One.
+          </span>
+        </div>
+      </form>
     </div>
 
     <!-- SEÇÃO: SEGURANÇA & ALTERAÇÃO DE SENHA -->

@@ -14,6 +14,7 @@
       <tr>
         <th>Nome</th>
         <th>Usuário</th>
+        <th>WhatsApp</th>
         <th>Perfil / Acesso</th>
         <th>Status</th>
         {% if me.role in ['admin', 'support'] %}
@@ -26,6 +27,13 @@
       <tr>
         <td><b>{{ u.name }}</b></td>
         <td><small class="mono">{{ u.username }}</small></td>
+        <td>
+          {% if u.phone %}
+            <span class="mono" style="color:var(--accent, #00E599); font-weight:600; font-size:12.5px;">{{ u.phone }}</span>
+          {% else %}
+            <span style="color:var(--muted); font-size:11.5px;">Não informado</span>
+          {% endif %}
+        </td>
         <td><span class="badge">{{ role_labels.get(u.role, u.role) }}</span></td>
         <td>
           {% if u.active %}
@@ -71,17 +79,23 @@
         <div class="modal-card">
           <div class="modal-head">
             <h3>Editar Usuário: {{ u.name }}</h3>
-            <button onclick="closeModal('editUser_{{ u.id }}')">×</button>
+            <button type="button" class="modal-close-btn" onclick="closeModal('editUser_{{ u.id }}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
           <form method="post" action="{{ url_for('edit_user', uid=u.id) }}" class="form-grid">
             <label>Nome completo
-              <input name="name" required value="{{ u.name }}">
+              <input name="name" required value="{{ u.name }}" class="form-input">
             </label>
             <label>Usuário de acesso
-              <input name="username" required value="{{ u.username }}">
+              <input name="username" required value="{{ u.username }}" class="form-input">
+            </label>
+            <label class="span-2">WhatsApp Comercial
+              <input name="phone" value="{{ u.phone or '' }}" placeholder="Ex.: 27999157162 ou (27) 99915-7162" class="form-input">
+              <small style="color:var(--muted); font-size:0.75rem;">Número utilizado nas abordagens do sistema de prospecção.</small>
             </label>
             <label class="span-2">Perfil de acesso
-              <select name="role">
+              <select name="role" class="form-input">
                 <option value="sales" {% if u.role == 'sales' %}selected{% endif %}>Vendas (vendas, estoque, produtos)</option>
                 <option value="stock" {% if u.role == 'stock' %}selected{% endif %}>Estoque (estoque, produtos, importar chassis)</option>
                 <option value="finance" {% if u.role == 'finance' %}selected{% endif %}>Financeiro (vendas, pagamentos, estoque, produtos)</option>
@@ -90,7 +104,7 @@
               </select>
             </label>
             <label class="span-2">Nova Senha (deixe em branco para não alterar)
-              <input type="password" name="password" placeholder="Nova senha (opcional)">
+              <input type="password" name="password" placeholder="Nova senha (opcional)" class="form-input">
             </label>
             <div class="form-actions span-2">
               <button type="button" class="btn" onclick="closeModal('editUser_{{ u.id }}')">Cancelar</button>
@@ -102,7 +116,7 @@
       {% endif %}
 
     {% else %}
-      <tr><td colspan="5" class="empty">Nenhum usuário cadastrado.</td></tr>
+      <tr><td colspan="6" class="empty">Nenhum usuário cadastrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -113,28 +127,33 @@
   <div class="modal-card">
     <div class="modal-head">
       <h3>Novo colaborador / usuário</h3>
-      <button onclick="closeModal('newUser')">×</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('newUser')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <form method="post" class="form-grid">
       <label>Nome completo
-        <input name="name" required placeholder="Ex.: Maria Silva">
+        <input name="name" required placeholder="Ex.: Maria Silva" class="form-input">
       </label>
       <label>Usuário de acesso
-        <input name="username" required placeholder="Ex.: maria">
+        <input name="username" required placeholder="Ex.: maria" class="form-input">
+      </label>
+      <label class="span-2">WhatsApp Comercial
+        <input name="phone" placeholder="Ex.: 27999157162 ou (27) 99915-7162" class="form-input">
+        <small style="color:var(--muted); font-size:0.75rem;">Número utilizado para acionamento de leads e contato comercial.</small>
       </label>
       <label class="span-2">Perfil de acesso
-        <select name="role">
+        <select name="role" class="form-input">
           <option value="sales">Vendas (vendas, estoque, produtos)</option>
           <option value="stock">Estoque (estoque, produtos, importar chassis)</option>
           <option value="finance">Financeiro (vendas, pagamentos, estoque, produtos)</option>
           <option value="support">Suporte Técnico (suporte e chamados)</option>
           <option value="admin">Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
-          <option value="support">Suporte Técnico (Acesso geral e suporte técnico)</option>
         </select>
       </label>
       <label class="span-2">Senha inicial temporária
-        <input name="password" value="MOne2026!" required>
-        <small>O colaborador deverá alterar a senha no primeiro uso.</small>
+        <input name="password" value="MOne2026!" required class="form-input">
+        <small style="color:var(--muted); font-size:0.75rem;">O colaborador deverá alterar a senha no primeiro uso.</small>
       </label>
       <div class="form-actions span-2">
         <button type="button" class="btn" onclick="closeModal('newUser')">Cancelar</button>

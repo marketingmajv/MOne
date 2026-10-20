@@ -53,6 +53,7 @@
           </div>
         </div>
 
+        {% if is_admin %}
         <!-- OPÇÃO 2: ATIVAR WEBHOOK AO VIVO (AUTOMÁTICO 24/7) -->
         <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
@@ -105,6 +106,7 @@
             </div>
           </div>
         </div>
+        {% endif %}
 
       </div>
 

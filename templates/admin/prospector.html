@@ -15,7 +15,7 @@
   <span>📊</span>
   <span>Planilha & Exportações</span>
 </button>
-{% if not is_seller %}
+{% if is_admin %}
 <a href="?tab=radar" class="btn primary" @click.prevent="$dispatch('abrir-aba-radar')">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
@@ -62,7 +62,7 @@
     <button type="button" class="tab-btn" :class="{ 'active': tab === 'capturados' }" @click="setTab('capturados')">
       📋 Leads Qualificados Capturados ({{ total_leads }})
     </button>
-    {% if not is_seller %}
+    {% if is_admin %}
     <button type="button" class="tab-btn" :class="{ 'active': tab === 'radar' }" @click="setTab('radar')">
       🎯 Radar de Prospecção
     </button>
@@ -234,7 +234,7 @@
                 <td colspan="7" class="empty-state">
                   <div style="text-align: center; padding: 30px;">
                     <p style="font-size: 15px; font-weight: 600; color: var(--muted, #64748b); margin-bottom: 12px;">Nenhum lead encontrado com os filtros selecionados.</p>
-                    {% if not is_seller %}
+                    {% if is_admin %}
                     <button type="button" class="btn primary" @click="setTab('radar')">🎯 Disparar Nova Varredura</button>
                     {% endif %}
                   </div>
@@ -262,7 +262,7 @@
     </div>
   </div>
 
-  {% if not is_seller %}
+  {% if is_admin %}
   <!-- ABA 2: RADAR DE PROSPECÇÃO (ADMIN / SUPPORT) -->
   <div x-show="tab === 'radar'" class="tab-pane">
     <div class="radar-grid">

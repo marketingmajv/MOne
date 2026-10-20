@@ -28,11 +28,12 @@ def users():
         username = request.form["username"].strip().lower()
         password = request.form.get("password") or "MOne2026!"
         role = request.form.get("role", "sales")
+        phone = "".join(ch for ch in request.form.get("phone", "") if ch.isdigit())
         with db() as conn:
             try:
                 conn.execute(
-                    "INSERT INTO users(name,username,password_hash,role) VALUES(%s,%s,%s,%s)",
-                    (name, username, hash_password(password), role)
+                    "INSERT INTO users(name,username,password_hash,role,phone) VALUES(%s,%s,%s,%s,%s)",
+                    (name, username, hash_password(password), role, phone or None)
                 )
                 conn.commit()
                 flash("Usuário criado.", "success")
@@ -85,19 +86,20 @@ def edit_user(uid):
     username = request.form.get("username", "").strip().lower()
     role = request.form.get("role", "sales")
     new_password = request.form.get("password", "").strip()
+    phone = "".join(ch for ch in request.form.get("phone", "") if ch.isdigit())
     with db() as conn:
         if new_password:
             conn.execute(
-                "UPDATE users SET name=%s, username=%s, role=%s, password_hash=%s WHERE id=%s",
-                (name, username, role, hash_password(new_password), uid)
+                "UPDATE users SET name=%s, username=%s, role=%s, password_hash=%s, phone=%s WHERE id=%s",
+                (name, username, role, hash_password(new_password), phone or None, uid)
             )
         else:
             conn.execute(
-                "UPDATE users SET name=%s, username=%s, role=%s WHERE id=%s",
-                (name, username, role, uid)
+                "UPDATE users SET name=%s, username=%s, role=%s, phone=%s WHERE id=%s",
+                (name, username, role, phone or None, uid)
             )
         conn.commit()
-    audit("user.edited", f"user_id={uid}; username={username}; role={role}")
+    audit("user.edited", f"user_id={uid}; username={username}; role={role}; phone={phone}")
     flash("Usuário atualizado com sucesso.", "success")
     return redirect(url_for("users"))
 

@@ -58,10 +58,11 @@ def index():
     """Painel principal do Módulo de Prospecção de Leads."""
     user = current_user() or {}
     user_role = user.get("role", "sales")
-    is_seller = (user_role == "sales")
+    is_admin = (user_role in ("admin", "support"))
+    is_seller = not is_admin
 
-    # Vendedores têm foco exclusivo na aba de captura e abordagem comercial
-    active_tab = "capturados" if is_seller else request.args.get("tab", "capturados")
+    # Apenas Diretoria e Suporte Técnico têm acesso às configurações e ao radar de busca
+    active_tab = "capturados" if not is_admin else request.args.get("tab", "capturados")
     nicho_filtro = request.args.get("nicho", "all")
     classe_filtro = request.args.get("classe", "all")
     status_filtro = request.args.get("status", "all")
@@ -114,6 +115,7 @@ def index():
         google_sheets_url=google_sheets_url,
         apify_configured=apify_token_configured,
         is_seller=is_seller,
+        is_admin=is_admin,
         user_role=user_role,
         vendedor_atual=user,
         automacao=automacao_cfg,

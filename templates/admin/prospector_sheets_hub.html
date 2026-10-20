@@ -93,7 +93,7 @@
       </a>
       {% endif %}
 
-      {% if not is_seller %}
+      {% if is_admin %}
       <button type="button" 
               class="btn sm" 
               :disabled="syncLoading" 
@@ -149,13 +149,14 @@
         <input type="url" 
                x-model="sheetsUrlInput" 
                placeholder="https://docs.google.com/spreadsheets/d/.../edit?usp=sharing" 
+               {% if not is_admin %}readonly title="Link da planilha oficial compartilhada (modo consulta)"{% endif %}
                class="form-input" 
                style="width: 100%; padding-left: 36px; padding-right: 12px; font-size: 0.78rem; font-family: monospace; border-radius: 8px; height: 38px; background: var(--panel); color: var(--text); border: 1px solid var(--line);">
       </div>
 
       <!-- Botões de Ação na URL -->
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        {% if not is_seller %}
+        {% if is_admin %}
         <button type="button" 
                 class="btn sm" 
                 :disabled="salvandoSheets" 
@@ -219,7 +220,7 @@
 
     </div>
 
-    {% if not is_seller %}
+    {% if is_admin %}
     <!-- CONTEÚDO DE CONFIGURAÇÃO DE WEBHOOK (EXPANSÍVEL) -->
     <div style="padding: 12px 14px; background: var(--panel2); border: 1px dashed var(--line); border-radius: 10px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
