@@ -1,0 +1,117 @@
+{#
+  M-One Prospector - Modal Assistente de Sincronização Google Sheets
+  templates/admin/prospector_sheets_modal.html
+  Em conformidade com as regras de UX/UI do M-One:
+  - Teleporte Alpine.js (<template x-teleport="body">)
+  - Botão fechar geométrico (.modal-close-btn com SVG 24x24)
+  - Dark Theme First (sem inputs brancos estourados)
+#}
+<template x-teleport="body">
+  <div class="modal show" x-show="modalSheetsAberto" x-cloak style="display: flex;">
+    <div class="modal-card modal-lg" @click.away="modalSheetsAberto = false" style="max-width: 680px;">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="modal-head">
+        <div class="head-info">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">📊</span>
+            <h3 class="modal-title">Sincronização ao Vivo com Google Sheets</h3>
+          </div>
+          <span class="modal-subtitle">Conta vinculada: <strong>marketingmajv@gmail.com</strong> (79 leads prontos)</span>
+        </div>
+        <button type="button" class="modal-close-btn" @click="modalSheetsAberto = false" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 18px;">
+        
+        <!-- OPÇÃO 1: IMPORTAÇÃO IMEDIATA SEM SCRIPT (MAIS RÁPIDA) -->
+        <div style="background: rgba(0, 229, 153, 0.08); border: 1px solid rgba(0, 229, 153, 0.3); border-radius: 12px; padding: 14px 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 1.1rem;">⚡</span>
+            <strong style="font-size: 0.95rem; color: var(--accent, #00E599);">Opção Imediata (10 segundos, sem configurar script):</strong>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text); margin: 0 0 10px 0; line-height: 1.4;">
+            Baixe a base completa já formatada com cabeçalho corporativo MAJ e 19 colunas. Na sua planilha do Google Sheets, basta clicar em <strong>Arquivo ➔ Importar ➔ Fazer upload</strong>.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('prospector.exportar_planilha_leads', formato='xlsx') }}" 
+               class="btn primary sm" 
+               style="font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Baixar Excel (.xlsx) Formatado</span>
+            </a>
+            {% if google_sheets_url %}
+            <a href="{{ google_sheets_url }}" target="_blank" rel="noopener noreferrer" class="btn sm" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+              <span>Abrir no Google Sheets ↗</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- OPÇÃO 2: ATIVAR WEBHOOK AO VIVO (AUTOMÁTICO 24/7) -->
+        <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <span style="font-size: 1.1rem;">🔗</span>
+            <strong style="font-size: 0.95rem; color: var(--text);">Opção Automática (Sincronização com o Botão ⚡):</strong>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 12px 0;">
+            O Google Sheets não permite gravação externa sem autorização. Para ativar o envio automático com 1 clique, configure o Apps Script na sua planilha em 3 etapas simples:
+          </p>
+
+          <ol style="margin: 0 0 14px 18px; padding: 0; font-size: 0.82rem; color: var(--text); line-height: 1.6;">
+            <li>
+              Abra sua planilha do Google Sheets e vá em <strong>Extensões ➔ Apps Script</strong>.
+            </li>
+            <li>
+              Apague o código existente e cole o código receptor:
+              <div style="margin: 6px 0 10px 0;">
+                <button type="button" 
+                        class="btn sm" 
+                        @click="copiarScriptAppsScript()" 
+                        style="font-size: 0.78rem; font-weight: 700; border-color: rgba(56, 189, 248, 0.4); color: var(--brand-blue, #38bdf8); display: inline-flex; align-items: center; gap: 6px;">
+                  <span x-text="scriptCopiado ? '✓ Código Copiado para a Área de Transferência!' : '📋 Copiar Código do Apps Script'">📋 Copiar Código do Apps Script</span>
+                </button>
+              </div>
+            </li>
+            <li>
+              Clique em <strong>Implantar ➔ Nova implantação</strong>, selecione <strong>App da Web</strong> (ícone de engrenagem), configure <em>Quem pode acessar: Qualquer pessoa</em>, clique em <strong>Implantar</strong> e copie a URL gerada.
+            </li>
+          </ol>
+
+          <!-- Input para colar a URL do Webhook -->
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.76rem; font-weight: 700; color: var(--text);">
+              Cole a URL do App da Web gerada:
+            </label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="url" 
+                     x-model="webhookModalInput" 
+                     placeholder="https://script.google.com/macros/s/.../exec" 
+                     class="form-input" 
+                     style="flex: 1; min-width: 260px; font-size: 0.78rem; font-family: monospace; height: 38px; border-radius: 8px;">
+              <button type="button" 
+                      class="btn primary sm" 
+                      :disabled="salvandoWebhookModal" 
+                      @click="salvarWebhookEExecutar()" 
+                      style="font-size: 0.8rem; font-weight: 700; height: 38px; padding: 0 16px; border-radius: 8px;">
+                <span x-show="!salvandoWebhookModal">💾 Salvar e Sincronizar</span>
+                <span x-show="salvandoWebhookModal">Sincronizando...</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-foot" style="display: flex; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line);">
+        <button type="button" class="btn sm" @click="modalSheetsAberto = false">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</template>
