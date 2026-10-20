@@ -20,6 +20,19 @@ from services.prospector_service import get_prospector_config, set_prospector_co
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1eZOrJ5drtast9a1aNlfzjclX2Rdnbt6vJQb3Z2I4Aeg/edit?usp=sharing"
+
+
+def get_google_sheets_url() -> str:
+    """Retorna o link oficial da planilha do Google Sheets."""
+    val = get_prospector_config("google_sheets_url", DEFAULT_GOOGLE_SHEETS_URL)
+    return val.strip() if val and val.strip() else DEFAULT_GOOGLE_SHEETS_URL
+
+
+def set_google_sheets_url(url: str) -> None:
+    """Grava o link oficial da planilha do Google Sheets."""
+    set_prospector_config("google_sheets_url", url.strip(), "Link oficial da Planilha Google Sheets dos Leads (marketingmajv@gmail.com)")
+
 
 def get_sheets_webhook_url() -> str:
     """Retorna a URL do Google Apps Script configurada."""
@@ -29,6 +42,138 @@ def get_sheets_webhook_url() -> str:
 def set_sheets_webhook_url(url: str) -> None:
     """Grava a URL do Google Apps Script."""
     set_prospector_config("sheets_webhook_url", url, "URL do Webhook do Google Apps Script para a Planilha de Leads")
+
+
+def gerar_planilha_excel_leads() -> bytes:
+    """Gera arquivo Excel (.xlsx) altamente estilizado com todos os leads qualificados."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Leads MAJ Mobilidade"
+    ws.views.sheetView[0].showGridLines = True
+
+    headers = [
+        "Empresa", "Nicho", "Cidade", "UF", "WhatsApp", "Telefone", "E-mail",
+        "CNPJ", "Razão Social", "Decisor", "Cargo", "Score", "Classe", "Status",
+        "Instagram", "Site", "Endereço", "Resumo Comercial", "Gancho de Abordagem WhatsApp"
+    ]
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
+    header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    thin_border = Border(
+        left=Side(style="thin", color="E2E8F0"),
+        right=Side(style="thin", color="E2E8F0"),
+        top=Side(style="thin", color="E2E8F0"),
+        bottom=Side(style="thin", color="E2E8F0")
+    )
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_align
+    ws.row_dimensions[1].height = 28
+
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM prospeccao.leads ORDER BY score DESC, created_at DESC").fetchall() or []
+        leads = [dict(r) for r in rows]
+
+    for r_idx, l in enumerate(leads, start=2):
+        row_data = [
+            l.get("nome") or "",
+            l.get("nicho_slug") or "",
+            l.get("cidade") or "",
+            l.get("uf") or "",
+            l.get("whatsapp") or l.get("telefone_google") or "",
+            l.get("telefone_google") or "",
+            l.get("email") or "",
+            l.get("cnpj") or "",
+            l.get("razao_social") or "",
+            l.get("decisor_nome") or "",
+            l.get("decisor_cargo") or "",
+            l.get("score") or 0,
+            l.get("classificacao") or "D",
+            l.get("status_contato") or "novo",
+            l.get("instagram") or "",
+            l.get("site") or "",
+            l.get("endereco") or "",
+            l.get("resumo_ia") or "",
+            l.get("gancho_comercial") or "",
+        ]
+        ws.append(row_data)
+
+        bg_color = "F8FAFC" if r_idx % 2 == 0 else "FFFFFF"
+        row_fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
+
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=r_idx, column=col_idx)
+            cell.fill = row_fill
+            cell.border = thin_border
+            cell.font = Font(name="Arial", size=10)
+            if col_idx in [3, 4, 12, 13, 14]:
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                cell.alignment = Alignment(vertical="center")
+        ws.row_dimensions[r_idx].height = 22
+
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            val = str(cell.value or "")
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 45)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+def gerar_csv_leads() -> str:
+    """Gera CSV completo em UTF-8 compatível diretamente com o Google Sheets."""
+    output = io.StringIO()
+    output.write("\ufeff")  # BOM para Excel e Sheets reconhecerem UTF-8
+    writer = csv.writer(output, delimiter=",")
+    headers = [
+        "Empresa", "Nicho", "Cidade", "UF", "WhatsApp", "Telefone", "E-mail",
+        "CNPJ", "Razão Social", "Decisor", "Cargo", "Score", "Classe", "Status",
+        "Instagram", "Site", "Endereço", "Resumo Comercial", "Gancho de Abordagem"
+    ]
+    writer.writerow(headers)
+
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM prospeccao.leads ORDER BY score DESC, created_at DESC").fetchall() or []
+        for l in rows:
+            writer.writerow([
+                l.get("nome") or "",
+                l.get("nicho_slug") or "",
+                l.get("cidade") or "",
+                l.get("uf") or "",
+                l.get("whatsapp") or l.get("telefone_google") or "",
+                l.get("telefone_google") or "",
+                l.get("email") or "",
+                l.get("cnpj") or "",
+                l.get("razao_social") or "",
+                l.get("decisor_nome") or "",
+                l.get("decisor_cargo") or "",
+                l.get("score") or 0,
+                l.get("classificacao") or "D",
+                l.get("status_contato") or "novo",
+                l.get("instagram") or "",
+                l.get("site") or "",
+                l.get("endereco") or "",
+                l.get("resumo_ia") or "",
+                l.get("gancho_comercial") or "",
+            ])
+    return output.getvalue()
 
 
 # -------------------------------------------------------------------------

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
-from flask import Blueprint, Response, jsonify, render_template, request, redirect, url_for, flash
+from flask import Blueprint, Response, jsonify, render_template, request, redirect, url_for, flash, send_file
 from database import db
 from routes.helpers import audit, current_user, login_required, roles_required
 from services.prospector_service import (
@@ -27,9 +27,13 @@ from services.prospector_service import (
 )
 from services.prospector_export_service import (
     exportar_csv_meta_lookalike,
+    gerar_csv_leads,
+    gerar_planilha_excel_leads,
+    get_google_sheets_url,
     get_sheets_webhook_url,
     listar_leads_capturados,
     obter_metricas_resumo,
+    set_google_sheets_url,
     set_sheets_webhook_url,
     sincronizar_com_google_sheets,
 )
@@ -85,6 +89,7 @@ def index():
     nichos = get_all_nichos(apenas_ativos=False)
     default_nicho = nichos[0]["slug"] if nichos else "revenda-motos"
     sheets_url = get_sheets_webhook_url()
+    google_sheets_url = get_google_sheets_url()
     apify_token_configured = bool(get_prospector_config("apify_token"))
     total_pages = max(1, (total_leads + per_page - 1) // per_page)
     automacao_cfg = obter_config_automacao()
@@ -106,6 +111,7 @@ def index():
         termo_busca=termo_busca,
         apenas_wa=apenas_wa,
         sheets_url=sheets_url,
+        google_sheets_url=google_sheets_url,
         apify_configured=apify_token_configured,
         is_seller=is_seller,
         user_role=user_role,
@@ -178,6 +184,52 @@ def export_meta():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=meta_lookalike_leads_maj.csv"}
     )
+
+
+@prospector_bp.route("/admin/prospeccao/exportar-planilha", methods=["GET"])
+@login_required
+@roles_required("admin", "support", "sales")
+def exportar_planilha_leads():
+    """Download da base completa em formato Excel (.xlsx) ou CSV para uso no Google Sheets."""
+    import io
+    formato = request.args.get("formato", "xlsx").lower()
+    audit("PROSPECTOR_EXPORT_SHEETS", f"Formato: {formato}")
+    if formato == "csv":
+        csv_data = gerar_csv_leads()
+        return Response(
+            csv_data,
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=leads_maj_mobilidade.csv"}
+        )
+
+    excel_bytes = gerar_planilha_excel_leads()
+    return send_file(
+        io.BytesIO(excel_bytes),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="leads_maj_mobilidade.xlsx"
+    )
+
+
+@prospector_bp.route("/admin/prospeccao/api/google-sheets", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def salvar_google_sheets_config():
+    """Atualiza o link oficial da planilha e o Webhook do Google Sheets."""
+    data = request.get_json(silent=True) or {}
+    sheets_url = data.get("google_sheets_url", "").strip()
+    webhook_url = data.get("sheets_webhook_url", "").strip()
+    if sheets_url:
+        set_google_sheets_url(sheets_url)
+    if webhook_url:
+        set_sheets_webhook_url(webhook_url)
+    audit("PROSPECTOR_SHEETS_CONFIG", "Configurações da Planilha atualizadas.")
+    return jsonify({
+        "status": "success",
+        "message": "Configurações da planilha salvas com sucesso!",
+        "google_sheets_url": get_google_sheets_url(),
+        "sheets_webhook_url": get_sheets_webhook_url(),
+    })
 
 
 @prospector_bp.route("/admin/prospeccao/api/config", methods=["POST"])
