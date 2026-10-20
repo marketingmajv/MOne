@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-20T20:43:18Z",
+  "updated_at": "2026-10-20T21:19:30Z",
   "total_models": 14,
   "total_all": 17,
   "menu_mode": "free",
@@ -105,6 +105,7 @@
       },
       "banner_image": "/public/images/models/banners/max-12-banner.webp",
       "cutout_image": "/public/images/models/cutouts/max-12.png",
+      "share_image": "/public/images/models/share/max-12.jpg",
       "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
         "/public/images/max-12/max-12-01.jpg",
@@ -226,6 +227,7 @@
       },
       "banner_image": "/public/images/models/banners/m9-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m9-pro.png",
+      "share_image": "/public/images/models/share/m9-pro.jpg",
       "hero_image": "/public/images/models/banners/m9-pro-banner.webp",
       "images": [
         "/public/images/m9-pro/m9-pro-01.jpg",
@@ -347,6 +349,7 @@
       },
       "banner_image": "/public/images/models/banners/flow-one-banner.webp",
       "cutout_image": "/public/images/models/cutouts/flow-one.png",
+      "share_image": "/public/images/models/share/flow-one.jpg",
       "hero_image": "/public/images/models/banners/flow-one-banner.webp",
       "images": [
         "/public/images/flow-one/flow-one-01.jpg",
@@ -468,6 +471,7 @@
       },
       "banner_image": "/public/images/models/banners/m50-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
+      "share_image": "/public/images/models/share/m50-pro.jpg",
       "hero_image": "/public/images/models/banners/m50-pro-banner.webp",
       "images": [
         "/public/images/m50-pro/m50-pro-01.jpg",
@@ -586,6 +590,7 @@
       },
       "banner_image": "/public/images/models/banners/classic-1000-banner.webp",
       "cutout_image": "/public/images/models/cutouts/classic-1000.png",
+      "share_image": "/public/images/models/share/classic-1000.jpg",
       "hero_image": "/public/images/models/banners/classic-1000-banner.webp",
       "images": [
         "/public/images/classic-1000/classic-1000-01.jpg",
@@ -707,6 +712,7 @@
       },
       "banner_image": "/public/images/models/banners/v20-ultra-banner.webp",
       "cutout_image": "/public/images/models/cutouts/v20-ultra.png",
+      "share_image": "/public/images/models/share/v20-ultra.jpg",
       "hero_image": "/public/images/models/banners/v20-ultra-banner.webp",
       "images": [
         "/public/images/v20-ultra/v20-ultra-01.jpg",
@@ -849,7 +855,8 @@
         "diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
         "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
-      }
+      },
+      "share_image": "/public/images/models/share/db-zero.jpg"
     },
     {
       "categoria": "Scooter",
@@ -968,7 +975,8 @@
         "diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 72V 30Ah.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 65 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
         "pontos_fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 72V 30Ah (2.160 Wh)."
-      }
+      },
+      "share_image": "/public/images/models/share/gp-1000.jpg"
     },
     {
       "categoria": "Scooter",
@@ -1087,7 +1095,8 @@
         "diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
         "pontos_fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED."
-      }
+      },
+      "share_image": "/public/images/models/share/m2.jpg"
     },
     {
       "categoria": "Scooter",
@@ -1182,6 +1191,7 @@
       },
       "banner_image": "/public/images/models/banners/nova-banner.webp",
       "cutout_image": "/public/images/models/cutouts/nova.png",
+      "share_image": "/public/images/models/share/nova.jpg",
       "hero_image": "/public/images/models/banners/nova-banner.webp",
       "images": [
         "/public/images/nova/nova-01.jpg",
@@ -1303,6 +1313,7 @@
       },
       "banner_image": "/public/images/models/banners/v8-mini-banner.webp",
       "cutout_image": "/public/images/models/cutouts/v8-mini.png",
+      "share_image": "/public/images/models/share/v8-mini.jpg",
       "hero_image": "/public/images/models/banners/v8-mini-banner.webp",
       "images": [
         "/public/images/v8-mini/v8-mini-01.jpg",
@@ -1424,6 +1435,7 @@
       },
       "banner_image": "/public/images/models/banners/ride-on-banner.webp",
       "cutout_image": "/public/images/models/cutouts/ride-on.png",
+      "share_image": "/public/images/models/share/ride-on.jpg",
       "hero_image": "/public/images/models/banners/ride-on-banner.webp",
       "images": [
         "/public/images/ride-on/ride-on-01.jpg",
@@ -1545,6 +1557,7 @@
       },
       "banner_image": "/public/images/models/banners/rz-110-banner.webp",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
+      "share_image": "/public/images/models/share/rz-110.jpg",
       "hero_image": "/public/images/models/banners/rz-110-banner.webp",
       "images": [
         "/public/images/rz-110/rz-110-01.jpg",
@@ -1666,6 +1679,7 @@
       },
       "banner_image": "/public/images/models/banners/vittoria-banner.webp",
       "cutout_image": "/public/images/models/cutouts/vittoria.png",
+      "share_image": "/public/images/models/share/vittoria.jpg",
       "hero_image": "/public/images/models/banners/vittoria-banner.webp",
       "images": [
         "/public/images/vittoria/vittoria-01.jpg",
@@ -1789,6 +1803,7 @@
       },
       "banner_image": "/public/images/models/banners/max-12-banner.webp",
       "cutout_image": "/public/images/models/cutouts/max-12.png",
+      "share_image": "/public/images/models/share/max-12.jpg",
       "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
         "/public/images/max-12/max-12-01.jpg",
@@ -1910,6 +1925,7 @@
       },
       "banner_image": "/public/images/models/banners/m9-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m9-pro.png",
+      "share_image": "/public/images/models/share/m9-pro.jpg",
       "hero_image": "/public/images/models/banners/m9-pro-banner.webp",
       "images": [
         "/public/images/m9-pro/m9-pro-01.jpg",
@@ -2031,6 +2047,7 @@
       },
       "banner_image": "/public/images/models/banners/flow-one-banner.webp",
       "cutout_image": "/public/images/models/cutouts/flow-one.png",
+      "share_image": "/public/images/models/share/flow-one.jpg",
       "hero_image": "/public/images/models/banners/flow-one-banner.webp",
       "images": [
         "/public/images/flow-one/flow-one-01.jpg",
@@ -2152,6 +2169,7 @@
       },
       "banner_image": "/public/images/models/banners/m50-pro-banner.webp",
       "cutout_image": "/public/images/models/cutouts/m50-pro.png",
+      "share_image": "/public/images/models/share/m50-pro.jpg",
       "hero_image": "/public/images/models/banners/m50-pro-banner.webp",
       "images": [
         "/public/images/m50-pro/m50-pro-01.jpg",
@@ -2270,6 +2288,7 @@
       },
       "banner_image": "/public/images/models/banners/classic-1000-banner.webp",
       "cutout_image": "/public/images/models/cutouts/classic-1000.png",
+      "share_image": "/public/images/models/share/classic-1000.jpg",
       "hero_image": "/public/images/models/banners/classic-1000-banner.webp",
       "images": [
         "/public/images/classic-1000/classic-1000-01.jpg",
@@ -2391,6 +2410,7 @@
       },
       "banner_image": "/public/images/models/banners/v20-ultra-banner.webp",
       "cutout_image": "/public/images/models/cutouts/v20-ultra.png",
+      "share_image": "/public/images/models/share/v20-ultra.jpg",
       "hero_image": "/public/images/models/banners/v20-ultra-banner.webp",
       "images": [
         "/public/images/v20-ultra/v20-ultra-01.jpg",
@@ -2533,7 +2553,8 @@
         "diferencial": "Linhas futuristas em Silver Black, peso reduzido, aceleração vigorosa, freios hidráulicos e bateria de lítio 60V.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
         "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
-      }
+      },
+      "share_image": "/public/images/models/share/db-zero.jpg"
     },
     {
       "categoria": "Scooter",
@@ -2652,7 +2673,8 @@
         "diferencial": "Design esportivo exclusivo, iluminação Full LED, baú traseiro integrado de série, freio a disco hidráulico e bateria de lítio 72V 30Ah.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 65 km*\n Suporta até 150 kg\n Freio a disco e Baú Traseiro Integrado",
         "pontos_fortes": "Motor de 1.000 W de alta eficiência; design esportivo dinâmico; baú traseiro já incluído; iluminação Full LED; freios a disco e bateria de lítio 72V 30Ah (2.160 Wh)."
-      }
+      },
+      "share_image": "/public/images/models/share/gp-1000.jpg"
     },
     {
       "categoria": "Scooter",
@@ -2771,7 +2793,8 @@
         "diferencial": "Freios hidráulicos a disco duplo, bateria de lítio 60V 20Ah e design urbano refinado.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 160 kg\n Freios hidráulicos a disco duplo",
         "pontos_fortes": "Freios hidráulicos a disco nas duas rodas; torque vigoroso; bateria de lítio 60V 20Ah e iluminação Full LED."
-      }
+      },
+      "share_image": "/public/images/models/share/m2.jpg"
     },
     {
       "categoria": "Scooter",
@@ -2866,6 +2889,7 @@
       },
       "banner_image": "/public/images/models/banners/nova-banner.webp",
       "cutout_image": "/public/images/models/cutouts/nova.png",
+      "share_image": "/public/images/models/share/nova.jpg",
       "hero_image": "/public/images/models/banners/nova-banner.webp",
       "images": [
         "/public/images/nova/nova-01.jpg",
@@ -2987,6 +3011,7 @@
       },
       "banner_image": "/public/images/models/banners/v8-mini-banner.webp",
       "cutout_image": "/public/images/models/cutouts/v8-mini.png",
+      "share_image": "/public/images/models/share/v8-mini.jpg",
       "hero_image": "/public/images/models/banners/v8-mini-banner.webp",
       "images": [
         "/public/images/v8-mini/v8-mini-01.jpg",
@@ -3108,6 +3133,7 @@
       },
       "banner_image": "/public/images/models/banners/ride-on-banner.webp",
       "cutout_image": "/public/images/models/cutouts/ride-on.png",
+      "share_image": "/public/images/models/share/ride-on.jpg",
       "hero_image": "/public/images/models/banners/ride-on-banner.webp",
       "images": [
         "/public/images/ride-on/ride-on-01.jpg",
@@ -3229,6 +3255,7 @@
       },
       "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/v80-pro.png",
+      "share_image": "/public/images/models/share/v80-pro.jpg",
       "hero_image": "/public/images/models/cutouts/v80-pro.png",
       "images": [
         "/public/images/v80-pro/v80-pro-01.jpg",
@@ -3350,6 +3377,7 @@
       },
       "banner_image": "/public/images/models/banners/rz-110-banner.webp",
       "cutout_image": "/public/images/models/cutouts/rz-110.png",
+      "share_image": "/public/images/models/share/rz-110.jpg",
       "hero_image": "/public/images/models/banners/rz-110-banner.webp",
       "images": [
         "/public/images/rz-110/rz-110-01.jpg",
@@ -3471,6 +3499,7 @@
       },
       "banner_image": "",
       "cutout_image": "/public/images/models/cutouts/sport-701-short.png",
+      "share_image": "/public/images/models/share/sport-701-short.jpg",
       "hero_image": "/public/images/models/cutouts/sport-701-short.png",
       "images": [
         "/public/images/sport-701-short/sport-701-short-01.jpg",
@@ -3592,6 +3621,7 @@
       },
       "banner_image": "/public/images/models/banners/vittoria-banner.webp",
       "cutout_image": "/public/images/models/cutouts/vittoria.png",
+      "share_image": "/public/images/models/share/vittoria.jpg",
       "hero_image": "/public/images/models/banners/vittoria-banner.webp",
       "images": [
         "/public/images/vittoria/vittoria-01.jpg",
@@ -3713,6 +3743,7 @@
       },
       "banner_image": "",
       "cutout_image": "",
+      "share_image": "/public/images/models/share/h1.jpg",
       "hero_image": "",
       "images": [],
       "metrics": {

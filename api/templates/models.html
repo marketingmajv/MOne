@@ -12,10 +12,15 @@
     <meta name="description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
     <meta property="og:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
     <meta name="twitter:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
-    {% set preview_img = active_model.cutout_image or (active_model.images[0] if active_model.images else '/static/img/maj-logo-official.png') %}
-    {% set abs_preview_img = preview_img if preview_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ preview_img) %}
-    <meta property="og:image" content="{{ abs_preview_img }}">
-    <meta name="twitter:image" content="{{ abs_preview_img }}">
+    {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
+    {% set abs_share_img = share_img if share_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ share_img) %}
+    <meta property="og:image" content="{{ abs_share_img }}">
+    <meta property="og:image:secure_url" content="{{ abs_share_img }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
+    <meta property="og:image:alt" content="Show-room {{ active_model.modelo }} • MAJ Mobilidade Elétrica">
+    <meta name="twitter:image" content="{{ abs_share_img }}">
   {% else %}
     <title>Show-room | MAJ Mobilidade Elétrica</title>
     <meta name="title" content="Show-room | MAJ Mobilidade Elétrica">
@@ -24,13 +29,22 @@
     <meta name="description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
     <meta property="og:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
     <meta name="twitter:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
-    <meta property="og:image" content="https://m-one.majmobilidade.com.br/static/img/maj-logo-official.png">
-    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/static/img/maj-logo-official.png">
+    <meta property="og:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
+    <meta property="og:image:secure_url" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
+    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg">
   {% endif %}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MAJ Mobilidade Elétrica">
   <meta property="og:url" content="{{ request.base_url }}">
   <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Favicon Oficial MAJ Mobilidade Elétrica -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
   
   <!-- Fontes de Alta Performance Estilo Gogoro Pulse / Apple / Tesla -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

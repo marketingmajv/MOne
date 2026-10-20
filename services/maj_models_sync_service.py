@@ -319,6 +319,8 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                     cutout_url = f"/public/images/models/cutouts/{slug}.png" if cutout_file.exists() else ""
                     banner_file = BASE_DIR / "public" / "images" / "models" / "banners" / f"{slug}-banner.webp"
                     banner_url = f"/public/images/models/banners/{slug}-banner.webp" if banner_file.exists() else ""
+                    share_file = BASE_DIR / "public" / "images" / "models" / "share" / f"{slug}.jpg"
+                    share_url = f"/public/images/models/share/{slug}.jpg" if share_file.exists() else ""
                     images = find_model_images(slug)
                     hero_url = banner_url if banner_url else (cutout_url if cutout_url else (images[0] if images else ""))
 
@@ -330,6 +332,7 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                         "sections": {},
                         "banner_image": banner_url,
                         "cutout_image": cutout_url,
+                        "share_image": share_url,
                         "hero_image": hero_url,
                         "images": images,
                     }
@@ -396,6 +399,8 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                 "descricao_livre": livre.get("Descrição comercial livre", ""),
                 "pontos_fortes": livre.get("Pontos fortes", ""),
             }
+            if not m_val.get("share_image"):
+                m_val["share_image"] = f"/public/images/models/share/{m_val.get('slug', '')}.jpg"
             final_list.append(m_val)
 
         # Ordenar por Modo de Menu (Categoria vs Livre/Aleatório)
