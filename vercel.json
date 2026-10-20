@@ -15,6 +15,7 @@
           "static/*.css",
           "static/*.js",
           "static/*.png",
+          "static/*.ico",
           "api/static/**",
           "public/**",
           "uploads/outlet/**"
