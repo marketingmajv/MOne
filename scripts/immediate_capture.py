@@ -213,7 +213,14 @@ def executar_captura_imediata(meta_leads: int = 70) -> None:
             """,
             [f"Lote imediato executado com sucesso: {total_gerados} novos leads capturados."]
         )
-        conn.commit()
+    # Opcional: Sincronização automática com a planilha Google Sheets se configurada
+    try:
+        from services.prospector_export_service import sincronizar_com_google_sheets
+        ok, msg, count = sincronizar_com_google_sheets(apenas_pendentes=True)
+        if count > 0:
+            logger.info(f"✓ Sincronizados {count} novos leads com a planilha Google Sheets!")
+    except Exception as ex:
+        logger.debug(f"Sincronização Google Sheets ignorada/não configurada: {ex}")
 
     logger.info(f"=== CAPTURA CONCLUÍDA! TOTAL DE {total_gerados} LEADS DISPONÍVEIS NA ESTEIRA ===")
 

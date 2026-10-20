@@ -1,0 +1,47 @@
+name: M-One Prospector 24/7 Automação
+
+on:
+  schedule:
+    # 09:00 UTC = 06:00 BRT (Lote diário matinal para abastecer a esteira comercial)
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      meta_leads:
+        description: 'Quantidade de leads a capturar neste lote'
+        required: false
+        default: '70'
+
+jobs:
+  prospector-batch:
+    name: Captura & Qualificação de Leads B2B
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar Dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Executar Motor de Prospecção
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL || secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+        run: |
+          META="${{ github.event.inputs.meta_leads || '70' }}"
+          echo "========================================================"
+          echo "Disparando Motor de Prospecção M-One no GitHub Actions"
+          echo "Meta de Leads: $META"
+          echo "Horário: $(date)"
+          echo "========================================================"
+          python scripts/immediate_capture.py "$META"
