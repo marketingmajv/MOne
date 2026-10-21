@@ -11,6 +11,32 @@
 {% endblock %}
 
 {% block top_actions %}
+<!-- Card Executivo do Usuário (Operador da Sessão de Prospecção) -->
+<div class="user-operator-card" onclick="openProfileModal()" title="Operador ativo: {{ me.name or me.username }} • Clique para gerenciar WhatsApp comercial e perfil">
+  <div class="user-operator-avatar">
+    {{ (me.name or me.username or 'U')[:1]|upper }}
+    <span class="user-operator-status" title="Online"></span>
+  </div>
+  <div class="user-operator-info">
+    <div class="user-operator-header">
+      <span class="user-operator-name">{{ me.name or me.username }}</span>
+      {% if me.role in ['admin', 'support'] %}
+      <span class="user-operator-badge admin">{{ 'Diretoria' if me.role == 'admin' else 'Suporte' }}</span>
+      {% else %}
+      <span class="user-operator-badge sales">Comercial</span>
+      {% endif %}
+    </div>
+    <div class="user-operator-sub">
+      <span>@{{ me.username }}</span>
+      {% if me.phone %}
+      <span>•</span>
+      <span style="color: #10b981;">📱 {{ me.phone }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <span style="color: var(--muted); font-size: 0.72rem; opacity: 0.7; margin-left: 2px;">⚙️</span>
+</div>
+
 <button type="button" class="btn" onclick="window.dispatchEvent(new CustomEvent('toggle-sheets-hub'))" title="Abrir ou recolher a gaveta da Planilha Google Sheets" style="display: inline-flex; align-items: center; gap: 6px;">
   <span>📊</span>
   <span>Planilha & Exportações</span>
