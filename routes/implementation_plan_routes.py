@@ -54,10 +54,12 @@ logger = logging.getLogger(__name__)
 implementation_plan_bp = Blueprint("implementation_plan", __name__)
 
 
+@implementation_plan_bp.route("/gestao-interna", methods=["GET"])
+@implementation_plan_bp.route("/admin/gestao-interna", methods=["GET"])
 @implementation_plan_bp.route("/admin/plano", methods=["GET"])
 @login_required
 def index():
-    """Painel do Plano MAJ e Formulário Semanal de Colaboradores."""
+    """Painel Executivo de Gestão Interna e Governança MAJ (Exclusivo para Diretoria e Administradores)."""
     ensure_implementation_plan_schema()
     ensure_reports_schema()
 
@@ -69,6 +71,11 @@ def index():
     role = (me.get("role") or "").lower().strip()
     admin_view = is_admin_viewer(username, role)
 
+    # Se NÃO for administrador/gerência, bloqueia acesso e redireciona para a dashboard
+    if not admin_view:
+        flash("Acesso restrito à Diretoria e Administradores da MAJ Mobilidade.", "error")
+        return redirect(url_for("dashboard"))
+
     all_cycles = get_all_cycles()
     selected_cycle_id = request.args.get("cycle_id", type=int)
     cycle = None
@@ -76,23 +83,6 @@ def index():
         cycle = next((c for c in all_cycles if c["id"] == selected_cycle_id), None)
     if not cycle:
         cycle = get_or_create_current_cycle()
-
-    # Se NÃO for administrador/gerência, exibe estritamente o formulário do próprio colaborador
-    if not admin_view:
-        employee_key = username
-        emp_meta = get_reporting_employee_meta(employee_key)
-        my_report = get_employee_report(cycle["id"], employee_key) if emp_meta else {}
-
-        return render_template(
-            "admin/implementation_plan.html",
-            me=me,
-            is_admin_viewer=False,
-            active_tab="meu_relatorio",
-            cycle=cycle,
-            all_cycles=all_cycles,
-            employee_meta=emp_meta,
-            my_report=my_report,
-        )
 
     # Para Diretoria & Gerência (Jam, Geysa, Fauzer, Suporte)
     active_tab = request.args.get("tab", "dashboard")
@@ -145,10 +135,10 @@ def submit_report():
             flash("Ciclo semanal inválido.", "danger")
             return redirect(url_for("implementation_plan.index"))
 
-        # Trava de Segurança: Colaborador comum só pode alterar seu próprio relatório
-        if not admin_view and target_employee != username:
-            flash("Permissão negada: você só pode enviar o seu próprio relatório.", "danger")
-            return redirect(url_for("implementation_plan.index"))
+        # Trava de Segurança: Apenas administradores/diretoria podem submeter pelo painel
+        if not admin_view:
+            flash("Permissão negada: acesso restrito à Diretoria e Administradores.", "danger")
+            return redirect(url_for("dashboard"))
 
         meta = get_reporting_employee_meta(target_employee)
         if not meta:
@@ -189,7 +179,7 @@ def submit_report():
         logger.error("Erro ao submeter relatório semanal: %s", e)
         flash(f"Erro ao processar relatório: {e}", "danger")
 
-    redirect_tab = "meu_relatorio" if not admin_view else request.form.get("redirect_tab", "dashboard")
+    redirect_tab = request.form.get("redirect_tab", "dashboard")
     return redirect(url_for("implementation_plan.index", tab=redirect_tab))
 
 

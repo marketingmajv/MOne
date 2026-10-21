@@ -164,10 +164,10 @@ ALL_PERMISSIONS = {
     },
     "implementation_plan": {
         "category": "governanca",
-        "label": "Relatórios & Governança",
+        "label": "Gestão Interna & Governança",
         "icon": "📊",
-        "description": "Relatórios de status e governança operacional MAJ",
-        "default_roles": ["admin", "support", "finance", "sales", "stock"],
+        "description": "Painel executivo da diretoria, relatórios semanais e governança MAJ",
+        "default_roles": ["admin", "support"],
     },
     "users": {
         "category": "governanca",

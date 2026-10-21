@@ -412,12 +412,12 @@ def get_reporting_employee_meta(employee_key: str) -> Optional[Dict[str, Any]]:
 
 def is_admin_viewer(username: Optional[str], role: Optional[str] = None) -> bool:
     """
-    Verifica se o usuário possui perfil de Diretoria/Gerência para visualizar todos os relatórios.
-    Restrito estritamente a Jam Penitenti, Geysa, Fauzer e suporte técnico.
-    Colaboradores como Jhon, Luiza, Marisa, Leo, Gabriel e Ricardo acessam seu próprio relatório.
+    Verifica se o usuário possui perfil de Diretoria/Gerência para visualizar a Gestão Interna.
+    Restrito estritamente a Jam Penitenti, Geysa, Fauzer, administradores e suporte técnico.
     """
     u = (username or "").lower().strip()
-    return u in ADMIN_MANAGERS
+    r = (role or "").lower().strip()
+    return u in ADMIN_MANAGERS or r in {"admin", "support"}
 
 
 def generate_whatsapp_charge_url(

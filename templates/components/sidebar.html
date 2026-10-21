@@ -26,7 +26,8 @@
 {% set has_financeiro = can_payments or can_fiscal %}
 
 {% set can_docs = me and user_has_permission(me, 'document_center') %}
-{% set can_plan = me and user_has_permission(me, 'implementation_plan') %}
+{% set is_admin_or_manager = (me and (me.role in ['admin', 'support'] or ((me.username or '')|lower in ['jam', 'geysa', 'fauzer', 'support', 'admin']))) %}
+{% set can_plan = is_admin_or_manager and user_has_permission(me, 'implementation_plan') %}
 {% set can_users = me and user_has_permission(me, 'users') %}
 {% set can_audit = me and user_has_permission(me, 'audit_logs') %}
 {% set has_governanca = can_docs or can_plan or can_users or can_audit %}
@@ -58,7 +59,7 @@
 {% set is_active_fiscal = ('fiscal' in full_ep) %}
 
 {% set is_active_docs = ('document' in full_ep) %}
-{% set is_active_plan = ('implementation_plan' in full_ep) %}
+{% set is_active_plan = ('implementation_plan' in full_ep or 'gestao-interna' in request.path or 'plano' in request.path) %}
 {% set is_active_users = (ep == 'users') %}
 {% set is_active_audit = ('audit' in full_ep) %}
 
@@ -344,11 +345,11 @@
       {% endif %}
 
       {% if can_plan %}
-      <a href="{{ url_for('implementation_plan.index') }}" class="nav-item {{ 'active' if is_active_plan else '' }}" title="Relatórios Semanais e Governança MAJ">
+      <a href="{{ url_for('implementation_plan.index') }}" class="nav-item {{ 'active' if is_active_plan else '' }}" title="Gestão Interna, Relatórios e Governança MAJ">
         <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
         </svg>
-        <span>Relatórios & Plano</span>
+        <span>Gestão Interna</span>
       </a>
       {% endif %}
 
