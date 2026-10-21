@@ -42,6 +42,12 @@ from services.implementation_plan_service import (
     get_all_implementation_phases,
     get_implementation_summary,
 )
+from services.employee_doc_importer_service import (
+    get_all_doc_links,
+    save_doc_link,
+    sync_single_employee_report,
+    sync_all_configured_docs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +104,7 @@ def index():
     # Se for o Fauzer, ele também possui formulário próprio para enviar
     fauzer_meta = get_reporting_employee_meta("fauzer")
     fauzer_report = get_employee_report(cycle["id"], "fauzer")
+    doc_links = get_all_doc_links()
 
     return render_template(
         "admin/implementation_plan.html",
@@ -112,6 +119,7 @@ def index():
         departments=departments,
         fauzer_meta=fauzer_meta,
         fauzer_report=fauzer_report,
+        doc_links=doc_links,
     )
 
 
@@ -241,3 +249,83 @@ def api_summary():
         "cycle": cycle,
         "summary": summary,
     })
+
+
+@implementation_plan_bp.route("/admin/plano/api/doc-links", methods=["GET", "POST"])
+@login_required
+def api_doc_links():
+    """Retorna ou salva os links oficiais do Google Docs de cada colaborador."""
+    me = current_user()
+    username = (me.get("username") or "").lower().strip()
+    role = (me.get("role") or "").lower().strip()
+    if not is_admin_viewer(username, role):
+        return jsonify({"error": "Acesso negado"}), 403
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        emp_key = data.get("employee_key", "").lower().strip()
+        url = data.get("google_doc_url", "").strip()
+
+        if not emp_key or not url:
+            return jsonify({"status": "error", "message": "Colaborador e URL do documento são obrigatórios."}), 400
+
+        ok = save_doc_link(emp_key, url)
+        if ok:
+            audit("plano.doc_link_saved", f"Link do Google Doc de {emp_key} atualizado por {username}")
+            return jsonify({"status": "success", "message": f"Link do Google Doc de {emp_key} salvo com sucesso!", "links": get_all_doc_links()})
+        return jsonify({"status": "error", "message": "Link inválido. Certifique-se de que é uma URL válida do Google Docs."}), 400
+
+    return jsonify({"status": "success", "links": get_all_doc_links()})
+
+
+@implementation_plan_bp.route("/admin/plano/api/sync-doc", methods=["POST"])
+@login_required
+def api_sync_single_doc():
+    """Sincroniza e extrai via IA as respostas de um colaborador específico."""
+    me = current_user()
+    username = (me.get("username") or "").lower().strip()
+    role = (me.get("role") or "").lower().strip()
+    if not is_admin_viewer(username, role):
+        return jsonify({"error": "Acesso negado"}), 403
+
+    data = request.get_json(silent=True) or {}
+    cycle_id = int(data.get("cycle_id", 0))
+    emp_key = data.get("employee_key", "").lower().strip()
+    force = bool(data.get("force", False))
+    custom_url = data.get("custom_url", "").strip() or None
+
+    if cycle_id <= 0 or not emp_key:
+        return jsonify({"status": "error", "message": "Dados incompletos (ciclo ou colaborador ausente)."}), 400
+
+    result = sync_single_employee_report(
+        cycle_id=cycle_id,
+        employee_key=emp_key,
+        custom_url=custom_url,
+        force=force,
+        user_id=me.get("id")
+    )
+
+    if result.get("status") == "success":
+        audit("plano.doc_synced", f"Relatório de {emp_key} sincronizado via Google Doc por {username}")
+
+    return jsonify(result)
+
+
+@implementation_plan_bp.route("/admin/plano/api/sync-all-docs", methods=["POST"])
+@login_required
+def api_sync_all_docs():
+    """Sincroniza em lote todos os colaboradores com Google Docs cadastrados."""
+    me = current_user()
+    username = (me.get("username") or "").lower().strip()
+    role = (me.get("role") or "").lower().strip()
+    if not is_admin_viewer(username, role):
+        return jsonify({"error": "Acesso negado"}), 403
+
+    data = request.get_json(silent=True) or {}
+    cycle_id = int(data.get("cycle_id", 0))
+    if cycle_id <= 0:
+        return jsonify({"status": "error", "message": "ID de ciclo inválido."}), 400
+
+    result = sync_all_configured_docs(cycle_id=cycle_id, user_id=me.get("id"))
+    audit("plano.all_docs_synced", f"Lote de Google Docs disparado por {username}: {result['sucessos']} sucessos, {result['divergencias']} divergências")
+    return jsonify(result)

@@ -5,6 +5,8 @@
 {% block content %}
 <script>
   window.__EMPLOYEES_DATA__ = {{ summary.employees|tojson|safe if (summary is defined and summary and summary.employees) else '[]' }};
+  window.__DOC_LINKS__ = {{ doc_links|tojson|safe if (doc_links is defined and doc_links) else '{}' }};
+  window.__CYCLE_ID__ = {{ cycle.id if (cycle is defined and cycle) else 0 }};
 </script>
 
 <div class="content-body" x-data="{
@@ -12,9 +14,17 @@
   searchMember: '',
   showDeadlineModal: false,
   showReportModal: false,
+  showDocLinksModal: false,
+  showMismatchModal: false,
+  mismatchData: {},
+  isSyncingDoc: false,
+  syncingStatusTitle: 'Sincronizando com IA...',
+  syncingStatusDesc: 'Lendo o Google Doc e extraindo as respostas...',
   selectedEmployee: 'marisa',
   selectedHistoryCycleId: null,
   employeesData: window.__EMPLOYEES_DATA__ || [],
+  docLinksData: window.__DOC_LINKS__ || {},
+  currentCycleId: window.__CYCLE_ID__ || 0,
   get currentEmployee() {
     return (this.employeesData || []).find(e => e.key === this.selectedEmployee) || null;
   },
@@ -30,6 +40,86 @@
     this.selectedEmployee = key;
     this.selectedHistoryCycleId = null;
     this.showReportModal = true;
+  },
+  async saveDocLink(key, url) {
+    if (!url) { alert('Informe a URL do Google Doc.'); return; }
+    try {
+      const res = await fetch('/admin/plano/api/doc-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_key: key, google_doc_url: url })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        this.docLinksData = data.links || this.docLinksData;
+        alert('Link do Google Doc salvo com sucesso!');
+      } else {
+        alert(data.message || 'Erro ao salvar link.');
+      }
+    } catch(err) {
+      alert('Falha na comunicação: ' + err);
+    }
+  },
+  async syncEmployeeDoc(key, force = false) {
+    this.isSyncingDoc = true;
+    this.syncingStatusTitle = 'Sincronizando com IA';
+    this.syncingStatusDesc = 'Conectando ao Google Docs, auditando atribuições e extraindo respostas...';
+    try {
+      const res = await fetch('/admin/plano/api/sync-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cycle_id: this.currentCycleId, employee_key: key, force: force })
+      });
+      const data = await res.json();
+      this.isSyncingDoc = false;
+
+      if (data.status === 'blank') {
+        alert('ℹ️ ' + data.message);
+      } else if (data.status === 'mismatch') {
+        this.mismatchData = data;
+        this.showMismatchModal = true;
+      } else if (data.status === 'success') {
+        alert('✅ ' + data.message);
+        window.location.reload();
+      } else {
+        alert('❌ ' + (data.message || 'Erro ao sincronizar documento.'));
+      }
+    } catch(err) {
+      this.isSyncingDoc = false;
+      alert('Erro ao sincronizar: ' + err);
+    }
+  },
+  forceSyncMismatch() {
+    this.showMismatchModal = false;
+    if (this.mismatchData && this.mismatchData.employee_key) {
+      this.syncEmployeeDoc(this.mismatchData.employee_key, true);
+    }
+  },
+  async syncAllDocs() {
+    if (!confirm('Deseja iniciar a sincronização automática de todos os Google Docs com IA?')) return;
+    this.isSyncingDoc = true;
+    this.syncingStatusTitle = 'Sincronização em Lote com IA';
+    this.syncingStatusDesc = 'Processando documentos de todos os colaboradores...';
+    try {
+      const res = await fetch('/admin/plano/api/sync-all-docs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cycle_id: this.currentCycleId })
+      });
+      const data = await res.json();
+      this.isSyncingDoc = false;
+
+      let msg = `Sincronização em Lote Concluída!\n\n` +
+                `✓ Relatórios Entregues: ${data.sucessos}\n` +
+                `📝 Em Branco (Aguardando preenchimento): ${data.em_branco || 0}\n` +
+                `⚠️ Incompatibilidades/Divergências: ${data.divergencias}\n` +
+                `❌ Erros de Conexão: ${data.erros}`;
+      alert(msg);
+      window.location.reload();
+    } catch(err) {
+      this.isSyncingDoc = false;
+      alert('Erro no lote: ' + err);
+    }
   }
 }">
 
@@ -347,6 +437,9 @@
         </div>
       </div>
     </template>
+
+    <!-- Modais de Sincronização Google Docs e IA -->
+    {% include "admin/doc_sync_modals.html" %}
 
   {% endif %}
 

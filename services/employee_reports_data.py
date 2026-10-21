@@ -258,52 +258,58 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
         "key": "leo",
         "username": "leo",
         "name": "Léo",
-        "role_title": "Pós-Venda & Comercial Híbrido",
-        "area": "Pós-Venda & Relacionamento",
-        "badge": "PÓS-VENDA",
-        "badge_color": "blue",
+        "role_title": "Vendas & Atendimento Comercial",
+        "area": "Comercial (Vendas & Atendimento)",
+        "badge": "VENDAS & ATENDIMENTO",
+        "badge_color": "emerald",
         "phone": "5527999990005",
         "deadline_day": "Sexta-feira",
         "deadline_time": "18:00",
         "instructions": (
-            "Relatório de acompanhamento de pós-venda, garantias, orçamentos e concessões comerciais utilizadas."
+            "Relatório semanal de vendas, atendimentos realizados, clientes em negociação e relacionamento comercial."
         ),
         "questions": [
             {
-                "id": "os_abertas_concluidas",
-                "label": "1. OS de Pós-Venda / Garantia Abertas e Concluídas",
-                "placeholder": "Volume de chamados de clientes atendidos, OS abertas e OS finalizadas nesta semana...",
-                "help": "Métricas de entrada e saída do suporte ao cliente."
+                "id": "atendimentos_realizados",
+                "label": "1. Volume de Atendimentos Realizados na Semana",
+                "placeholder": "Quantidade de clientes atendidos (loja física, WhatsApp, telefone ou redes sociais)...",
+                "help": "Métricas de fluxo e contato comercial na semana."
             },
             {
-                "id": "os_atrasadas",
-                "label": "2. OS Atrasadas e Motivo Específico",
-                "placeholder": "Casos que ultrapassaram o prazo combinado com o cliente e a razão de não estarem concluídos...",
-                "help": "Transparência total sobre gargalos de reparo ou transporte."
+                "id": "vendas_fechadas",
+                "label": "2. Vendas Concluídas e Pedidos Faturados",
+                "placeholder": "Modelos vendidos, valores aproximados, canais (varejo/atacado) e pedidos fechados...",
+                "help": "Destaque dos principais negócios fechados no período."
             },
             {
-                "id": "clientes_sensiveis",
-                "label": "3. Clientes Sensíveis ou sem Retorno",
-                "placeholder": "Clientes insatisfeitos, casos de garantia delicados ou solicitações aguardando retorno há mais de 48 horas...",
-                "help": "Evita cancelamentos, procons ou atritos com a marca."
+                "id": "modelos_mais_procurados",
+                "label": "3. Modelos Mais Procurados e Perguntas Recorrentes",
+                "placeholder": "Quais modelos de motos ou autopropelidos tiveram maior procura e interesse dos clientes...",
+                "help": "Ajuda a alinhar o estoque e as campanhas comerciais."
             },
             {
-                "id": "orcamentos_pendentes",
-                "label": "4. Orçamentos Aguardando Aprovação",
-                "placeholder": "Orçamentos de peças/serviços enviados aos clientes e ainda pendentes de aceite ou pagamento...",
-                "help": "Acompanhamento do fechamento de orçamentos de assistência técnica."
+                "id": "objecoes_e_desistencias",
+                "label": "4. Principais Objeções e Motivos de Não Fechamento",
+                "placeholder": "Por que alguns clientes não fecharam? (preço, parcelamento, prazo de entrega, falta de modelo)...",
+                "help": "Identifica gargalos e objeções na conversão comercial."
             },
             {
-                "id": "concessoes_utilizadas",
-                "label": "5. Concessões Comerciais Utilizadas na Semana",
-                "placeholder": "Descontos pontuais concedidos, cortesias, peças sem custo ou fretes bonificados autorizados...",
-                "help": "Revisão obrigatória de concessões para auditoria de margem."
+                "id": "clientes_em_negociacao",
+                "label": "5. Clientes em Negociação Quente (Follow-up)",
+                "placeholder": "Negociações avançadas previstas para fechamento nos próximos dias...",
+                "help": "Previsibilidade de vendas para a reunião de gestão de segunda-feira."
             },
             {
-                "id": "decisoes_necessarias",
-                "label": "6. Pendências que Necessitam de Decisão da Gerência / Diretoria",
-                "placeholder": "Casos especiais fora da alçada padrão que precisam de definição de Geysa ou Jam...",
-                "help": "Escalonamento formal para a reunião de gestão de segunda-feira."
+                "id": "suporte_pos_venda",
+                "label": "6. Atendimento de Suporte ao Cliente / Pós-Venda",
+                "placeholder": "Dúvidas atendidas, encaminhamentos para oficina e assistência rápida prestada aos clientes...",
+                "help": "Garante a qualidade contínua no relacionamento com o cliente."
+            },
+            {
+                "id": "sugestoes_comerciais",
+                "label": "7. Ocorrências Relevantes e Sugestões da Semana",
+                "placeholder": "Ideias práticas para alavancar vendas, campanhas ou melhorias no atendimento...",
+                "help": "Fatos relevantes para a diretoria na reunião de segunda-feira."
             }
         ]
     },

@@ -186,10 +186,10 @@ def get_team_members_data() -> List[Dict[str, Any]]:
         },
         {
             "name": "Leo",
-            "role": "Vendedor Comercial (Função Híbrida)",
-            "area": "Comercial (Atacado & Varejo)",
+            "role": "Vendas & Atendimento Comercial",
+            "area": "Comercial (Vendas & Atendimento)",
             "avatar_icon": "💼",
-            "badge": "COMERCIAL HÍBRIDO",
+            "badge": "VENDAS & ATENDIMENTO",
             "badge_color": "emerald",
             "responsibilities": [
                 "Vendas ativas e atendimento tanto no Atacado quanto no Varejo",

@@ -308,6 +308,13 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         cur_r = conn.execute(f"SELECT * FROM maj_employee_reports WHERE cycle_id = {placeholder}", (cycle_id,))
         reports_map = {r["employee_key"]: dict(r) for r in cur_r.fetchall()}
 
+    doc_links_map = {}
+    try:
+        from services.employee_doc_importer_service import get_all_doc_links
+        doc_links_map = get_all_doc_links()
+    except Exception:
+        pass
+
     deadline = cycle.get("deadline")
     deadline_str = ""
     if isinstance(deadline, datetime):
@@ -393,6 +400,8 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "answers": answers,
             "questions": q_list,
             "history": get_employee_history(key),
+            "google_doc_url": (rep.get("google_doc_url") if rep else None) or doc_links_map.get(key, {}).get("google_doc_url", ""),
+            "uses_google_doc": (key != "fauzer"),
         })
 
     total_submitted = counts["submitted_on_time"] + counts["submitted_late"]
@@ -433,9 +442,10 @@ def get_monday_consolidation_briefing(cycle_id: int) -> Dict[str, Any]:
             ("Modelos Mais Procurados", "modelos_procurados"), ("Objeções Comerciais", "objecoes_perdas"),
             ("Preços Considerados Altos", "precos_altos"), ("Sugestão da Semana", "sugestao_comercial")
         ]),
-        ("5. Pós-Venda, Garantias & Clientes Sensíveis", "Léo", "PÓS-VENDA", "blue", "leo", [
-            ("OS Pós-Venda", "os_abertas_concluidas"), ("Clientes Sensíveis / 48h+", "clientes_sensiveis"),
-            ("Concessões Utilizadas", "concessoes_utilizadas"), ("Decisões da Gerência", "decisoes_necessarias")
+        ("5. Vendas, Atendimentos & Negociações", "Léo", "VENDAS & ATENDIMENTO", "emerald", "leo", [
+            ("Atendimentos Realizados", "atendimentos_realizados"), ("Vendas Concluídas", "vendas_fechadas"),
+            ("Modelos Procurados", "modelos_mais_procurados"), ("Objeções / Desistências", "objecoes_e_desistencias"),
+            ("Clientes em Negociação", "clientes_em_negociacao"), ("Sugestões Comerciais", "sugestoes_comerciais")
         ]),
         ("6. Sistemas, Marketing & Desvios de Processo", "Fauzer", "SISTEMAS", "purple", "fauzer", [
             ("Marketing & CPL", "marketing_investimento"), ("Sistemas & Bling/M-One", "processos_sistemas"),

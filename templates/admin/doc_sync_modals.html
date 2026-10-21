@@ -1,0 +1,164 @@
+{#
+  M-One Implementation Plan - Modais de Sincronização Google Docs & Validação IA
+  templates/admin/doc_sync_modals.html
+  Em estrita conformidade com as diretrizes inegociáveis de UX/UI do M-One:
+  - Teleporte Alpine.js (<template x-teleport="body">)
+  - Botão fechar geométrico (.modal-close-btn com SVG 24x24)
+  - Dark Theme First (inputs form-input, var(--panel), var(--line), var(--text))
+#}
+
+<!-- ========================================================================= -->
+<!-- 1. MODAL DE GERENCIAMENTO DE LINKS DOS GOOGLE DOCS (6 COLABORADORES)      -->
+<!-- ========================================================================= -->
+<template x-teleport="body">
+  <div class="modal show" x-show="showDocLinksModal" x-cloak style="display: flex;">
+    <div class="modal-card modal-lg" @click.away="showDocLinksModal = false" style="max-width: 720px;">
+      
+      <!-- Cabeçalho -->
+      <div class="modal-head">
+        <div class="head-info">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🔗</span>
+            <h3 class="modal-title">Links Oficiais do Google Docs dos Colaboradores</h3>
+          </div>
+          <span class="modal-subtitle">Cada funcionário preenche seu documento semanal compartilhado no Google Docs.</span>
+        </div>
+        <button type="button" class="modal-close-btn" @click="showDocLinksModal = false" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Corpo com os 6 links -->
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-height: 70vh; overflow-y: auto;">
+        
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px 16px; font-size: 0.82rem; color: var(--text);">
+          💡 <strong>Importante:</strong> Certifique-se de que os documentos estejam com permissão <em>"Qualquer pessoa com o link pode ler"</em> para permitir a leitura imediata sem necessidade de login. Fauzer reporta diretamente no M-One.
+        </div>
+
+        <template x-for="emp in (employeesData || []).filter(e => e.uses_google_doc)" :key="emp.key">
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: var(--accent, #e5a93b); font-weight: 800; font-size: 0.72rem;" x-text="emp.badge"></span>
+                <strong style="color: var(--text); font-size: 0.9rem;" x-text="emp.name"></strong>
+                <span class="muted" style="font-size: 0.76rem;" x-text="'(' + emp.role_title + ')'"></span>
+              </div>
+              <template x-if="docLinksData[emp.key] && docLinksData[emp.key].google_doc_url">
+                <a :href="docLinksData[emp.key].google_doc_url" target="_blank" rel="noopener noreferrer" style="font-size: 0.74rem; color: #38bdf8; text-decoration: none;">
+                  Abrir Doc ↗
+                </a>
+              </template>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <input type="url" 
+                     class="form-input" 
+                     style="flex: 1; font-size: 0.8rem; font-family: monospace; height: 38px; border-radius: 8px;"
+                     :placeholder="'https://docs.google.com/document/d/.../edit'"
+                     :value="(docLinksData[emp.key] ? docLinksData[emp.key].google_doc_url : '')"
+                     :id="'doc-input-' + emp.key">
+              <button type="button" 
+                      class="btn sm" 
+                      style="background: var(--panel); border: 1px solid var(--line); color: var(--text); font-weight: 700; height: 38px; padding: 0 14px; border-radius: 8px;"
+                      @click="saveDocLink(emp.key, document.getElementById('doc-input-' + emp.key).value)">
+                Salvar
+              </button>
+            </div>
+          </div>
+        </template>
+
+      </div>
+
+      <!-- Rodapé -->
+      <div class="modal-foot" style="display: flex; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line);">
+        <button type="button" class="btn sm" @click="showDocLinksModal = false">Fechar</button>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<!-- ========================================================================= -->
+<!-- 2. MODAL DE ALERTA DE DIVERGÊNCIA DE CARGO / AUDITORIA DA IA              -->
+<!-- ========================================================================= -->
+<template x-teleport="body">
+  <div class="modal show" x-show="showMismatchModal" x-cloak style="display: flex;">
+    <div class="modal-card modal-md" @click.away="showMismatchModal = false" style="max-width: 580px; border: 1px solid rgba(239, 68, 68, 0.4);">
+      
+      <!-- Cabeçalho de Alerta -->
+      <div class="modal-head" style="background: rgba(239, 68, 68, 0.08); border-bottom: 1px solid rgba(239, 68, 68, 0.2);">
+        <div class="head-info">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <h3 class="modal-title" style="color: #ef4444;">Documento Divergente Detectado pela IA</h3>
+          </div>
+          <span class="modal-subtitle" x-text="'Colaborador no M-One: ' + (mismatchData.employee_name || '')"></span>
+        </div>
+        <button type="button" class="modal-close-btn" @click="showMismatchModal = false" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Corpo da Explicação da IA -->
+      <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+        <p style="font-size: 0.88rem; color: var(--text); margin: 0; line-height: 1.5;">
+          A inteligência artificial do M-One analisou o conteúdo do documento e identificou que ele <strong>não corresponde às perguntas e atribuições</strong> deste colaborador.
+        </p>
+
+        <div style="background: var(--panel2); border-left: 3px solid #ef4444; border-radius: 8px; padding: 12px 16px;">
+          <small style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 800; color: #ef4444; letter-spacing: 0.05em; margin-bottom: 4px;">
+            Diagnóstico do Auditor IA:
+          </small>
+          <div style="font-size: 0.84rem; color: var(--text); line-height: 1.45;" x-text="mismatchData.motivo"></div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;">
+          <small class="muted" style="display: block; font-size: 0.72rem; margin-bottom: 4px;">Trecho do Documento Fornecido:</small>
+          <div style="font-size: 0.78rem; font-family: monospace; color: var(--text-dim); max-height: 110px; overflow-y: auto; white-space: pre-wrap;" x-text="mismatchData.sample"></div>
+        </div>
+
+        <div style="font-size: 0.82rem; color: var(--text-dim);">
+          Você pode <strong>cancelar</strong> para ajustar o link correto, ou <strong>forçar a sincronização</strong> se este documento for intencional.
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="modal-foot" style="display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--line);">
+        <button type="button" class="btn sm" @click="showMismatchModal = false">
+          Cancelar & Conferir Link
+        </button>
+        <button type="button" 
+                class="btn sm" 
+                style="background: #ef4444; color: #fff; font-weight: 800; border: none;"
+                @click="forceSyncMismatch()">
+          ⚡ Forçar Sincronização Mesmo Assim
+        </button>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<!-- ========================================================================= -->
+<!-- 3. OVERLAY DE CARREGAMENTO DA IA                                          -->
+<!-- ========================================================================= -->
+<template x-teleport="body">
+  <div class="modal show" x-show="isSyncingDoc" x-cloak style="display: flex; z-index: 99999;">
+    <div class="modal-card" style="max-width: 420px; text-align: center; padding: 32px 24px; border-radius: 16px;">
+      <div style="font-size: 2.5rem; margin-bottom: 12px; animation: pulse 1.5s infinite;">
+        ⚡
+      </div>
+      <h3 style="margin: 0 0 8px 0; font-size: 1.15rem; font-weight: 800; color: var(--text);" x-text="syncingStatusTitle"></h3>
+      <p class="muted" style="font-size: 0.84rem; margin: 0; line-height: 1.45;" x-text="syncingStatusDesc"></p>
+      <div style="background: var(--panel2); border-radius: 6px; height: 4px; width: 80%; margin: 20px auto 0 auto; overflow: hidden;">
+        <div style="background: var(--accent, #e5a93b); height: 100%; width: 100%; animation: indeterminate 1.5s infinite linear;"></div>
+      </div>
+    </div>
+  </div>
+</template>

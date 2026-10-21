@@ -133,3 +133,10 @@ Erros visuais de modais desalinhados e esquemas de cores bagunçados são proibi
   - `[ ]` **Vendas (`/sales`)**: Sincronização contínua de pedidos Bling, notas fiscais emitidas e status de faturamento.
   - `[ ]` **Fiscal & Precificação (`/fiscal/pricing`)**: Sincronização de regras tributárias, MVAs e alíquotas interestaduais.
 
+---
+
+## Diretriz de Decisão e Comunicação: Opção Recomendada Obrigatória
+Sempre que o agente apresentar opções, alternativas, cenários ou caminhos de solução (Opções A, B, C, etc.) ao usuário:
+1. **O agente DEVE OBRIGATORIAMENTE indicar e destacar com clareza a Opção Recomendada**.
+2. A opção recomendada deve vir sempre destacada como **(Recomendada)** ou posicionada em primeiro lugar, acompanhada de justificativa técnica e operacional objetiva (por que é a mais rápida, segura, eficiente ou alinhada com as melhores práticas de negócio da MAJ).
+3. O agente deve assumir uma postura consultiva sênior e assertiva, facilitando a tomada de decisão do usuário e direcionando para a melhor execução prática imediata.

@@ -38,10 +38,21 @@ Padronizar a gestão de dados de todas as seções operacionais do **M-One** seg
 | **Produtos & Catálogo** | `/products` / `/atacado` | Catálogo Bling, Pesos Cubados, Dimensões e Fichas Técnicas | Sincronização Contínua / Manual | ⏳ **Pendente** |
 | **Vendas & Pedidos** | `/sales` | Pedidos Bling ERP, NF-e e Múltiplos Recebimentos | Webhook Bling / Sincronização | ⏳ **Pendente** |
 | **Fiscal & Precificação** | `/fiscal/pricing` | Tabela de Alíquotas Interestaduais, MVA, DIFAL e ICMS | Sincronização Periódica / Manual | ⏳ **Pendente** |
+| **Prospecção de Leads** | `/admin/prospeccao` | Google Sheets (`docs/GOOGLE_APPS_SCRIPT_LEADS.md`) | Webhook Apps Script + Cron Noturno 06h | ⏳ **Pendente de Webhook / Secrets** |
+
+---
+
+### 📌 Detalhamento da Pendência: Prospecção B2B & Google Sheets
+1. **Implantação do Webhook Apps Script na Planilha Oficial**:
+   - Re-implantar o Apps Script na planilha com permissão pública (*"Quem pode acessar: Qualquer pessoa"*), gerando uma nova URL `/exec` válida para eliminar o erro `HTTP 401 Unauthorized` e permitir que o M-One descarregue os leads na planilha sem login.
+   - Sincronizar o lote atual de 157 leads existentes no Supabase.
+2. **Secrets no GitHub Actions (`.github/workflows/prospector-cron.yml`)**:
+   - Cadastrar `DATABASE_URL` e `GEMINI_API_KEY` em `Settings > Secrets and variables > Actions` no GitHub para garantir a captura autônoma de 70 leads todo dia às 06:00 BRT.
 
 ---
 
 ## 3. Especificação do Componente Padrão de Automação
+
 
 ### 3.1. Template Front-end (`templates/<modulo>/automation_panel.html`)
 - Utiliza variáveis semânticas do tema para compatibilidade nativa com tema escuro e claro:

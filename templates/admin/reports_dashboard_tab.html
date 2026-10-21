@@ -89,13 +89,27 @@
         </div>
       </div>
 
-      <!-- Botão para abrir edição de prazo -->
-      <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- Ações da Diretoria: Prazos, Links e Sincronização em Lote -->
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <button type="button" 
                 class="btn" 
-                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px;"
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;"
+                @click="showDocLinksModal = true">
+          🔗 Links dos Docs (6)
+        </button>
+
+        <button type="button" 
+                class="btn" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;"
                 @click="showDeadlineModal = true">
-          ✏️ Alterar Prazo do Ciclo
+          ✏️ Alterar Prazo
+        </button>
+
+        <button type="button" 
+                class="btn primary" 
+                style="font-size: 0.82rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+                @click="syncAllDocs()">
+          <span>⚡ Sincronizar Todos os Docs</span>
         </button>
       </div>
     </div>
@@ -108,7 +122,7 @@
         Quadro de Entregas Semanais (7 Colaboradores Oficiais)
       </h3>
       <span class="muted" style="font-size: 0.78rem;">
-        Atualizado em tempo real
+        Atualizado em tempo real • Sincronização com Google Docs via IA
       </span>
     </div>
 
@@ -138,7 +152,14 @@
                 </div>
                 <div>
                   <strong style="color: var(--text); font-size: 0.92rem; display: block;">{{ emp.name }}</strong>
-                  <span class="muted" style="font-size: 0.75rem;">@{{ emp.key }}</span>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                    <span class="muted" style="font-size: 0.75rem;">@{{ emp.key }}</span>
+                    {% if emp.uses_google_doc and emp.google_doc_url %}
+                    <a href="{{ emp.google_doc_url }}" target="_blank" rel="noopener noreferrer" style="font-size: 0.7rem; color: #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Abrir Google Doc em nova aba">
+                      <span>📄 Doc ↗</span>
+                    </a>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </td>
@@ -185,7 +206,19 @@
 
             <!-- Ações -->
             <td style="padding: 14px 18px; text-align: right;">
-              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <!-- Botão de Sincronizar Google Doc com IA se o colaborador usar Doc -->
+                {% if emp.uses_google_doc %}
+                <button type="button" 
+                        class="btn sm" 
+                        style="background: rgba(229, 169, 59, 0.15); border: 1px solid rgba(229, 169, 59, 0.4); color: var(--accent, #e5a93b); font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"
+                        title="Ler Google Doc e sincronizar respostas com IA"
+                        @click.stop="syncEmployeeDoc('{{ emp.key }}')">
+                  <span>⚡</span>
+                  <span>Sincronizar Doc</span>
+                </button>
+                {% endif %}
+
                 <!-- Botão de Cobrança WhatsApp se pendente -->
                 {% if emp.status in ['pending', 'draft', 'submitted_late'] %}
                 <a href="{{ emp.whatsapp_url }}" 
