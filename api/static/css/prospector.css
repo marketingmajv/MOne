@@ -592,92 +592,85 @@
 @keyframes spin { 100% { transform: rotate(360deg); } }
 .spinner-icon { animation: spin 1s linear infinite; }
 
-/* Card Executivo do Operador de Prospecção */
+/* Card Executivo Linear do Operador de Prospecção (38px de altura - Alinhamento Perfeito com Botões) */
 .user-operator-card {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  height: 38px;
   background: var(--panel2, rgba(255, 255, 255, 0.05));
-  border: 1px solid var(--line, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  padding: 5px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 0 12px 0 6px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 .user-operator-card:hover {
   transform: translateY(-1px);
   border-color: var(--accent, #00E599);
   background: var(--panel, #1e293b);
-  box-shadow: 0 4px 12px rgba(0, 229, 153, 0.15);
+  box-shadow: 0 3px 10px rgba(0, 229, 153, 0.15);
 }
 .user-operator-avatar {
   position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #00E599 0%, #10B981 100%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00E599 0%, #059669 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 0.92rem;
+  font-size: 0.76rem;
   color: #052e16;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 229, 153, 0.25);
-}
-.user-operator-status {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background: #10B981;
-  border: 2px solid var(--panel2, #1e293b);
-  border-radius: 50%;
-  box-shadow: 0 0 4px #10B981;
-}
-.user-operator-info {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  line-height: 1.2;
-}
-.user-operator-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0, 229, 153, 0.3);
 }
 .user-operator-name {
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text, #f8fafc);
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 .user-operator-badge {
   font-size: 0.65rem;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 .user-operator-badge.admin {
-  background: rgba(229, 169, 59, 0.15);
+  background: rgba(229, 169, 59, 0.12);
   color: #d97706;
-  border: 1px solid rgba(229, 169, 59, 0.35);
+  border: 1px solid rgba(229, 169, 59, 0.3);
+}
+.user-operator-badge.support {
+  background: rgba(56, 189, 248, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(56, 189, 248, 0.3);
 }
 .user-operator-badge.sales {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
-.user-operator-sub {
+.user-operator-chevron {
+  opacity: 0.45;
+  color: var(--text);
+  transition: opacity 0.15s ease, transform 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--muted, #94a3b8);
+}
+.user-operator-card:hover .user-operator-chevron {
+  opacity: 0.9;
+  transform: translateY(1px);
 }
 
 
