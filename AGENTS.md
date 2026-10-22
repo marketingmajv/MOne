@@ -54,6 +54,29 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
 
 ---
 
+## Protocolo Especial: [Relatório Fauzer]
+Sempre que o usuário digitar `[Relatório Fauzer]`, `[relatorio fauzer]`, `relatório fauzer` ou `relatorio fauzer`:
+O agente DEVE executar imediatamente o **Protocolo RELATÓRIO FAUZER** em 3 etapas sequenciais:
+
+1. **Passo 01 — Varredura Híbrida de Atividades do Dia**:
+   - Vasculhar o Git: rodar `git log --since="today 00:00" --oneline` (ou `git log -n 15 --since="midnight" --stat`) para listar commits realizados no dia.
+   - Vasculhar o Workspace: rodar `git status -sb` e `git diff --stat` para capturar alterações em andamento.
+   - Vasculhar o Chat da Sessão: rastrear todas as demandas, problemas investigados, diagnósticos e soluções aprovadas durante o dia.
+
+2. **Passo 02 — Estruturação do Relatório Técnico & Executivo Detalhado**:
+   - Gerar relatório Markdown completo contendo:
+     - 🎯 **Demandas e Problemas Endereçados**: Contexto operacional e dores resolvidas.
+     - 🛠️ **Entregas e Implementações Técnicas**: Arquivos modificados (`file://`) e detalhamento das soluções.
+     - 🛡️ **Qualidade e Validações**: Status dos testes de integridade, UX/UI e monólitos.
+     - 🚀 **Status de Deploy**: Confirmação da publicação e links oficiais.
+
+3. **Passo 03 — Geração do Bloco WhatsApp (Para Envio à Gerência)**:
+   - Apresentar, ao final, um bloco formatado exclusivamente para WhatsApp (`*negrito*`, marcadores `•` e emojis executivos).
+   - Redigido em **1ª pessoa** por Fauzer (*"Hoje entreguei...", "Ajustei...", "Subi em produção..."*).
+   - Foco executivo em **valor entregue**, agilidade e benefícios para a operação da MAJ Mobilidade, sem excesso de jargões herméticos, pronto para copiar e colar para a gerência.
+
+---
+
 ## Regras de Negócio e Desenvolvimento
 - **Porta Local**: Usar sempre a porta `5001` (a porta 5000 do macOS é ocupada pelo AirPlay / ControlCenter).
 - **Banco de Dados**: Usar sempre o pooler IPv4 oficial do Supabase:
