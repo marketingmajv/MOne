@@ -34,7 +34,7 @@
        async gerarIA() {
          if (!confirm('Deseja executar a síntese balanceada dos relatórios com IA?')) return;
          this.isGenerating = true;
-         this.statusMsg = 'Lendo os relatórios dos 7 colaboradores e sintetizando com IA...';
+         this.statusMsg = 'Lendo relatórios e gerando síntese...';
          try {
            const res = await fetch('/admin/plano/api/analise-interna/gerar-ia', {
              method: 'POST',
@@ -47,7 +47,7 @@
              this.analysis = data.analysis;
              alert('✅ ' + data.message);
            } else {
-             alert('❌ ' + (data.message || 'Erro ao gerar síntese com IA.'));
+             alert('❌ ' + (data.message || 'Erro ao gerar síntese.'));
            }
          } catch(e) {
            this.isGenerating = false;
@@ -70,7 +70,7 @@
              this.curatorEditMode = false;
              alert('✅ ' + data.message);
            } else {
-             alert('❌ ' + (data.message || 'Erro ao salvar curadoria.'));
+             alert('❌ ' + (data.message || 'Erro ao salvar.'));
            }
          } catch(e) {
            this.isSaving = false;
@@ -79,7 +79,7 @@
        },
 
        async liberarParaDiretoria() {
-         if (!confirm('Deseja homologar e LIBERAR a Análise Interna para visualização imediata por Jam e Geysa?')) return;
+         if (!confirm('Deseja homologar e LIBERAR a Análise Interna para Jam e Geysa?')) return;
          this.isPublishing = true;
          try {
            const res = await fetch('/admin/plano/api/analise-interna/liberar', {
@@ -112,7 +112,7 @@
            const data = await res.json();
            this.isSaving = false;
            if (data.status === 'success') {
-             alert('✅ Deliberações da reunião de Diretoria registradas com sucesso no banco!');
+             alert('✅ Deliberações da reunião registradas com sucesso no banco!');
            } else {
              alert('❌ ' + (data.message || 'Erro ao salvar deliberações.'));
            }
@@ -123,7 +123,7 @@
        },
 
        async simularDados() {
-         if (!confirm('Deseja carregar dados de demonstração realistas para os 7 colaboradores no ciclo atual para testar a Análise Interna?')) return;
+         if (!confirm('Deseja carregar dados de demonstração realistas para os 7 colaboradores para teste?')) return;
          this.isSimulating = true;
          try {
            const res = await fetch('/admin/plano/api/analise-interna/simular-dados', {
@@ -151,65 +151,41 @@
   <!-- BARRA DE CONTROLE EXCLUSIVA DO CURADOR ESTRATÉGICO (FAUZER & SUPORTE)     -->
   <!-- ========================================================================= -->
   <template x-if="isCurator">
-    <div class="panel" style="margin-bottom: 20px; background: rgba(139, 92, 246, 0.06); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 14px 18px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.4rem;">🛠️</span>
+    <div class="panel" style="margin-bottom: 22px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 12px; padding: 16px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.6rem;">🛠️</span>
           <div>
-            <div style="font-size: 0.92rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.05rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px;">
               <span>Central de Curadoria da Análise Interna (Fauzer)</span>
               <span class="badge" 
+                    style="font-size: 0.82rem; font-weight: 800; padding: 4px 10px;"
                     :style="isPublished ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);'"
                     x-text="isPublished ? '🟢 LIBERADO PARA JAM & GEYSA' : '🟡 EM CURADORIA (RASCUNHO)'">
               </span>
             </div>
-            <div style="font-size: 0.78rem; color: var(--text-dim);">
-              <span x-show="!isPublished">Jam e Geysa ainda NÃO visualizam esta tela até você clicar no botão de liberação.</span>
+            <div style="font-size: 0.88rem; color: var(--text-dim); margin-top: 3px;">
+              <span x-show="!isPublished">Jam e Geysa ainda NÃO visualizam esta tela até você clicar em liberar.</span>
               <span x-show="isPublished">Esta Análise Interna está homologada e visível no painel da Diretoria.</span>
             </div>
           </div>
         </div>
 
         <!-- Botões de Ação do Curador -->
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <button type="button" 
-                  class="btn" 
-                  style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 8px;"
-                  @click="simularDados()"
-                  :disabled="isSimulating">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="simularDados()" :disabled="isSimulating">
             <span x-text="isSimulating ? '⏳ Simulando...' : '🧪 Simular Respostas (7)'"></span>
           </button>
-
-          <button type="button" 
-                  class="btn" 
-                  style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 8px;"
-                  @click="gerarIA()"
-                  :disabled="isGenerating">
+          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="gerarIA()" :disabled="isGenerating">
             <span x-text="isGenerating ? '⏳ Sintetizando...' : '⚡ Sintetizar com IA'"></span>
           </button>
-
-          <button type="button" 
-                  class="btn" 
-                  style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 8px;"
-                  @click="curatorEditMode = !curatorEditMode"
-                  x-show="radarAlerts.length || pautaDecisoes.length">
+          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="curatorEditMode = !curatorEditMode" x-show="radarAlerts.length || pautaDecisoes.length">
             <span x-text="curatorEditMode ? '👁️ Ver Prévia Executiva' : '✏️ Editar Cards'"></span>
           </button>
-
-          <button type="button" 
-                  class="btn" 
-                  style="background: #10b981; color: #000; font-size: 0.82rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; border: none; display: inline-flex; align-items: center; gap: 6px;"
-                  @click="liberarParaDiretoria()"
-                  :disabled="isPublishing"
-                  x-show="!isPublished && (radarAlerts.length || pautaDecisoes.length)">
+          <button type="button" class="btn" style="background: #10b981; color: #000; font-size: 0.9rem; font-weight: 800; padding: 9px 18px; border-radius: 8px; border: none;" @click="liberarParaDiretoria()" :disabled="isPublishing" x-show="!isPublished && (radarAlerts.length || pautaDecisoes.length)">
             <span x-text="isPublishing ? '⏳ Liberando...' : '🚀 Liberar para Jam & Geysa'"></span>
           </button>
-
-          <button type="button" 
-                  class="btn" 
-                  style="background: #10b981; color: #000; font-size: 0.8rem; font-weight: 800; padding: 7px 14px; border-radius: 8px; border: none;"
-                  @click="salvarCuradoria()"
-                  x-show="curatorEditMode">
+          <button type="button" class="btn" style="background: #10b981; color: #000; font-size: 0.88rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; border: none;" @click="salvarCuradoria()" x-show="curatorEditMode">
             <span>💾 Salvar Edições</span>
           </button>
         </div>
@@ -220,16 +196,16 @@
   <!-- ========================================================================= -->
   <!-- TELA DE ESPERA PARA JAM & GEYSA (SE AINDA NÃO FOR LIBERADO)               -->
   <!-- ========================================================================= -->
-  <div x-show="!isPublished && !isCurator" class="panel" style="padding: 40px 24px; text-align: center; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 24px;">
-    <div style="font-size: 2.8rem; margin-bottom: 12px;">⏳</div>
-    <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">
+  <div x-show="!isPublished && !isCurator" class="panel" style="padding: 44px 28px; text-align: center; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 24px;">
+    <div style="font-size: 3rem; margin-bottom: 14px;">⏳</div>
+    <h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text); margin-bottom: 10px;">
       Análise Interna em Curadoria Estratégica
     </h3>
-    <p class="muted" style="max-width: 620px; margin: 0 auto 16px; font-size: 0.92rem; line-height: 1.55;">
+    <p class="muted" style="max-width: 660px; margin: 0 auto 18px; font-size: 1.05rem; line-height: 1.6;">
       Fauzer está realizando a compilação cruzada e curadoria dos 7 relatórios semanais da equipe para a reunião com Jam e Geysa.
       A versão oficial homologada será liberada nesta tela antes do início da reunião de segunda-feira.
     </p>
-    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; color: var(--text-dim);">
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); padding: 8px 18px; border-radius: 20px; font-size: 0.92rem; color: var(--text-dim);">
       <span>Prazo oficial das entregas: <strong>{{ summary.deadline_str or 'Sexta-feira 18h' }}</strong></span>
     </div>
   </div>
@@ -238,19 +214,18 @@
   <!-- MODO DE VISUALIZAÇÃO EXECUTIVA (HOMOLOGADO OU PRÉVIA DE FAUZER)          -->
   <!-- ========================================================================= -->
   <div x-show="isPublished || isCurator">
-
     <!-- Se não há dados gerados ainda -->
-    <div x-show="!radarAlerts.length && !pautaDecisoes.length" class="panel" style="padding: 36px 20px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; margin-bottom: 20px;">
-      <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">📑</span>
-      <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 6px;">Análise Interna Ainda Não Gerada</h4>
-      <p class="muted" style="font-size: 0.88rem; max-width: 580px; margin: 0 auto 16px;">
+    <div x-show="!radarAlerts.length && !pautaDecisoes.length" class="panel" style="padding: 40px 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; margin-bottom: 24px;">
+      <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📑</span>
+      <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Análise Interna Ainda Não Gerada</h4>
+      <p class="muted" style="font-size: 1rem; max-width: 620px; margin: 0 auto 18px; line-height: 1.55;">
         Clique no botão abaixo para processar com IA as respostas enviadas pelos colaboradores deste ciclo ou simule dados para testar.
       </p>
-      <div style="display: flex; justify-content: center; gap: 10px;" x-show="isCurator">
-        <button type="button" class="btn primary" @click="gerarIA()" :disabled="isGenerating">
+      <div style="display: flex; justify-content: center; gap: 12px;" x-show="isCurator">
+        <button type="button" class="btn primary" style="font-size: 0.95rem; font-weight: 800; padding: 10px 20px;" @click="gerarIA()" :disabled="isGenerating">
           <span>⚡ Gerar Síntese com IA Agora</span>
         </button>
-        <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text);" @click="simularDados()" :disabled="isSimulating">
+        <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.95rem; padding: 10px 18px;" @click="simularDados()" :disabled="isSimulating">
           <span>🧪 Carregar Dados de Simulação</span>
         </button>
       </div>
@@ -258,40 +233,34 @@
 
     <!-- Conteúdo Oficial da Análise Interna -->
     <div x-show="radarAlerts.length || pautaDecisoes.length">
-
       <!-- Header Executivo da Reunião -->
-      <div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--accent, #e5a93b); padding: 20px 24px; border-radius: 12px; background: var(--panel);">
+      <div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--accent, #e5a93b); padding: 22px 26px; border-radius: 12px; background: var(--panel);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
           <div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
-              <span style="font-size: 1.4rem;">📑</span>
-              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+              <span style="font-size: 1.6rem;">📑</span>
+              <h3 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
                 Análise Interna — Reunião de Diretoria (20–30 min)
               </h3>
-              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 800; font-size: 0.72rem;">
+              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 800; font-size: 0.82rem; padding: 4px 10px;">
                 PAUTA DELIBERATIVA
               </span>
             </div>
-            <p class="muted" style="margin: 0; font-size: 0.85rem; max-width: 840px; line-height: 1.45;">
+            <p class="muted" style="margin: 0; font-size: 0.98rem; max-width: 860px; line-height: 1.5;">
               Síntese estratégica cruzada para alinhamento entre <strong>Jam Penitenti</strong> (Diretoria Geral), <strong>Geysa</strong> (Gerência Geral) e <strong>Fauzer</strong>.
             </p>
           </div>
 
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" 
-                    class="btn" 
-                    onclick="window.print()" 
-                    style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
-              <span>🖨️</span>
-              <span>Imprimir / PDF</span>
-            </button>
-          </div>
+          <button type="button" class="btn" onclick="window.print()" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.92rem; font-weight: 600; padding: 9px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
+            <span>🖨️</span>
+            <span>Imprimir / PDF</span>
+          </button>
         </div>
 
         <!-- Resumo Executivo em 2 Linhas -->
         <template x-if="currentData.executive_summary">
-          <div style="margin-top: 14px; padding: 12px 16px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line); font-size: 0.88rem; color: var(--text); line-height: 1.5;">
-            <strong style="color: #e5a93b;">Resumo Executivo:</strong>
+          <div style="margin-top: 16px; padding: 14px 18px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line); font-size: 1.05rem; color: var(--text); line-height: 1.6;">
+            <strong style="color: #e5a93b; font-weight: 800;">Resumo Executivo:</strong>
             <span x-text="currentData.executive_summary"></span>
           </div>
         </template>
@@ -300,97 +269,87 @@
       <!-- =================================================================== -->
       <!-- CAMADA 1: RADAR DE ALERTAS CRÍTICOS (URGÊNCIAS & GARGALOS)          -->
       <!-- =================================================================== -->
-      <div style="margin-bottom: 24px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-          <h4 style="font-size: 1rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px;">
-            <span>🚨</span>
+      <div style="margin-bottom: 28px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+          <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.4rem;">🚨</span>
             <span>Radar de Alertas Críticos da Semana</span>
-            <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.72rem;" x-text="radarAlerts.length + ' Alertas'"></span>
+            <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.82rem; padding: 3px 9px;" x-text="radarAlerts.length + ' Alertas'"></span>
           </h4>
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
           <template x-for="(alert, idx) in radarAlerts" :key="alert.id || idx">
-            <div class="panel" style="margin-bottom: 0; padding: 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;"
-                 :style="alert.severity === 'high' ? 'border-left: 4px solid #ef4444;' : (alert.severity === 'medium' ? 'border-left: 4px solid #f59e0b;' : 'border-left: 4px solid #3b82f6;')">
+            <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;"
+                 :style="alert.severity === 'high' ? 'border-left: 5px solid #ef4444;' : (alert.severity === 'medium' ? 'border-left: 5px solid #f59e0b;' : 'border-left: 5px solid #3b82f6;')">
               <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                   <span class="badge" 
-                        style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase;"
+                        style="font-size: 0.82rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px;"
                         :style="alert.severity === 'high' ? 'background: rgba(239, 68, 68, 0.12); color: #ef4444;' : 'background: rgba(245, 158, 11, 0.12); color: #f59e0b;'"
                         x-text="alert.pilar_label || alert.pilar">
                   </span>
-                  <span style="font-size: 0.72rem; color: var(--text-dim);" x-text="'Envolvidos: ' + ((alert.envolvidos || []).join(', ') || 'Equipe')"></span>
+                  <span style="font-size: 0.88rem; color: var(--text-dim); font-weight: 600;" x-text="'Envolvidos: ' + ((alert.envolvidos || []).join(', ') || 'Equipe')"></span>
                 </div>
-
                 <div x-show="!curatorEditMode">
-                  <div style="font-size: 0.92rem; font-weight: 800; color: var(--text); margin-bottom: 6px;" x-text="alert.title"></div>
-                  <div style="font-size: 0.82rem; color: var(--text-dim); line-height: 1.45;" x-text="alert.description"></div>
+                  <div style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.35;" x-text="alert.title"></div>
+                  <div style="font-size: 1.02rem; color: #cbd5e1; line-height: 1.6;" x-text="alert.description"></div>
                 </div>
-
                 <!-- Modo Edição do Curador -->
-                <div x-show="curatorEditMode" style="display: flex; flex-direction: column; gap: 8px;">
-                  <input class="form-input" style="font-size: 0.85rem; font-weight: 700; width: 100%;" x-model="alert.title" placeholder="Título do alerta">
-                  <textarea class="form-input" style="font-size: 0.8rem; width: 100%; min-height: 55px;" x-model="alert.description" placeholder="Descrição do alerta"></textarea>
+                <div x-show="curatorEditMode" style="display: flex; flex-direction: column; gap: 10px;">
+                  <input class="form-input" style="font-size: 1rem; font-weight: 700; width: 100%; padding: 8px 12px;" x-model="alert.title" placeholder="Título do alerta">
+                  <textarea class="form-input" style="font-size: 0.95rem; width: 100%; min-height: 65px; padding: 8px 12px; line-height: 1.5;" x-model="alert.description" placeholder="Descrição do alerta"></textarea>
                 </div>
               </div>
             </div>
           </template>
         </div>
       </div>
-
       <!-- =================================================================== -->
       <!-- CAMADA 2: PAUTA DELIBERATIVA DA DIRETORIA (JAM & GEYSA DECIDEM)      -->
       <!-- =================================================================== -->
-      <div class="panel" style="margin-bottom: 24px; padding: 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+      <div class="panel" style="margin-bottom: 28px; padding: 24px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
           <div>
-            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px;">
-              <span>🎯</span>
+            <h4 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.4rem;">🎯</span>
               <span>Pauta Deliberativa de Decisões (Jam & Geysa)</span>
             </h4>
-            <small style="color: var(--text-dim); font-size: 0.8rem;">
+            <small style="color: var(--text-dim); font-size: 0.92rem; display: block; margin-top: 4px;">
               Registre as resoluções da Diretoria durante a reunião. Os despachos posteriores ficam a cargo de Jam e Geysa.
             </small>
           </div>
 
           <button type="button" 
                   class="btn primary" 
-                  style="font-size: 0.82rem; font-weight: 800; padding: 7px 16px; border-radius: 8px;"
+                  style="font-size: 0.95rem; font-weight: 800; padding: 9px 20px; border-radius: 8px;"
                   @click="salvarDeliberacoes()"
                   :disabled="isSaving">
             <span x-text="isSaving ? '⏳ Salvando...' : '💾 Salvar Deliberações da Reunião'"></span>
           </button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 18px;">
           <template x-for="(dec, idx) in pautaDecisoes" :key="dec.id || idx">
-            <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 800; font-size: 0.88rem; color: #e5a93b;" x-text="(idx + 1) + '.'"></span>
-                  <div style="font-weight: 800; font-size: 0.95rem; color: var(--text);" x-text="dec.title"></div>
+            <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: baseline; gap: 10px;">
+                  <span style="font-weight: 800; font-size: 1.25rem; color: #e5a93b;" x-text="(idx + 1) + '.'"></span>
+                  <div style="font-weight: 800; font-size: 1.2rem; color: var(--text); line-height: 1.35;" x-text="dec.title"></div>
                 </div>
                 
                 <!-- Status da Deliberação -->
-                <div style="display: flex; gap: 6px;">
-                  <button type="button" 
-                          class="btn" 
-                          style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px;"
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
                           :style="dec.status === 'approved' ? 'background: #10b981; color: #000; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
                           @click="dec.status = 'approved'">
                     ✓ Aprovado
                   </button>
-                  <button type="button" 
-                          class="btn" 
-                          style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px;"
+                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
                           :style="dec.status === 'postponed' ? 'background: #f59e0b; color: #000; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
                           @click="dec.status = 'postponed'">
                     ⏳ Adiado
                   </button>
-                  <button type="button" 
-                          class="btn" 
-                          style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px;"
+                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
                           :style="dec.status === 'rejected' ? 'background: #ef4444; color: #fff; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
                           @click="dec.status = 'rejected'">
                     ✕ Rejeitado
@@ -399,16 +358,16 @@
               </div>
 
               <!-- Contexto e Proposta -->
-              <div style="font-size: 0.82rem; color: var(--text-dim); line-height: 1.45; margin-bottom: 10px;">
-                <strong style="color: var(--text);">Contexto:</strong> <span x-text="dec.context"></span><br>
-                <strong style="color: #e5a93b;">Encaminhamento sugerido:</strong> <span x-text="dec.proposta"></span>
+              <div style="font-size: 1.05rem; color: #cbd5e1; line-height: 1.65; margin-bottom: 14px;">
+                <div><strong style="color: var(--text); font-weight: 700;">Contexto:</strong> <span x-text="dec.context"></span></div>
+                <div style="margin-top: 4px;"><strong style="color: #e5a93b; font-weight: 700;">Encaminhamento sugerido:</strong> <span x-text="dec.proposta"></span></div>
               </div>
 
               <!-- Input para Deliberação ao Vivo -->
               <div>
                 <input type="text" 
                        class="form-input" 
-                       style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;"
+                       style="width: 100%; font-size: 1.02rem; padding: 11px 16px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; line-height: 1.5;"
                        placeholder="Anotar resolução de Jam e Geysa (ex: Aprovada compra de 10 baterias com fornecedor local; Marisa agenda pagamento)..."
                        x-model="dec.deliberacao_texto">
               </div>
@@ -420,121 +379,117 @@
       <!-- =================================================================== -->
       <!-- CAMADA 3: OS 4 PILARES DA MAJ (SÍNTESE BALANCEADA POR ÁREA)          -->
       <!-- =================================================================== -->
-      <div style="margin-bottom: 24px;">
-        <h4 style="font-size: 1rem; font-weight: 800; color: var(--text); margin: 0 0 14px 0; display: flex; align-items: center; gap: 8px;">
-          <span>🏢</span>
+      <div style="margin-bottom: 28px;">
+        <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.4rem;">🏢</span>
           <span>Visão Consolidada dos 4 Pilares da MAJ</span>
         </h4>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 18px;">
           
           <!-- Pilar 1: Financeiro -->
-          <div class="panel" style="margin-bottom: 0; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
               <div>
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text);">1. Financeiro, Caixa & Faturamento</h5>
-                <small style="color: var(--text-dim); font-size: 0.75rem;">Responsável: <strong>Marisa</strong></small>
+                <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">1. Financeiro, Caixa & Faturamento</h5>
+                <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Marisa</strong></small>
               </div>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 0.7rem; font-weight: 800;">FINANCEIRO</span>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">FINANCEIRO</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
               <template x-for="(d, i) in (pilares.financeiro ? pilares.financeiro.destaques : [])" :key="i">
-                <div style="color: var(--text);"><span style="color: #10b981;">•</span> <span x-text="d"></span></div>
+                <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
               </template>
               <template x-for="(p, i) in (pilares.financeiro ? pilares.financeiro.pontos_atencao : [])" :key="i">
                 <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
               </template>
             </div>
-            <div style="margin-top: 12px; text-align: right;">
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('marisa')">
+            <div style="margin-top: 14px; text-align: right;">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('marisa')">
                 Ver relatório da Marisa →
               </button>
             </div>
           </div>
 
           <!-- Pilar 2: Estoque -->
-          <div class="panel" style="margin-bottom: 0; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
               <div>
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text);">2. Estoque Físico & Galpões</h5>
-                <small style="color: var(--text-dim); font-size: 0.75rem;">Responsável: <strong>Jhon</strong></small>
+                <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">2. Estoque Físico & Galpões</h5>
+                <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Jhon</strong></small>
               </div>
-              <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; font-size: 0.7rem; font-weight: 800;">ESTOQUE</span>
+              <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">ESTOQUE</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
               <template x-for="(d, i) in (pilares.estoque ? pilares.estoque.destaques : [])" :key="i">
-                <div style="color: var(--text);"><span style="color: #10b981;">•</span> <span x-text="d"></span></div>
+                <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
               </template>
               <template x-for="(p, i) in (pilares.estoque ? pilares.estoque.pontos_atencao : [])" :key="i">
                 <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
               </template>
             </div>
-            <div style="margin-top: 12px; text-align: right;">
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('jhon')">
+            <div style="margin-top: 14px; text-align: right;">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('jhon')">
                 Ver relatório do Jhon →
               </button>
             </div>
           </div>
 
           <!-- Pilar 3: Oficina -->
-          <div class="panel" style="margin-bottom: 0; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
               <div>
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text);">3. Oficina Técnica & Pós-Vendas</h5>
-                <small style="color: var(--text-dim); font-size: 0.75rem;">Responsável: <strong>Ricardo</strong></small>
+                <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">3. Oficina Técnica & Pós-Vendas</h5>
+                <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Ricardo</strong></small>
               </div>
-              <span class="badge" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4; font-size: 0.7rem; font-weight: 800;">OFICINA</span>
+              <span class="badge" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">OFICINA</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
               <template x-for="(d, i) in (pilares.oficina ? pilares.oficina.destaques : [])" :key="i">
-                <div style="color: var(--text);"><span style="color: #10b981;">•</span> <span x-text="d"></span></div>
+                <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
               </template>
               <template x-for="(p, i) in (pilares.oficina ? pilares.oficina.pontos_atencao : [])" :key="i">
                 <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
               </template>
             </div>
-            <div style="margin-top: 12px; text-align: right;">
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('ricardo')">
+            <div style="margin-top: 14px; text-align: right;">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('ricardo')">
                 Ver relatório do Ricardo →
               </button>
             </div>
           </div>
 
           <!-- Pilar 4: Comercial -->
-          <div class="panel" style="margin-bottom: 0; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+          <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
               <div>
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text);">4. Comercial, Demanda & Clientes</h5>
-                <small style="color: var(--text-dim); font-size: 0.75rem;">Responsáveis: <strong>Luiza, Léo & Gabriel</strong></small>
+                <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">4. Comercial, Demanda & Clientes</h5>
+                <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsáveis: <strong style="color: var(--text);">Luiza, Léo & Gabriel</strong></small>
               </div>
-              <span class="badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-size: 0.7rem; font-weight: 800;">COMERCIAL</span>
+              <span class="badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">COMERCIAL</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
               <template x-for="(d, i) in (pilares.comercial ? pilares.comercial.destaques : [])" :key="i">
-                <div style="color: var(--text);"><span style="color: #10b981;">•</span> <span x-text="d"></span></div>
+                <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
               </template>
               <template x-for="(p, i) in (pilares.comercial ? pilares.comercial.pontos_atencao : [])" :key="i">
                 <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
               </template>
             </div>
-            <div style="margin-top: 12px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('luiza')">
+            <div style="margin-top: 14px; text-align: right; display: flex; justify-content: flex-end; gap: 12px;">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('luiza')">
                 Luiza →
               </button>
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('leo')">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('leo')">
                 Léo →
               </button>
-              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.75rem; font-weight: 700; cursor: pointer;" @click="openReport('gabriel')">
+              <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openReport('gabriel')">
                 Gabriel →
               </button>
             </div>
           </div>
-
         </div>
       </div>
-
     </div>
-
   </div>
-
 </div>
