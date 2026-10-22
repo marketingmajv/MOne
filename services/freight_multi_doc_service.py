@@ -80,6 +80,13 @@ def parse_sla_spreadsheet(file_path: str) -> Dict[str, Any]:
 
     for sheet_name in wb.sheetnames:
         sheet = wb[sheet_name]
+
+        # Trava anti-falso-positivo: se a aba contiver faixas tarifárias (Até 10kg, Até 20kg, etc.), é tabela de tarifas, não apenas SLA
+        for r_check in sheet.iter_rows(values_only=True, max_row=15):
+            line_str = " ".join(str(c or "").upper() for c in r_check)
+            if any(k in line_str for k in ["ATÉ 10KG", "ATÉ 20KG", "ATÉ 30KG", "ATÉ 50KG", "KG EXCEDENTE", "FRETE VALOR", "VALOR KG", "R$/KG"]):
+                return {"is_sla": False, "cities_by_uf": {}, "uf_avg_days": {}, "total_cities": 0}
+
         current_ufs_by_col: Dict[int, str] = {}
 
         for row in sheet.iter_rows(values_only=True):
@@ -293,17 +300,23 @@ def process_multi_document_upload(
     pricing_res: Optional[Dict[str, Any]] = None
     sla_res: Optional[Dict[str, Any]] = None
 
-    for f in file_paths:
-        ext = f.suffix.lower()
-        if ext in [".xlsx", ".xlsm", ".xls", ".csv"]:
-            sla_check = parse_sla_spreadsheet(str(f))
-            if sla_check.get("is_sla"):
-                sla_file = f
-                sla_res = sla_check
-                continue
+    if len(file_paths) == 1:
+        pricing_file = file_paths[0]
+        sla_check = parse_sla_spreadsheet(str(pricing_file))
+        if sla_check.get("is_sla"):
+            sla_res = sla_check
+    else:
+        for f in file_paths:
+            ext = f.suffix.lower()
+            if ext in [".xlsx", ".xlsm", ".xls", ".csv"]:
+                sla_check = parse_sla_spreadsheet(str(f))
+                if sla_check.get("is_sla"):
+                    sla_file = f
+                    sla_res = sla_check
+                    continue
 
-        if not pricing_file:
-            pricing_file = f
+            if not pricing_file:
+                pricing_file = f
 
     # Se apenas sla_file foi detectado, tentar verificar se a planilha contém tarifas em outra aba
     if not pricing_file and sla_file:

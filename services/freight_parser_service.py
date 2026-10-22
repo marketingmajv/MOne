@@ -173,54 +173,89 @@ def parse_freight_spreadsheet_native(file_path: str, carrier_name: str) -> Dict[
         else:
             # Checar se é faixa de peso (ex: 'ATÉ 20KG', '20KG', '0-20', 'ATE 50')
             m_weight = re.search(r"(?:AT[EÉ]|\<|\<\=)?\s*(\d+(?:[,\.]\d+)?)\s*(?:KG)?", c_clean)
-            if m_weight:
+            if m_weight and "EXC" not in c_clean and "EXCEDENTE" not in c_clean:
                 try:
                     w_limit = clean_numeric(m_weight.group(1))
                     if 0 < w_limit <= 5000:
                         weight_bracket_cols.append((c_idx, last_weight, w_limit))
-                        last_weight = w_limit + 0.01
+                        last_weight = round(w_limit + 0.01, 2)
                 except Exception:
                     pass
 
     # Se não identificou coluna de UF pelo cabeçalho, checar primeira coluna onde os valores são siglas de estado
     if uf_col == -1:
         for c_idx in range(min(5, len(header))):
-            sample_vals = [str(r[c_idx]).strip().upper() for r in data_rows[:10] if len(r) > c_idx and r[c_idx]]
-            if sum(1 for v in sample_vals if v in BRAZIL_UFS) >= 2:
+            sample_vals = [str(r[c_idx]).strip().upper() for r in data_rows[:35] if len(r) > c_idx and r[c_idx]]
+            if any(v in BRAZIL_UFS for v in sample_vals):
                 uf_col = c_idx
                 break
 
     if uf_col == -1:
         uf_col = 0
 
-    if city_col == -1 and len(header) > 1 and uf_col != 1:
-        city_col = 1
+    if city_col == -1 or city_col == uf_col:
+        city_col = uf_col + 1
 
-    # PARSEAMENTO LINHA A LINHA
+    # Tentar detectar nome da transportadora no texto da planilha se não informado
+    if not carrier_name or carrier_name.strip() in ["Transportadora", ""]:
+        full_text = " ".join(" ".join(str(c or "") for c in r) for r in raw_rows[:30]).lower()
+        if "camilodossantos" in full_text or "camilo dos santos" in full_text:
+            carrier_name = "Camilo dos Santos"
+
+    # PARSEAMENTO LINHA A LINHA COM FORWARD-FILL DE UF
+    current_uf = ""
     for r in data_rows:
         if not r or len(r) <= uf_col:
             continue
 
-        raw_uf = str(r[uf_col]).strip().upper() if len(r) > uf_col and r[uf_col] else ""
-        if len(raw_uf) > 2 and raw_uf not in BRAZIL_UFS:
-            # Tentar encontrar UF embutida
-            m_uf = re.search(r"\b([A-Z]{2})\b", raw_uf)
+        r_str = " ".join([str(c or "").upper() for c in r])
+        if any(w in r_str for w in ["GENERALIDADES", "OBSERVAÇÕES GERAIS", "VEICULO DEDICADO", "ACEITE DO CLIENTE"]):
+            break
+
+        cand_uf = str(r[uf_col]).strip().upper() if len(r) > uf_col and r[uf_col] else ""
+        if cand_uf in BRAZIL_UFS:
+            current_uf = cand_uf
+        elif len(cand_uf) > 2:
+            m_uf = re.search(r"\b([A-Z]{2})\b", cand_uf)
             if m_uf and m_uf.group(1) in BRAZIL_UFS:
-                raw_uf = m_uf.group(1)
-            else:
-                continue
-        elif raw_uf not in BRAZIL_UFS:
+                current_uf = m_uf.group(1)
+
+        if not current_uf:
             continue
+        raw_uf = current_uf
 
         raw_city = str(r[city_col]).strip() if city_col != -1 and len(r) > city_col and r[city_col] else "Geral"
-        days = clean_int(r[days_col], default=3 if "CAPITAL" in raw_city.upper() else 5) if days_col != -1 and len(r) > days_col else (3 if "CAPITAL" in raw_city.upper() else 5)
-        adv = clean_numeric(r[adv_col], default=0.30) if adv_col != -1 and len(r) > adv_col else 0.30
-        if adv > 5.0:  # Se veio em percentual inteiro (ex: 30 ao invés de 0.30)
-            adv = adv / 100.0
+        if not raw_city or raw_city in BRAZIL_UFS:
+            continue
 
-        gris = clean_numeric(r[gris_col], default=0.20) if gris_col != -1 and len(r) > gris_col else 0.20
+        # Sub-tipo na coluna seguinte (ex: P = Capital/Polo, R = Reg. Metrop., I = Interior)
+        if city_col + 1 < len(r) and str(r[city_col + 1] or "").strip().upper() in ["P", "R", "I"]:
+            sub_tipo = str(r[city_col + 1]).strip().upper()
+            tipo_label = {"P": "Capital/Polo", "R": "Reg. Metropolitana", "I": "Interior"}.get(sub_tipo, sub_tipo)
+            raw_city = f"{raw_city} ({tipo_label})"
+
+        if days_col != -1 and len(r) > days_col and r[days_col]:
+            days = clean_int(r[days_col], default=3)
+        else:
+            base_days = {"ES": 2, "RJ": 3, "MG": 3, "SP": 4, "BA": 5, "PR": 5, "SC": 5, "RS": 6}.get(raw_uf, 4)
+            if "CAPITAL" in raw_city.upper() or "(CAPITAL/POLO)" in raw_city.upper():
+                days = max(1, base_days - 1)
+            elif "INTERIOR" in raw_city.upper():
+                days = base_days + 1
+            else:
+                days = base_days
+
+        adv = clean_numeric(r[adv_col], default=0.25) if adv_col != -1 and len(r) > adv_col else 0.25
+        if adv > 5.0:
+            adv = adv / 100.0
+        elif 0 < adv < 0.05:
+            adv = adv * 100.0
+
+        gris = clean_numeric(r[gris_col], default=0.15) if gris_col != -1 and len(r) > gris_col else 0.15
         if gris > 5.0:
             gris = gris / 100.0
+        elif 0 < gris < 0.05:
+            gris = gris * 100.0
 
         tax_fixa = clean_numeric(r[fixed_tax_col], default=0.0) if fixed_tax_col != -1 and len(r) > fixed_tax_col else 0.0
         min_freight = clean_numeric(r[min_freight_col], default=0.0) if min_freight_col != -1 and len(r) > min_freight_col else 0.0
@@ -302,41 +337,31 @@ def parse_freight_spreadsheet_native(file_path: str, carrier_name: str) -> Dict[
         ufs_found = sorted(list({r["uf"] for r in rates if r.get("uf")}))
         return {
             "is_valid": True,
+            "carrier_name": carrier_name,
             "issues": [f"Parser nativo extraiu {len(rates)} faixas tarifárias atendendo as UFs: {', '.join(ufs_found)}."],
             "rates": rates,
             "method": "native_spreadsheet"
         }
 
-    return {
-        "is_valid": False,
-        "issues": ["Não foi possível identificar colunas de tarifas ou pesos na estrutura da planilha."],
-        "rates": []
-    }
+    return {"is_valid": False, "issues": ["Não foi possível identificar colunas de tarifas ou pesos na estrutura da planilha."], "rates": []}
 
 
 def parse_freight_table_unified(file_path: str, carrier_name: str) -> Dict[str, Any]:
-    """
-    Função mestra unificada:
-    1. Para arquivos Excel (.xlsx, .xls) e CSV, tenta primeiro o parser determinístico nativo.
-    2. Se for PDF ou se a planilha for complexa/não tabulada, aciona o Gemini com múltiplos modelos.
-    3. Se o Gemini falhar por 503/timeout e o arquivo for planilha, usa o resultado nativo como garantia operacional.
-    """
+    """Função mestra unificada: nativa para planilhas e Gemini para PDFs."""
     file_path = str(file_path)
     p = Path(file_path)
     ext = p.suffix.lower()
 
-    # 1. Tentativa Nativa Direta para Planilhas
     native_res = None
     if ext in [".xlsx", ".xlsm", ".xltx", ".xls", ".csv", ".tsv"]:
         try:
             native_res = parse_freight_spreadsheet_native(file_path, carrier_name)
             if native_res.get("is_valid") and len(native_res.get("rates", [])) >= 3:
-                logger.info("Planilha de frete '%s' importada nativamente com sucesso (%d regras).", carrier_name, len(native_res["rates"]))
+                logger.info("Planilha de frete '%s' importada nativamente (%d regras).", carrier_name, len(native_res["rates"]))
                 return native_res
         except Exception as e:
             logger.warning("Falha na tentativa nativa: %s", e)
 
-    # 2. Acionar Gemini se for PDF ou se o parser nativo precisou de auxílio
     from freight_service import parse_freight_table_with_gemini
     try:
         gemini_res = parse_freight_table_with_gemini(file_path, carrier_name)
@@ -345,46 +370,36 @@ def parse_freight_table_unified(file_path: str, carrier_name: str) -> Dict[str, 
     except Exception as e:
         logger.warning("Gemini parser error: %s", e)
 
-    # 3. Fallback: se Gemini falhou e tínhamos qualquer regra nativa, usa a nativa
     if native_res and native_res.get("rates") and len(native_res["rates"]) > 0:
         native_res["is_valid"] = True
         return native_res
 
-    # 4. Se for PDF e a IA falhou
     return {
         "is_valid": False,
-        "issues": [
-            "Não foi possível extrair faixas tarifárias legíveis do documento. "
-            "Certifique-se de que o arquivo contém colunas claras de UF, faixa de peso (ex: 20kg, 50kg, 100kg), "
-            "valores e prazos de entrega estimados."
-        ],
+        "issues": ["Não foi possível extrair faixas tarifárias legíveis do documento. Certifique-se de que o arquivo contém colunas de UF, faixas de peso e valores."],
         "rates": []
     }
 
 
 def inspect_freight_document_metadata(file_path: str, filename: str = "") -> Dict[str, Any]:
-    """
-    Inspeciona documento de frete (PDF, Excel, CSV) via heurísticas locais e IA Gemini
-    para auto-preencher Transportadora, Nome da Tabela, Fator de Cubagem e Observações.
-    """
+    """Inspeciona documento de frete para preencher Transportadora, Nome da Tabela e Fator de Cubagem."""
     p = Path(file_path)
     ext = p.suffix.lower()
     doc_text = ""
 
-    # Extração de texto para inspeção preliminar
     if ext == ".pdf":
         try:
             from services.pdf_extractor import extract_text_from_pdf
             with open(file_path, "rb") as f:
                 doc_text = extract_text_from_pdf(f.read(), max_pages=4, max_chars=16000)
         except Exception as e:
-            logger.warning("Falha ao extrair texto do PDF para metadados: %s", e)
+            logger.warning("Falha ao extrair texto do PDF: %s", e)
     elif ext in [".xlsx", ".xlsm", ".xltx", ".xls", ".csv", ".tsv"]:
         try:
             from freight_service import extract_text_from_spreadsheet
             doc_text = extract_text_from_spreadsheet(str(file_path))[:16000]
         except Exception as e:
-            logger.warning("Falha ao extrair texto da planilha para metadados: %s", e)
+            logger.warning("Falha ao extrair texto da planilha: %s", e)
 
     carrier_guess = ""
     table_guess = ""
@@ -393,6 +408,9 @@ def inspect_freight_document_metadata(file_path: str, filename: str = "") -> Dic
     lower_text = (doc_text + " " + filename).lower()
     if "aguia branca" in lower_text or "águia branca" in lower_text or "vab" in lower_text:
         carrier_guess = "Viação Águia Branca S/A"
+    elif "camilo dos santos" in lower_text or "camilodossantos" in lower_text or "colvix" in lower_text:
+        carrier_guess = "Camilo dos Santos"
+        table_guess = "Tabela Camilo dos Santos (Referencial VIX)"
         table_guess = "Tabela Combinada (ES para BA, MG, RJ, SP, PE, SE)"
         cubing_guess = 150.0
     elif "vinislog" in lower_text:
