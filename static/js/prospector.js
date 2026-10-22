@@ -267,9 +267,8 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
       let base = lead.mensagem_enviada ? lead.mensagem_enviada : (lead.gancho_comercial || '');
 
       if (!base) {
-        let decisor = lead.decisor_nome ? lead.decisor_nome.split(' ')[0] : '';
-        let saudacao = decisor ? `Olá, ${decisor}!` : `Olá!`;
-        base = `${saudacao} Tudo bem? ${introVendedor}. Vimos que vocês são referência na região e temos condições especiais de atacado direto de fábrica para a ${lead.nome}. Podemos conversar por aqui?`;
+        const nomeLoja = (lead.nome_fantasia || lead.nome || 'Loja').trim();
+        base = `Olá, equipe da ${nomeLoja}! Tudo bem? 😊\n\n${introVendedor}.\n\nVimos que vocês são referência no segmento de duas rodas na região e estamos ampliando nossos parceiros lojistas com condições exclusivas de atacado direto de fábrica para revenda de scooters e motos elétricas MAJ.\n\nCom quem da equipe comercial ou de compras poderíamos conversar por aqui? 🚀`;
       } else {
         // Se já contiver "Aqui é da MAJ Mobilidade...", substitui pelo nome do vendedor
         const regexMaj = /Aqui é (da|do|represento a) MAJ Mobilidade( Elétrica)?\.?/gi;
@@ -344,15 +343,20 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
         return;
       }
 
-      const rawPhone = this.leadSelecionado.whatsapp || this.leadSelecionado.telefone_google;
-      if (!rawPhone) {
-        alert('Este lead não possui número de WhatsApp ou telefone registrado.');
+      // Validação estrita de número celular apto para WhatsApp
+      if (!this.leadSelecionado.whatsapp) {
+        if (this.leadSelecionado.telefone_google) {
+          alert(`⚠️ Atenção: O lead '${this.leadSelecionado.nome}' possui apenas Telefone Fixo Comercial (${this.leadSelecionado.telefone_google}).\n\nTelefones fixos convencionais normalmente não possuem WhatsApp ativo. Recomendamos ligar para a loja e solicitar o WhatsApp do responsável de compras/comercial.`);
+        } else {
+          alert('Este lead não possui número de WhatsApp ou telefone registrado.');
+        }
         return;
       }
 
+      const rawPhone = this.leadSelecionado.whatsapp;
       const cleanPhone = String(rawPhone).replace(/\D/g, '');
       if (cleanPhone.length < 10) {
-        alert('Número de telefone inválido para o lead: ' + rawPhone);
+        alert('Número de celular inválido para WhatsApp: ' + rawPhone);
         return;
       }
 

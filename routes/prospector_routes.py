@@ -25,6 +25,7 @@ from services.prospector_service import (
     obter_status_job,
     set_prospector_config,
 )
+from services.maintenance_service import get_module_status
 from services.prospector_export_service import (
     exportar_csv_meta_lookalike,
     gerar_csv_leads,
@@ -94,6 +95,7 @@ def index():
     apify_token_configured = bool(get_prospector_config("apify_token"))
     total_pages = max(1, (total_leads + per_page - 1) // per_page)
     automacao_cfg = obter_config_automacao()
+    module_maintenance = get_module_status("prospeccao")
 
     return render_template(
         "admin/prospector.html",
@@ -119,6 +121,7 @@ def index():
         user_role=user_role,
         vendedor_atual=user,
         automacao=automacao_cfg,
+        module_maintenance=module_maintenance,
     )
 
 

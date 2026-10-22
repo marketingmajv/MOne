@@ -87,16 +87,29 @@ def get_nicho_by_slug(slug: str) -> Optional[Dict[str, Any]]:
         return _parse_nicho_fields(dict(row)) if row else None
 
 
-def normalizar_telefone(bruto: Any) -> Optional[str]:
-    """Formata telefone brasileiro para padrão E.164 (5527999999999)."""
+def classificar_telefone(bruto: Any) -> Tuple[Optional[str], Optional[str]]:
+    """Normaliza telefone brasileiro e classifica entre 'celular' (apto para WhatsApp) ou 'fixo'."""
     if not bruto:
-        return None
+        return None, None
     d = re.sub(r"\D", "", str(bruto))
     if d.startswith("0"):
         d = d[1:]
     if not d.startswith("55"):
         d = "55" + d
-    return d if 12 <= len(d) <= 13 else None
+    if len(d) == 13:
+        return (d, "celular") if d[4] == "9" else (d, "fixo")
+    elif len(d) == 12:
+        if d[4] in "2345":
+            return d, "fixo"
+        elif d[4] in "6789":
+            return d[:4] + "9" + d[4:], "celular"
+    return (d if 12 <= len(d) <= 13 else None), None
+
+
+def normalizar_telefone(bruto: Any) -> Optional[str]:
+    """Formata telefone brasileiro para padrão E.164 (5527999999999)."""
+    tel, _ = classificar_telefone(bruto)
+    return tel
 
 
 def normalizar_email(bruto: Any) -> Optional[str]:
@@ -289,7 +302,7 @@ def analisar_lead_com_ia(nome: str, categoria: str, texto_site: str, nicho_confi
     padrao = {
         "resumo": f"{nome} - Atuação no segmento {categoria}.", "porte_estimado": "pequena",
         "do_nicho": True, "motivo": "Classificação automática de contingência.",
-        "gancho_comercial": f"Olá! Aqui é da MAJ Mobilidade e temos condições diretas de fábrica para a {nome}. Podemos conversar por aqui?"
+        "gancho_comercial": f"Olá, equipe da {nome}! Tudo bem? 😊 Aqui é da MAJ Mobilidade e temos condições diretas de fábrica para revenda. Podemos conversar por aqui?"
     }
     prompt = f"""Você é especialista em inteligência de vendas B2B da MAJ Mobilidade Elétrica.
 Analise a empresa e responda estritamente em JSON:
@@ -297,7 +310,7 @@ Analise a empresa e responda estritamente em JSON:
 - Trecho do Site: {texto_site[:1200] if texto_site else 'Site não informado'}
 - Proposta da MAJ: {nicho_config.get('gancho_comercial_padrao', 'Venda de atacado direto de fábrica para revenda.')}
 Responda SOMENTE objeto JSON com chaves:
-{{"resumo": "Breve descrição (2 frases).", "porte_estimado": "micro|pequena|media|grande", "do_nicho": true, "motivo": "Motivo 1 frase.", "gancho_comercial": "Mensagem curta e informal para WhatsApp (Ex: Olá! Aqui é da MAJ Mobilidade...). Proibido incluir assinaturas formais como 'Att' ou 'Atenciosamente'."}}"""
+{{"resumo": "Breve descrição (2 frases).", "porte_estimado": "micro|pequena|media|grande", "do_nicho": true, "motivo": "Motivo 1 frase.", "gancho_comercial": "Mensagem amigável para WhatsApp (Ex: Olá, equipe da {nome}! Tudo bem? 😊 Aqui é da MAJ Mobilidade...). Proibido citar nomes de sócios ou pessoas físicas; dirija-se à equipe da empresa. Proibido incluir 'Att' ou 'Atenciosamente'."}}"""
     try:
         payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"}}
         res = execute_gemini_payload(payload, timeout=25)
@@ -395,7 +408,11 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                         emails_consolidados.append(fonte_em)
 
                 email_principal = emails_consolidados[0] if emails_consolidados else None
-                lead_combinado = {**p, **site_info, **(cnpj_info or {}), "email": email_principal, "emails": emails_consolidados}
+                tel_g, tipo_g = classificar_telefone(p.get("telefone_google"))
+                site_wa, tipo_site = classificar_telefone(site_info.get("whatsapp"))
+                whatsapp_valido = site_wa if tipo_site == "celular" else (tel_g if tipo_g == "celular" else None)
+
+                lead_combinado = {**p, **site_info, **(cnpj_info or {}), "email": email_principal, "emails": emails_consolidados, "whatsapp": whatsapp_valido}
                 score, classe, sinais = calcular_score_lead(lead_combinado, nicho_cfg.get("pesos") or {})
 
                 with db() as conn:
@@ -429,7 +446,7 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                         [
                             p["google_id"], nicho_slug, praca, p.get("termo_busca", "loja de motos"), p["nome"], p["categoria"], p["endereco"], p["cidade"], None, p["lat"], p["lng"],
                             p["google_maps_url"], p["avaliacao"], p["total_avaliacoes"], p["telefone_google"], p["site"], site_info["site_status"], site_info["site_vivo"],
-                            site_info["site_titulo"], site_info["whatsapp"] or p["telefone_google"], email_principal, emails_consolidados, site_info["instagram"],
+                            site_info["site_titulo"], whatsapp_valido, email_principal, emails_consolidados, site_info["instagram"],
                             cnpj_info.get("cnpj") if cnpj_info else None, cnpj_info.get("razao_social") if cnpj_info else None, cnpj_info.get("nome_fantasia") if cnpj_info else None,
                             cnpj_info.get("situacao") if cnpj_info else None, cnpj_info.get("porte") if cnpj_info else None, cnpj_info.get("capital_social") if cnpj_info else None,
                             cnpj_info.get("cnae_codigo") if cnpj_info else None, cnpj_info.get("cnae_descricao") if cnpj_info else None, cnpj_info.get("data_abertura") if cnpj_info else None,

@@ -7,6 +7,7 @@
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261020_v4">
 <script src="{{ url_for('static', filename='js/prospector-automacao.js') }}?v=20261020_v4"></script>
+<script src="{{ url_for('static', filename='js/module-maintenance.js') }}?v=20261022_v1"></script>
 <script src="{{ url_for('static', filename='js/prospector.js') }}?v=20261020_v4"></script>
 {% endblock %}
 
@@ -32,6 +33,19 @@
 </div>
 
 {% if is_admin %}
+<!-- Botão de Controle de Modo Manutenção -->
+<div x-data="moduleMaintenanceAdmin('prospeccao', {{ 'true' if module_maintenance.in_maintenance else 'false' }}, '{{ module_maintenance.expected_time or '' }}', '{{ module_maintenance.reason or '' }}', 'Prospecção')" style="display: inline-flex; align-items: center;">
+  <button type="button" 
+          class="btn sm" 
+          style="font-size: 0.82rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+          :style="inMaintenance ? 'background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444;' : 'background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981;'"
+          @click="openModal()" 
+          title="Gerenciar Modo Manutenção deste Módulo">
+    <span x-text="inMaintenance ? '🛠️ Em Manutenção (Ajustar)' : '🟢 Operacional (Mudar)'"></span>
+  </button>
+  {% include 'admin/module_maintenance_modal.html' %}
+</div>
+
 <button type="button" class="btn" onclick="window.dispatchEvent(new CustomEvent('toggle-sheets-hub'))" title="Abrir ou recolher a gaveta da Planilha Google Sheets" style="display: inline-flex; align-items: center; gap: 6px;">
   <span>📊</span>
   <span>Planilha & Exportações</span>
@@ -46,6 +60,21 @@
 {% endblock %}
 
 {% block content %}
+{% if not is_admin and module_maintenance.in_maintenance %}
+  {% include 'admin/module_maintenance_modal.html' %}
+{% else %}
+{% if is_admin and module_maintenance.in_maintenance %}
+<div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+  <div style="display: flex; align-items: center; gap: 10px; color: #f59e0b; font-size: 0.92rem; font-weight: 700;">
+    <span style="font-size: 1.3rem;">🛠️</span>
+    <span>MODO MANUTENÇÃO ATIVO: O acesso está bloqueado para a equipe comercial. Liberado apenas para Administradores para testes e ajustes.</span>
+  </div>
+  <button type="button" class="btn sm" style="background: #f59e0b; color: #000; font-weight: 800; border: none; cursor: pointer; padding: 6px 14px; border-radius: 6px;" onclick="window.dispatchEvent(new CustomEvent('abrir-modal-manutencao'))">
+    Gerenciar / Liberar
+  </button>
+</div>
+{% endif %}
+
 <div class="prospector-app" x-data="prospectorApp('{{ active_tab }}', '{{ default_nicho }}', '{{ sheets_url }}', {{ vendedor_atual.id or 0 }}, '{{ (vendedor_atual.name or vendedor_atual.username or '')|replace('\'', '\\\'') }}', '{{ (vendedor_atual.phone or '')|replace('\'', '\\\'') }}', {{ 'true' if is_seller else 'false' }})" @abrir-aba-radar.window="setTab('radar')">
   <!-- Toast / Alerta de Ação -->
   <div x-show="alertaMsg" x-cloak class="alert-banner" style="border-left: 4px solid #0070F3; margin-bottom: 12px;">
@@ -213,7 +242,7 @@
                       🟢 {{ l.whatsapp }}
                     </a>
                     {% elif l.telefone_google %}
-                    <span class="contact-pill phone" title="Telefone Google Maps">📞 {{ l.telefone_google }}</span>
+                    <span class="contact-pill phone" title="Telefone Fixo Comercial (Ligar)">☎️ Fixo: {{ l.telefone_google }}</span>
                     {% endif %}
                     {% set lead_mail = l.email or (l.emails[0] if l.emails else '') %}
                     {% if lead_mail %}
@@ -426,22 +455,17 @@
             <li>✓ Filtro automático de decisores e sócios auditados</li>
           </ul>
         </div>
-
-        <a href="{{ url_for('prospector.export_meta') }}" class="btn primary" download>
-          📥 Baixar CSV para Meta Lookalike
-        </a>
+        <a href="{{ url_for('prospector.export_meta') }}" class="btn primary" download>📥 Baixar CSV para Meta Lookalike</a>
       </div>
 
       <!-- Credenciais Apify -->
       <div class="panel">
         <h3 class="panel-title">🔑 Chave de Coleta (Apify Token)</h3>
         <p class="panel-desc">Token do Apify para buscar empresas no Google Maps (compass~crawler-google-places). Usufrui dos $5 gratuitos mensais.</p>
-
         <div class="form-group" style="margin-bottom: 16px;">
           <label style="font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px;">APIFY_TOKEN:</label>
           <input type="password" x-model="configForm.apify_token" placeholder="apify_api_..." class="form-input">
         </div>
-
         <button type="button" class="btn" @click="salvarConfiguracoes()">Gravar Token</button>
       </div>
 
@@ -465,10 +489,9 @@
   </div>
   {% endif %}
 
-  <!-- Modal Ficha do Lead & Gancho Comercial IA -->
+  <!-- Modais -->
   {% include 'admin/prospector_modal.html' %}
-
-  <!-- Modal Assistente de Sincronização Google Sheets -->
   {% include 'admin/prospector_sheets_modal.html' %}
 </div>
+{% endif %}
 {% endblock %}

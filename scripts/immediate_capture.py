@@ -23,6 +23,16 @@ from database import db
 from services.gemini_client import execute_gemini_payload
 from services.prospector_service import calcular_score_lead, normalizar_email, normalizar_telefone
 
+from services.prospector_service import (
+    buscar_google_maps_apify,
+    calcular_score_lead,
+    classificar_telefone,
+    consultar_dados_cnpj,
+    escanear_site,
+    normalizar_email,
+    normalizar_telefone,
+)
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -35,107 +45,68 @@ TARGET_PRACAS = [
     ("Campinas SP", "SP"),
 ]
 
-NICHO_TERMOS = [
-    ("revenda-motos", "loja de motos e revenda multimarcas"),
-    ("revenda-motos", "concessionária de motos e scooters"),
-    ("revenda-motos", "loja de motos elétricas e mobilidade urbana"),
-    ("bicicletarias", "bicicletaria e loja de e-bikes"),
-    ("frotas-delivery", "locadora de motos e frotas delivery"),
-]
 
-
-def buscar_lote_empresas_ia(termo: str, praca: str, uf: str, nicho_slug: str, quantidade: int = 12) -> List[Dict[str, Any]]:
-    """Consulta o Gemini para extrair um lote rico de empresas comerciais reais e ativas na praça."""
-    prompt = f"""Você é um especialista sênior em inteligência comercial B2B e mapeamento de mercado brasileiro da MAJ Mobilidade Elétrica.
-Gere uma lista de EXATAMENTE {quantidade} empresas comerciais REAIS ou altamente verossímeis (lojas físicas ativas, revendas de veículos, oficinas conceituadas, concessionárias ou comércios) em {praca} ({uf}) para o segmento: "{termo}".
-
-Para cada empresa, gere dados comerciais verossímeis, incluindo razão social, nome fantasia, endereço completo com bairro típico de {praca}, telefone comercial ou WhatsApp com DDD correspondente, website, decisor comercial e gancho personalizado para venda B2B de atacado de motos e scooters elétricas MAJ.
-
-Retorne ESTRITAMENTE um array JSON de objetos com esta estrutura exata:
-[
-  {{
-    "nome": "Nome Fantasia da Loja",
-    "razao_social": "Razão Social LTDA",
-    "categoria": "Revenda Multimarcas / Concessionária / Bike Shop",
-    "endereco": "Avenida ou Rua com número e Bairro real em {praca}",
-    "cidade": "{praca.split()[0]}",
-    "uf": "{uf}",
-    "telefone": "DDD + número telefone",
-    "whatsapp": "DDD + número WhatsApp",
-    "email": "contato ou comercial @ dominio da loja .com.br",
-    "site": "https://www.nomedaloja.com.br",
-    "instagram": "https://instagram.com/nomedaloja",
-    "cnpj": "XX.XXX.XXX/0001-XX",
-    "decisor_nome": "Nome do Sócio ou Diretor Comercial",
-    "decisor_cargo": "Sócio Administrador / Diretor Comercial",
-    "avaliacao": 4.6,
-    "total_avaliacoes": 42,
-    "resumo_ia": "Breve raio-x da atuação da loja em duas frases.",
-    "porte_estimado": "pequena",
-    "gancho_comercial": "Mensagem curta e personalizada para abordagem pelo WhatsApp do vendedor MAJ."
-  }}
-]"""
-
+def buscar_lote_empresas_reais(termo: str, praca: str, uf: str, nicho_slug: str, quantidade: int = 12) -> List[Dict[str, Any]]:
+    """Consulta o Google Maps oficial via Apify para coletar empresas comerciais reais ativas."""
+    query = f"{termo} em {praca}"
+    logger.info(f"Buscando comércios reais no Google Maps via Apify: '{query}'...")
     try:
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.25,
-                "responseMimeType": "application/json"
-            }
-        }
-        res = execute_gemini_payload(payload, timeout=30)
-        items = res.get("data")
-        if not items and res.get("text"):
-            try:
-                items = json.loads(res["text"])
-            except Exception:
-                items = []
-        if isinstance(items, list):
-            return items
-        return []
+        results = buscar_google_maps_apify(query, max_results=quantidade)
+        logger.info(f"Retornadas {len(results)} empresas reais pelo Google Places para {praca}.")
+        return results
     except Exception as e:
-        logger.error(f"Erro ao buscar lote para {praca} - {termo}: {e}")
+        logger.error(f"Erro ao buscar no Google Places para {praca} - {termo}: {e}")
         return []
 
 
 def salvar_leads_no_banco(leads_raw: List[Dict[str, Any]], nicho_slug: str, praca: str, termo: str) -> int:
-    """Insere os leads gerados com cálculo de score no Supabase."""
+    """Insere os leads reais coletados com classificação estrita de WhatsApp vs Fixo."""
     salvos = 0
     with db() as conn:
         for idx, item in enumerate(leads_raw):
-            nome = item.get("nome") or "Empresa Desconhecida"
-            gid = f"maj_lead_{abs(hash(nome + praca))}_{int(time.time())}_{idx}"
-            tel_google = normalizar_telefone(item.get("telefone") or item.get("whatsapp"))
-            whatsapp = normalizar_telefone(item.get("whatsapp") or tel_google)
-            email = normalizar_email(item.get("email"))
+            nome = item.get("nome") or "Empresa"
+            gid = item.get("google_id") or f"gplace_{abs(hash(nome + praca))}_{int(time.time())}_{idx}"
+
+            site_url = item.get("site")
+            site_info = escanear_site(site_url) if site_url else {}
+
+            tel_g, tipo_g = classificar_telefone(item.get("telefone_google") or item.get("telefone"))
+            site_wa, tipo_site = classificar_telefone(site_info.get("whatsapp") or item.get("whatsapp"))
+
+            # Regra estrita: WhatsApp só é gravado se for celular brasileiro verificado (com 9)
+            whatsapp = site_wa if tipo_site == "celular" else (tel_g if tipo_g == "celular" else None)
+            tel_principal = tel_g or site_wa
+
+            email = normalizar_email(item.get("email") or (site_info.get("emails") or [None])[0])
             emails = [email] if email else []
+
+            gancho = (
+                f"Olá, equipe da {nome}! Tudo bem? 😊 Aqui é da MAJ Mobilidade Elétrica. "
+                "Vimos que vocês são referência na região e temos condições exclusivas de atacado "
+                "direto de fábrica para revenda de scooters e motos elétricas MAJ. "
+                "Com quem da equipe comercial ou de compras poderíamos conversar por aqui? 🚀"
+            )
 
             lead_dict = {
                 "nome": nome,
-                "site_vivo": bool(item.get("site")),
+                "site_vivo": bool(site_url),
                 "whatsapp": whatsapp,
-                "telefone_google": tel_google,
-                "cnpj": item.get("cnpj"),
-                "decisor_nome": item.get("decisor_nome"),
-                "instagram": item.get("instagram"),
+                "telefone_google": tel_principal,
+                "cnpj": site_info.get("cnpj"),
+                "decisor_nome": None,
+                "instagram": site_info.get("instagram"),
                 "email": email,
                 "emails": emails,
                 "avaliacao": float(item.get("avaliacao") or 4.5),
-                "total_avaliacoes": int(item.get("total_avaliacoes") or 25),
+                "total_avaliacoes": int(item.get("total_avaliacoes") or 10),
             }
 
             pesos_padrao = {
-                "site_vivo": 20,
-                "whatsapp": 20,
-                "cnpj_decisor": 20,
-                "instagram": 15,
-                "email": 10,
-                "reputacao": 15
+                "site_vivo": 20, "whatsapp": 20, "cnpj_decisor": 20,
+                "instagram": 15, "email": 10, "reputacao": 15
             }
             score, classe, sinais = calcular_score_lead(lead_dict, pesos_padrao)
-
-            maps_url = f"https://www.google.com/maps/search/?api=1&query={nome.replace(' ', '+')}+{praca.replace(' ', '+')}"
+            maps_url = item.get("google_maps_url") or f"https://www.google.com/maps/search/?api=1&query={nome.replace(' ', '+')}+{praca.replace(' ', '+')}"
 
             conn.execute(
                 """
@@ -147,19 +118,19 @@ def salvar_leads_no_banco(leads_raw: List[Dict[str, Any]], nicho_slug: str, prac
                     gancho_comercial, score, classificacao, sinais_score, status_contato
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, 200, TRUE,
+                    %s, %s, %s, %s, %s, 200, %s,
                     %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, TRUE, 'Potencial revendedor para eletrificação de frota e mostruário MAJ.',
+                    NULL, NULL, %s, 'pequena', TRUE, 'Empresa real ativa identificada no Google Maps.',
                     %s, %s, %s, %s, 'novo'
                 )
                 ON CONFLICT (google_id) DO NOTHING;
                 """,
                 [
-                    gid, nicho_slug, praca, termo, nome, item.get("categoria", "Revenda"), item.get("endereco", praca), item.get("cidade", praca.split()[0]), item.get("uf", "ES"),
-                    maps_url, float(item.get("avaliacao") or 4.5), int(item.get("total_avaliacoes") or 25), tel_google, item.get("site"),
-                    whatsapp, email, emails, item.get("instagram"), item.get("cnpj"), item.get("razao_social"), nome,
-                    item.get("decisor_nome"), item.get("decisor_cargo", "Responsável"), item.get("resumo_ia"), item.get("porte_estimado", "pequena"),
-                    item.get("gancho_comercial"), score, classe, json.dumps(sinais)
+                    gid, nicho_slug, praca, termo, nome, item.get("categoria", "Revenda"), item.get("endereco", praca), item.get("cidade", praca.split()[0]), "ES",
+                    maps_url, float(item.get("avaliacao") or 4.5), int(item.get("total_avaliacoes") or 10), tel_principal, site_url, bool(site_url),
+                    whatsapp, email, emails, site_info.get("instagram"), site_info.get("cnpj"), nome, nome,
+                    f"Comércio ativo em {praca} no segmento {item.get('categoria', 'duas rodas')}.",
+                    gancho, score, classe, json.dumps(sinais)
                 ]
             )
             salvos += 1
@@ -187,7 +158,7 @@ def executar_captura_imediata(meta_leads: int = 70) -> None:
         if total_gerados >= meta_leads:
             break
         logger.info(f"Capturando lote em {praca} para '{termo}' (Meta: {por_query})...")
-        lote = buscar_lote_empresas_ia(termo, praca, uf, nicho, quantidade=por_query)
+        lote = buscar_lote_empresas_reais(termo, praca, uf, nicho, quantidade=por_query)
         if lote:
             qtd = salvar_leads_no_banco(lote, nicho, praca, termo)
             total_gerados += qtd

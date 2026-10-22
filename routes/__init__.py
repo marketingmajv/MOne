@@ -36,6 +36,7 @@ from routes.implementation_plan_routes import implementation_plan_bp
 from routes.botconversa_routes import botconversa_bp
 from routes.custom_catalog_routes import custom_catalog_bp
 from routes.prospector_routes import prospector_bp
+from routes.maintenance_routes import maintenance_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -71,6 +72,7 @@ ALL_BLUEPRINTS = [
     botconversa_bp,
     custom_catalog_bp,
     prospector_bp,
+    maintenance_bp,
 ]
 
 
