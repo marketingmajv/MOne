@@ -85,12 +85,28 @@
   <header class="outlet-header">
     <div class="outlet-container header-inner" style="display: flex; justify-content: space-between; align-items: center;">
       <div class="logo-box" style="display: flex; align-items: center; gap: 14px;">
-        {% if catalog.logo_url %}
-          <img src="{{ catalog.logo_url }}" alt="{{ catalog.title }}" class="header-logo" style="max-height: 48px; max-width: 140px; object-fit: contain;">
+        {% if not catalog.is_white_label %}
+          {# Modo Co-Branded / Rede Oficial MAJ #}
+          {% if catalog.logo_url %}
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="{{ catalog.logo_url }}" alt="{{ catalog.title }}" class="header-logo" style="max-height: 44px; max-width: 120px; object-fit: contain;">
+              <span style="color: rgba(255,255,255,0.25); font-size: 1.2rem; font-weight: 300;">|</span>
+              <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" style="max-height: 38px; max-width: 110px; object-fit: contain;" title="Parceiro Oficial MAJ Mobilidade">
+            </div>
+          {% else %}
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" style="max-height: 46px; max-width: 150px; object-fit: contain;" title="MAJ Mobilidade">
+            </div>
+          {% endif %}
         {% else %}
-          <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #e5a93b, #d97706); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.3rem; color: #0a0d14;">
-            ⚡
-          </div>
+          {# Modo White-Label 100% #}
+          {% if catalog.logo_url %}
+            <img src="{{ catalog.logo_url }}" alt="{{ catalog.title }}" class="header-logo" style="max-height: 48px; max-width: 140px; object-fit: contain;">
+          {% else %}
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg, #e5a93b, #d97706); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.3rem; color: #0a0d14;">
+              ⚡
+            </div>
+          {% endif %}
         {% endif %}
         <div class="logo-text">
           <span class="brand-title" style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">{{ catalog.title }}</span>
@@ -99,7 +115,10 @@
               <span style="font-size: 0.78rem; color: #94a3b8;">{{ catalog.client_name }}</span>
             {% endif %}
             {% if not catalog.is_white_label %}
-              <span class="partner-brand-badge">⚡ Parceiro Oficial MAJ</span>
+              <span class="partner-brand-badge" style="background: rgba(0, 229, 153, 0.12); border: 1px solid rgba(0, 229, 153, 0.35); color: #00e599; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ" style="height: 12px; object-fit: contain;">
+                <span>Parceiro Oficial MAJ</span>
+              </span>
             {% endif %}
           </div>
         </div>
@@ -119,10 +138,16 @@
   <!-- Hero Section -->
   <section class="outlet-hero" style="padding: 40px 0 28px;">
     <div class="outlet-container hero-inner" style="text-align: center;">
-      <div class="hero-badge">
+      <div class="hero-badge" style="margin-bottom: 8px;">
         <span class="hero-pulse"></span>
         <span>CATÁLOGO EXCLUSIVO SELECIONADO</span>
       </div>
+      {% if not catalog.is_white_label %}
+      <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 5px 14px; background: rgba(0, 229, 153, 0.08); border: 1px solid rgba(0, 229, 153, 0.25); border-radius: 999px;">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ" style="height: 16px; object-fit: contain;">
+        <span style="font-size: 0.76rem; font-weight: 800; color: #00e599; letter-spacing: 0.04em;">DISTRIBUIÇÃO HOMOLOGADA • REDE MAJ MOBILIDADE</span>
+      </div>
+      {% endif %}
       <h1 class="hero-title" style="font-size: 2.2rem; margin: 12px 0 8px;">{{ catalog.title }}</h1>
       <p class="hero-subtitle" style="max-width: 650px; margin: 0 auto 24px; color: #94a3b8;">
         Explore nossa linha completa de mobilidade elétrica sustentável, com opções de pronta entrega e atendimento consultivo direto.
@@ -344,6 +369,23 @@
     </div>
   </div>
   </template>
+
+  <!-- Rodapé Institucional (com Logo MAJ quando não for White-Label) -->
+  <footer style="margin-top: 60px; padding: 36px 20px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; background: rgba(0, 0, 0, 0.25);">
+    {% if not catalog.is_white_label %}
+      <div style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px;">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" style="height: 28px; object-fit: contain;">
+        <span style="font-size: 0.95rem; font-weight: 800; color: #f8fafc;">MAJ Mobilidade Elétrica</span>
+      </div>
+      <p style="margin: 0 auto; font-size: 0.8rem; color: #94a3b8; max-width: 520px; line-height: 1.5;">
+        Catálogo oficial homologado • Veículos elétricos com garantia de fábrica, revisão técnica de entrega e suprimento direto MAJ Mobilidade.
+      </p>
+    {% else %}
+      <p style="margin: 0; font-size: 0.8rem; color: #64748b;">
+        © {{ catalog.title }} • Todos os direitos reservados.
+      </p>
+    {% endif %}
+  </footer>
 
   <script>
     function customCatalogApp() {

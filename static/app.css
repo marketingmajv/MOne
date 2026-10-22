@@ -1642,6 +1642,20 @@ tr:hover td {
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
+[data-theme="light"] .modal-head button,
+[data-theme="light"] .modal-close-btn {
+  border: 1px solid #CBD5E1 !important;
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .modal-head button:hover,
+[data-theme="light"] .modal-close-btn:hover {
+  background: #E2E8F0 !important;
+  color: #000000 !important;
+  border-color: #94A3B8 !important;
+}
+
 .modal-head button svg,
 .modal-close-btn svg {
   display: block !important;

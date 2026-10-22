@@ -4,6 +4,60 @@
 {% block page_title %}Gestão de Catálogos Personalizados{% endblock %}
 {% block page_subtitle %}Distribuição de catálogos clonados com precificação sob medida, White-label e links exclusivos de WhatsApp{% endblock %}
 
+{% block head %}
+<style>
+  /* Avisos no Modal de Catálogo — Alto Contraste Dual-Theme (Default Light-Theme First) */
+  .catalog-notice-atacado {
+    background: #ECFDF5 !important;
+    border: 1.5px solid #10B981 !important;
+    color: #064E3B !important;
+  }
+  .catalog-notice-atacado .notice-title {
+    color: #047857 !important;
+  }
+  .catalog-notice-atacado .notice-body {
+    color: #065F46 !important;
+  }
+
+  .catalog-notice-markup {
+    background: #EEF2FF !important;
+    border: 1.5px dashed #4F46E5 !important;
+    color: #1E1B4B !important;
+  }
+  .catalog-notice-markup label {
+    color: #312E81 !important;
+  }
+  .catalog-notice-markup .markup-helper {
+    color: #1E293B !important;
+  }
+
+  /* Modo Escuro (Explicit Override) */
+  [data-theme="dark"] .catalog-notice-atacado {
+    background: rgba(0, 229, 153, 0.12) !important;
+    border: 1px solid rgba(0, 229, 153, 0.45) !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] .catalog-notice-atacado .notice-title {
+    color: #00E599 !important;
+  }
+  [data-theme="dark"] .catalog-notice-atacado .notice-body {
+    color: #E2E8F0 !important;
+  }
+
+  [data-theme="dark"] .catalog-notice-markup {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border: 1.5px dashed #818CF8 !important;
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] .catalog-notice-markup label {
+    color: #C7D2FE !important;
+  }
+  [data-theme="dark"] .catalog-notice-markup .markup-helper {
+    color: #F1F5F9 !important;
+  }
+</style>
+{% endblock %}
+
 {% block top_actions %}
   <button type="button" class="btn primary" onclick="if(window.customCatalogApp){window.customCatalogApp.openModal();}else{window.dispatchEvent(new CustomEvent('open-custom-catalog-modal'));}" style="display: inline-flex; align-items: center; gap: 8px;">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -172,17 +226,15 @@
   </div>
 
   <!-- Modal de Criação / Edição de Catálogo (Teleportado para o body para centralização perfeita) -->
+  <!-- Regra de UX: Fechamento exclusivo pelo botão 'X' (sem fechamento ao clicar fora no backdrop) -->
   <template x-teleport="body">
     <div x-show="showModal" 
          x-cloak 
          class="modal" 
          :class="{ 'show': showModal }"
          :style="showModal ? 'display: flex !important;' : 'display: none !important;'"
-         style="position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;" 
-         @click.self="closeModal()"
-         @keydown.escape.window="closeModal()">
+         style="position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;">
       <div class="modal-card" 
-           @click.stop
            style="width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; background: var(--panel, #121722); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 16px; box-shadow: 0 24px 50px rgba(0,0,0,0.8); padding: 26px; box-sizing: border-box;">
         
         <div class="modal-head" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.1)); padding-bottom: 14px;">
@@ -240,20 +292,25 @@
             </div>
           </div>
 
-          <!-- Aviso informativo quando Matriz for Atacado -->
-          <div x-show="form.source_matrix === 'atacado'" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(0, 204, 136, 0.08); border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.1rem;">⚡</span>
-            <span style="font-size: 0.8rem; color: #a7f3d0; font-weight: 600;">
-              <strong>Matriz Atacado CNPJ:</strong> Catálogos gerados a partir do Atacado operam estritamente com preços à vista CNPJ (sem parcelamento).
-            </span>
+          <!-- Aviso informativo quando Matriz for Atacado (Contraste Alto Garantido) -->
+          <div x-show="form.source_matrix === 'atacado'" 
+               class="catalog-notice-atacado" 
+               style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; display: flex; align-items: flex-start; gap: 10px; background: #ECFDF5; border: 1.5px solid #10B981;">
+            <span style="font-size: 1.15rem; line-height: 1.2; flex-shrink: 0;">⚡</span>
+            <div style="font-size: 0.84rem; line-height: 1.45;">
+              <strong class="notice-title" style="font-weight: 800; color: #047857;">Matriz Atacado CNPJ:</strong>
+              <span class="notice-body" style="font-weight: 600; color: #064E3B;">Catálogos gerados a partir do Atacado operam estritamente com preços à vista CNPJ (sem parcelamento).</span>
+            </div>
           </div>
 
-          <!-- Campo condicional de margem percentual -->
-          <div x-show="form.pricing_mode === 'percentage_markup'" style="margin-bottom: 16px; padding: 14px; background: rgba(99, 102, 241, 0.1); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 10px;">
-            <label style="display: block; font-size: 0.84rem; font-weight: 700; margin-bottom: 6px; color: #818cf8;">Margem Adicional sobre Todos os Produtos (%)</label>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <input type="number" step="0.5" name="percentage_markup" x-model="form.percentage_markup" placeholder="Ex: 15.0" style="max-width: 130px; padding: 8px 12px; background: var(--panel2, #182030); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 8px; color: var(--text, #f8fafc); font-weight: 800; font-size: 0.95rem;">
-              <span style="font-size: 0.82rem; color: #cbd5e1;">% somado ao valor de cada veículo da matriz</span>
+          <!-- Campo condicional de margem percentual (Contraste Alto Garantido) -->
+          <div x-show="form.pricing_mode === 'percentage_markup'" 
+               class="catalog-notice-markup" 
+               style="margin-bottom: 16px; padding: 14px 16px; border-radius: 10px; background: #EEF2FF; border: 1.5px dashed #4F46E5;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 8px; color: #312E81;">Margem Adicional sobre Todos os Produtos (%)</label>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <input type="number" step="0.5" name="percentage_markup" x-model="form.percentage_markup" placeholder="Ex: 15.0" class="form-input" style="max-width: 110px; padding: 8px 12px; background: var(--panel2); border: 1.5px solid #4F46E5; border-radius: 8px; color: var(--text); font-weight: 800; font-size: 0.95rem;">
+              <span class="markup-helper" style="font-size: 0.84rem; font-weight: 700; color: #1E293B;">% somado ao valor de cada veículo da matriz</span>
             </div>
           </div>
 
