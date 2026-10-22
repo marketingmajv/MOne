@@ -62,6 +62,7 @@ O agente DEVE executar imediatamente o **Protocolo RELATÓRIO FAUZER** em 3 etap
    - Vasculhar o Git: rodar `git log --since="today 00:00" --oneline` (ou `git log -n 15 --since="midnight" --stat`) para listar commits realizados no dia.
    - Vasculhar o Workspace: rodar `git status -sb` e `git diff --stat` para capturar alterações em andamento.
    - Vasculhar o Chat da Sessão: rastrear todas as demandas, problemas investigados, diagnósticos e soluções aprovadas durante o dia.
+   - Vasculhar a Central de Agentes de IA (Google Drive): `/Users/macstudio-maj/Library/CloudStorage/GoogleDrive-marketingmajv@gmail.com/Meu Drive/TRABALHOS - START | MAJ MOBILIDADE/AGENTES DE IA - MAJ` (`[AGENTE DE MARKETING - MAJ MOBILIDADE]`, `[BOT CONVERSA - AGENTE]`, `[REMOTION SKILL - MAJ]`).
 
 2. **Passo 02 — Estruturação do Relatório Técnico & Executivo Detalhado**:
    - Gerar relatório Markdown completo contendo:

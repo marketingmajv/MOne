@@ -25,6 +25,12 @@ O agente deve coletar evidências em 3 fontes essenciais:
    - Executar `git status -sb` e `git diff --stat` para identificar tarefas em andamento ou alterações não comitadas.
 3. **Histórico do Chat da Sessão**:
    - Rastrear todas as solicitações do usuário no dia, dúvidas tiradas, diagnósticos realizados, testes executados e decisões aprovadas.
+4. **Varredura da Central de Agentes de IA (Google Drive)**:
+   - Vasculhar o diretório: `/Users/macstudio-maj/Library/CloudStorage/GoogleDrive-marketingmajv@gmail.com/Meu Drive/TRABALHOS - START | MAJ MOBILIDADE/AGENTES DE IA - MAJ`
+   - Identificar alterações, scripts de automação, diagnósticos e relatórios recentes nos sub-agentes:
+     - `[AGENTE DE MARKETING - MAJ MOBILIDADE]`: Otimizações de tráfego pago (Meta Ads), relatórios de performance diária e scripts (`trafego_maj/`).
+     - `[BOT CONVERSA - AGENTE]`: Diagnósticos de automação de WhatsApp, funis de atendimento e relatórios em PDF.
+     - `[REMOTION SKILL - MAJ]`: Produção de vídeos programáticos, composições criativas e arquitetura de renderização.
 
 ---
 
