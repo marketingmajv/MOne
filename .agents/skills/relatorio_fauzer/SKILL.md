@@ -51,26 +51,28 @@ Gerar um relatório em Markdown estruturado com:
 
 ### Passo 03 — Geração do Bloco WhatsApp (Para a Gerência)
 Abaixo do relatório detalhado, fornecer o bloco formatado especificamente para WhatsApp:
+- **Diretriz de Tamanho**: Versão **ultra-resumida e direta ao ponto**, leitura rápida em menos de 20 segundos para a gerência.
 - **Regras de Formatação**:
   - Usar `*texto*` para negritos (e não `**texto**`).
-  - Usar marcadores de lista `•` ou `-`.
-  - Sem tags HTML ou blocos de código markdown desnecessários.
-- **Tom e Perspectiva**:
-  - Redigido em **1ª pessoa** por Fauzer (*"Hoje finalizei...", "Implementei...", "Ajustei..."*).
-  - Linguagem executiva, clara e focada em **valor de negócio**, impacto na operação e melhoria da experiência dos clientes/parceiros, sem excesso de jargões técnicos herméticos.
-- **Estrutura Padrão do WhatsApp**:
+  - Usar marcadores `•`.
+  - Redigido em **1ª pessoa** por Fauzer.
+  - Foco exclusivo em **resultados práticos e números chave**.
+- **Estrutura Padrão Ultra-Resumida**:
   ```text
-  *Resumo Diário de Atividades — M-One*
-  *Data:* [Data de Hoje]
-  *Profissional:* Fauzer
+  *Resumo Diário — Fauzer (DD/MM)*
 
-  *Principais Entregas de Hoje:*
-  • *[Item 1]:* [Breve descrição do valor entregue]
-  • *[Item 2]:* [Breve descrição do valor entregue]
-  • *[Item 3]:* [Breve descrição do valor entregue]
+  Olá! Segue o resumo rápido das entregas de hoje:
 
-  *Status Operacional:*
-  • Testes de integridade e UX: Aprovados ✅
-  • Deploy em produção: Realizado e operando no ar 🚀
-  • Link do sistema: https://m-one.majmobilidade.com.br
+  ⚡ *Sistema M-One:*
+  • *Catálogos dos Parceiros:* Ajustei o contraste das margens, travei o modal para fechar só no "X" (sem perda de dados) e ativei o logo da MAJ automático quando não for White-Label.
+  • *Deploy:* Versão validada e publicada em produção no ar.
+
+  📈 *Tráfego Pago (Meta Ads):*
+  • *Leads:* 73 novas conversas no WhatsApp (37 Varejo / 36 Atacado B2B).
+  • *Custo por Lead:* Queda de 16% no custo por conversa (CPR médio caiu para R$ 2,54).
+
+  🎬 *Automações:*
+  • Esteira de vídeos do Remotion e monitoramento do BotConversa integrados e ativos.
+
+  ✅ *Status:* 100% operacional no ar (https://m-one.majmobilidade.com.br).
   ```

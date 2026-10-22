@@ -7,6 +7,8 @@
   window.__EMPLOYEES_DATA__ = {{ summary.employees|tojson|safe if (summary is defined and summary and summary.employees) else '[]' }};
   window.__DOC_LINKS__ = {{ doc_links|tojson|safe if (doc_links is defined and doc_links) else '{}' }};
   window.__CYCLE_ID__ = {{ cycle.id if (cycle is defined and cycle) else 0 }};
+  window.__INTERNAL_ANALYSIS__ = {{ internal_analysis|tojson|safe if (internal_analysis is defined and internal_analysis) else '{}' }};
+  window.__IS_CURATOR__ = {{ 'true' if is_curator else 'false' }};
 </script>
 
 <div class="content-body" x-data="{
@@ -190,7 +192,7 @@
               style="{% if active_tab == 'consolidation' %}background: #e5a93b; color: #000; font-weight: 800; border: none;{% else %}background: var(--panel2); color: var(--text);{% endif %}"
               :style="activeTab === 'consolidation' ? 'background: #e5a93b; color: #000; font-weight: 800; border: none;' : 'background: var(--panel2); color: var(--text);'"
               @click="activeTab = 'consolidation'">
-        📑 Briefing Reunião Segunda-feira (Jam + Geysa + Fauzer)
+        📑 Análise Interna da Reunião (Jam + Geysa + Fauzer)
       </button>
 
       <button type="button" 
