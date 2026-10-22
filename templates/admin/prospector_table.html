@@ -1,0 +1,208 @@
+{#
+  M-One Prospector Table (templates/admin/prospector_table.html)
+  Tabela refinada de Leads Qualificados com Formatação Brasileira, Badges Temáticas e Ações Inteligentes.
+  Segregação modular estrita (< 500 linhas).
+#}
+
+<div class="table-responsive">
+  <table class="leads-table">
+    <thead>
+      <tr>
+        <th style="width: 75px; text-align: center;">Classe</th>
+        <th style="min-width: 220px;">Empresa</th>
+        <th style="min-width: 170px;">Segmento & Praça</th>
+        <th style="min-width: 210px;">Contato Telefônico</th>
+        <th style="width: 110px; text-align: center;">Canais</th>
+        <th style="min-width: 200px;">Raio-X Comercial</th>
+        <th style="width: 130px;">Status</th>
+        <th style="width: 130px; text-align: right;">Ação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if leads %}
+        {% for l in leads %}
+        <tr class="lead-row" id="lead-row-{{ l.id }}">
+          <!-- 1. CLASSE & SCORE -->
+          <td style="text-align: center;">
+            <div class="score-badge badge-{{ l.classificacao|lower }}" title="Score de Qualificação Comercial: {{ l.score }}/100">
+              <strong>{{ l.classificacao }}</strong>
+              <span>{{ l.score }} pts</span>
+            </div>
+          </td>
+
+          <!-- 2. EMPRESA & DECISOR -->
+          <td>
+            <div class="company-cell">
+              <strong class="company-name" title="{{ l.nome }}">{{ l.nome }}</strong>
+              
+              {% if l.decisor_nome %}
+              <span class="decisor-tag" title="Decisor apurado">
+                <span>👤</span>
+                <strong>{{ l.decisor_nome }}</strong>
+                {% if l.decisor_cargo %}<small>({{ l.decisor_cargo }})</small>{% endif %}
+              </span>
+              {% elif l.razao_social and l.razao_social.strip().lower() != l.nome.strip().lower() %}
+              <span class="corporate-name" title="Razão Social">
+                <span>🏢</span>
+                <span>{{ l.razao_social }}</span>
+              </span>
+              {% endif %}
+
+              {% if l.cnpj %}
+              <span class="cnpj-sub" title="CNPJ da Empresa">CNPJ: {{ l.cnpj }}</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- 3. NICHO & PRAÇA -->
+          <td>
+            <div class="nicho-praça-cell">
+              {% if 'moto' in l.nicho_slug %}
+              <span class="nicho-tag moto" title="Revendas de Motos e Scooters">🛵 Revenda Motos</span>
+              {% elif 'bike' in l.nicho_slug or 'biciclet' in l.nicho_slug %}
+              <span class="nicho-tag bike" title="Bicicletarias e E-Bikes">🚲 Bicicletarias</span>
+              {% elif 'delivery' in l.nicho_slug or 'frota' in l.nicho_slug %}
+              <span class="nicho-tag delivery" title="Delivery e Frotas Corporativas">📦 Frotas Delivery</span>
+              {% else %}
+              <span class="nicho-tag" title="{{ l.nicho_slug }}">{{ l.nicho_slug|replace('-', ' ')|title }}</span>
+              {% endif %}
+
+              <span class="location-badge">
+                <span>📍</span>
+                <span>{{ l.cidade or l.praca or 'Vitória' }}{% if l.uf %}, {{ l.uf }}{% endif %}</span>
+              </span>
+            </div>
+          </td>
+
+          <!-- 4. CONTATOS TELEFÔNICOS -->
+          <td>
+            <div class="contact-telefonia-cell">
+              {% if l.whatsapp %}
+              <a href="https://wa.me/{{ l.whatsapp }}" target="_blank" class="phone-pill wa" title="Celular com WhatsApp Verificado (Clique para conversar)">
+                <span class="status-dot-pulse"></span>
+                <strong>{{ (l.whatsapp|phone|replace('+55 ', '')) if l.whatsapp else '' }}</strong>
+              </a>
+              {% elif l.telefone_google %}
+              <span class="phone-pill landline" title="Telefone Fixo Comercial (Ligar para a Loja)">
+                <span>☎️</span>
+                <span>{{ (l.telefone_google|phone|replace('+55 ', '')) if l.telefone_google else '' }}</span>
+              </span>
+              {% else %}
+              <span class="phone-pill empty">Sem contato direto</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- 5. CANAIS DIGITAIS -->
+          <td style="text-align: center;">
+            <div class="channel-actions-cell">
+              {% if l.site %}
+              <a href="{{ l.site }}" target="_blank" class="ch-btn site" title="Acessar Site: {{ l.site }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </a>
+              {% endif %}
+
+              {% if l.instagram %}
+              <a href="{{ l.instagram }}" target="_blank" class="ch-btn ig" title="Instagram: {{ l.instagram }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </a>
+              {% endif %}
+
+              {% set lead_mail = l.email or (l.emails[0] if l.emails else '') %}
+              {% if lead_mail %}
+              <a href="mailto:{{ lead_mail }}" class="ch-btn email" title="E-mail: {{ lead_mail }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </a>
+              {% endif %}
+
+              {% if l.google_maps_url %}
+              <a href="{{ l.google_maps_url }}" target="_blank" class="ch-btn maps" title="Ver no Google Maps">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </a>
+              {% endif %}
+
+              {% if not l.site and not l.instagram and not lead_mail and not l.google_maps_url %}
+              <span style="color: var(--muted); font-size: 11px;">-</span>
+              {% endif %}
+            </div>
+          </td>
+
+          <!-- 6. RAIO-X IA -->
+          <td>
+            <div class="raiox-cell" title="{{ l.resumo_ia or 'Empresa comercial de duas rodas e mobilidade.' }}">
+              {% if l.porte_estimado %}
+              <span class="porte-badge {{ l.porte_estimado|lower }}">{{ l.porte_estimado|capitalize }}</span>
+              {% endif %}
+              <span class="raiox-snippet">{{ l.resumo_ia or 'Loja comercial ativa em Vitória/ES.' }}</span>
+            </div>
+          </td>
+
+          <!-- 7. STATUS OPERACIONAL -->
+          <td>
+            {% if l.status_contato == 'prospectado' %}
+            <div class="prospectado-cell">
+              <span class="status-badge status-prospectado">💬 Abordado</span>
+              <small class="vendedor-nome-sub" title="Abordado em {{ l.prospectado_em or '' }}">👤 {{ l.prospectado_por_nome or 'Vendedor' }}</small>
+            </div>
+            {% elif l.status_contato == 'novo' or not l.status_contato %}
+            <span class="status-badge status-novo">🟢 Disponível</span>
+            {% elif l.status_contato == 'em_negociacao' %}
+            <span class="status-badge status-em_negociacao">🤝 Negociação</span>
+            {% elif l.status_contato == 'convertido' %}
+            <span class="status-badge status-convertido">🏆 Convertido</span>
+            {% elif l.status_contato == 'descartado' %}
+            <span class="status-badge status-descartado">⚪ Descartado</span>
+            {% else %}
+            <span class="status-badge status-novo">{{ l.status_contato|replace('_', ' ')|capitalize }}</span>
+            {% endif %}
+          </td>
+
+          <!-- 8. AÇÃO PRINCIPAL -->
+          <td style="text-align: right;">
+            {% if l.whatsapp %}
+            <button type="button" class="btn-lead-action btn-wa-action" @click="abrirProspectar('{{ l.id }}')" title="Iniciar Abordagem Comercial via WhatsApp">
+              <span>💬</span>
+              <span>Abordar</span>
+            </button>
+            {% else %}
+            <button type="button" class="btn-lead-action btn-phone-action" @click="abrirProspectar('{{ l.id }}')" title="Ver Ficha / Telefone Fixo da Loja">
+              <span>☎️</span>
+              <span>Ligar Loja</span>
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="8" class="empty-state">
+            <div style="text-align: center; padding: 40px 20px;">
+              <div style="font-size: 2.5rem; margin-bottom: 10px;">🔍</div>
+              <p style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px;">Nenhum lead encontrado com os filtros selecionados.</p>
+              <p style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">Tente alterar os filtros de nicho ou status de contato.</p>
+              {% if is_admin %}
+              <button type="button" class="btn primary" @click="setTab('radar')">🎯 Disparar Nova Varredura</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Paginação -->
+{% if total_pages > 1 %}
+<div class="pagination-bar">
+  <span>Página {{ page }} de {{ total_pages }} ({{ total_leads }} leads capturados)</span>
+  <div class="page-buttons">
+    {% if page > 1 %}
+    <a href="{{ url_for('prospector.index', tab='capturados', page=page-1, nicho=nicho_filtro, classe=classe_filtro, status=status_filtro, filtro_rapido=filtro_rapido, busca=termo_busca) }}" class="btn sm">Anterior</a>
+    {% endif %}
+    <span class="page-current">{{ page }}</span>
+    {% if page < total_pages %}
+    <a href="{{ url_for('prospector.index', tab='capturados', page=page+1, nicho=nicho_filtro, classe=classe_filtro, status=status_filtro, filtro_rapido=filtro_rapido, busca=termo_busca) }}" class="btn sm">Próxima</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
