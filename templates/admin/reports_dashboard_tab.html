@@ -160,8 +160,8 @@
                     </a>
                     {% endif %}
                     {% if emp.docx_filename %}
-                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.68rem; padding: 2px 6px;" title="Relatório entregue via upload de arquivo Word (.docx)">
-                      📎 DOCX
+                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.68rem; padding: 2px 6px;" title="Relatório entregue via upload de arquivo">
+                      📎 {{ 'TXT' if emp.docx_filename.endswith('.txt') else 'DOCX' }}
                     </span>
                     {% endif %}
                   </div>
@@ -224,28 +224,28 @@
                 </button>
                 {% endif %}
 
-                <!-- Botão de Upload DOCX -->
+                <!-- Botão de Upload DOCX / TXT -->
                 <label class="btn sm" 
                        style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;"
-                       title="Subir relatório Word (.docx) com auditoria e extração por IA">
+                       title="Subir relatório Word (.docx) ou Texto (.txt) com auditoria e extração por IA">
                   <span>📤</span>
-                  <span>Subir DOCX</span>
+                  <span>Subir Arquivo</span>
                   <input type="file" 
-                         accept=".docx" 
+                         accept=".docx,.txt" 
                          style="display: none;" 
                          :id="'docx-file-input-' + '{{ emp.key }}'"
                          @change="handleDocxSelected($event, '{{ emp.key }}')">
                 </label>
 
-                <!-- Botão de Baixar DOCX se já enviado -->
+                <!-- Botão de Baixar Arquivo se já enviado -->
                 {% if emp.docx_filename %}
                 <a href="/admin/plano/download-docx?file={{ emp.docx_filename }}&cycle_code={{ cycle.cycle_code }}" 
                    target="_blank" 
                    class="btn sm" 
                    style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
-                   title="Baixar arquivo Word original submetido">
+                   title="Baixar arquivo original submetido">
                   <span>📥</span>
-                  <span>Baixar DOCX</span>
+                  <span>Baixar {{ 'TXT' if emp.docx_filename.endswith('.txt') else 'DOCX' }}</span>
                 </a>
                 {% endif %}
 

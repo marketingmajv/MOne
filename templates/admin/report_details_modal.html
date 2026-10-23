@@ -152,18 +152,18 @@
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px;">
-              <!-- Botão Subir DOCX -->
-              <label class="btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 700; font-size: 0.82rem; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+              <!-- Botão Subir Arquivo (DOCX / TXT) -->
+              <label class="btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 700; font-size: 0.82rem; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0;" title="Subir relatório Word (.docx) ou Texto (.txt)">
                 <span>📤</span>
-                <span>Subir DOCX</span>
-                <input type="file" accept=".docx" style="display: none;" @change="handleDocxSelected($event, currentEmployee.key)">
+                <span>Subir Arquivo</span>
+                <input type="file" accept=".docx,.txt" style="display: none;" @change="handleDocxSelected($event, currentEmployee.key)">
               </label>
 
-              <!-- Botão Baixar DOCX se já enviado -->
+              <!-- Botão Baixar Arquivo se já enviado -->
               <template x-if="activeReportData && activeReportData.docx_filename">
                 <a :href="'/admin/plano/download-docx?file=' + activeReportData.docx_filename + '&cycle_code=' + activeReportData.cycle_code" target="_blank" class="btn" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
                   <span>📥</span>
-                  <span>Baixar DOCX</span>
+                  <span x-text="activeReportData.docx_filename && activeReportData.docx_filename.endsWith('.txt') ? 'Baixar TXT' : 'Baixar DOCX'"></span>
                 </a>
               </template>
             </div>

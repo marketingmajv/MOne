@@ -41,17 +41,33 @@ def ensure_docx_schema() -> None:
             pass
 
 
-def extract_text_from_docx_bytes(docx_bytes: bytes) -> Tuple[bool, str]:
+def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> Tuple[bool, str]:
     """
-    Extrai o texto integral de um arquivo .docx (OpenXML) sem dependências externas,
-    lendo diretamente o word/document.xml empacotado no ZIP.
+    Extrai o texto integral de um arquivo .docx (OpenXML) ou .txt (UTF-8 / Latin-1).
     Retorna (sucesso, texto_ou_mensagem_erro).
     """
-    if not docx_bytes or len(docx_bytes) < 100:
+    if not file_bytes or len(file_bytes) < 3:
         return False, "O arquivo enviado está vazio ou corrompido."
 
+    lower_fn = (filename or "").lower()
+    is_txt = lower_fn.endswith(".txt") or (not file_bytes.startswith(b"PK") and not lower_fn.endswith(".docx"))
+
+    if is_txt:
+        try:
+            try:
+                full_text = file_bytes.decode("utf-8").strip()
+            except UnicodeDecodeError:
+                full_text = file_bytes.decode("latin-1", errors="replace").strip()
+            if not full_text:
+                return False, "O arquivo de texto (.txt) está em branco."
+            return True, full_text
+        except Exception as ex:
+            logger.error("Erro ao ler arquivo .txt: %s", ex)
+            return False, f"Falha ao decodificar arquivo de texto (.txt): {ex}"
+
+    # Processamento padrão de .docx (OpenXML ZIP)
     try:
-        with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
+        with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
             if "word/document.xml" not in z.namelist():
                 return False, "O arquivo não possui a estrutura interna padrão de um documento Word (.docx)."
 
@@ -75,18 +91,24 @@ def extract_text_from_docx_bytes(docx_bytes: bytes) -> Tuple[bool, str]:
 
             return True, full_text
     except zipfile.BadZipFile:
-        return False, "Formato inválido: o arquivo não é um documento .docx válido (não é um arquivo ZIP válido)."
+        return False, "Formato inválido: o arquivo não é um documento .docx nem .txt legível."
     except Exception as ex:
         logger.error("Erro ao extrair texto do arquivo docx: %s", ex)
-        return False, f"Falha ao ler documento .docx: {ex}"
+        return False, f"Falha ao ler documento: {ex}"
+
+
+def extract_text_from_docx_bytes(docx_bytes: bytes) -> Tuple[bool, str]:
+    """Alias de compatibilidade retroativa para código legado."""
+    return extract_text_from_file_bytes(docx_bytes)
 
 
 def get_docx_storage_path(cycle_code: str, employee_key: str, original_filename: str) -> Tuple[Path, str]:
-    """Gera o caminho seguro no disco e o nome final do arquivo .docx salvo."""
+    """Gera o caminho seguro no disco e o nome final do arquivo (.docx ou .txt) salvo."""
     safe_cycle = re.sub(r"[^a-zA-Z0-9-_]", "", cycle_code) or "ciclo"
     safe_key = re.sub(r"[^a-zA-Z0-9-_]", "", employee_key) or "emp"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    final_filename = f"{safe_cycle}_{safe_key}_{timestamp}.docx"
+    ext = ".txt" if (original_filename or "").lower().endswith(".txt") else ".docx"
+    final_filename = f"{safe_cycle}_{safe_key}_{timestamp}{ext}"
 
     target_dir = DOCX_UPLOADS_DIR / safe_cycle
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -102,7 +124,7 @@ def process_docx_upload(
     force: bool = False
 ) -> Dict[str, Any]:
     """
-    Processa o upload de um .docx:
+    Processa o upload de um arquivo de relatório (.docx ou .txt):
     1. Valida colaborador e formato.
     2. Extrai texto puro.
     3. Audita e extrai respostas via IA (Gemini).
@@ -115,8 +137,8 @@ def process_docx_upload(
     if not meta:
         return {"status": "error", "message": f"Colaborador '{emp_key}' não encontrado no sistema."}
 
-    # 1. Extração de texto
-    ok, doc_text = extract_text_from_docx_bytes(file_bytes)
+    # 1. Extração de texto (suporta .docx e .txt)
+    ok, doc_text = extract_text_from_file_bytes(file_bytes, original_filename)
     if not ok:
         return {"status": "error", "message": doc_text}
 
@@ -195,9 +217,10 @@ def process_docx_upload(
     except Exception as ex:
         logger.error("Erro ao registrar docx_filename no banco: %s", ex)
 
+    ext_label = "TXT" if stored_filename.lower().endswith(".txt") else "DOCX"
     return {
         "status": "success",
-        "message": f"Relatório DOCX de {meta['name']} auditado e entregue com sucesso!",
+        "message": f"Relatório ({ext_label}) de {meta['name']} auditado e entregue com sucesso!",
         "employee_name": meta["name"],
         "employee_key": emp_key,
         "total_respostas": total_resp,

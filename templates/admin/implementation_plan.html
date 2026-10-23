@@ -176,14 +176,17 @@
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith('.docx')) {
-      alert('Por favor, selecione um arquivo Word válido com extensão .docx.');
+    const lowerName = file.name.toLowerCase();
+    const isDocx = lowerName.endsWith('.docx');
+    const isTxt = lowerName.endsWith('.txt');
+    if (!isDocx && !isTxt) {
+      alert('Por favor, selecione um arquivo válido (.docx ou .txt).');
       event.target.value = '';
       return;
     }
 
     this.isSyncingDoc = true;
-    this.syncingStatusTitle = 'Processando Relatório DOCX';
+    this.syncingStatusTitle = isTxt ? 'Processando Relatório TXT' : 'Processando Relatório DOCX';
     this.syncingStatusDesc = `Lendo o arquivo '${file.name}', extraindo texto e auditando com IA...`;
 
     const formData = new FormData();
