@@ -228,6 +228,8 @@ def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = 
                     item["specs_json"] = json.loads(item["specs_json"])
                 except Exception:
                     item["specs_json"] = {}
+            if isinstance(item.get("specs_json"), dict):
+                item["specs_json"] = {k: v for k, v in item["specs_json"].items() if "preço" not in k.lower() and "preco" not in k.lower()}
             else:
                 item["specs_json"] = {}
             items.append(item)
@@ -258,6 +260,8 @@ def get_atacado_item_by_id_or_slug(identifier: Any) -> Optional[Dict[str, Any]]:
                 item["specs_json"] = json.loads(item["specs_json"])
             except Exception:
                 item["specs_json"] = {}
+        if isinstance(item.get("specs_json"), dict):
+            item["specs_json"] = {k: v for k, v in item["specs_json"].items() if "preço" not in k.lower() and "preco" not in k.lower()}
         else:
             item["specs_json"] = {}
         return item
@@ -547,9 +551,10 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 except Exception:
                     specs_obj = {}
 
-            specs_obj["Preço Atacado À Vista"] = f"R$ {price_atacado:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if price_atacado > 0 else "Sob consulta"
-            if price_atacado_plus > 0:
-                specs_obj["Preço Atacado Plus"] = f"R$ {price_atacado_plus:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            # Remove chaves de preço das especificações técnicas (preço exibido apenas no topo)
+            specs_obj.pop("Preço Atacado À Vista", None)
+            specs_obj.pop("Preço Atacado Plus", None)
+            specs_obj.pop("Preço Plus", None)
             if pinfo.get("peso"):
                 specs_obj["Peso Embalado"] = pinfo["peso"]
             if pinfo.get("dimensoes"):

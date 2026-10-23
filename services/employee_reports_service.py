@@ -401,6 +401,7 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "questions": q_list,
             "history": get_employee_history(key),
             "google_doc_url": (rep.get("google_doc_url") if rep else None) or doc_links_map.get(key, {}).get("google_doc_url", ""),
+            "docx_filename": (rep.get("docx_filename") if rep else None) or "",
             "uses_google_doc": (key != "fauzer"),
         })
 

@@ -8,53 +8,27 @@ Diretoria e Gerência (Jam, Geysa, Fauzer, Suporte) possuem visão de dashboard,
 from __future__ import annotations
 
 import logging
-from flask import (
-    Blueprint,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from routes.helpers import audit, current_user, login_required
-from services.employee_reports_data import (
-    get_reporting_employee_meta,
-    is_admin_viewer,
-)
+from services.employee_reports_data import get_reporting_employee_meta, is_admin_viewer
 from services.employee_reports_service import (
-    ensure_reports_schema,
-    get_all_cycles,
-    get_cycle_submissions_summary,
-    get_employee_report,
-    get_monday_consolidation_briefing,
-    get_or_create_current_cycle,
-    save_or_submit_report,
-    update_cycle_deadline,
+    ensure_reports_schema, get_all_cycles, get_cycle_submissions_summary,
+    get_employee_report, get_monday_consolidation_briefing,
+    get_or_create_current_cycle, save_or_submit_report, update_cycle_deadline,
 )
-from services.implementation_plan_data import (
-    get_departments_data,
-    get_team_members_data,
-)
+from services.implementation_plan_data import get_departments_data, get_team_members_data
 from services.implementation_plan_service import (
-    ensure_implementation_plan_schema,
-    get_all_implementation_phases,
-    get_implementation_summary,
+    ensure_implementation_plan_schema, get_all_implementation_phases, get_implementation_summary,
 )
 from services.employee_doc_importer_service import (
-    get_all_doc_links,
-    save_doc_link,
-    sync_single_employee_report,
-    sync_all_configured_docs,
+    get_all_doc_links, save_doc_link, sync_single_employee_report, sync_all_configured_docs,
 )
 from services.internal_analysis_service import (
-    ensure_internal_analysis_schema,
-    get_internal_analysis,
-    save_or_init_internal_analysis,
-    generate_ai_internal_analysis,
-    seed_demo_simulation_cycle,
+    ensure_internal_analysis_schema, get_internal_analysis, save_or_init_internal_analysis,
+    generate_ai_internal_analysis, seed_demo_simulation_cycle,
 )
+from services.employee_docx_importer_service import find_docx_file, process_docx_upload
 
 logger = logging.getLogger(__name__)
 
@@ -467,4 +441,56 @@ def api_simular_dados_analise_interna():
     analysis = seed_demo_simulation_cycle(cycle_id)
     audit("plano.demo_seeded", f"Dados de simulação do Ciclo {cycle_id} carregados por {username}")
     return jsonify({"status": "success", "message": "🧪 Respostas simuladas e Análise Interna geradas com sucesso para teste!", "analysis": analysis})
+
+
+@implementation_plan_bp.route("/admin/plano/api/upload-docx", methods=["POST"])
+@login_required
+def api_upload_docx():
+    """Recebe upload de relatório Word (.docx) de um colaborador e extrai respostas via IA."""
+    me = current_user()
+    username = (me.get("username") or "").lower().strip()
+    role = (me.get("role") or "").lower().strip()
+    if not is_admin_viewer(username, role):
+        return jsonify({"error": "Acesso negado"}), 403
+
+    cycle_id = request.form.get("cycle_id", type=int) or 0
+    emp_key = (request.form.get("employee_key") or "").lower().strip()
+    force = request.form.get("force", "").lower() in ("true", "1")
+    file = request.files.get("file")
+
+    if cycle_id <= 0 or not emp_key or not file:
+        return jsonify({"status": "error", "message": "Ciclo, colaborador ou arquivo ausente."}), 400
+
+    file_bytes = file.read()
+    result = process_docx_upload(
+        cycle_id=cycle_id,
+        employee_key=emp_key,
+        file_bytes=file_bytes,
+        original_filename=file.filename or f"{emp_key}.docx",
+        user_id=me.get("id"),
+        force=force,
+    )
+    if result.get("status") == "success":
+        audit("plano.docx_uploaded", f"Relatório .docx de {emp_key} enviado por {username}")
+    return jsonify(result)
+
+
+@implementation_plan_bp.route("/admin/plano/download-docx", methods=["GET"])
+@login_required
+def download_docx():
+    """Disponibiliza o download do arquivo DOCX original submetido."""
+    me = current_user()
+    username = (me.get("username") or "").lower().strip()
+    role = (me.get("role") or "").lower().strip()
+    if not is_admin_viewer(username, role):
+        return jsonify({"error": "Acesso negado"}), 403
+
+    filename = request.args.get("file", "").strip()
+    cycle_code = request.args.get("cycle_code", "").strip()
+    target_path = find_docx_file(cycle_code, filename)
+    if not target_path or not target_path.exists():
+        return jsonify({"status": "error", "message": "Arquivo DOCX não encontrado."}), 404
+
+    return send_file(str(target_path), as_attachment=True, download_name=target_path.name)
+
 

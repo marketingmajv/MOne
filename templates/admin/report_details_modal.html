@@ -1,0 +1,176 @@
+{#
+  M-One Implementation Plan - Modais de Prazo e Detalhes do Relatório
+  templates/admin/report_details_modal.html
+  Conformidade estrita de UX/UI: Teleporte Alpine, Dark Theme e Geometria Precisa.
+#}
+
+<!-- ===================================================================== -->
+<!-- MODAL: ALTERAR PRAZO DO CICLO                                         -->
+<!-- ===================================================================== -->
+<template x-teleport="body">
+  <div x-show="showDeadlineModal" 
+       x-cloak 
+       class="plano-modal-backdrop"
+       :style="showDeadlineModal ? 'display: flex !important;' : 'display: none !important;'"
+       @click.self="showDeadlineModal = false"
+       @keydown.escape.window="showDeadlineModal = false">
+    <div class="panel" 
+         style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">
+          Alterar Prazo Oficial de Entrega
+        </h3>
+        <button type="button" class="modal-close-btn" @click="showDeadlineModal = false" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <p class="muted" style="font-size: 0.82rem; margin-bottom: 20px; line-height: 1.45;">
+        Ajuste o horário limite para os colaboradores submeterem seus relatórios do {{ cycle.title }}.
+      </p>
+
+      <form action="{{ url_for('implementation_plan.update_deadline') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">
+            Nova Data e Hora Limite:
+          </label>
+          <input type="datetime-local" 
+                 name="deadline" 
+                 required
+                 value="{{ cycle.deadline|string|replace(' ', 'T') if cycle.deadline else '' }}"
+                 class="form-input"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); font-size: 0.9rem; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn" style="background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line);" @click="showDeadlineModal = false">
+            Cancelar
+          </button>
+          <button type="submit" class="btn primary" style="font-weight: 800; cursor: pointer;">
+            Salvar Novo Prazo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<!-- ===================================================================== -->
+<!-- MODAL: VISUALIZAR RESPOSTAS DO COLABORADOR                            -->
+<!-- ===================================================================== -->
+<template x-teleport="body">
+  <div x-show="showReportModal" 
+       x-cloak 
+       class="plano-modal-backdrop"
+       :style="showReportModal ? 'display: flex !important;' : 'display: none !important;'"
+       @click.self="showReportModal = false"
+       @keydown.escape.window="showReportModal = false">
+    <div class="plano-modal-box">
+      
+      <template x-if="currentEmployee">
+        <div style="display: flex; flex-direction: column; max-height: 88vh; width: 100%; overflow: hidden;">
+          <!-- Header Fixo do Modal -->
+          <div class="plano-modal-header">
+            <div>
+              <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);" x-text="'Relatório de ' + currentEmployee.name"></h3>
+              <small class="muted" style="font-size: 0.82rem;" x-text="currentEmployee.role_title + ' • ' + currentEmployee.area"></small>
+            </div>
+            <button type="button" 
+                    class="modal-close-btn" 
+                    @click="showReportModal = false"
+                    aria-label="Fechar visualização">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Corpo Rolável do Modal -->
+          <div class="plano-modal-body">
+            <!-- Seletor de Histórico de Semanas se o funcionário tiver mais de 1 relatório -->
+            <div x-show="currentEmployee.history && currentEmployee.history.length > 1" style="margin-bottom: 16px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <small style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em;">
+                  📅 Histórico de Relatórios deste Colaborador (<span x-text="currentEmployee.history ? currentEmployee.history.length : 1"></span> Semanas):
+                </small>
+                <small class="muted" style="font-size: 0.72rem;">Clique para alternar entre as semanas</small>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <template x-for="h in (currentEmployee.history || [])" :key="h.cycle_id">
+                  <button type="button" 
+                          class="btn" 
+                          :style="(activeReportData && activeReportData.cycle_id === h.cycle_id) ? 'background: #e5a93b; color: #000; font-weight: 800; font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: none;' : 'background: var(--panel); color: var(--text); font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);'"
+                          @click="selectedHistoryCycleId = h.cycle_id">
+                    <span x-text="h.cycle_code"></span>
+                    <span style="font-size: 0.7rem; opacity: 0.85;" x-text="' (' + (h.submitted_at_fmt ? h.submitted_at_fmt.split(' ')[0] : 'Pendente') + ')'"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Status e Data do Relatório Selecionado -->
+            <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <span class="badge" :class="activeReportData ? (activeReportData.status === 'submitted_on_time' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30') : ''" x-text="activeReportData ? (activeReportData.cycle_title + ' • ' + (activeReportData.status === 'submitted_on_time' ? '✅ Enviado no Prazo' : '⚠️ ' + activeReportData.status)) : ''"></span>
+              <small class="muted" x-text="activeReportData && activeReportData.submitted_at_fmt ? 'Enviado em: ' + activeReportData.submitted_at_fmt : (currentEmployee.submitted_at ? 'Enviado em: ' + currentEmployee.submitted_at : 'Ainda não submetido')"></small>
+            </div>
+
+            <!-- Respostas organizadas por pergunta oficial da cartilha -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <template x-for="q in (activeReportData ? (activeReportData.questions || []) : (currentEmployee.questions || []))" :key="q.id">
+                <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
+                  <div style="font-size: 0.78rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;" x-text="q.label"></div>
+                  <div x-show="q.help" style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 8px; font-style: italic;" x-text="q.help"></div>
+                  <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="q.answer || '(Pendente de preenchimento)'"></div>
+                </div>
+              </template>
+              
+              <div x-show="!activeReportData || !activeReportData.questions || !activeReportData.questions.length" class="muted" style="text-align: center; padding: 24px; font-size: 0.88rem;">
+                Nenhuma resposta enviada até o momento.
+              </div>
+            </div>
+          </div>
+
+          <!-- Rodapé Fixo do Modal -->
+          <div class="plano-modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <a :href="currentEmployee.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.35); color: #25d366; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                <span>💬</span>
+                <span>Chamar no WhatsApp</span>
+              </a>
+              <template x-if="currentEmployee.uses_google_doc && docLinksData[currentEmployee.key] && docLinksData[currentEmployee.key].google_doc_url">
+                <a :href="docLinksData[currentEmployee.key].google_doc_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: #38bdf8; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>📄</span>
+                  <span>Abrir Google Doc</span>
+                </a>
+              </template>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- Botão Subir DOCX -->
+              <label class="btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-weight: 700; font-size: 0.82rem; padding: 8px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                <span>📤</span>
+                <span>Subir DOCX</span>
+                <input type="file" accept=".docx" style="display: none;" @change="handleDocxSelected($event, currentEmployee.key)">
+              </label>
+
+              <!-- Botão Baixar DOCX se já enviado -->
+              <template x-if="activeReportData && activeReportData.docx_filename">
+                <a :href="'/admin/plano/download-docx?file=' + activeReportData.docx_filename + '&cycle_code=' + activeReportData.cycle_code" target="_blank" class="btn" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>📥</span>
+                  <span>Baixar DOCX</span>
+                </a>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </div>
+  </div>
+</template>

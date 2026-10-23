@@ -97,6 +97,127 @@
       this.syncEmployeeDoc(this.mismatchData.employee_key, true);
     }
   },
+  async saveAndResyncMismatch() {
+    const input = document.getElementById('mismatch-corrected-url');
+    const newUrl = input ? input.value.trim() : '';
+    if (!newUrl) {
+      alert('Informe a URL correta do Google Doc.');
+      return;
+    }
+    const empKey = this.mismatchData.employee_key;
+    if (!empKey) {
+      alert('Chave do colaborador não identificada.');
+      return;
+    }
+
+    this.showMismatchModal = false;
+    this.isSyncingDoc = true;
+    this.syncingStatusTitle = 'Atualizando Link & Ressincronizando';
+    this.syncingStatusDesc = 'Salvando o novo link oficial e extraindo respostas com IA...';
+
+    try {
+      const resSave = await fetch('/admin/plano/api/doc-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_key: empKey, google_doc_url: newUrl })
+      });
+      const saveResult = await resSave.json();
+      if (saveResult.status !== 'success') {
+        this.isSyncingDoc = false;
+        alert('Erro ao salvar novo link: ' + (saveResult.message || 'Falha'));
+        return;
+      }
+      this.docLinksData = saveResult.links || this.docLinksData;
+
+      const resSync = await fetch('/admin/plano/api/sync-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cycle_id: this.currentCycleId, employee_key: empKey, custom_url: newUrl, force: false })
+      });
+      const syncResult = await resSync.json();
+      this.isSyncingDoc = false;
+
+      if (syncResult.status === 'blank') {
+        alert('ℹ️ Link atualizado! ' + syncResult.message);
+        window.location.reload();
+      } else if (syncResult.status === 'mismatch') {
+        this.mismatchData = syncResult;
+        this.showMismatchModal = true;
+      } else if (syncResult.status === 'success') {
+        alert('✅ ' + syncResult.message);
+        window.location.reload();
+      } else {
+        alert('❌ ' + (syncResult.message || 'Erro ao sincronizar documento.'));
+      }
+    } catch(err) {
+      this.isSyncingDoc = false;
+      alert('Erro na operação: ' + err);
+    }
+  },
+  triggerDocxUpload(employeeKey) {
+    const el = document.getElementById('docx-file-input-' + employeeKey);
+    if (el) {
+      el.click();
+    } else {
+      const globalInput = document.getElementById('docx-file-input-global');
+      if (globalInput) {
+        globalInput.dataset.empKey = employeeKey;
+        globalInput.click();
+      }
+    }
+  },
+  async handleDocxSelected(event, specificKey = null) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const empKey = specificKey || event.target.dataset.empKey;
+    if (!empKey) {
+      alert('Colaborador não identificado para upload.');
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      alert('Por favor, selecione um arquivo Word válido com extensão .docx.');
+      event.target.value = '';
+      return;
+    }
+
+    this.isSyncingDoc = true;
+    this.syncingStatusTitle = 'Processando Relatório DOCX';
+    this.syncingStatusDesc = `Lendo o arquivo '${file.name}', extraindo texto e auditando com IA...`;
+
+    const formData = new FormData();
+    formData.append('cycle_id', this.currentCycleId);
+    formData.append('employee_key', empKey);
+    formData.append('file', file);
+    formData.append('force', 'false');
+
+    try {
+      const res = await fetch('/admin/plano/api/upload-docx', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      this.isSyncingDoc = false;
+      event.target.value = '';
+
+      if (data.status === 'blank') {
+        alert('ℹ️ ' + data.message);
+      } else if (data.status === 'mismatch') {
+        this.mismatchData = data;
+        this.showMismatchModal = true;
+      } else if (data.status === 'success') {
+        alert('✅ ' + data.message);
+        window.location.reload();
+      } else {
+        alert('❌ ' + (data.message || 'Erro ao processar arquivo DOCX.'));
+      }
+    } catch(err) {
+      this.isSyncingDoc = false;
+      event.target.value = '';
+      alert('Falha no upload do DOCX: ' + err);
+    }
+  },
   async syncAllDocs() {
     if (!confirm('Deseja iniciar a sincronização automática de todos os Google Docs com IA?')) return;
     this.isSyncingDoc = true;
@@ -301,144 +422,8 @@
     </style>
 
     <!-- ===================================================================== -->
-    <!-- MODAL: ALTERAR PRAZO DO CICLO                                         -->
-    <!-- ===================================================================== -->
-    <template x-teleport="body">
-      <div x-show="showDeadlineModal" 
-           x-cloak 
-           class="plano-modal-backdrop"
-           :style="showDeadlineModal ? 'display: flex !important;' : 'display: none !important;'"
-           @click.self="showDeadlineModal = false"
-           @keydown.escape.window="showDeadlineModal = false">
-        <div class="panel" 
-             style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
-            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">
-              Alterar Prazo Oficial de Entrega
-            </h3>
-            <button type="button" class="btn" style="padding: 4px 10px; font-size: 0.85rem; background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line); border-radius: 6px;" @click="showDeadlineModal = false">
-              ✕
-            </button>
-          </div>
-          <p class="muted" style="font-size: 0.82rem; margin-bottom: 20px; line-height: 1.45;">
-            Ajuste o horário limite para os colaboradores submeterem seus relatórios do {{ cycle.title }}.
-          </p>
-
-          <form action="{{ url_for('implementation_plan.update_deadline') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
-
-            <div style="margin-bottom: 18px;">
-              <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">
-                Nova Data e Hora Limite:
-              </label>
-              <input type="datetime-local" 
-                     name="deadline" 
-                     required
-                     value="{{ cycle.deadline|string|replace(' ', 'T') if cycle.deadline else '' }}"
-                     style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); font-size: 0.9rem; box-sizing: border-box;">
-            </div>
-
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-              <button type="button" class="btn" style="background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line);" @click="showDeadlineModal = false">
-                Cancelar
-              </button>
-              <button type="submit" class="btn" style="background: #e5a93b; color: #000; font-weight: 800; border: none; cursor: pointer;">
-                Salvar Novo Prazo
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </template>
-
-    <!-- ===================================================================== -->
-    <!-- MODAL: VISUALIZAR RESPOSTAS DO COLABORADOR                            -->
-    <!-- ===================================================================== -->
-    <template x-teleport="body">
-      <div x-show="showReportModal" 
-           x-cloak 
-           class="plano-modal-backdrop"
-           :style="showReportModal ? 'display: flex !important;' : 'display: none !important;'"
-           @click.self="showReportModal = false"
-           @keydown.escape.window="showReportModal = false">
-        <div class="plano-modal-box">
-          
-          <template x-if="currentEmployee">
-            <div style="display: flex; flex-direction: column; max-height: 88vh; width: 100%; overflow: hidden;">
-              <!-- Header Fixo do Modal -->
-              <div class="plano-modal-header">
-                <div>
-                  <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);" x-text="'Relatório de ' + currentEmployee.name"></h3>
-                  <small class="muted" style="font-size: 0.82rem;" x-text="currentEmployee.role_title + ' • ' + currentEmployee.area"></small>
-                </div>
-                <button type="button" 
-                        class="btn" 
-                        style="padding: 6px 14px; font-size: 0.82rem; background: var(--panel2); color: var(--text); border-radius: 8px; cursor: pointer; border: 1px solid var(--line); font-weight: 700;" 
-                        @click="showReportModal = false"
-                        title="Fechar visualização">
-                  ✕ Fechar
-                </button>
-              </div>
-
-              <!-- Corpo Rolável do Modal -->
-              <div class="plano-modal-body">
-                <!-- Seletor de Histórico de Semanas se o funcionário tiver mais de 1 relatório -->
-                <div x-show="currentEmployee.history && currentEmployee.history.length > 1" style="margin-bottom: 16px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <small style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em;">
-                      📅 Histórico de Relatórios deste Colaborador (<span x-text="currentEmployee.history ? currentEmployee.history.length : 1"></span> Semanas):
-                    </small>
-                    <small class="muted" style="font-size: 0.72rem;">Clique para alternar entre as semanas</small>
-                  </div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <template x-for="h in (currentEmployee.history || [])" :key="h.cycle_id">
-                      <button type="button" 
-                              class="btn" 
-                              :style="(activeReportData && activeReportData.cycle_id === h.cycle_id) ? 'background: #e5a93b; color: #000; font-weight: 800; font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: none;' : 'background: var(--panel); color: var(--text); font-size: 0.76rem; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);'"
-                              @click="selectedHistoryCycleId = h.cycle_id">
-                        <span x-text="h.cycle_code"></span>
-                        <span style="font-size: 0.7rem; opacity: 0.85;" x-text="' (' + (h.submitted_at_fmt ? h.submitted_at_fmt.split(' ')[0] : 'Pendente') + ')'"></span>
-                      </button>
-                    </template>
-                  </div>
-                </div>
-
-                <!-- Status e Data do Relatório Selecionado -->
-                <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                  <span class="badge" :class="activeReportData ? (activeReportData.status === 'submitted_on_time' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30') : ''" x-text="activeReportData ? (activeReportData.cycle_title + ' • ' + (activeReportData.status === 'submitted_on_time' ? '✅ Enviado no Prazo' : '⚠️ ' + activeReportData.status)) : ''"></span>
-                  <small class="muted" x-text="activeReportData && activeReportData.submitted_at_fmt ? 'Enviado em: ' + activeReportData.submitted_at_fmt : (currentEmployee.submitted_at ? 'Enviado em: ' + currentEmployee.submitted_at : 'Ainda não submetido')"></small>
-                </div>
-
-                <!-- Respostas organizadas por pergunta oficial da cartilha -->
-                <div style="display: flex; flex-direction: column; gap: 14px;">
-                  <template x-for="q in (activeReportData ? (activeReportData.questions || []) : (currentEmployee.questions || []))" :key="q.id">
-                    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
-                      <div style="font-size: 0.78rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;" x-text="q.label"></div>
-                      <div x-show="q.help" style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 8px; font-style: italic;" x-text="q.help"></div>
-                      <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="q.answer || '(Pendente de preenchimento)'"></div>
-                    </div>
-                  </template>
-                  
-                  <div x-show="!activeReportData || !activeReportData.questions || !activeReportData.questions.length" class="muted" style="text-align: center; padding: 24px; font-size: 0.88rem;">
-                    Nenhuma resposta enviada até o momento.
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rodapé Fixo do Modal -->
-              <div class="plano-modal-footer" style="display: flex; justify-content: flex-start; align-items: center;">
-                <a :href="currentEmployee.whatsapp_url" target="_blank" rel="noopener noreferrer" class="btn" style="background: #25d366; color: #fff; font-weight: 700; font-size: 0.82rem; text-decoration: none; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                  <span>💬</span>
-                  <span>Chamar no WhatsApp</span>
-                </a>
-              </div>
-            </div>
-          </template>
-
-        </div>
-      </div>
-    </template>
+    <!-- Modais de Prazo e Detalhes do Relatório -->
+    {% include "admin/report_details_modal.html" %}
 
     <!-- Modais de Sincronização Google Docs e IA -->
     {% include "admin/doc_sync_modals.html" %}

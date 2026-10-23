@@ -327,7 +327,7 @@
                 <h3>Ficha Técnica & Cores em Estoque</h3>
                 <div class="specs-table">
                   <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                    <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices'">
+                    <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco')">
                       <span class="spec-k" x-text="key"></span>
                       <span class="spec-v" x-text="val"></span>
                     </div>
