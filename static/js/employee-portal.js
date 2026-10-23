@@ -6,12 +6,14 @@
 
 function employeePortal() {
   const cfg = window.__PORTAL_CONFIG__ || {};
+  const isFauzer = Boolean(cfg.isFauzer);
   return {
     currentTab: 'form',
     cycleId: cfg.cycleId,
     employeeKey: cfg.employeeKey,
     deadlineIso: cfg.deadlineIso,
-    isEditable: cfg.isEditable,
+    isFauzer: isFauzer,
+    isEditable: isFauzer ? true : Boolean(cfg.isEditable),
     csrfToken: cfg.csrfToken || '',
     answers: cfg.answers || {},
     reportStatus: cfg.reportStatus || 'draft',

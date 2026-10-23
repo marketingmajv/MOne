@@ -45,7 +45,7 @@
         <div>
           <strong style="color: #10b981; font-size: 0.95rem; display: block;">Relatório Oficial Enviado no Prazo!</strong>
           <span style="color: var(--text-dim); font-size: 0.82rem;">
-            Submetido com sucesso para a Diretoria em {{ rep.submitted_at|string if rep.submitted_at else 'data recente' }}. Você pode realizar ajustes até o encerramento do ciclo.
+            Submetido com sucesso para a Diretoria em {{ rep.submitted_at|string if rep.submitted_at else 'data recente' }}. {% if meta.key == 'fauzer' %}Você possui permissão de edição contínua sem travas de prazo.{% else %}Você pode realizar ajustes até o encerramento do ciclo.{% endif %}
           </span>
         </div>
       </div>

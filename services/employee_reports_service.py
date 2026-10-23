@@ -247,10 +247,11 @@ def save_or_submit_report(
                 except Exception:
                     deadline_dt = now
 
-            if now > deadline_dt:
-                status = "submitted_late"
-            else:
+            is_fauzer = employee_key.lower().strip() == "fauzer"
+            if is_fauzer or now <= deadline_dt:
                 status = "submitted_on_time"
+            else:
+                status = "submitted_late"
             submitted_at = now if pg else now.strftime("%Y-%m-%d %H:%M:%S")
 
         # Verifica se já existe registro
@@ -263,7 +264,10 @@ def save_or_submit_report(
         if existing:
             # Se já estava submetido e é rascunho, preserva a submissão original
             final_submitted_at = submitted_at if submitted_at else existing.get("submitted_at")
-            final_status = status if not is_draft else ("draft" if not existing.get("submitted_at") else "submitted_on_time")
+            if is_fauzer and not is_draft:
+                final_status = "submitted_on_time"
+            else:
+                final_status = status if not is_draft else ("draft" if not existing.get("submitted_at") else "submitted_on_time")
 
             up_sql = f"""
                 UPDATE maj_employee_reports

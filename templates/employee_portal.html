@@ -9,6 +9,7 @@
     employeeKey: "{{ meta.key }}",
     deadlineIso: "{{ deadline_iso }}",
     isEditable: {{ 'true' if is_editable else 'false' }},
+    isFauzer: {{ 'true' if is_fauzer else 'false' }},
     csrfToken: "{{ csrf_token() }}",
     answers: {{ report.answers|tojson|safe if (report and report.answers) else '{}' }},
     reportStatus: "{{ report.status if report else 'draft' }}",
@@ -42,8 +43,13 @@
       <!-- Card do Prazo & Contagem Regressiva Viva -->
       <div style="min-width: 280px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;" :style="timeRemaining.isExpired ? 'color: #f43f5e;' : (timeRemaining.isWarning ? 'color: #f59e0b;' : 'color: #10b981;')">
-            <span x-text="timeRemaining.isExpired ? '🔴 Prazo Encerrado' : (timeRemaining.isWarning ? '🟡 Reta Final' : '🟢 Prazo de Entrega')"></span>
+          <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;" :style="timeRemaining.isExpired ? (isFauzer ? 'color: #38bdf8;' : 'color: #f43f5e;') : (timeRemaining.isWarning ? 'color: #f59e0b;' : 'color: #10b981;')">
+            <template x-if="isFauzer && timeRemaining.isExpired">
+              <span>🔓 Pós-Prazo Liberado</span>
+            </template>
+            <template x-if="!isFauzer || !timeRemaining.isExpired">
+              <span x-text="timeRemaining.isExpired ? '🔴 Prazo Encerrado' : (timeRemaining.isWarning ? '🟡 Reta Final' : '🟢 Prazo de Entrega')"></span>
+            </template>
           </span>
           <span style="font-size: 12px; color: var(--muted);">Sexta 18:00</span>
         </div>
@@ -175,6 +181,20 @@
         </button>
       </div>
     </div>
+
+    <!-- Banner informativo exclusivo para Fauzer (Diretoria / Curadoria) -->
+    {% if is_fauzer %}
+    <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 18px;">🔓</span>
+        <div>
+          <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">Acesso Especial Diretoria (Fauzer):</span>
+          <span style="font-size: 12px; color: var(--muted); margin-left: 6px;">Trava pós-prazo desativada. Formulário 100% liberado para edição contínua e salvamento a qualquer momento.</span>
+        </div>
+      </div>
+      <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 11px; font-weight: 700;">Edição Livre</span>
+    </div>
+    {% endif %}
 
     <!-- Banner se o relatório já estiver travado para edição -->
     <div x-show="!isEditable" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">

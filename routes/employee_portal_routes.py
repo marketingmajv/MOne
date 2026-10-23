@@ -72,12 +72,16 @@ def meu_relatorio():
         except Exception:
             deadline_dt = datetime.now()
 
+    # O usuário Fauzer possui permissão de edição contínua sem travas de prazo ou protocolo
+    is_fauzer = (emp_key == "fauzer") or ((me.get("username") or "").strip().lower() == "fauzer")
+
     is_editable = True
     now = datetime.now()
-    if now > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
-        is_editable = False
-    if report.get("reviewed_at"):
-        is_editable = False
+    if not is_fauzer:
+        if now > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
+            is_editable = False
+        if report.get("reviewed_at"):
+            is_editable = False
 
     return render_template(
         "employee_portal.html",
@@ -87,6 +91,7 @@ def meu_relatorio():
         report=report,
         profile=profile,
         is_editable=is_editable,
+        is_fauzer=is_fauzer,
         now_iso=now.isoformat(),
         deadline_iso=deadline_dt.isoformat() if hasattr(deadline_dt, "isoformat") else str(deadline_dt),
     )
@@ -104,9 +109,26 @@ def api_meu_relatorio_status():
     report = get_employee_report(current_cycle["id"], emp_key)
     profile = get_employee_gamification_profile(emp_key)
 
+    is_fauzer = (emp_key == "fauzer") or ((me.get("username") or "").strip().lower() == "fauzer")
+    is_editable = True
+    if not is_fauzer:
+        deadline_val = current_cycle.get("deadline")
+        deadline_dt = deadline_val
+        if isinstance(deadline_val, str):
+            try:
+                deadline_dt = datetime.fromisoformat(deadline_val.replace("T", " "))
+            except Exception:
+                deadline_dt = datetime.now()
+        if datetime.now() > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
+            is_editable = False
+        if report.get("reviewed_at"):
+            is_editable = False
+
     return jsonify({
         "status": "success",
         "employee_key": emp_key,
+        "is_fauzer": is_fauzer,
+        "is_editable": is_editable,
         "cycle": current_cycle,
         "meta": meta,
         "report": report,
