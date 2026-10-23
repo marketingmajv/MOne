@@ -37,10 +37,12 @@ from routes.botconversa_routes import botconversa_bp
 from routes.custom_catalog_routes import custom_catalog_bp
 from routes.prospector_routes import prospector_bp
 from routes.maintenance_routes import maintenance_bp
+from routes.employee_portal_routes import employee_portal_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
     dashboard_bp,
+    employee_portal_bp,
     sales_bp,
     stock_bp,
     freight_bp,

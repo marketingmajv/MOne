@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Relatório Semanal | M-One{% endblock %}
+
+{% block content %}
+<script>
+  window.__PORTAL_CONFIG__ = {
+    cycleId: {{ cycle.id if cycle else 0 }},
+    employeeKey: "{{ meta.key }}",
+    deadlineIso: "{{ deadline_iso }}",
+    isEditable: {{ 'true' if is_editable else 'false' }},
+    csrfToken: "{{ csrf_token() }}",
+    answers: {{ report.answers|tojson|safe if (report and report.answers) else '{}' }},
+    reportStatus: "{{ report.status if report else 'draft' }}",
+    pointsAwarded: {{ report.points_awarded if (report and report.points_awarded) else 0 }},
+    reviewedAt: "{{ report.reviewed_at if (report and report.reviewed_at) else '' }}",
+    reviewedBy: "{{ report.reviewed_by if (report and report.reviewed_by) else '' }}",
+    profile: {{ profile|tojson|safe if profile else '{}' }}
+  };
+</script>
+
+<div class="content-body" x-data="employeePortal()" x-init="initPortal()">
+  <!-- Top Hero: Boas-vindas, Cargo e Cronômetro Vivo -->
+  <div class="panel mb-4" style="background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(30, 41, 59, 0.85)); border: 1px solid var(--line); border-radius: 16px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-weight: 700; padding: 4px 10px; border-radius: 8px;">
+            {{ meta.badge or 'COLABORADOR' }}
+          </span>
+          <span style="color: var(--muted); font-size: 13px;">{{ cycle.title }} ({{ cycle.cycle_code }})</span>
+        </div>
+        <h1 style="font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.5px;">
+          Olá, {{ meta.name }}! 👋
+        </h1>
+        <p style="color: var(--muted); font-size: 14px; margin: 0; max-width: 650px; line-height: 1.5;">
+          {{ meta.role_title }} • {{ meta.area }}.<br>
+          <span style="color: #94a3b8; font-size: 13px;">{{ meta.instructions }}</span>
+        </p>
+      </div>
+
+      <!-- Card do Prazo & Contagem Regressiva Viva -->
+      <div style="min-width: 280px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;" :style="timeRemaining.isExpired ? 'color: #f43f5e;' : (timeRemaining.isWarning ? 'color: #f59e0b;' : 'color: #10b981;')">
+            <span x-text="timeRemaining.isExpired ? '🔴 Prazo Encerrado' : (timeRemaining.isWarning ? '🟡 Reta Final' : '🟢 Prazo de Entrega')"></span>
+          </span>
+          <span style="font-size: 12px; color: var(--muted);">Sexta 18:00</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: baseline;">
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.days">0</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">dias</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.hours">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">hrs</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.minutes">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">min</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #38bdf8;" x-text="timeRemaining.seconds">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">seg</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gamificação: Placar Pessoal, Streak e Linha do Tempo -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Card Nível & Pontos -->
+    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sua Pontuação Total</span>
+        <span style="font-size: 18px;" x-text="profile.badge_info ? profile.badge_info.badge.split(' ')[0] : '🥉'">🥉</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-size: 28px; font-weight: 900; color: #e5a93b;" x-text="(profile.total_points || 0) + ' pts'">0 pts</span>
+        <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.3); font-size: 11px; font-weight: 700;" x-text="profile.badge_info ? profile.badge_info.tier : 'Bronze MAJ'">Bronze MAJ</span>
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;" x-text="'+100 pts por cada relatório enviado rigorosamente no prazo.'"></p>
+    </div>
+
+    <!-- Card Sequência Ativa (Streak) -->
+    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sequência Pontual (Streak)</span>
+        <span style="font-size: 18px;">🔥</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span style="font-size: 28px; font-weight: 900; color: #f97316;" x-text="(profile.current_streak || 0) + ' semanas'">0 semanas</span>
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">
+        <span x-show="profile.current_streak > 0">Consistência impecável! Continue pontual para multiplicar seus pontos.</span>
+        <span x-show="!profile.current_streak || profile.current_streak === 0">Envie esta semana no prazo para iniciar sua chama de pontualidade.</span>
+      </p>
+    </div>
+
+    <!-- Card Status do Relatório Atual -->
+    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Relatório Desta Semana</span>
+        <span style="font-size: 14px;" :title="currentReportStatus">
+          <template x-if="reportStatus === 'submitted_on_time'">
+            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">✓ Protocolado</span>
+          </template>
+          <template x-if="reportStatus === 'submitted_late'">
+            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">Atrasado</span>
+          </template>
+          <template x-if="reportStatus === 'draft' || !reportStatus">
+            <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">Rascunho</span>
+          </template>
+        </span>
+      </div>
+      <div style="font-size: 13px; color: var(--text); line-height: 1.4;">
+        <template x-if="reviewedAt">
+          <div style="color: #38bdf8; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>👁️ Recebido & Analisado pela Diretoria</span>
+          </div>
+        </template>
+        <template x-if="!reviewedAt && (reportStatus === 'submitted_on_time' || reportStatus === 'submitted_late')">
+          <div style="color: #10b981; font-weight: 600;">
+            <span>📬 Protocolado! Aguardando reunião da diretoria.</span>
+          </div>
+        </template>
+        <template x-if="reportStatus === 'draft' || !reportStatus">
+          <div style="color: var(--muted);">
+            <span>📝 Preencha abaixo e clique em 'Enviar Relatório Oficial'.</span>
+          </div>
+        </template>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 6px;" x-text="autoSaveMessage"></div>
+    </div>
+  </div>
+
+  <!-- Abas: Preenchimento do Relatório vs Histórico Pessoal -->
+  <div style="display: flex; gap: 12px; border-bottom: 1px solid var(--line); margin-bottom: 24px;">
+    <button @click="currentTab = 'form'" class="btn" :style="currentTab === 'form' ? 'background: var(--panel2); color: #fff; border-bottom: 2px solid #38bdf8; font-weight: 700;' : 'background: transparent; color: var(--muted); border: none; font-weight: 500;'" style="padding: 10px 18px; border-radius: 8px 8px 0 0;">
+      ✍️ Preenchimento da Semana
+    </button>
+    <button @click="currentTab = 'history'" class="btn" :style="currentTab === 'history' ? 'background: var(--panel2); color: #fff; border-bottom: 2px solid #38bdf8; font-weight: 700;' : 'background: transparent; color: var(--muted); border: none; font-weight: 500;'" style="padding: 10px 18px; border-radius: 8px 8px 0 0;">
+      📊 Meu Histórico & Linha do Tempo (<span x-text="profile.submitted_count || 0"></span>)
+    </button>
+  </div>
+
+  <!-- ABA 1: FORMULÁRIO DE PREENCHIMENTO -->
+  <div x-show="currentTab === 'form'" x-transition>
+    <!-- Ações Superiores: Subir Arquivo e Auto-save -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 700; color: #fff;">Critérios do seu cargo:</span>
+        <span style="font-size: 12px; color: var(--muted);">({{ meta.questions|length }} perguntas obrigatórias)</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Input de arquivo invisível -->
+        <input type="file" id="portal-file-input" accept=".docx,.txt" style="display: none;" @change="handleFileUpload($event)">
+        <button type="button" class="btn" @click="document.getElementById('portal-file-input').click()" :disabled="!isEditable || isUploading" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.08); font-size: 12px; display: flex; align-items: center; gap: 6px;">
+          <span>📎 Subir Relatório via Arquivo (.docx / .txt)</span>
+        </button>
+
+        <button type="button" class="btn" @click="saveDraft(false)" :disabled="isSaving" style="font-size: 12px;">
+          <span x-text="isSaving ? 'Salvando...' : '💾 Salvar Rascunho'"></span>
+        </button>
+
+        <button type="button" class="btn primary" @click="submitOfficial()" :disabled="!isEditable || isSaving" style="font-size: 12px; font-weight: 700;">
+          <span>🚀 Enviar Relatório Oficial</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Banner se o relatório já estiver travado para edição -->
+    <div x-show="!isEditable" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 20px;">🔒</span>
+      <div>
+        <div style="font-weight: 700; color: #fff; font-size: 13px;">Relatório congelado para edição</div>
+        <div style="font-size: 12px; color: var(--muted);">Este relatório já foi protocolado oficialmente ou analisado pela Diretoria. Para qualquer ajuste pontual de urgência, contate a Gerência.</div>
+      </div>
+    </div>
+
+    <!-- Lista de Perguntas Dinâmicas da Cartilha -->
+    <form @submit.prevent="submitOfficial()" style="display: flex; flex-direction: column; gap: 20px;">
+      {% for q in meta.questions %}
+      <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <label for="q_{{ q.id }}" style="font-size: 15px; font-weight: 700; color: var(--text); display: block;">
+            {{ q.label }}
+          </label>
+          <span style="font-size: 11px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+            Item {{ loop.index }} de {{ loop.length }}
+          </span>
+        </div>
+
+        {% if q.help %}
+        <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">
+          💡 {{ q.help }}
+        </p>
+        {% endif %}
+
+        <textarea
+          id="q_{{ q.id }}"
+          class="form-input"
+          rows="4"
+          placeholder="{{ q.placeholder }}"
+          x-model="answers['{{ q.id }}']"
+          @input="debounceAutoSave()"
+          :disabled="!isEditable"
+          style="width: 100%; font-size: 13px; line-height: 1.5; resize: vertical; border-radius: 10px;"
+        ></textarea>
+      </div>
+      {% endfor %}
+
+      <!-- Botões de Ação Inferiores -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 10px; padding-bottom: 40px;">
+        <span style="font-size: 12px; color: var(--muted);" x-text="autoSaveMessage"></span>
+        <button type="button" class="btn" @click="saveDraft(false)" :disabled="isSaving">
+          <span x-text="isSaving ? 'Salvando...' : '💾 Salvar Rascunho'"></span>
+        </button>
+        <button type="submit" class="btn primary" :disabled="!isEditable || isSaving" style="font-size: 14px; font-weight: 700; padding: 10px 24px;">
+          <span>🚀 Enviar Relatório Oficial (+100 pts)</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ABA 2: MEU HISTÓRICO & LINHA DO TEMPO DE RECEBIMENTO -->
+  <div x-show="currentTab === 'history'" x-transition>
+    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h2 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 4px 0;">
+            Linha do Tempo de Entregas & Confirmação da Diretoria
+          </h2>
+          <p style="font-size: 12px; color: var(--muted); margin: 0;">
+            Acompanhe a chegada e confirmação dos seus relatórios pelos moderadores (Jam, Geysa e Diretoria).
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <span style="font-size: 12px; color: var(--muted);">Taxa de Pontualidade:</span>
+          <span style="font-size: 16px; font-weight: 800; color: #10b981; margin-left: 6px;" x-text="(profile.on_time_pct || 0) + '%'">100%</span>
+        </div>
+      </div>
+
+      <!-- Lista de Ciclos com Linha do Tempo em 3 Estágios -->
+      <template x-if="profile.timeline && profile.timeline.length > 0">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <template x-for="item in profile.timeline" :key="item.cycle_id">
+            <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                <div>
+                  <span style="font-size: 15px; font-weight: 800; color: #fff;" x-text="item.cycle_title"></span>
+                  <span style="font-size: 12px; color: var(--muted); margin-left: 8px;" x-text="'(' + item.cycle_code + ')'"></span>
+                  <template x-if="item.docx_filename">
+                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 11px; margin-left: 8px;">
+                      📎 Arquivo Vinculado
+                    </span>
+                  </template>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-weight: 700; font-size: 12px;" x-text="'+' + item.points + ' pts'"></span>
+                  <span class="badge" :style="item.status === 'submitted_on_time' ? 'background: rgba(16, 185, 129, 0.2); color: #10b981;' : (item.status === 'submitted_late' ? 'background: rgba(245, 158, 11, 0.2); color: #f59e0b;' : 'background: rgba(148, 163, 184, 0.2); color: #94a3b8;')">
+                    <span x-text="item.status === 'submitted_on_time' ? '✓ No Prazo' : (item.status === 'submitted_late' ? 'Atrasado' : 'Rascunho')"></span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Linha do Tempo Visual de 3 Estágios -->
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px;">
+                <!-- Estágio 1 -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
+                       :style="item.stage >= 1 ? 'background: #38bdf8; color: #000;' : 'background: #334155; color: #94a3b8;'">
+                    1
+                  </div>
+                  <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #fff;">1. Rascunho Salvo</div>
+                    <div style="font-size: 10px; color: var(--muted);">Respostas registradas</div>
+                  </div>
+                </div>
+
+                <!-- Estágio 2 -->
+                <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
+                       :style="item.stage >= 2 ? 'background: #10b981; color: #000;' : 'background: #334155; color: #94a3b8;'">
+                    2
+                  </div>
+                  <div>
+                    <div style="font-size: 12px; font-weight: 700;" :style="item.stage >= 2 ? 'color: #10b981;' : 'color: var(--muted);'">2. Protocolado</div>
+                    <div style="font-size: 10px; color: var(--muted);" x-text="item.submitted_at_fmt ? item.submitted_at_fmt : 'Aguardando envio'"></div>
+                  </div>
+                </div>
+
+                <!-- Estágio 3 -->
+                <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
+                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
+                       :style="item.stage >= 3 ? 'background: #8b5cf6; color: #fff;' : 'background: #334155; color: #94a3b8;'">
+                    3
+                  </div>
+                  <div>
+                    <div style="font-size: 12px; font-weight: 700;" :style="item.stage >= 3 ? 'color: #c084fc;' : 'color: var(--muted);'">3. Recebido pela Diretoria</div>
+                    <div style="font-size: 10px; color: var(--muted);" x-text="item.reviewed_at_fmt ? item.reviewed_at_fmt + ' (' + item.reviewed_by + ')' : 'Em fila de análise'"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <template x-if="!profile.timeline || profile.timeline.length === 0">
+        <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+          <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text);">Nenhum histórico anterior registrado ainda</div>
+          <div style="font-size: 12px;">Ao enviar seu relatório desta semana, seu protocolo oficial e linha do tempo ficarão registrados aqui.</div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Modal de Feedback de Upload com IA -->
+  <template x-teleport="body">
+    <div class="modal" :class="{ 'show': isUploading }" style="display: flex; align-items: center; justify-content: center; z-index: 9999;" x-show="isUploading">
+      <div class="modal-card" style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; max-width: 440px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.7);">
+        <div style="font-size: 36px; margin-bottom: 12px;">⚡</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">Auditoria com IA em Andamento</h3>
+        <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
+          Lendo o arquivo, extraindo respostas e populando as perguntas do seu cargo...
+        </p>
+        <div style="height: 4px; background: rgba(56, 189, 248, 0.2); border-radius: 4px; overflow: hidden; position: relative;">
+          <div style="height: 100%; width: 50%; background: #38bdf8; position: absolute; animation: indeterminate 1.5s infinite linear;"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<style>
+  @keyframes indeterminate {
+    0% { left: -50%; width: 50%; }
+    50% { left: 25%; width: 75%; }
+    100% { left: 100%; width: 50%; }
+  }
+</style>
+
+<script src="{{ url_for('static', filename='js/employee-portal.js') }}"></script>
+{% endblock %}
