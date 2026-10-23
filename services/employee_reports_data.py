@@ -258,58 +258,65 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
         "key": "leo",
         "username": "leo",
         "name": "Léo",
-        "role_title": "Vendas & Atendimento Comercial",
-        "area": "Comercial (Vendas & Atendimento)",
-        "badge": "VENDAS & ATENDIMENTO",
-        "badge_color": "emerald",
+        "role_title": "Pós-Venda & Atendimento ao Cliente",
+        "area": "Pós-Venda & Triagem de Oficina",
+        "badge": "PÓS-VENDA",
+        "badge_color": "cyan",
         "phone": "5527999990005",
         "deadline_day": "Sexta-feira",
         "deadline_time": "18:00",
         "instructions": (
-            "Relatório semanal de vendas, atendimentos realizados, clientes em negociação e relacionamento comercial."
+            "Relatório semanal de pós-venda: controle de OS, atrasos de serviços, clientes sensíveis, "
+            "orçamentos, triagem de garantia e interface com a oficina técnica."
         ),
         "questions": [
             {
-                "id": "atendimentos_realizados",
-                "label": "1. Volume de Atendimentos Realizados na Semana",
-                "placeholder": "Quantidade de clientes atendidos (loja física, WhatsApp, telefone ou redes sociais)...",
-                "help": "Métricas de fluxo e contato comercial na semana."
+                "id": "os_da_semana",
+                "label": "1. OS da Semana (Abertas, Concluídas e Pendentes)",
+                "placeholder": "Quantidade de OS abertas, concluídas e ainda pendentes na oficina...",
+                "help": "Métricas semanais de entrada e saída de ordens de serviço."
             },
             {
-                "id": "vendas_fechadas",
-                "label": "2. Vendas Concluídas e Pedidos Faturados",
-                "placeholder": "Modelos vendidos, valores aproximados, canais (varejo/atacado) e pedidos fechados...",
-                "help": "Destaque dos principais negócios fechados no período."
+                "id": "atrasos_servicos",
+                "label": "2. Atrasos em Serviços, Motivos e Atualização dos Clientes",
+                "placeholder": "Serviços atrasados, motivos de cada atraso e se os clientes foram devidamente avisados...",
+                "help": "Garante alinhamento prévio e combate frustração do cliente."
             },
             {
-                "id": "modelos_mais_procurados",
-                "label": "3. Modelos Mais Procurados e Perguntas Recorrentes",
-                "placeholder": "Quais modelos de motos ou autopropelidos tiveram maior procura e interesse dos clientes...",
-                "help": "Ajuda a alinhar o estoque e as campanhas comerciais."
+                "id": "clientes_sensiveis",
+                "label": "3. Clientes Sensíveis, Reclamações ou Riscos de Conflito",
+                "placeholder": "Relate clientes insatisfeitos, veículos com histórico complexo ou risco de conflito...",
+                "help": "Alerta a gerência para atuação preventiva e blindagem da marca."
             },
             {
-                "id": "objecoes_e_desistencias",
-                "label": "4. Principais Objeções e Motivos de Não Fechamento",
-                "placeholder": "Por que alguns clientes não fecharam? (preço, parcelamento, prazo de entrega, falta de modelo)...",
-                "help": "Identifica gargalos e objeções na conversão comercial."
+                "id": "orcamentos_oficina",
+                "label": "4. Orçamentos da Oficina (Aguardando Aprovação e Aprovados)",
+                "placeholder": "Orçamentos aguardando resposta do cliente e aprovados ainda em execução...",
+                "help": "Visibilidade do fluxo financeiro e operacional da oficina."
             },
             {
-                "id": "clientes_em_negociacao",
-                "label": "5. Clientes em Negociação Quente (Follow-up)",
-                "placeholder": "Negociações avançadas previstas para fechamento nos próximos dias...",
-                "help": "Previsibilidade de vendas para a reunião de gestão de segunda-feira."
+                "id": "garantia_triagem",
+                "label": "5. Casos de Garantia / Triagem Encaminhados ao Ricardo",
+                "placeholder": "Casos encaminhados à oficina para diagnóstico técnico e casos aguardando dados/vídeos...",
+                "help": "Léo realiza a triagem de dados; Ricardo executa o diagnóstico técnico."
             },
             {
-                "id": "suporte_pos_venda",
-                "label": "6. Atendimento de Suporte ao Cliente / Pós-Venda",
-                "placeholder": "Dúvidas atendidas, encaminhamentos para oficina e assistência rápida prestada aos clientes...",
-                "help": "Garante a qualidade contínua no relacionamento com o cliente."
+                "id": "concessoes_semana",
+                "label": "6. Concessões Utilizadas na Semana e Benefícios Concedidos",
+                "placeholder": "Concessões e benefícios concedidos a clientes, motivos e valores estimados...",
+                "help": "Alinhado aos limites financeiros autorizados pela diretoria."
             },
             {
-                "id": "sugestoes_comerciais",
-                "label": "7. Ocorrências Relevantes e Sugestões da Semana",
-                "placeholder": "Ideias práticas para alavancar vendas, campanhas ou melhorias no atendimento...",
-                "help": "Fatos relevantes para a diretoria na reunião de segunda-feira."
+                "id": "pagamentos_oficina",
+                "label": "7. Pagamentos da Oficina e Registros Pendentes",
+                "placeholder": "Pendências de pagamento de serviços, comprovantes ou quitações em aberto...",
+                "help": "Garante que nenhuma moto saia da oficina sem liquidação financeira."
+            },
+            {
+                "id": "pendencias_decisao",
+                "label": "8. Pendências que Precisam de Decisão da Diretoria",
+                "placeholder": "Casos atípicos, impasses ou concessões fora de alçada para pauta de segunda-feira...",
+                "help": "Prioridades executivas para deliberação de Jam e Geysa."
             }
         ]
     },
