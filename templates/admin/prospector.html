@@ -5,9 +5,10 @@
 {% block page_subtitle %}Máquina Automatizada de Descoberta, Qualificação e Abordagem Comercial B2B{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261020_v4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261023_v5">
 <script src="{{ url_for('static', filename='js/prospector-automacao.js') }}?v=20261020_v4"></script>
 <script src="{{ url_for('static', filename='js/module-maintenance.js') }}?v=20261022_v1"></script>
+<script src="{{ url_for('static', filename='js/prospector-columns.js') }}?v=20261023_v1"></script>
 <script src="{{ url_for('static', filename='js/prospector.js') }}?v=20261020_v4"></script>
 {% endblock %}
 
@@ -194,6 +195,39 @@
           {% if nicho_filtro != 'all' or classe_filtro != 'all' or status_filtro != 'all' or filtro_rapido != 'all' or termo_busca or apenas_wa %}
           <a href="{{ url_for('prospector.index', tab='capturados') }}" class="btn sm">Limpar</a>
           {% endif %}
+
+          <!-- Botão e Popover de Personalizar Colunas -->
+          <div class="columns-customizer-wrapper" x-data="{ openCols: false }" @click.outside="openCols = false">
+            <button type="button" class="btn sm btn-columns-toggle" @click="openCols = !openCols" title="Personalizar e Reordenar Colunas da Tabela">
+              <span>⚙️</span>
+              <span>Colunas</span>
+            </button>
+
+            <!-- Popover Suspenso de Colunas -->
+            <div x-show="openCols" x-cloak class="columns-popover" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
+              <div class="columns-popover-head">
+                <div class="columns-popover-title">
+                  <span>⚙️</span>
+                  <strong>Personalizar Colunas</strong>
+                </div>
+                <button type="button" class="columns-close-btn" @click="openCols = false" title="Fechar">✕</button>
+              </div>
+
+              <div class="columns-popover-hint">
+                <span>Arraste os títulos no cabeçalho (<strong>Drag & Drop</strong>) ou use os seletores abaixo:</span>
+              </div>
+
+              <!-- Lista Dinâmica de Colunas (renderizada por prospector-columns.js) -->
+              <div id="prospector-columns-list" class="columns-popover-list"></div>
+
+              <div class="columns-popover-footer">
+                <button type="button" id="btn-reset-prospector-columns" class="btn sm btn-reset-cols">
+                  <span>↺</span>
+                  <span>Voltar ao Original</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
 

@@ -53,6 +53,10 @@ prospector_bp = Blueprint("prospector", __name__)
 @prospector_bp.route("/admin/prospeccao/", methods=["GET"])
 @prospector_bp.route("/prospeccao", methods=["GET"])
 @prospector_bp.route("/prospeccao/", methods=["GET"])
+@prospector_bp.route("/admin/prospector", methods=["GET"])
+@prospector_bp.route("/admin/prospector/", methods=["GET"])
+@prospector_bp.route("/prospector", methods=["GET"])
+@prospector_bp.route("/prospector/", methods=["GET"])
 @login_required
 @roles_required("admin", "support", "sales")
 def index():

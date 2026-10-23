@@ -8,14 +8,14 @@
   <table class="leads-table">
     <thead>
       <tr>
-        <th style="width: 75px; text-align: center;">Classe</th>
-        <th style="min-width: 220px;">Empresa</th>
-        <th style="min-width: 170px;">Segmento & Praça</th>
-        <th style="min-width: 210px;">Contato Telefônico</th>
-        <th style="width: 110px; text-align: center;">Canais</th>
-        <th style="min-width: 200px;">Raio-X Comercial</th>
-        <th style="width: 130px;">Status</th>
-        <th style="width: 130px; text-align: right;">Ação</th>
+        <th data-col="classe" style="width: 75px; text-align: center;">Classe</th>
+        <th data-col="empresa" style="min-width: 220px;">Empresa</th>
+        <th data-col="segmento" style="min-width: 170px;">Segmento & Praça</th>
+        <th data-col="contato" style="min-width: 210px;">Contato Telefônico</th>
+        <th data-col="canais" style="width: 110px; text-align: center;">Canais</th>
+        <th data-col="raiox" style="min-width: 200px;">Raio-X Comercial</th>
+        <th data-col="status" style="width: 130px;">Status</th>
+        <th data-col="acoes" style="width: 130px; text-align: right;">Ação</th>
       </tr>
     </thead>
     <tbody>
@@ -23,7 +23,7 @@
         {% for l in leads %}
         <tr class="lead-row" id="lead-row-{{ l.id }}">
           <!-- 1. CLASSE & SCORE -->
-          <td style="text-align: center;">
+          <td data-col="classe" style="text-align: center;">
             <div class="score-badge badge-{{ l.classificacao|lower }}" title="Score de Qualificação Comercial: {{ l.score }}/100">
               <strong>{{ l.classificacao }}</strong>
               <span>{{ l.score }} pts</span>
@@ -31,7 +31,7 @@
           </td>
 
           <!-- 2. EMPRESA & DECISOR -->
-          <td>
+          <td data-col="empresa">
             <div class="company-cell">
               <strong class="company-name" title="{{ l.nome }}">{{ l.nome }}</strong>
               
@@ -55,7 +55,7 @@
           </td>
 
           <!-- 3. NICHO & PRAÇA -->
-          <td>
+          <td data-col="segmento">
             <div class="nicho-praça-cell">
               {% if 'moto' in l.nicho_slug %}
               <span class="nicho-tag moto" title="Revendas de Motos e Scooters">🛵 Revenda Motos</span>
@@ -75,7 +75,7 @@
           </td>
 
           <!-- 4. CONTATOS TELEFÔNICOS -->
-          <td>
+          <td data-col="contato">
             <div class="contact-telefonia-cell">
               {% if l.whatsapp %}
               <a href="https://wa.me/{{ l.whatsapp }}" target="_blank" class="phone-pill wa" title="Celular com WhatsApp Verificado (Clique para conversar)">
@@ -94,11 +94,11 @@
           </td>
 
           <!-- 5. CANAIS DIGITAIS -->
-          <td style="text-align: center;">
+          <td data-col="canais" style="text-align: center;">
             <div class="channel-actions-cell">
               {% if l.site %}
               <a href="{{ l.site }}" target="_blank" class="ch-btn site" title="Acessar Site: {{ l.site }}">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </a>
               {% endif %}
 
@@ -128,7 +128,7 @@
           </td>
 
           <!-- 6. RAIO-X IA -->
-          <td>
+          <td data-col="raiox">
             <div class="raiox-cell" title="{{ l.resumo_ia or 'Empresa comercial de duas rodas e mobilidade.' }}">
               {% if l.porte_estimado %}
               <span class="porte-badge {{ l.porte_estimado|lower }}">{{ l.porte_estimado|capitalize }}</span>
@@ -138,7 +138,7 @@
           </td>
 
           <!-- 7. STATUS OPERACIONAL -->
-          <td>
+          <td data-col="status">
             {% if l.status_contato == 'prospectado' %}
             <div class="prospectado-cell">
               <span class="status-badge status-prospectado">💬 Abordado</span>
@@ -158,7 +158,7 @@
           </td>
 
           <!-- 8. AÇÃO PRINCIPAL -->
-          <td style="text-align: right;">
+          <td data-col="acoes" style="text-align: right;">
             {% if l.whatsapp %}
             <button type="button" class="btn-lead-action btn-wa-action" @click="abrirProspectar('{{ l.id }}')" title="Iniciar Abordagem Comercial via WhatsApp">
               <span>💬</span>
