@@ -198,9 +198,23 @@
     try {
       const res = await fetch('/admin/plano/api/upload-docx', {
         method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: formData
       });
-      const data = await res.json();
+
+      const contentType = res.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        if (res.status === 401 || res.status === 403 || text.includes('<!doctype') || text.includes('<html')) {
+          throw new Error('Sua sessão de login expirou ou você não possui permissão. Recarregue a página e faça login novamente.');
+        } else {
+          throw new Error(`Resposta inesperada do servidor (HTTP ${res.status}): ${text.substring(0, 120)}`);
+        }
+      }
+
       this.isSyncingDoc = false;
       event.target.value = '';
 
@@ -213,12 +227,12 @@
         alert('✅ ' + data.message);
         window.location.reload();
       } else {
-        alert('❌ ' + (data.message || 'Erro ao processar arquivo DOCX.'));
+        alert('❌ ' + (data.message || 'Erro ao processar arquivo.'));
       }
     } catch(err) {
       this.isSyncingDoc = false;
       event.target.value = '';
-      alert('Falha no upload do DOCX: ' + err);
+      alert('Falha no upload do relatório: ' + (err.message || err));
     }
   },
   async syncAllDocs() {

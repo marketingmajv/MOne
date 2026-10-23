@@ -14,7 +14,7 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
-from flask import flash, g, redirect, session, url_for
+from flask import flash, g, jsonify, redirect, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -128,6 +128,8 @@ def login_required(fn):
     @wraps(fn)
     def inner(*args, **kwargs):
         if not session.get("user_id"):
+            if "/api/" in request.path or request.path.startswith("/api/") or request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"status": "error", "message": "Sessão expirada. Por favor, recarregue a página e faça login novamente."}), 401
             return redirect(url_for("login"))
         return fn(*args, **kwargs)
     return inner

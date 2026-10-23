@@ -27,7 +27,14 @@ from services.employee_reports_service import _is_pg, ensure_reports_schema, sav
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DOCX_UPLOADS_DIR = BASE_DIR / "uploads" / "relatorios_docx"
+if os.environ.get("VERCEL"):
+    DOCX_UPLOADS_DIR = Path("/tmp/uploads/relatorios_docx")
+else:
+    DOCX_UPLOADS_DIR = BASE_DIR / "uploads" / "relatorios_docx"
+try:
+    DOCX_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 
 def ensure_docx_schema() -> None:
@@ -111,7 +118,15 @@ def get_docx_storage_path(cycle_code: str, employee_key: str, original_filename:
     final_filename = f"{safe_cycle}_{safe_key}_{timestamp}{ext}"
 
     target_dir = DOCX_UPLOADS_DIR / safe_cycle
-    target_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as ex:
+        logger.warning("Falha ao criar diretório %s (usando fallback /tmp): %s", target_dir, ex)
+        target_dir = Path("/tmp")
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
     return target_dir / final_filename, final_filename
 
 
@@ -131,108 +146,112 @@ def process_docx_upload(
     4. Se divergente e não forçado, aciona o modal de divergência.
     5. Se válido, salva o arquivo físico e grava o relatório no M-One.
     """
-    ensure_docx_schema()
-    emp_key = employee_key.lower().strip()
-    meta = get_reporting_employee_meta(emp_key)
-    if not meta:
-        return {"status": "error", "message": f"Colaborador '{emp_key}' não encontrado no sistema."}
-
-    # 1. Extração de texto (suporta .docx e .txt)
-    ok, doc_text = extract_text_from_file_bytes(file_bytes, original_filename)
-    if not ok:
-        return {"status": "error", "message": doc_text}
-
-    # 2. Informações do ciclo
-    cycle_info = None
-    cycle_code = f"ciclo_{cycle_id}"
     try:
-        with db() as conn:
-            ph = "%s" if _is_pg(conn) else "?"
-            cur_c = conn.execute(f"SELECT * FROM maj_report_cycles WHERE id = {ph} LIMIT 1", (cycle_id,))
-            c_row = cur_c.fetchone()
-            if c_row:
-                cycle_info = dict(c_row)
-                cycle_code = cycle_info.get("cycle_code") or cycle_code
-    except Exception as e:
-        logger.debug("Erro ao obter ciclo: %s", e)
+        ensure_docx_schema()
+        emp_key = employee_key.lower().strip()
+        meta = get_reporting_employee_meta(emp_key)
+        if not meta:
+            return {"status": "error", "message": f"Colaborador '{emp_key}' não encontrado no sistema."}
 
-    # 3. Processamento via IA
-    ai_result = extract_answers_with_gemini(doc_text, meta, cycle_info=cycle_info)
-    valido = ai_result.get("valido", True)
-    motivo = ai_result.get("motivo_incompatibilidade") or ""
-    respostas = ai_result.get("respostas") or {}
+        # 1. Extração de texto (suporta .docx e .txt)
+        ok, doc_text = extract_text_from_file_bytes(file_bytes, original_filename)
+        if not ok:
+            return {"status": "error", "message": doc_text}
 
-    # Bloqueio preventivo se não for válido e force=False
-    if not valido and not force:
+        # 2. Informações do ciclo
+        cycle_info = None
+        cycle_code = f"ciclo_{cycle_id}"
+        try:
+            with db() as conn:
+                ph = "%s" if _is_pg(conn) else "?"
+                cur_c = conn.execute(f"SELECT * FROM maj_report_cycles WHERE id = {ph} LIMIT 1", (cycle_id,))
+                c_row = cur_c.fetchone()
+                if c_row:
+                    cycle_info = dict(c_row)
+                    cycle_code = cycle_info.get("cycle_code") or cycle_code
+        except Exception as e:
+            logger.debug("Erro ao obter ciclo: %s", e)
+
+        # 3. Processamento via IA
+        ai_result = extract_answers_with_gemini(doc_text, meta, cycle_info=cycle_info)
+        valido = ai_result.get("valido", True)
+        motivo = ai_result.get("motivo_incompatibilidade") or ""
+        respostas = ai_result.get("respostas") or {}
+
+        # Bloqueio preventivo se não for válido e force=False
+        if not valido and not force:
+            return {
+                "status": "mismatch",
+                "message": f"A IA detectou que este arquivo não corresponde ao cargo de {meta['name']}!",
+                "motivo": motivo,
+                "colaborador_detectado": ai_result.get("colaborador_detectado", "Desconhecido"),
+                "employee_name": meta["name"],
+                "employee_key": emp_key,
+                "source_type": "docx",
+                "sample": doc_text[:400]
+            }
+
+        is_blank = ai_result.get("documento_em_branco", False)
+        total_resp = sum(1 for v in respostas.values() if (v or "").strip() and not str(v).startswith("[Não preenchido"))
+
+        if is_blank or total_resp == 0:
+            return {
+                "status": "blank",
+                "message": f"O arquivo de {meta['name']} está no modelo padrão em branco (sem respostas preenchidas).",
+                "employee_name": meta["name"],
+                "employee_key": emp_key,
+                "total_respostas": 0,
+                "source_type": "docx"
+            }
+
+        # 4. Salva arquivo físico original para auditoria e download (resiliente a read-only filesystem)
+        stored_filename = original_filename or f"{emp_key}.docx"
+        try:
+            target_path, stored_filename = get_docx_storage_path(cycle_code, emp_key, original_filename)
+            target_path.write_bytes(file_bytes)
+        except Exception as ex:
+            logger.warning("Falha ao gravar arquivo no disco local/efêmero: %s", ex)
+
+        # 5. Salva respostas no banco de dados M-One
+        saved = save_or_submit_report(
+            cycle_id=cycle_id,
+            user_id=user_id,
+            employee_key=emp_key,
+            answers=respostas,
+            is_draft=False
+        )
+
+        # 6. Grava nome do arquivo no relatório
+        try:
+            with db() as conn:
+                ph = "%s" if _is_pg(conn) else "?"
+                conn.execute(
+                    f"UPDATE maj_employee_reports SET docx_filename = {ph} WHERE cycle_id = {ph} AND employee_key = {ph}",
+                    (stored_filename, cycle_id, emp_key)
+                )
+                conn.commit()
+        except Exception as ex:
+            logger.error("Erro ao registrar docx_filename no banco: %s", ex)
+
+        ext_label = "TXT" if stored_filename.lower().endswith(".txt") else "DOCX"
         return {
-            "status": "mismatch",
-            "message": f"A IA detectou que este arquivo DOCX não corresponde ao cargo de {meta['name']}!",
-            "motivo": motivo,
-            "colaborador_detectado": ai_result.get("colaborador_detectado", "Desconhecido"),
+            "status": "success",
+            "message": f"Relatório ({ext_label}) de {meta['name']} auditado e entregue com sucesso!",
             "employee_name": meta["name"],
             "employee_key": emp_key,
-            "source_type": "docx",
-            "sample": doc_text[:400]
+            "total_respostas": total_resp,
+            "resumo_doc": ai_result.get("resumo_doc", ""),
+            "docx_filename": stored_filename,
+            "is_forced": force and not valido,
+            "report_id": saved.get("id")
         }
-
-    is_blank = ai_result.get("documento_em_branco", False)
-    total_resp = sum(1 for v in respostas.values() if (v or "").strip() and not str(v).startswith("[Não preenchido"))
-
-    if is_blank or total_resp == 0:
-        return {
-            "status": "blank",
-            "message": f"O arquivo DOCX de {meta['name']} está no modelo padrão em branco (sem respostas preenchidas).",
-            "employee_name": meta["name"],
-            "employee_key": emp_key,
-            "total_respostas": 0,
-            "source_type": "docx"
-        }
-
-    # 4. Salva arquivo físico original para auditoria e download
-    target_path, stored_filename = get_docx_storage_path(cycle_code, emp_key, original_filename)
-    try:
-        target_path.write_bytes(file_bytes)
     except Exception as ex:
-        logger.error("Falha ao gravar arquivo DOCX físico: %s", ex)
-        stored_filename = original_filename or "documento.docx"
-
-    # 5. Salva respostas no banco de dados M-One
-    saved = save_or_submit_report(
-        cycle_id=cycle_id,
-        user_id=user_id,
-        employee_key=emp_key,
-        answers=respostas,
-        is_draft=False
-    )
-
-    # 6. Grava nome do arquivo DOCX no relatório
-    try:
-        with db() as conn:
-            ph = "%s" if _is_pg(conn) else "?"
-            conn.execute(
-                f"UPDATE maj_employee_reports SET docx_filename = {ph} WHERE cycle_id = {ph} AND employee_key = {ph}",
-                (stored_filename, cycle_id, emp_key)
-            )
-            conn.commit()
-    except Exception as ex:
-        logger.error("Erro ao registrar docx_filename no banco: %s", ex)
-
-    ext_label = "TXT" if stored_filename.lower().endswith(".txt") else "DOCX"
-    return {
-        "status": "success",
-        "message": f"Relatório ({ext_label}) de {meta['name']} auditado e entregue com sucesso!",
-        "employee_name": meta["name"],
-        "employee_key": emp_key,
-        "total_respostas": total_resp,
-        "resumo_doc": ai_result.get("resumo_doc", ""),
-        "docx_filename": stored_filename,
-        "is_forced": force and not valido,
-        "report_id": saved.get("id")
-    }
+        logger.error("Erro crítico ao processar upload de documento: %s", ex, exc_info=True)
+        return {"status": "error", "message": f"Erro interno ao processar relatório: {str(ex)}"}
 
 
 def find_docx_file(cycle_code: str, filename: str) -> Optional[Path]:
-    """Localiza o arquivo .docx físico para download."""
+    """Localiza o arquivo .docx ou .txt físico para download."""
     if not filename:
         return None
     safe_filename = os.path.basename(filename)
@@ -241,8 +260,17 @@ def find_docx_file(cycle_code: str, filename: str) -> Optional[Path]:
     candidates = [
         DOCX_UPLOADS_DIR / safe_cycle / safe_filename,
         DOCX_UPLOADS_DIR / safe_filename,
+        Path("/tmp/uploads/relatorios_docx") / safe_cycle / safe_filename,
+        Path("/tmp/uploads/relatorios_docx") / safe_filename,
+        Path("/tmp") / safe_filename,
+        BASE_DIR / "uploads" / "relatorios_docx" / safe_cycle / safe_filename,
+        BASE_DIR / "uploads" / "relatorios_docx" / safe_filename,
     ]
     for c in candidates:
-        if c.exists() and c.is_file():
-            return c
+        try:
+            if c.exists() and c.is_file():
+                return c
+        except Exception:
+            pass
     return None
+
