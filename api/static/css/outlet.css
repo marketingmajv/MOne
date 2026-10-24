@@ -968,6 +968,27 @@ body {
   font-weight: 900;
   color: #fff;
   margin: 4px 0 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modal-color-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(229, 169, 59, 0.18) 0%, rgba(0, 204, 136, 0.18) 100%);
+  border: 1px solid var(--gold-primary, #e5a93b);
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 14px rgba(229, 169, 59, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  vertical-align: middle;
 }
 
 .modal-pricing-box {

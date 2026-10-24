@@ -307,7 +307,12 @@
                   <span class="modal-condition-tag" x-text="selectedItem.condition"></span>
                 </template>
               </div>
-              <h2 class="modal-title" x-text="selectedItem.name"></h2>
+              <h2 class="modal-title">
+                <span x-text="selectedItem.name"></span>
+                <template x-if="getActiveColorBadge()">
+                  <span class="modal-color-sticker" x-text="getActiveColorBadge()"></span>
+                </template>
+              </h2>
               
               <!-- Box de Preço e Simulador de Parcelas -->
               <div class="modal-pricing-box">
@@ -498,6 +503,22 @@
 
         selectColorObj(cp) {
           this.selectedColorObj = cp;
+        },
+
+        getActiveColorBadge() {
+          if (!this.selectedItem) return '';
+          if (this.selectedColorObj && this.selectedColorObj.colors) {
+            let c = this.selectedColorObj.colors;
+            if (c.toLowerCase().includes('cores padrão') || c.toLowerCase().includes('cores padrao')) {
+              return '🎨 Cores Padrão (Promoção)';
+            }
+            let clean = c.replace(/\s*\([^)]*\)\s*/g, '').trim();
+            return '🎨 ' + (clean || c);
+          }
+          if (this.selectedItem.color) {
+            return '🎨 ' + this.selectedItem.color;
+          }
+          return '';
         },
 
         getActivePrice() {
