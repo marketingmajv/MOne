@@ -38,25 +38,12 @@ MODEL_SPECS = {
             "Freios": "Disco hidráulico dianteiro e traseiro"
         },
         "badge": "MAIS VENDIDO",
-        "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"]
-    },
-    "MAX 12 - Carbon & Preta (Fora da Promoção)": {
-        "category": "Scooter Elétrica",
-        "description": "Unidades exclusivas da MAX 12 fora da tabela promocional padrão. Versões Carbono e Preta com acabamento premium e pronta entrega.",
-        "specs": {
-            "Motor": "1200W High Torque",
-            "Velocidade Máxima": "Até 45 km/h",
-            "Autonomia": "Até 45 km por recarga",
-            "Bateria": "Lítio 60V removível",
-            "Carga Máxima": "160 kg",
-            "Freios": "Disco hidráulico dianteiro e traseiro"
-        },
-        "badge": "FORA DA PROMOÇÃO",
         "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"],
         "color_prices": [
-            {"colors": "Preta Montada", "price": "R$ 8.900,00", "p12": "R$ 849,49", "p18": "R$ 588,15", "stock": 1},
-            {"colors": "Carbon Na Caixa", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1}
-        ]
+            {"colors": "Cores Padrão Promoção (Azul, Branca, Red)", "price": "R$ 7.990,00", "p12": "R$ 762,63", "p18": "R$ 528,02", "stock": 51},
+            {"colors": "Preta Montada (Fora da Promoção)", "price": "R$ 8.900,00", "p12": "R$ 849,49", "p18": "R$ 588,15", "stock": 1},
+            {"colors": "Carbon Na Caixa (Fora da Promoção)", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1},
+        ],
     },
     "X15 PRO": {
         "category": "Scooter Elétrica",
