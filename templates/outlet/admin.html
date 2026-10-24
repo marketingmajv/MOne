@@ -126,7 +126,8 @@
           <th>Categoria</th>
           <th>Preço Outlet</th>
           <th>Condição 12x / 18x</th>
-          <th style="text-align: center;">Estoque</th>
+          <th style="text-align: center;">Estoque Real</th>
+          <th style="text-align: center;">Se Zerado</th>
           <th style="text-align: center;">Status</th>
           <th style="text-align: right; padding-right: 24px; min-width: 120px;">Ações</th>
         </tr>
@@ -182,6 +183,15 @@
             <span class="badge {{ 'available' if item.stock_qty > 5 else 'warning' if item.stock_qty > 0 else 'muted' }}" style="font-weight: 700; padding: 4px 10px;">
               {{ item.stock_qty }} un
             </span>
+          </td>
+          <td style="text-align: center;">
+            <button type="button" 
+                    class="btn sm" 
+                    style="{{ 'background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 700;' if item.show_on_demand else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                    onclick="toggleOutletOnDemand({{ item.id }}, this)"
+                    title="Alternar entre Ocultar ou Exibir Sob Encomenda quando estoque for 0">
+              {{ '📦 Sob Encomenda' if item.show_on_demand else '🚫 Ocultar' }}
+            </button>
           </td>
           <td style="text-align: center;">
             <form action="{{ url_for('outlet.toggle_status', item_id=item.id) }}" method="POST" style="display: inline-block;">
@@ -264,6 +274,18 @@
           </div>
         </div>
 
+        <div style="margin-bottom: 12px; padding: 10px 14px; border: 1px solid rgba(229, 169, 59, 0.25); border-radius: 8px; background: rgba(229, 169, 59, 0.05); display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <label for="outlet_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
+              📦 Exibir como "Sob Encomenda" se estoque estiver zerado
+            </label>
+            <small class="muted" style="font-size: 0.72rem; display: block; margin-top: 2px;">
+              Se desmarcado, o modelo é automaticamente ocultado do catálogo público ao zerar o estoque.
+            </small>
+          </div>
+          <input type="checkbox" name="show_on_demand" id="outlet_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
+        </div>
+
         <div style="margin-bottom: 12px;">
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Cores e Variações</label>
           <input type="text" name="color" id="outlet_form_color" style="width: 100%;">
@@ -318,6 +340,7 @@
     document.getElementById('outlet_form_installment_12').value = '';
     document.getElementById('outlet_form_installment_18').value = '';
     document.getElementById('outlet_form_stock_qty').value = '1';
+    document.getElementById('outlet_form_show_on_demand').checked = false;
     document.getElementById('outlet_form_color').value = '';
     document.getElementById('outlet_form_description').value = '';
     CURRENT_GALLERY = [];
@@ -342,6 +365,7 @@
     document.getElementById('outlet_form_installment_12').value = (item.installment_12 !== null && item.installment_12 !== undefined) ? item.installment_12 : '';
     document.getElementById('outlet_form_installment_18').value = (item.installment_18 !== null && item.installment_18 !== undefined) ? item.installment_18 : '';
     document.getElementById('outlet_form_stock_qty').value = (item.stock_qty !== null && item.stock_qty !== undefined) ? item.stock_qty : 1;
+    document.getElementById('outlet_form_show_on_demand').checked = !!item.show_on_demand;
     document.getElementById('outlet_form_color').value = item.color || '';
     document.getElementById('outlet_form_description').value = item.description || '';
 
@@ -545,6 +569,37 @@
       reader.readAsDataURL(file);
     });
   }
+
+  async function toggleOutletOnDemand(itemId, btn) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const res = await fetch(`/admin/outlet/toggle-on-demand/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.show_on_demand) {
+          btn.textContent = '📦 Sob Encomenda';
+          btn.style.background = 'rgba(229, 169, 59, 0.15)';
+          btn.style.color = '#e5a93b';
+          btn.style.borderColor = 'rgba(229, 169, 59, 0.35)';
+        } else {
+          btn.textContent = '🚫 Ocultar';
+          btn.style.background = 'rgba(148, 163, 184, 0.1)';
+          btn.style.color = 'var(--muted)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao alternar disponibilidade sob encomenda:', err);
+    }
+  }
+  window.toggleOutletOnDemand = toggleOutletOnDemand;
 
   // Aliases para compatibilidade
   window.openNewOutletModal = openOutletNewModal;

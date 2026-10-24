@@ -67,6 +67,11 @@ def ensure_atacado_schema():
     with db() as conn:
         is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
         if is_pg:
+            try:
+                conn.execute("ALTER TABLE atacado_items ADD COLUMN IF NOT EXISTS show_on_demand BOOLEAN DEFAULT FALSE")
+                conn.commit()
+            except Exception as col_err:
+                logger.debug("Alter atacado_items pg warning: %s", col_err)
             statements = [
                 """CREATE TABLE IF NOT EXISTS atacado_items (
                     id SERIAL PRIMARY KEY,
@@ -90,6 +95,7 @@ def ensure_atacado_schema():
                     image_main TEXT,
                     images_gallery TEXT,
                     status VARCHAR(30) NOT NULL DEFAULT 'active',
+                    show_on_demand BOOLEAN DEFAULT FALSE,
                     sort_order INTEGER DEFAULT 0,
                     notes TEXT,
                     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -109,6 +115,11 @@ def ensure_atacado_schema():
                 except Exception as e:
                     logger.debug("Atacado Schema stmt error: %s", e)
         else:
+            try:
+                conn.execute("ALTER TABLE atacado_items ADD COLUMN show_on_demand BOOLEAN DEFAULT 0")
+                conn.commit()
+            except Exception:
+                pass
             schema_sql = """
             CREATE TABLE IF NOT EXISTS atacado_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,6 +143,7 @@ def ensure_atacado_schema():
                 image_main TEXT,
                 images_gallery TEXT,
                 status TEXT NOT NULL DEFAULT 'active',
+                show_on_demand BOOLEAN DEFAULT 0,
                 sort_order INTEGER DEFAULT 0,
                 notes TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -193,7 +205,7 @@ def set_atacado_setting(key: str, value: str):
         conn.commit()
 
 
-def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = None, only_available: bool = False) -> List[Dict[str, Any]]:
     ensure_atacado_schema()
     with db() as conn:
         is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
@@ -203,6 +215,9 @@ def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = 
         if status and status != "all":
             query += " AND status = ?"
             params.append(status)
+
+        if only_available:
+            query += " AND (stock_qty > 0 OR show_on_demand = TRUE)" if is_pg else " AND (stock_qty > 0 OR show_on_demand = 1)"
 
         if search:
             query += " AND (name ILIKE ? OR category ILIKE ? OR color ILIKE ?)" if is_pg else " AND (name LIKE ? OR category LIKE ? OR color LIKE ?)"
@@ -215,6 +230,7 @@ def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = 
         items = []
         for r in rows:
             item = dict(r)
+            item["show_on_demand"] = bool(item.get("show_on_demand"))
             if item.get("images_gallery") and isinstance(item["images_gallery"], str):
                 try:
                     item["images_gallery"] = json.loads(item["images_gallery"])
@@ -247,6 +263,7 @@ def get_atacado_item_by_id_or_slug(identifier: Any) -> Optional[Dict[str, Any]]:
         if not row:
             return None
         item = dict(row)
+        item["show_on_demand"] = bool(item.get("show_on_demand"))
         if item.get("images_gallery") and isinstance(item["images_gallery"], str):
             try:
                 item["images_gallery"] = json.loads(item["images_gallery"])
@@ -292,6 +309,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
 
         inst_text = data.get("installments_text") or f"12x de R$ {inst12:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stock_qty = int(data.get("stock_qty") or 0)
+        show_on_demand = bool(data.get("show_on_demand"))
         location = (data.get("location") or "GALPÃO M-ONE / GALPÃO MAJ").strip()
         badge = (data.get("badge") or "EXCLUSIVO CNPJ").strip()
         description = (data.get("description") or "").strip()
@@ -325,7 +343,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                 installment_12 = ?, installment_18 = ?, installments_text = ?,
                 stock_qty = ?, location = ?, badge = ?, specs_json = ?,
                 description = ?, image_main = ?, images_gallery = ?,
-                status = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                status = ?, show_on_demand = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """
             run_exec(
@@ -337,7 +355,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, sort_order, notes, item_id
+                    status, show_on_demand, sort_order, notes, item_id
                 )
             )
             conn.commit()
@@ -351,14 +369,14 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                 installment_12, installment_18, installments_text,
                 stock_qty, location, badge, specs_json,
                 description, image_main, images_gallery,
-                status, sort_order, notes
+                status, show_on_demand, sort_order, notes
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?
+                ?, ?, ?, ?
             )
             """
             if is_pg:
@@ -373,11 +391,24 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, sort_order, notes
+                    status, show_on_demand, sort_order, notes
                 )
             )
             conn.commit()
             return cur.lastrowid or 0
+
+
+def toggle_atacado_show_on_demand(item_id: int) -> bool:
+    ensure_atacado_schema()
+    with db() as conn:
+        row = run_exec(conn, "SELECT show_on_demand FROM atacado_items WHERE id = ?", (item_id,)).fetchone()
+        if not row:
+            return False
+        current = bool(row["show_on_demand"] if isinstance(row, dict) else row[0])
+        new_val = not current
+        run_exec(conn, "UPDATE atacado_items SET show_on_demand = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_val, item_id))
+        conn.commit()
+        return new_val
 
 
 def delete_atacado_item(item_id: int):
@@ -526,10 +557,10 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             p18 = pinfo.get("varejo_18x_parc") or (round((price_atacado * 1.1855) / 18, 2) if price_atacado > 0 else 0.0)
             p12_total = pinfo.get("varejo_12x") or (round(price_atacado * 1.1416, 2) if price_atacado > 0 else 0.0)
 
-            # Lista de cores combinadas com quantidades
+            # Lista de cores (sem expor unidades)
             colors_dict = sinfo["colors"]
             if colors_dict:
-                colors_list = [f"{c} ({q} un)" for c, q in colors_dict.items()]
+                colors_list = [f"{c}" for c in colors_dict.keys()]
                 colors_str = ", ".join(colors_list)
             else:
                 colors_str = "Cores sob consulta"
@@ -555,19 +586,22 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             specs_obj.pop("Preço Atacado À Vista", None)
             specs_obj.pop("Preço Atacado Plus", None)
             specs_obj.pop("Preço Plus", None)
+            specs_obj.pop("Disponibilidade em Estoque", None)
             if pinfo.get("peso"):
                 specs_obj["Peso Embalado"] = pinfo["peso"]
             if pinfo.get("dimensoes"):
                 specs_obj["Dimensões Embalagem"] = pinfo["dimensoes"]
 
-            specs_obj["Disponibilidade em Estoque"] = f"{total_qty} unidades"
+            specs_obj["Disponibilidade"] = "Pronta Entrega" if total_qty > 0 else "Sob Encomenda"
             specs_obj["Localização do Estoque"] = sources_str
-            specs_obj["Cores e Lotes"] = colors_str
+            specs_obj["Cores Disponíveis"] = colors_str
 
             # Verificar se produto já existe no banco atacado
-            existing = run_exec(conn, "SELECT id, image_main, images_gallery FROM atacado_items WHERE name = ?", (model,)).fetchone()
+            existing = run_exec(conn, "SELECT id, image_main, images_gallery, show_on_demand FROM atacado_items WHERE name = ?", (model,)).fetchone()
+            show_on_demand_val = False
             if existing:
                 e_dict = dict(existing)
+                show_on_demand_val = bool(e_dict.get("show_on_demand"))
                 if e_dict.get("image_main"):
                     image_main = e_dict["image_main"]
                 if e_dict.get("images_gallery") and str(e_dict["images_gallery"]).strip() not in ["[]", ""]:
@@ -585,13 +619,14 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 "installment_12": p12,
                 "installment_18": p18,
                 "stock_qty": total_qty,
+                "show_on_demand": show_on_demand_val,
                 "location": sources_str,
                 "badge": "VENDA ATACADO CNPJ",
                 "specs_json": specs_obj,
                 "description": f"Modelo {model} para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
                 "image_main": image_main,
                 "images_gallery": images_gallery,
-                "status": "active" if (total_qty > 0 or price_atacado > 0) else "inactive"
+                "status": "active" if (total_qty > 0 or show_on_demand_val or price_atacado > 0) else "inactive"
             }
 
             if existing:

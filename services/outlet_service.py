@@ -48,6 +48,11 @@ def ensure_outlet_schema():
                 chk = conn.execute("SELECT to_regclass('public.outlet_items');").fetchone()
                 reg = chk.get("to_regclass") if isinstance(chk, dict) else (chk[0] if chk else None)
                 if reg:
+                    try:
+                        conn.execute("ALTER TABLE outlet_items ADD COLUMN IF NOT EXISTS show_on_demand BOOLEAN DEFAULT FALSE")
+                        conn.commit()
+                    except Exception as col_err:
+                        logger.debug("Alter outlet_items pg warning: %s", col_err)
                     _outlet_schema_ensured = True
                     return
             except Exception:
@@ -74,6 +79,7 @@ def ensure_outlet_schema():
                     image_main TEXT,
                     images_gallery TEXT,
                     status VARCHAR(30) NOT NULL DEFAULT 'active',
+                    show_on_demand BOOLEAN DEFAULT FALSE,
                     sort_order INTEGER DEFAULT 0,
                     notes TEXT,
                     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -93,6 +99,11 @@ def ensure_outlet_schema():
                 except Exception as e:
                     logger.debug("Schema stmt error: %s", e)
         else:
+            try:
+                conn.execute("ALTER TABLE outlet_items ADD COLUMN show_on_demand BOOLEAN DEFAULT 0")
+                conn.commit()
+            except Exception:
+                pass
             schema_sql = """
             CREATE TABLE IF NOT EXISTS outlet_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,7 +206,7 @@ def set_outlet_setting(key: str, value: str):
         conn.commit()
 
 
-def get_all_outlet_items(status: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_all_outlet_items(status: Optional[str] = None, search: Optional[str] = None, only_available: bool = False) -> List[Dict[str, Any]]:
     ensure_outlet_schema()
     with db() as conn:
         is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
@@ -205,6 +216,9 @@ def get_all_outlet_items(status: Optional[str] = None, search: Optional[str] = N
         if status and status != "all":
             query += " AND status = ?"
             params.append(status)
+
+        if only_available:
+            query += " AND (stock_qty > 0 OR show_on_demand = TRUE)" if is_pg else " AND (stock_qty > 0 OR show_on_demand = 1)"
 
         if search:
             query += " AND (name ILIKE ? OR category ILIKE ? OR color ILIKE ?)" if is_pg else " AND (name LIKE ? OR category LIKE ? OR color LIKE ?)"
@@ -217,6 +231,7 @@ def get_all_outlet_items(status: Optional[str] = None, search: Optional[str] = N
         items = []
         for r in rows:
             item = dict(r)
+            item["show_on_demand"] = bool(item.get("show_on_demand"))
             if item.get("images_gallery") and isinstance(item["images_gallery"], str):
                 try:
                     item["images_gallery"] = json.loads(item["images_gallery"])
@@ -247,6 +262,7 @@ def get_outlet_item_by_id_or_slug(identifier: Any) -> Optional[Dict[str, Any]]:
         if not row:
             return None
         item = dict(row)
+        item["show_on_demand"] = bool(item.get("show_on_demand"))
         if item.get("images_gallery") and isinstance(item["images_gallery"], str):
             try:
                 item["images_gallery"] = json.loads(item["images_gallery"])
@@ -290,6 +306,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
 
         inst_text = data.get("installments_text") or f"12x de R$ {inst12:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stock_qty = int(data.get("stock_qty") or 0)
+        show_on_demand = bool(data.get("show_on_demand"))
         location = (data.get("location") or "GALPÃO MAJ").strip()
         badge = (data.get("badge") or "").strip()
         description = (data.get("description") or "").strip()
@@ -323,7 +340,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                 installment_12 = ?, installment_18 = ?, installments_text = ?,
                 stock_qty = ?, location = ?, badge = ?, specs_json = ?,
                 description = ?, image_main = ?, images_gallery = ?,
-                status = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                status = ?, show_on_demand = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """
             run_exec(
@@ -335,7 +352,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, sort_order, notes, item_id
+                    status, show_on_demand, sort_order, notes, item_id
                 )
             )
             conn.commit()
@@ -349,14 +366,14 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                 installment_12, installment_18, installments_text,
                 stock_qty, location, badge, specs_json,
                 description, image_main, images_gallery,
-                status, sort_order, notes
+                status, show_on_demand, sort_order, notes
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?
+                ?, ?, ?, ?
             )
             """
             if is_pg:
@@ -371,11 +388,24 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, sort_order, notes
+                    status, show_on_demand, sort_order, notes
                 )
             )
             conn.commit()
             return cur.lastrowid or 0
+
+
+def toggle_outlet_show_on_demand(item_id: int) -> bool:
+    ensure_outlet_schema()
+    with db() as conn:
+        row = run_exec(conn, "SELECT show_on_demand FROM outlet_items WHERE id = ?", (item_id,)).fetchone()
+        if not row:
+            return False
+        current = bool(row["show_on_demand"] if isinstance(row, dict) else row[0])
+        new_val = not current
+        run_exec(conn, "UPDATE outlet_items SET show_on_demand = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_val, item_id))
+        conn.commit()
+        return new_val
 
 
 def delete_outlet_item(item_id: int):

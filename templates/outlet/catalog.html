@@ -85,8 +85,8 @@
 
       <div class="hero-stats-bar">
         <div class="stat-card">
-          <strong class="stat-number">{{ total_vehicles }}+</strong>
-          <span class="stat-label">Veículos Disponíveis</span>
+          <strong class="stat-number">{{ items|length }}+</strong>
+          <span class="stat-label">Modelos Disponíveis</span>
         </div>
         <div class="stat-card">
           <strong class="stat-number">18X</strong>
@@ -118,7 +118,7 @@
           <div class="sort-select-box">
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
-              <option value="stock_desc">📦 Maior Estoque</option>
+              <option value="stock_desc">📦 Pronta Entrega / Destaques</option>
               <option value="price_asc">💰 Menor Preço</option>
               <option value="price_desc">💎 Maior Preço</option>
               <option value="discount_desc">🔥 Maior Desconto %</option>
@@ -160,7 +160,12 @@
             <template x-if="item.badge">
               <span class="badge-custom" x-text="item.badge"></span>
             </template>
-            <span class="badge-stock" x-text="item.stock_qty + ' em estoque'"></span>
+            <template x-if="item.stock_qty > 0">
+              <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
+            </template>
+            <template x-if="item.stock_qty <= 0">
+              <span class="badge-stock badge-sob-encomenda">📦 Sob Encomenda</span>
+            </template>
           </div>
 
           <!-- Imagem Principal -->
@@ -347,7 +352,7 @@
                   18x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment18())"></strong> no cartão
                 </div>
 
-                <div class="modal-stock-badge" x-text="'Disponibilidade: ' + selectedItem.stock_qty + ' unidades em estoque à pronta entrega'"></div>
+                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'"></div>
               </div>
 
               <p class="modal-desc" x-text="selectedItem.description"></p>

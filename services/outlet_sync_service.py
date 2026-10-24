@@ -188,6 +188,8 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         if grp["installment_12"] > 0:
             inst_text = f"12x de R$ {grp['installment_12']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+        show_on_demand_val = bool(existing.get("show_on_demand")) if existing else False
+
         item_dict = {
             "slug": slug,
             "name": model_name,
@@ -200,13 +202,14 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
             "installment_18": grp["installment_18"],
             "installments_text": inst_text,
             "stock_qty": grp["total_qty"],
+            "show_on_demand": show_on_demand_val,
             "location": ", ".join(grp["locations"]),
             "badge": badge,
             "specs_json": specs,
             "description": desc,
             "image_main": main_img,
             "images_gallery": gallery,
-            "status": "active" if grp["total_qty"] > 0 else "sold_out",
+            "status": "active" if (grp["total_qty"] > 0 or show_on_demand_val) else "sold_out",
             "sort_order": order,
             "notes": f"Lote promocional. Cores: {colors_str}. Observações: {'; '.join(grp['observations'])}",
         }

@@ -461,14 +461,27 @@ body {
 }
 
 .badge-stock {
-  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   color: #e2e8f0;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-pronta-entrega {
+  background: rgba(0, 204, 136, 0.15) !important;
+  color: #00cc88 !important;
+  border: 1px solid rgba(0, 204, 136, 0.3) !important;
+}
+
+.badge-sob-encomenda {
+  background: rgba(229, 169, 59, 0.15) !important;
+  color: #e5a93b !important;
+  border: 1px solid rgba(229, 169, 59, 0.35) !important;
 }
 
 .card-image-box {
@@ -973,9 +986,14 @@ body {
 }
 
 .modal-stock-badge {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin-top: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
 }
 
 .modal-desc {

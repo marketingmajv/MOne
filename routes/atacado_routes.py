@@ -45,7 +45,7 @@ def _render_atacado_catalog(show_prices=True):
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = get_all_atacado_items(status="active", search=search if search else None)
+    items = get_all_atacado_items(status="active", search=search if search else None, only_available=True)
     
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
@@ -71,14 +71,14 @@ def _render_atacado_catalog(show_prices=True):
     if show_prices:
         subtitle = get_atacado_setting(
             "atacado_subtitle",
-            f"Catálogo Oficial de Atacado • {total_vehicles} Veículos Elétricos com Preços Exclusivos para CNPJ"
+            "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"
         )
     else:
-        subtitle = f"Catálogo Oficial de Atacado • {total_vehicles} Veículos Elétricos em Estoque (Mostruário CNPJ)"
+        subtitle = "Catálogo Oficial de Atacado • Mostruário CNPJ para Revendedores e Frotas"
 
     urgency_text = get_atacado_setting(
         "atacado_urgency_text",
-        "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • ESTOQUE À PRONTA ENTREGA"
+        "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • MODELOS A PRONTA ENTREGA"
     )
     min_qty_text = get_atacado_setting(
         "atacado_min_qty_text",
@@ -232,6 +232,7 @@ def admin_atacado_save():
             "installment_12": request.form.get("installment_12"),
             "installment_18": request.form.get("installment_18"),
             "stock_qty": request.form.get("stock_qty"),
+            "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
             "location": request.form.get("location"),
             "badge": request.form.get("badge"),
             "description": request.form.get("description"),
@@ -247,6 +248,20 @@ def admin_atacado_save():
     except Exception as e:
         flash(f"Erro ao salvar produto de atacado: {str(e)}", "danger")
 
+    return redirect(url_for("atacado.admin_atacado"))
+
+
+@atacado_bp.route("/admin/atacado/toggle-on-demand/<int:item_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def admin_atacado_toggle_on_demand(item_id):
+    """Ativa ou desativa a exibição do produto como Sob Encomenda se o estoque estiver zerado."""
+    from services.atacado_service import toggle_atacado_show_on_demand
+    new_val = toggle_atacado_show_on_demand(item_id)
+    audit("toggle_atacado_on_demand", f"Item Atacado ID={item_id} show_on_demand alterado para {new_val}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "show_on_demand": new_val})
+    flash("Disponibilidade sob encomenda atualizada com sucesso!", "success")
     return redirect(url_for("atacado.admin_atacado"))
 
 

@@ -136,8 +136,8 @@
             <th style="padding: 12px 16px;">Modelo / Categoria</th>
             <th style="padding: 12px 16px;">Preço Atacado À Vista</th>
             <th style="padding: 12px 16px;">Preço Atacado Plus</th>
-            <th style="padding: 12px 16px;">Parcelas (12x)</th>
-            <th style="padding: 12px 16px;">Estoque Total</th>
+            <th style="padding: 12px 16px;">Estoque Real</th>
+            <th style="padding: 12px 16px;">Se Zerado</th>
             <th style="padding: 12px 16px;">Status</th>
             <th style="padding: 12px 16px; text-align: right;">Ações</th>
           </tr>
@@ -181,6 +181,15 @@
               <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-weight: 700;">
                 {{ item.stock_qty }} un
               </span>
+            </td>
+            <td style="padding: 10px 16px;">
+              <button type="button" 
+                      class="btn sm" 
+                      style="{{ 'background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 700;' if item.show_on_demand else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      onclick="toggleAtacadoOnDemand({{ item.id }}, this)"
+                      title="Alternar entre Ocultar ou Exibir Sob Encomenda quando estoque for 0">
+                {{ '📦 Sob Encomenda' if item.show_on_demand else '🚫 Ocultar' }}
+              </button>
             </td>
             <td style="padding: 10px 16px;">
               <form action="{{ url_for('atacado.admin_atacado_status', item_id=item.id) }}" method="POST" style="margin: 0;">
@@ -248,6 +257,18 @@
         </div>
       </div>
 
+      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(229, 169, 59, 0.25); border-radius: 8px; background: rgba(229, 169, 59, 0.05); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <label for="atacado_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
+            📦 Exibir como "Sob Encomenda" se estoque estiver zerado
+          </label>
+          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+            Se desmarcado, o modelo é automaticamente ocultado do catálogo CNPJ ao zerar o estoque.
+          </small>
+        </div>
+        <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
+      </div>
+
       <div style="margin-bottom: 14px;">
         <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
         <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
@@ -297,6 +318,7 @@
     document.getElementById('atacado_form_price_outlet').value = '';
     document.getElementById('atacado_form_price_atacado_plus').value = '';
     document.getElementById('atacado_form_stock_qty').value = '1';
+    document.getElementById('atacado_form_show_on_demand').checked = false;
     document.getElementById('atacado_form_color').value = '';
     document.getElementById('atacado_form_description').value = '';
     ATACADO_CURRENT_GALLERY = [];
@@ -320,6 +342,7 @@
     document.getElementById('atacado_form_price_outlet').value = item.price_outlet || '';
     document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
     document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
+    document.getElementById('atacado_form_show_on_demand').checked = !!item.show_on_demand;
     document.getElementById('atacado_form_color').value = item.color || '';
     document.getElementById('atacado_form_description').value = item.description || '';
 
@@ -524,5 +547,36 @@
     };
     reader.readAsDataURL(file);
   }
+
+  async function toggleAtacadoOnDemand(itemId, btn) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const res = await fetch(`/admin/atacado/toggle-on-demand/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.show_on_demand) {
+          btn.textContent = '📦 Sob Encomenda';
+          btn.style.background = 'rgba(229, 169, 59, 0.15)';
+          btn.style.color = '#e5a93b';
+          btn.style.borderColor = 'rgba(229, 169, 59, 0.35)';
+        } else {
+          btn.textContent = '🚫 Ocultar';
+          btn.style.background = 'rgba(148, 163, 184, 0.1)';
+          btn.style.color = 'var(--muted)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao alternar disponibilidade sob encomenda no atacado:', err);
+    }
+  }
+  window.toggleAtacadoOnDemand = toggleAtacadoOnDemand;
 </script>
 {% endblock %}

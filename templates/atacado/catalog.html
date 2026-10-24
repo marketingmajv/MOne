@@ -115,8 +115,8 @@
 
       <div class="hero-stats-bar">
         <div class="stat-card">
-          <strong class="stat-number" style="color: #00cc88;">{{ total_vehicles }}+</strong>
-          <span class="stat-label">Veículos em Estoque</span>
+          <strong class="stat-number" style="color: #00cc88;">{{ items|length }}+</strong>
+          <span class="stat-label">Modelos Disponíveis</span>
         </div>
         <div class="stat-card">
           <strong class="stat-number">CNPJ</strong>
@@ -124,7 +124,7 @@
         </div>
         <div class="stat-card">
           <strong class="stat-number">2 GALPÕES</strong>
-          <span class="stat-label">Estoque Unificado M-One & COLVIX</span>
+          <span class="stat-label">Pronta Entrega M-One & COLVIX</span>
         </div>
         <div class="stat-card">
           <strong class="stat-number">100%</strong>
@@ -148,7 +148,7 @@
           <div class="sort-select-box">
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
-              <option value="stock_desc">📦 Maior Estoque</option>
+              <option value="stock_desc">📦 Pronta Entrega / Destaques</option>
               {% if show_prices %}
               <option value="price_asc">💰 Menor Preço Atacado</option>
               <option value="price_desc">💎 Maior Preço Atacado</option>
@@ -186,7 +186,12 @@
           <!-- Badges -->
           <div class="card-badges">
             <span class="badge-cnpj">CNPJ ATACADO</span>
-            <span class="badge-stock" x-text="item.stock_qty + ' em estoque'"></span>
+            <template x-if="item.stock_qty > 0">
+              <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
+            </template>
+            <template x-if="item.stock_qty <= 0">
+              <span class="badge-stock badge-sob-encomenda">📦 Sob Encomenda</span>
+            </template>
           </div>
 
           <!-- Imagem Principal -->
@@ -308,7 +313,7 @@
                   <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
                 </div>
 
-                <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
+                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega (Estoque MAJ & COLVIX)' : '📦 Disponibilidade: Sob Encomenda'"></div>
               </div>
               {% else %}
               <div class="modal-pricing-box">
@@ -316,7 +321,7 @@
                   <span class="amount" style="font-size: 1.35rem; color: #00cc88; font-weight: 800;">Cotação Sob Consulta</span>
                   <span class="payment-method">Condições de Venda Direta Atacado CNPJ</span>
                 </div>
-                <div class="modal-stock-badge" style="background: rgba(0,204,136,0.1); color: #00cc88; border-color: rgba(0,204,136,0.25);" x-text="'Disponibilidade Total: ' + selectedItem.stock_qty + ' unidades em estoque (Unificado MAJ & COLVIX)'"></div>
+                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega (Estoque MAJ & COLVIX)' : '📦 Disponibilidade: Sob Encomenda'"></div>
               </div>
               {% endif %}
 
@@ -324,7 +329,7 @@
 
               <!-- Tabela de Ficha Técnica -->
               <div class="modal-specs-section">
-                <h3>Ficha Técnica & Cores em Estoque</h3>
+                <h3>Ficha Técnica & Especificações</h3>
                 <div class="specs-table">
                   <template x-for="(val, key) in selectedItem.specs_json" :key="key">
                     <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco')">
@@ -457,15 +462,13 @@
             try { gal = JSON.parse(gal); } catch(e) { gal = []; }
           }
           if (!Array.isArray(gal)) gal = [];
-          const all = [item.image_main, ...gal].filter(Boolean);
-          return [...new Set(all)];
+          return [...new Set([item.image_main, ...gal].filter(Boolean))];
         },
 
         formatPrice(val) {
           if (!val) return '0,00';
           return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
-
         getWhatsAppUrl(model, price) {
           let msg = '';
           if (this.showPrices && price && price !== '0,00' && price !== 'Sob consulta') {
@@ -476,7 +479,6 @@
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
           return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
         },
-
         getFloatingWhatsAppUrl() {
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
           const msg = WA_FLOATING_MSG || 'Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.';
@@ -485,7 +487,6 @@
       };
     }
   </script>
-
   <!-- Botão Flutuante do WhatsApp (Atendimento Geral CNPJ) -->
   <a :href="getFloatingWhatsAppUrl()" target="_blank" class="floating-whatsapp-btn" title="Falar com Consultor CNPJ">
     <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">

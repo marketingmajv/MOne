@@ -63,7 +63,7 @@ def catalog():
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = get_all_outlet_items(status="active", search=search if search else None)
+    items = get_all_outlet_items(status="active", search=search if search else None, only_available=True)
     
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
@@ -83,7 +83,7 @@ def catalog():
         "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de falar com um consultor."
     )
     title = outlet_settings.get("outlet_title") or "OUTLET MAJ MOBILIDADE"
-    subtitle = outlet_settings.get("outlet_subtitle") or f"Queima de Estoque Oficial • Mais de {total_vehicles} Veículos Elétricos com Descontos Exclusivos"
+    subtitle = outlet_settings.get("outlet_subtitle") or "Queima de Estoque Oficial • Veículos Elétricos com Descontos Exclusivos"
     urgency_text = outlet_settings.get("outlet_urgency_text") or "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X"
 
     # Extrair categorias únicas para filtros
@@ -209,6 +209,7 @@ def save_item():
             "images_gallery": gallery,
             "specs_json": specs,
             "status": request.form.get("status", "active"),
+            "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
             "sort_order": request.form.get("sort_order", 0),
             "notes": request.form.get("notes"),
         }
@@ -240,6 +241,20 @@ def save_item():
         logger.exception("Erro ao salvar item no Outlet: %s", e)
         flash(f"Ocorreu um erro ao salvar o produto: {str(e)}", "danger")
 
+    return redirect(url_for("outlet.admin_outlet"))
+
+
+@outlet_bp.route("/admin/outlet/toggle-on-demand/<int:item_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def toggle_on_demand(item_id):
+    """Ativa ou desativa a exibição do produto como Sob Encomenda se o estoque estiver zerado."""
+    from services.outlet_service import toggle_outlet_show_on_demand
+    new_val = toggle_outlet_show_on_demand(item_id)
+    audit("toggle_outlet_on_demand", f"Item ID={item_id} show_on_demand alterado para {new_val}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "show_on_demand": new_val})
+    flash("Disponibilidade sob encomenda atualizada com sucesso!", "success")
     return redirect(url_for("outlet.admin_outlet"))
 
 
