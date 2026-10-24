@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -27,6 +28,7 @@ DEFAULT_WA_MESSAGE = "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {pr
 
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
+    text = unicodedata.normalize("NFKD", text).encode("ASCII", "ignore").decode("utf-8")
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"[\s_-]+", "-", text)
     return text.strip("-")

@@ -38,8 +38,12 @@ PRICES_GID = "494760175"
 _atacado_schema_ensured = False
 
 
+import unicodedata
+
+
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
+    text = unicodedata.normalize("NFKD", text).encode("ASCII", "ignore").decode("utf-8")
     text = re.sub(r"[^\w\s-]", "", text)
     text = re.sub(r"[\s_-]+", "-", text)
     return text.strip("-")

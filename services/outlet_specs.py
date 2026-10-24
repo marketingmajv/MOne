@@ -20,8 +20,21 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         },
         "badge": "MAIS VENDIDO",
         "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"],
+    },
+    "MAX 12 - Carbon & Preta (Fora da Promoção)": {
+        "category": "Scooter Elétrica",
+        "description": "Unidades exclusivas da MAX 12 fora da tabela promocional padrão. Versões Carbono e Preta com acabamento premium e pronta entrega.",
+        "specs": {
+            "Motor": "1000W",
+            "Velocidade Máxima": "Até 32 km/h",
+            "Autonomia": "Até 50 km",
+            "Bateria": "Lítio 60V 20Ah removível (LiFePO₄)",
+            "Carga Máxima": "180 kg",
+            "Freios": "Disco hidráulico dianteiro e traseiro",
+        },
+        "badge": "FORA DA PROMOÇÃO",
+        "folder_aliases": ["MAX 12 MAJ", "MAX 12", "MAX12"],
         "color_prices": [
-            {"colors": "Cores Padrão (Red, White, Blue, Branca, Azul)", "price": "R$ 7.990,00", "p12": "R$ 762,63", "p18": "R$ 528,02", "stock": 51},
             {"colors": "Preta Montada", "price": "R$ 8.900,00", "p12": "R$ 849,49", "p18": "R$ 588,15", "stock": 1},
             {"colors": "Carbon Na Caixa", "price": "R$ 8.990,00", "p12": "R$ 858,08", "p18": "R$ 594,10", "stock": 1},
         ],

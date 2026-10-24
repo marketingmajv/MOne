@@ -87,10 +87,16 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         color = (row.get("Cor / Banco") or "").strip()
         loc = (row.get("Localização") or "").strip()
         obs = (row.get("Observação") or "").strip()
+        is_fora_promo = "fora da promoção" in obs.lower() or "fora da promocao" in obs.lower()
+        if is_fora_promo:
+            group_name = f"{raw_name} - Carbon & Preta (Fora da Promoção)" if "max" in raw_name.lower() else f"{raw_name} (Fora da Promoção)"
+        else:
+            group_name = raw_name
 
-        if raw_name not in model_groups:
-            model_groups[raw_name] = {
-                "name": raw_name,
+        if group_name not in model_groups:
+            model_groups[group_name] = {
+                "name": group_name,
+                "base_model": raw_name,
                 "total_qty": 0,
                 "min_price": price_out,
                 "max_price": price_out,
@@ -102,7 +108,7 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
                 "observations": set(),
             }
 
-        grp = model_groups[raw_name]
+        grp = model_groups[group_name]
         grp["total_qty"] += qty
         if price_out > 0:
             if grp["min_price"] == 0 or price_out < grp["min_price"]:
@@ -126,13 +132,14 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
 
     for model_name, grp in sorted(model_groups.items(), key=lambda x: x[1]["total_qty"], reverse=True):
         slug = slugify(model_name)
-        specs_data = MODEL_SPECS.get(model_name, {})
+        base_model = grp.get("base_model") or model_name
+        specs_data = MODEL_SPECS.get(model_name) or MODEL_SPECS.get(base_model, {})
         category = specs_data.get("category", "Mobilidade Elétrica")
         desc = specs_data.get("description", f"Veículo elétrico MAJ {model_name} de alta qualidade.")
         specs = dict(specs_data.get("specs", {}))
 
         # Cruzar dinamicamente com as especificações oficiais da Planilha Google
-        clean_name = model_name.strip().upper()
+        clean_name = base_model.strip().upper()
         matched = official_models.get(clean_name)
         if not matched:
             for s_k, s_m in official_models.items():
@@ -179,8 +186,17 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
             if existing.get("price_original") and float(existing.get("price_original")) > 0:
                 price_orig = float(existing.get("price_original"))
 
+        if (not main_img or not gallery) and base_model != model_name:
+            base_slug = slugify(base_model)
+            base_existing = get_outlet_item_by_id_or_slug(base_slug)
+            if base_existing:
+                if not main_img:
+                    main_img = base_existing.get("image_main") or ""
+                if not gallery:
+                    gallery = base_existing.get("images_gallery") or []
+
         if not main_img:
-            slug_img = re.sub(r"[^\w]", "-", model_name.lower())
+            slug_img = re.sub(r"[^\w]", "-", base_model.lower())
             slug_img = re.sub(r"-+", "-", slug_img).strip("-")
             main_img = f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{slug_img}/{slug_img}-01.jpg"
 

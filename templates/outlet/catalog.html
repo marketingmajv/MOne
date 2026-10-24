@@ -378,7 +378,7 @@
 
               <!-- Botões de Ação no Modal (UX Refinada e Compacta) -->
               <div class="modal-cta-box">
-                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
+                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(getActivePrice()))" 
                    target="_blank" 
                    class="btn-modal-whatsapp"
                    aria-label="Garantir Oferta no WhatsApp">
@@ -555,7 +555,7 @@
 
         getWhatsAppUrl(model, price) {
           let activeName = model;
-          if (this.selectedItem && this.selectedItem.name === model && this.selectedColorObj && this.selectedColorObj.colors) {
+          if (this.modalOpen && this.selectedItem && this.selectedItem.name === model && this.selectedColorObj && this.selectedColorObj.colors) {
             activeName = `${model} (Cor: ${this.selectedColorObj.colors})`;
           }
           const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} no Outlet MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
