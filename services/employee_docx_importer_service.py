@@ -50,15 +50,35 @@ def ensure_docx_schema() -> None:
 
 def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> Tuple[bool, str]:
     """
-    Extrai o texto integral de um arquivo .docx (OpenXML) ou .txt (UTF-8 / Latin-1).
+    Extrai o texto integral de um arquivo .docx (OpenXML), .pdf (pypdf) ou .txt (UTF-8 / Latin-1).
     Retorna (sucesso, texto_ou_mensagem_erro).
     """
     if not file_bytes or len(file_bytes) < 3:
         return False, "O arquivo enviado está vazio ou corrompido."
 
     lower_fn = (filename or "").lower()
-    is_txt = lower_fn.endswith(".txt") or (not file_bytes.startswith(b"PK") and not lower_fn.endswith(".docx"))
 
+    # 1. Processamento de arquivo PDF (.pdf)
+    is_pdf = lower_fn.endswith(".pdf") or file_bytes.startswith(b"%PDF")
+    if is_pdf:
+        try:
+            import pypdf
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            pages_text = []
+            for page in reader.pages:
+                txt = page.extract_text()
+                if txt and txt.strip():
+                    pages_text.append(txt.strip())
+            full_text = "\n\n".join(pages_text).strip()
+            if not full_text:
+                return False, "O arquivo PDF enviado está em branco ou contém apenas imagens/digitalizações sem camada de texto."
+            return True, full_text
+        except Exception as ex:
+            logger.error("Erro ao ler arquivo PDF: %s", ex)
+            return False, f"Falha ao processar arquivo PDF: {ex}"
+
+    # 2. Processamento de arquivo de texto (.txt)
+    is_txt = lower_fn.endswith(".txt") or (not file_bytes.startswith(b"PK") and not lower_fn.endswith(".docx"))
     if is_txt:
         try:
             try:
@@ -72,7 +92,7 @@ def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> Tuple
             logger.error("Erro ao ler arquivo .txt: %s", ex)
             return False, f"Falha ao decodificar arquivo de texto (.txt): {ex}"
 
-    # Processamento padrão de .docx (OpenXML ZIP)
+    # 3. Processamento padrão de .docx (OpenXML ZIP)
     try:
         with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
             if "word/document.xml" not in z.namelist():
@@ -98,7 +118,7 @@ def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> Tuple
 
             return True, full_text
     except zipfile.BadZipFile:
-        return False, "Formato inválido: o arquivo não é um documento .docx nem .txt legível."
+        return False, "Formato não suportado: envie seu relatório em formato Word (.docx), PDF (.pdf) ou Texto (.txt)."
     except Exception as ex:
         logger.error("Erro ao extrair texto do arquivo docx: %s", ex)
         return False, f"Falha ao ler documento: {ex}"
@@ -110,11 +130,17 @@ def extract_text_from_docx_bytes(docx_bytes: bytes) -> Tuple[bool, str]:
 
 
 def get_docx_storage_path(cycle_code: str, employee_key: str, original_filename: str) -> Tuple[Path, str]:
-    """Gera o caminho seguro no disco e o nome final do arquivo (.docx ou .txt) salvo."""
+    """Gera o caminho seguro no disco e o nome final do arquivo (.docx, .pdf ou .txt) salvo."""
     safe_cycle = re.sub(r"[^a-zA-Z0-9-_]", "", cycle_code) or "ciclo"
     safe_key = re.sub(r"[^a-zA-Z0-9-_]", "", employee_key) or "emp"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ext = ".txt" if (original_filename or "").lower().endswith(".txt") else ".docx"
+    lower_fn = (original_filename or "").lower()
+    if lower_fn.endswith(".pdf"):
+        ext = ".pdf"
+    elif lower_fn.endswith(".txt"):
+        ext = ".txt"
+    else:
+        ext = ".docx"
     final_filename = f"{safe_cycle}_{safe_key}_{timestamp}{ext}"
 
     target_dir = DOCX_UPLOADS_DIR / safe_cycle
@@ -233,7 +259,13 @@ def process_docx_upload(
         except Exception as ex:
             logger.error("Erro ao registrar docx_filename no banco: %s", ex)
 
-        ext_label = "TXT" if stored_filename.lower().endswith(".txt") else "DOCX"
+        lower_stored = stored_filename.lower()
+        if lower_stored.endswith(".pdf"):
+            ext_label = "PDF"
+        elif lower_stored.endswith(".txt"):
+            ext_label = "TXT"
+        else:
+            ext_label = "DOCX"
         return {
             "status": "success",
             "message": f"Relatório ({ext_label}) de {meta['name']} auditado e entregue com sucesso!",

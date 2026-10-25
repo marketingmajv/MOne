@@ -1,5 +1,5 @@
 /**
- * M-One Implementation Plan & Governance Dashboard (api/static/js/implementation-plan.js)
+ * M-One Implementation Plan & Governance Dashboard (static/js/implementation-plan.js)
  * Componente reativo Alpine.js para o Painel da Diretoria e Governança MAJ.
  * Segregação estrita (< 500 linhas).
  */
@@ -231,15 +231,16 @@ function implementationPlanApp() {
 
       const lowerName = file.name.toLowerCase();
       const isDocx = lowerName.endsWith('.docx');
+      const isPdf = lowerName.endsWith('.pdf');
       const isTxt = lowerName.endsWith('.txt');
-      if (!isDocx && !isTxt) {
-        alert('Por favor, selecione um arquivo válido (.docx ou .txt).');
+      if (!isDocx && !isPdf && !isTxt) {
+        alert('Por favor, selecione um arquivo válido (.docx, .pdf ou .txt).');
         event.target.value = '';
         return;
       }
 
       this.isSyncingDoc = true;
-      this.syncingStatusTitle = isTxt ? 'Processando Relatório TXT' : 'Processando Relatório DOCX';
+      this.syncingStatusTitle = isPdf ? 'Processando Relatório PDF' : (isTxt ? 'Processando Relatório TXT' : 'Processando Relatório DOCX');
       this.syncingStatusDesc = `Lendo o arquivo '${file.name}', extraindo texto e auditando com IA...`;
 
       const formData = new FormData();

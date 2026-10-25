@@ -257,9 +257,9 @@
 
       <div style="display: flex; align-items: center; gap: 10px;">
         <!-- Input de arquivo invisível -->
-        <input type="file" id="portal-file-input" accept=".docx,.txt" style="display: none;" @change="handleFileUpload($event)">
+        <input type="file" id="portal-file-input" accept=".docx,.pdf,.txt" style="display: none;" @change="handleFileUpload($event)">
         <button type="button" class="btn" @click="document.getElementById('portal-file-input').click()" :disabled="!isEditable || isUploading" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.08); font-size: 12px; display: flex; align-items: center; gap: 6px;">
-          <span>📎 Subir Relatório via Arquivo (.docx / .txt)</span>
+          <span>📎 Subir Relatório via Arquivo (.docx / .pdf / .txt)</span>
         </button>
 
         <button type="button" class="btn" @click="saveDraft(false)" :disabled="isSaving" style="font-size: 12px;">

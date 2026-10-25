@@ -152,13 +152,13 @@
         </template>
 
         <div style="font-size: 0.82rem; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <span>Ou se preferir, envie o arquivo <strong>(.docx ou .txt)</strong> diretamente:</span>
+          <span>Ou se preferir, envie o arquivo <strong>(.docx, .pdf ou .txt)</strong> diretamente:</span>
           <button type="button" 
                   class="btn sm" 
                   style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"
                   @click="triggerDocxUpload(mismatchData.employee_key); showMismatchModal = false;">
             <span>📤</span>
-            <span>Subir Arquivo (DOCX / TXT)</span>
+            <span>Subir Arquivo (DOCX / PDF / TXT)</span>
           </button>
         </div>
       </div>
