@@ -76,8 +76,98 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
+
+  {% if is_feedback_released %}
+  <!-- Seção Oficial de Feedback & Alinhamento Deliberado pela Diretoria -->
+  <div class="panel mb-4" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 78, 59, 0.15)); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 16px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">🎯</span>
+        <div>
+          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #fff;">
+            Feedback Oficial & Alinhamento da Diretoria
+          </h3>
+          <p style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--muted);">
+            Orientações, elogios e combinados deliberados por Jam Penitenti, Geysa e Fauzer.
+          </p>
+        </div>
+      </div>
+      {% if feedback_eval and feedback_eval.score_total %}
+      <div>
+        <span class="badge" style="font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 8px; {% if feedback_eval.score_badge == 'green' %}background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);{% elif feedback_eval.score_badge == 'yellow' %}background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);{% else %}background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);{% endif %}">
+          ⭐ Score de Alinhamento: {{ feedback_eval.score_total or 0 }}/100
+        </span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if feedback_eval and feedback_eval.summary %}
+    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; color: var(--text); line-height: 1.5;">
+      <strong>Síntese da Gestão:</strong> {{ feedback_eval.summary }}
+    </div>
+    {% endif %}
+
+    <!-- Acordos & Metas Estabelecidos para a Próxima Semana -->
+    {% if agreements_jam_geysa or agreements_fauzer %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px;">
+      {% if agreements_jam_geysa %}
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span>📌</span>
+          <strong style="color: #fbbf24; font-size: 13px;">Acordos & Metas — Jam & Geysa</strong>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; white-space: pre-wrap;">{{ agreements_jam_geysa }}</p>
+      </div>
+      {% endif %}
+
+      {% if agreements_fauzer %}
+      <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span>⚡</span>
+          <strong style="color: #c084fc; font-size: 13px;">Acordos & Metas — Fauzer</strong>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; white-space: pre-wrap;">{{ agreements_fauzer }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Comparativo de Perguntas com Comentários de Alinhamento -->
+    <details open style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px;">
+      <summary style="font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; user-select: none;">
+        📖 Ver Pareceres por Pergunta e Orientações da Diretoria
+      </summary>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+        {% for q in meta.questions %}
+        {% set ans = report.answers.get(q.id) if (report and report.answers) else '' %}
+        {% set d_comment = director_comments.get(q.id) or '' %}
+        {% set des = feedback_desired.get(q.id) or '' %}
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px 14px;">
+          <strong style="font-size: 12.5px; color: #fff; display: block; margin-bottom: 8px;">{{ q.label }}</strong>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 12px;">
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #38bdf8; font-weight: 700; display: block; margin-bottom: 4px;">Sua Resposta:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ ans if ans else 'Não preenchido' }}</span>
+            </div>
+            {% if d_comment %}
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #fbbf24; font-weight: 700; display: block; margin-bottom: 4px;">💬 Parecer da Diretoria:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ d_comment }}</span>
+            </div>
+            {% elif des %}
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #f59e0b; font-weight: 700; display: block; margin-bottom: 4px;">Expectativa da Diretoria:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ des }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+  {% endif %}
 
   <!-- Gamificação: Placar Pessoal, Streak e Linha do Tempo -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">

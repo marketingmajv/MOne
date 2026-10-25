@@ -182,7 +182,7 @@ button, input, select, textarea {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 250px;
+  width: 260px;
   height: 100vh;
   height: 100dvh;
   background: #080D1A;
@@ -306,6 +306,113 @@ button, input, select, textarea {
   color: #FFFFFF !important;
 }
 
+/* ==========================================================================
+   SIDEBAR MODERNA — PADRÃO LINEAR / STRIPE
+   Categorias elegantes com títulos sutis e links abertos em 1 clique.
+   ========================================================================== */
+.sidebar-nav-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-top: 4px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.nav-section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  padding: 16px 12px 6px;
+  user-select: none;
+}
+
+.nav-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  color: #94A3B8;
+  font-weight: 500;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item .nav-icon {
+  width: 18px;
+  height: 18px;
+  color: #64748B;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #F8FAFC;
+}
+
+.nav-item:hover .nav-icon {
+  color: #F8FAFC;
+}
+
+.nav-item.active {
+  background: #0070F3 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  border: 1px solid #0070F3 !important;
+  box-shadow: 0 4px 14px rgba(0, 112, 243, 0.35) !important;
+}
+
+.nav-item.active .nav-icon {
+  color: #FFFFFF !important;
+}
+
+.nav-item.active span {
+  color: #FFFFFF !important;
+}
+
+
 .sidebar-foot {
   margin-top: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -375,8 +482,8 @@ button, input, select, textarea {
 
 /* Main Layout & Topbar */
 .main {
-  margin-left: 250px;
-  width: calc(100% - 250px);
+  margin-left: 260px;
+  width: calc(100% - 260px);
   min-width: 0;
   min-height: 100vh;
   min-height: 100dvh;
@@ -1503,22 +1610,59 @@ tr:hover td {
   color: var(--text);
 }
 
-.modal-head button {
-  border: 0;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: background 0.15s ease;
+/* Modal Close Button Standard - Centered Geometry */
+.modal-head button.modal-close-btn,
+.modal-close-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text, #f8fafc) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
 }
 
-.modal-head button:hover {
-  background: rgba(255, 255, 255, 0.15);
+.modal-head button.modal-close-btn:hover,
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme="light"] .modal-head button.modal-close-btn,
+[data-theme="light"] .modal-close-btn {
+  border: 1px solid #CBD5E1 !important;
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .modal-head button.modal-close-btn:hover,
+[data-theme="light"] .modal-close-btn:hover {
+  background: #E2E8F0 !important;
+  color: #000000 !important;
+  border-color: #94A3B8 !important;
+}
+
+.modal-head button.modal-close-btn svg,
+.modal-close-btn svg {
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: auto !important;
+  pointer-events: none !important;
 }
 
 /* Modern Form Ergonomics & Inputs (Spacious & Clean) */

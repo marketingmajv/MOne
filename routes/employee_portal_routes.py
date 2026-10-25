@@ -83,6 +83,27 @@ def meu_relatorio():
         if report.get("reviewed_at"):
             is_editable = False
 
+    is_feedback_released = bool(report.get("is_feedback_released"))
+    feedback_eval = {}
+    feedback_desired = {}
+    director_comments = {}
+    agreements_jam_geysa = report.get("agreements_jam_geysa") or ""
+    agreements_fauzer = report.get("agreements_fauzer") or ""
+    if is_feedback_released:
+        import json
+        try:
+            feedback_eval = json.loads(report.get("evaluation_json") or "{}")
+        except Exception:
+            feedback_eval = {}
+        try:
+            feedback_desired = json.loads(report.get("desired_answers_json") or "{}")
+        except Exception:
+            feedback_desired = {}
+        try:
+            director_comments = json.loads(report.get("director_comments_json") or "{}")
+        except Exception:
+            director_comments = {}
+
     return render_template(
         "employee_portal.html",
         me=me,
@@ -92,6 +113,12 @@ def meu_relatorio():
         profile=profile,
         is_editable=is_editable,
         is_fauzer=is_fauzer,
+        is_feedback_released=is_feedback_released,
+        feedback_eval=feedback_eval,
+        feedback_desired=feedback_desired,
+        director_comments=director_comments,
+        agreements_jam_geysa=agreements_jam_geysa,
+        agreements_fauzer=agreements_fauzer,
         now_iso=now.isoformat(),
         deadline_iso=deadline_dt.isoformat() if hasattr(deadline_dt, "isoformat") else str(deadline_dt),
     )
