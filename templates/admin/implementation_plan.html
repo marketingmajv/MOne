@@ -11,8 +11,8 @@
   window.__INTERNAL_ANALYSIS__ = {{ internal_analysis|tojson|safe if (internal_analysis is defined and internal_analysis) else '{}' }};
   window.__IS_CURATOR__ = {{ 'true' if is_curator else 'false' }};
 </script>
-<script src="{{ url_for('static', filename='js/implementation-plan.js') }}"></script>
-<script src="{{ url_for('static', filename='js/reports-columns.js') }}"></script>
+<script src="{{ url_for('static', filename='js/implementation-plan.js') }}?v=20261026_eval_v2"></script>
+<script src="{{ url_for('static', filename='js/reports-columns.js') }}?v=20261026_eval_v2"></script>
 
 <div class="content-body" x-data="implementationPlanApp()">
 
@@ -65,6 +65,14 @@
             <div class="comex-value-emerald" style="font-size: 1.3rem; font-weight: 800;">{{ summary.total_submitted }}/{{ summary.counts.total }}</div>
             <small style="font-size: 0.72rem; color: var(--text-dim); font-weight: 600;">{{ summary.completion_percent }}% concluído</small>
           </div>
+
+          <button type="button"
+                  class="btn"
+                  @click="$dispatch('open-consolidated-demands-modal', { cycleId: {{ cycle.id }} })"
+                  style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 800; font-size: 0.82rem; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;"
+                  title="Abrir pauta consolidada de demandas de Jam, Geysa e Fauzer para envio no WhatsApp">
+            <span>⚡ Demandas da Diretoria (WhatsApp)</span>
+          </button>
         </div>
       </div>
     </div>
@@ -201,6 +209,9 @@
 
     <!-- Modal Executivo de Aferição e Confronto de Respostas Centrado em Pessoas -->
     {% include "components/modal_employee_evaluation.html" %}
+
+    <!-- Modal Executivo de Demandas Consolidadas da Diretoria -->
+    {% include "components/modal_consolidated_demands.html" %}
 
   {% endif %}
 

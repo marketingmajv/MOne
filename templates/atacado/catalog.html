@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}?v=20261026_atacado_v2">
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
 
@@ -61,6 +61,79 @@
     .sticker-min-qty svg {
       flex-shrink: 0;
     }
+
+    /* Otimização Específica Mobile Header Atacado */
+    @media (max-width: 768px) {
+      .outlet-header {
+        padding: 8px 0;
+      }
+      .header-inner {
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .logo-box {
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .header-logo {
+        height: 32px;
+      }
+      .brand-title {
+        font-size: 0.90rem;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+      }
+      .brand-badge {
+        font-size: 0.52rem;
+        letter-spacing: 0.04em;
+        padding: 2px 6px;
+        display: inline-block;
+        max-width: fit-content;
+      }
+      /* Oculta botão secundário 'Ver Catálogo' no mobile para despoluir o header */
+      .btn-scroll-catalog {
+        display: none !important;
+      }
+      .header-actions {
+        flex-shrink: 0;
+      }
+      .btn-whatsapp-header {
+        padding: 8px 14px;
+        font-size: 0.80rem;
+        border-radius: 9999px;
+        gap: 6px;
+        white-space: nowrap;
+        background: #25D366;
+        color: #000;
+        font-weight: 800;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+      }
+      .btn-wa-text-full {
+        display: none !important;
+      }
+      .btn-wa-text-short {
+        display: inline !important;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .header-logo {
+        height: 28px;
+      }
+      .brand-title {
+        font-size: 0.80rem;
+      }
+      .brand-badge {
+        font-size: 0.46rem;
+      }
+      .btn-whatsapp-header {
+        padding: 7px 10px;
+        font-size: 0.74rem;
+        gap: 4px;
+      }
+    }
   </style>
 </head>
 <body x-data="atacadoApp()">
@@ -95,9 +168,10 @@
 
       <div class="header-actions">
         <a href="#catalogo" class="btn-scroll-catalog" style="background: rgba(0,204,136,0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">Ver Catálogo CNPJ</a>
-        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header">
+        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header" aria-label="Falar com Consultor CNPJ no WhatsApp">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-          <span>Falar com Consultor CNPJ</span>
+          <span class="btn-wa-text-full">Falar com Consultor CNPJ</span>
+          <span class="btn-wa-text-short">Consultor CNPJ</span>
         </a>
       </div>
     </div>
@@ -264,108 +338,8 @@
     </div>
   </main>
 
-  <!-- Modal Interativo de Ficha Técnica e Galeria -->
-  <div class="outlet-modal-backdrop" 
-       x-show="modalOpen" 
-       x-cloak 
-       @click.self="modalOpen = false"
-       @keydown.escape.window="modalOpen = false">
-    
-    <div class="outlet-modal-box">
-      <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
-      <div class="modal-scroll-body">
-        <template x-if="selectedItem">
-          <div class="modal-content-grid">
-            <!-- Coluna Visual / Galeria -->
-            <div class="modal-gallery-col">
-              <div class="modal-main-image">
-                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
-              </div>
-              <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
-                <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
-                  <div class="thumb-item" 
-                       :class="{'active': activeImage === img}"
-                       @click="activeImage = img">
-                    <img :src="img" alt="Foto" decoding="async" loading="lazy">
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- Coluna Detalhes -->
-            <div class="modal-info-col">
-              <div class="modal-header-tag">
-                <span class="modal-category" style="color: #00cc88;" x-text="selectedItem.category || 'Atacado CNPJ'"></span>
-                <span class="badge-cnpj">VENDA EXCLUSIVA CNPJ</span>
-              </div>
-              <h2 class="modal-title" x-text="selectedItem.name"></h2>
-              
-              {% if show_prices %}
-              <!-- Box de Preço Atacado (Apenas à Vista CNPJ) -->
-              <div class="modal-pricing-box">
-                <div class="sticker-min-qty" style="margin-bottom: 8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                  <span>{{ min_qty_text }}</span>
-                </div>
-                <div class="price-to">
-                  <span class="currency">R$</span>
-                  <span class="amount" x-text="selectedItem.price_outlet > 0 ? formatPrice(selectedItem.price_outlet) : 'Sob consulta'"></span>
-                  <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
-                </div>
-
-                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega (Estoque MAJ & COLVIX)' : '📦 Disponibilidade: Sob Encomenda'"></div>
-              </div>
-              {% else %}
-              <div class="modal-pricing-box">
-                <div class="price-to">
-                  <span class="amount" style="font-size: 1.35rem; color: #00cc88; font-weight: 800;">Cotação Sob Consulta</span>
-                  <span class="payment-method">Condições de Venda Direta Atacado CNPJ</span>
-                </div>
-                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega (Estoque MAJ & COLVIX)' : '📦 Disponibilidade: Sob Encomenda'"></div>
-              </div>
-              {% endif %}
-
-              <p class="modal-desc" x-text="selectedItem.description"></p>
-
-              <!-- Tabela de Ficha Técnica -->
-              <div class="modal-specs-section">
-                <h3>Ficha Técnica & Especificações</h3>
-                <div class="specs-table">
-                  <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                    <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco')">
-                      <span class="spec-k" x-text="key"></span>
-                      <span class="spec-v" x-text="val"></span>
-                    </div>
-                  </template>
-                  <div class="spec-row" x-show="selectedItem.color">
-                    <span class="spec-k">Cores Disponíveis</span>
-                    <span class="spec-v" x-text="selectedItem.color"></span>
-                  </div>
-                  <div class="spec-row" x-show="selectedItem.location">
-                    <span class="spec-k">Galpões</span>
-                    <span class="spec-v" x-text="selectedItem.location"></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Botões de Ação no Modal -->
-              <div class="modal-cta-box">
-                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(selectedItem.price_outlet))" 
-                   target="_blank" 
-                   class="btn-modal-whatsapp"
-                   style="background: linear-gradient(135deg, #059669, #10b981);"
-                   aria-label="Solicitar Cotação CNPJ no WhatsApp">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-                  <span>Solicitar Cotação CNPJ no WhatsApp</span>
-                </a>
-                <span class="modal-secure-note">🔒 Atendimento oficial de atacado MAJ Mobilidade • Exclusivo CNPJ</span>
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
+  <!-- Modal Interativo de Ficha Técnica e Galeria (Componente Modular) -->
+  {% include 'atacado/catalog_modal.html' %}
 
   <!-- Widget Flutuante de WhatsApp -->
   <a :href="getWhatsAppUrl('Geral - Atendimento Atacado CNPJ', '0')" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor de Atacado">

@@ -19,71 +19,68 @@
     >
       <div
         class="modal-card eval-modal-card"
-        style="background: var(--surface-card, #0f172a); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; width: 100%; max-width: 1160px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 30px 70px -15px rgba(0,0,0,0.85); overflow: hidden; padding: 0;"
+        style="background: #0f172a !important; color: #f8fafc !important; border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; width: 100%; max-width: 1180px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 30px 70px -15px rgba(0,0,0,0.85); overflow: hidden; padding: 0;"
       >
-        <!-- Modal Head com a Cor Oficial da Sidebar (#0b111f) -->
+        <!-- Modal Head (#0b111f) -->
         <div
           class="eval-modal-header"
-          style="padding: 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 16px;"
+          style="padding: 18px 26px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 14px;"
         >
-          <div style="display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1;">
+          <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
             <div
-              style="width: 48px; height: 48px; border-radius: 14px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.45rem; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.35); flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.25);"
+              style="width: 46px; height: 46px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.35); flex-shrink: 0;"
               x-text="employeeData.employee_name ? employeeData.employee_name.charAt(0) : '👤'"
             ></div>
             <div style="min-width: 0;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #ffffff !important; letter-spacing: -0.02em;" x-text="employeeData.employee_name || 'Aferição do Colaborador'"></h3>
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #ffffff !important; letter-spacing: -0.02em;" x-text="employeeData.employee_name || 'Aferição do Colaborador'"></h3>
                 <span
                   class="badge"
-                  style="font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; font-weight: 800; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); text-transform: uppercase; letter-spacing: 0.04em;"
+                  style="font-size: 0.72rem; padding: 3px 9px; border-radius: 6px; font-weight: 800; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); text-transform: uppercase;"
                   x-text="employeeData.area || 'Operações'"
                 ></span>
                 <template x-if="employeeData.score_total !== null && employeeData.score_total !== undefined">
                   <span
                     class="badge"
                     :style="getScoreBadgeStyle(employeeData.score_badge)"
-                    style="font-size: 0.78rem; padding: 4px 12px; border-radius: 8px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);"
+                    style="font-size: 0.76rem; padding: 3px 10px; border-radius: 8px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
                   >
                     <span x-text="getScoreBadgeIcon(employeeData.score_badge)"></span>
                     <span x-text="'SCORE: ' + employeeData.score_total + '/100'"></span>
                   </span>
                 </template>
               </div>
-              <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #94a3b8 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                Função: <strong style="color: #f1f5f9 !important;" x-text="employeeData.role_title || ''"></strong> • Status de Entrega: <span x-text="getStatusLabel(employeeData.status)" style="font-weight: 600; color: #cbd5e1;"></span>
+              <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #94a3b8 !important;">
+                Função: <strong style="color: #f1f5f9 !important;" x-text="employeeData.role_title || ''"></strong> • Status: <span x-text="getStatusLabel(employeeData.status)" style="font-weight: 600; color: #cbd5e1;"></span>
               </p>
             </div>
           </div>
 
-          <!-- Ações do Cabeçalho: Pill Switch e Botão Fechar -->
+          <!-- Ações do Cabeçalho: Pill Modo Confidencial & Fechar -->
           <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto;">
-            <!-- Switch Liberar Feedback em Formato de Pill Elegante -->
             <button
               type="button"
-              class="btn eval-toggle-btn"
+              class="btn"
               @click="toggleFeedbackRelease()"
               :disabled="loading"
-              style="display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 7px 18px !important; border-radius: 9999px !important; font-size: 0.82rem !important; font-weight: 700 !important; cursor: pointer !important; white-space: nowrap !important; border: 1px solid !important; width: auto !important; height: 38px !important; min-width: auto !important; max-width: none !important; user-select: none !important; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;"
+              style="display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 6px 16px !important; border-radius: 9999px !important; font-size: 0.8rem !important; font-weight: 700 !important; cursor: pointer !important; white-space: nowrap !important; border: 1px solid !important; height: 36px !important; transition: all 0.2s !important;"
               :style="employeeData.is_feedback_released 
-                ? 'background: rgba(0, 229, 153, 0.15) !important; border-color: #00e599 !important; color: #00e599 !important; box-shadow: 0 0 14px rgba(0, 229, 153, 0.25) !important;' 
-                : 'background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.2) !important; color: #cbd5e1 !important; box-shadow: none !important;'"
-              title="Alterna se o colaborador poderá visualizar o gabarito e notas no seu próprio portal"
+                ? 'background: rgba(0, 229, 153, 0.15) !important; border-color: #00e599 !important; color: #00e599 !important;' 
+                : 'background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.2) !important; color: #cbd5e1 !important;'"
+              title="Alterna se o colaborador poderá visualizar o feedback no portal"
             >
-              <span style="font-size: 1rem; line-height: 1;" x-text="employeeData.is_feedback_released ? '🔓' : '🔒'"></span>
+              <span x-text="employeeData.is_feedback_released ? '🔓' : '🔒'"></span>
               <span x-text="employeeData.is_feedback_released ? 'Feedback Liberado ao Colaborador' : 'Modo Confidencial (Diretoria)'"></span>
             </button>
 
-            <!-- Botão Fechar Padronizado M-One -->
             <button
               type="button"
               class="modal-close-btn"
               @click="closeModal()"
-              title="Fechar modal (Esc)"
-              aria-label="Fechar"
-              style="width: 38px !important; height: 38px !important; min-width: 38px !important; min-height: 38px !important; max-width: 38px !important; max-height: 38px !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; margin: 0 !important; cursor: pointer !important; transition: all 0.15s ease !important; flex-shrink: 0 !important;"
+              title="Fechar (Esc)"
+              style="width: 36px !important; height: 36px !important; min-width: 36px !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; cursor: pointer !important;"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none; display: block; margin: auto;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -91,133 +88,282 @@
           </div>
         </div>
 
-        <!-- Subheader Informativo com Tom Navy Escuro (#0d1527) -->
-        <div style="padding: 12px 28px; background: #0d1527 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: #94a3b8 !important;">
+        <!-- Subheader Informativo (#0d1527) -->
+        <div style="padding: 10px 26px; background: #0d1527 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: #94a3b8 !important;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span>📋</span>
-            <span style="color: #cbd5e1 !important;"><strong style="color: #ffffff !important;">Pauta de Alinhamento Semanal:</strong> Resposta do colaborador confrontada com o parecer e combinados da Diretoria.</span>
+            <span style="color: #cbd5e1 !important;"><strong style="color: #ffffff !important;">Método Executivo:</strong> Diagramação vertical com direcionamento de demandas para Jam, Geysa e Fauzer.</span>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <span style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">📥 Sexta: Relato do Colaborador</span>
-            <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">💬 Segunda: Parecer da Diretoria</span>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="background: rgba(0, 229, 153, 0.12); color: #00e599; border: 1px solid rgba(0, 229, 153, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">✓ Ciente/Registrado</span>
+            <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">👔 Demanda Jam</span>
+            <span style="background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">💼 Demanda Geysa</span>
+            <span style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ Demanda Fauzer</span>
           </div>
         </div>
 
-        <!-- Corpo com Scroll: Perguntas e Acordos -->
-        <div style="flex: 1; overflow-y: auto; padding: 20px 28px; display: flex; flex-direction: column; gap: 20px;">
+        <!-- Corpo com Scroll (#0f172a) -->
+        <div style="flex: 1; overflow-y: auto; padding: 20px 26px; display: flex; flex-direction: column; gap: 20px; background: #0f172a !important; color: #f8fafc !important;">
           <!-- Loading State -->
           <template x-if="loadingData">
-            <div style="text-align: center; padding: 60px 20px; color: var(--muted, #94a3b8);">
+            <div style="text-align: center; padding: 60px 20px; color: #94a3b8 !important;">
               <div style="font-size: 2rem; margin-bottom: 12px; animation: spin 1s linear infinite;">⏳</div>
-              <p style="margin: 0; font-size: 0.95rem;">Carregando respostas e métricas do colaborador...</p>
+              <p style="margin: 0; font-size: 0.95rem;">Carregando respostas e histórico da reunião...</p>
             </div>
           </template>
 
           <template x-if="!loadingData">
-            <div style="display: flex; flex-direction: column; gap: 18px;">
-              <!-- Lista de Perguntas (Lado a Lado) -->
+            <div style="display: flex; flex-direction: column; gap: 22px;">
+              <!-- LISTA DE PERGUNTAS (COLUNA ÚNICA VERTICAL) -->
               <template x-for="(q, idx) in employeeData.triad_questions" :key="q.id">
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
-                  <!-- Cabeçalho da Pergunta -->
+                <div style="background: #131c2e !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+                  
+                  <!-- Título da Pergunta -->
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
                     <div>
-                      <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text, #f8fafc);" x-text="q.label"></h4>
-                      <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: var(--muted, #94a3b8);" x-text="q.help || q.placeholder"></p>
+                      <h4 style="margin: 0; font-size: 0.98rem; font-weight: 800; color: #ffffff !important;" x-text="q.label"></h4>
+                      <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: #94a3b8 !important;" x-text="q.help || q.placeholder"></p>
                     </div>
                   </div>
 
-                  <!-- Comparativo Lado a Lado (2 Colunas) -->
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
-                    <!-- Coluna Esquerda: Resposta Fornecida -->
-                    <div style="background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; padding: 12px; display: flex; flex-direction: column;">
-                      <div style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                        <span>📥 Resposta Fornecida (Sexta-feira)</span>
-                        <span x-text="q.provided_answer ? 'Preenchido' : 'Em branco'" style="font-size: 0.68rem; opacity: 0.8;"></span>
-                      </div>
-                      <div
-                        style="font-size: 0.84rem; color: var(--text, #f8fafc); line-height: 1.5; white-space: pre-wrap; flex: 1; min-height: 70px;"
-                        :style="!q.provided_answer ? 'color: var(--muted, #94a3b8); font-style: italic;' : ''"
-                        x-html="formatAnswerHtml(q.provided_answer)"
-                      ></div>
+                  <!-- Campo 1: Resposta Fornecida pelo Colaborador (Topo) -->
+                  <div style="background: #0c1a2e !important; border: 1px solid rgba(56, 189, 248, 0.28) !important; border-radius: 12px; padding: 14px; display: flex; flex-direction: column;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                      <span>📥 Resposta Fornecida (Sexta-feira)</span>
+                      <span x-text="q.provided_answer ? 'Preenchido' : 'Em branco'" style="font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"></span>
                     </div>
+                    <div
+                      style="font-size: 0.88rem; color: #f1f5f9 !important; line-height: 1.6; white-space: pre-wrap;"
+                      :style="!q.provided_answer ? 'color: #94a3b8 !important; font-style: italic;' : ''"
+                      x-html="formatAnswerHtml(q.provided_answer)"
+                    ></div>
+                  </div>
 
-                    <!-- Coluna Direita: Parecer de Alinhamento da Diretoria -->
-                    <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 12px; display: flex; flex-direction: column;">
-                      <div style="font-size: 0.74rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                        <span>💬 Parecer de Alinhamento (Diretoria)</span>
+                  <!-- Campo 2: Barra de Chips/Pills Clicáveis (Ações da Diretoria) -->
+                  <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                      <span style="font-size: 0.74rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.03em;">
+                        ⚡ Direcionamento da Diretoria:
+                      </span>
+                      
+                      <!-- 4 Chips / Pills Interativas -->
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <!-- Pill 1: Registrado / Ciente -->
                         <button
                           type="button"
-                          @click="suggestIdea(q)"
-                          :disabled="loadingSuggestion === q.id"
-                          style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.35); color: #c084fc; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s;"
-                          title="Sugerir uma ideia de comentário construtivo com IA"
+                          @click="toggleAction(q.id, 'acknowledged')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.acknowledged
+                            ? 'background: rgba(0, 229, 153, 0.18) !important; border-color: #00e599 !important; color: #00e599 !important; box-shadow: 0 0 10px rgba(0, 229, 153, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
                         >
-                          <span x-show="loadingSuggestion !== q.id">✨ Sugerir Ideia</span>
-                          <span x-show="loadingSuggestion === q.id">Pensando...</span>
+                          <span x-text="qActions[String(q.id)]?.acknowledged ? '✓' : '○'"></span>
+                          <span>Registrado pela Gerência</span>
+                        </button>
+
+                        <!-- Pill 2: Demanda Jam -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'jam')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_jam
+                            ? 'background: rgba(245, 158, 11, 0.18) !important; border-color: #fbbf24 !important; color: #fbbf24 !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>👔</span>
+                          <span>Demanda Jam</span>
+                        </button>
+
+                        <!-- Pill 3: Demanda Geysa -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'geysa')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_geysa
+                            ? 'background: rgba(52, 211, 153, 0.18) !important; border-color: #34d399 !important; color: #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>💼</span>
+                          <span>Demanda Geysa</span>
+                        </button>
+
+                        <!-- Pill 4: Demanda Fauzer -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'fauzer')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_fauzer
+                            ? 'background: rgba(168, 85, 247, 0.18) !important; border-color: #c084fc !important; color: #c084fc !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>⚡</span>
+                          <span>Demanda Fauzer</span>
                         </button>
                       </div>
-                      <textarea
-                        class="form-input"
-                        x-model="directorComments[q.id]"
-                        placeholder="Anote elogios, correções, pontos de atenção ou orientações da Diretoria para este item..."
-                        rows="3"
-                        style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: rgba(0,0,0,0.25); color: var(--text, #f8fafc); border: 1px solid rgba(245, 158, 11, 0.25); padding: 8px 10px; resize: vertical; box-sizing: border-box;"
-                      ></textarea>
+                    </div>
+
+                    <!-- CAIXAS DE TEXTO EXPANSÍVEIS (ATIVADAS PELOS BOTÕES) -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+                      
+                      <!-- Caixa 1: Observação / Feedback ao Colaborador -->
+                      <div x-show="qActions[String(q.id)]?.acknowledged" x-transition style="background: rgba(0, 229, 153, 0.04); border: 1px solid rgba(0, 229, 153, 0.25); border-radius: 10px; padding: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                          <span style="font-size: 0.72rem; font-weight: 800; color: #00e599; text-transform: uppercase;">
+                            💬 Devolutiva ao Colaborador (Opcional — sairá no WhatsApp dele):
+                          </span>
+                          <button
+                            type="button"
+                            @click="suggestIdea(q)"
+                            :disabled="loadingSuggestion === q.id"
+                            style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.35); color: #c084fc; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; cursor: pointer;"
+                          >
+                            <span x-show="loadingSuggestion !== q.id">✨ Sugerir com IA</span>
+                            <span x-show="loadingSuggestion === q.id">Pensando...</span>
+                          </button>
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].employee_feedback"
+                          placeholder="Ex: Registrado! Parabéns pela precisão nas informações... ou orientações de ajuste para o colaborador..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(0, 229, 153, 0.3) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 2: Demanda Jam -->
+                      <div x-show="qActions[String(q.id)]?.has_jam" x-transition style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 6px;">
+                          👔 Ação atribuída ao Jam Penitenti:
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_jam"
+                          placeholder="Descreva exatamente o que o Jam deve executar referente a este ponto..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(245, 158, 11, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 3: Demanda Geysa -->
+                      <div x-show="qActions[String(q.id)]?.has_geysa" x-transition style="background: rgba(52, 211, 153, 0.04); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #34d399; text-transform: uppercase; margin-bottom: 6px;">
+                          💼 Ação atribuída à Geysa (Loja / Financeiro):
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_geysa"
+                          placeholder="Descreva a conferência, cobrança ou ação de rotina da Geysa..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(52, 211, 153, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 4: Demanda Fauzer -->
+                      <div x-show="qActions[String(q.id)]?.has_fauzer" x-transition style="background: rgba(168, 85, 247, 0.04); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #c084fc; text-transform: uppercase; margin-bottom: 6px;">
+                          ⚡ Ação atribuída ao Fauzer (Sistemas / M-One / Cartilhas):
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_fauzer"
+                          placeholder="Descreva o ajuste de processo, automação no M-One ou treinamento com o Fauzer..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(168, 85, 247, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
                     </div>
                   </div>
+
                 </div>
               </template>
 
-              <!-- Painel de Acordos & Metas da Semana (Jam/Geysa vs Fauzer) -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
-                <!-- Bloco 1: Acordos Jam & Geysa -->
-                <div style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 14px; padding: 16px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 1.2rem;">📌</span>
-                      <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #fbbf24;">Acordos & Metas — Jam & Geysa</h4>
-                    </div>
-                    <span style="font-size: 0.68rem; font-weight: 700; color: #fbbf24; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px;">Loja & Gestão</span>
+              <!-- CENTRAL DOS 4 RELATÓRIOS EXECUTIVOS WHATSAPP (ABAS) -->
+              <div style="background: #101726; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <h4 style="margin: 0; font-size: 0.98rem; font-weight: 800; color: #ffffff;">📊 Central dos 4 Relatórios de Alinhamento</h4>
+                    <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: #94a3b8;">Gerados em tempo real prontos para envio individual no WhatsApp:</p>
                   </div>
-                  <p style="margin: 0 0 8px 0; font-size: 0.74rem; color: var(--muted, #94a3b8);">Rotinas de loja, caixa físico, cobranças financeiras, alçadas e disciplina:</p>
-                  <textarea
-                    class="form-input"
-                    x-model="agreementsJamGeysa"
-                    placeholder="Ex: 1. Reduzir tempo de faturamento no balcão; 2. Enviar comprovantes diários para Geysa até as 17h..."
-                    rows="4"
-                    style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: rgba(0,0,0,0.25); color: var(--text, #f8fafc); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 10px; resize: vertical; box-sizing: border-box;"
-                  ></textarea>
+
+                  <!-- Seletor de Abas dos 4 Relatórios -->
+                  <div style="display: flex; gap: 6px; background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'employee'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'employee' ? 'background: #00e599; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      👤 Colaborador
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'jam'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'jam' ? 'background: #fbbf24; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      👔 Jam
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'geysa'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'geysa' ? 'background: #34d399; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      💼 Geysa
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'fauzer'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'fauzer' ? 'background: #c084fc; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      ⚡ Fauzer
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Bloco 2: Acordos Fauzer -->
-                <div style="background: rgba(168, 85, 247, 0.06); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 14px; padding: 16px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span style="font-size: 1.2rem;">⚡</span>
-                      <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #c084fc;">Acordos & Metas — Fauzer</h4>
+                <!-- Card de Preview do Relatório Selecionado -->
+                <div style="background: #090e17; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; position: relative;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+                      📱 Mensagem Formatada para WhatsApp:
+                    </span>
+                    <div style="display: flex; gap: 8px;">
+                      <button
+                        type="button"
+                        @click="copyReport(activeReportTab)"
+                        style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+                      >
+                        <span x-text="copiedTab === activeReportTab ? '✅ Copiado!' : '📋 Copiar Texto'"></span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="dispatchWhatsApp(activeReportTab)"
+                        style="background: rgba(37, 211, 102, 0.18); border: 1px solid rgba(37, 211, 102, 0.4); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+                      >
+                        <span>📱 Abrir no WhatsApp</span>
+                      </button>
                     </div>
-                    <span style="font-size: 0.68rem; font-weight: 700; color: #c084fc; background: rgba(168, 85, 247, 0.15); padding: 2px 6px; border-radius: 4px;">Sistemas M-One</span>
                   </div>
-                  <p style="margin: 0 0 8px 0; font-size: 0.74rem; color: var(--muted, #94a3b8);">Processos operacionais, sistema M-One, automações e cartilhas técnicas:</p>
-                  <textarea
-                    class="form-input"
-                    x-model="agreementsFauzer"
-                    placeholder="Ex: 1. Realizar treinamento do módulo de expedição na terça; 2. Padronizar conferência de chassi no Bling..."
-                    rows="4"
-                    style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: rgba(0,0,0,0.25); color: var(--text, #f8fafc); border: 1px solid rgba(168, 85, 247, 0.3); padding: 8px 10px; resize: vertical; box-sizing: border-box;"
-                  ></textarea>
+
+                  <pre
+                    x-text="buildWhatsAppText(activeReportTab)"
+                    style="margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; line-height: 1.5; color: #e2e8f0; white-space: pre-wrap; max-height: 220px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);"
+                  ></pre>
                 </div>
               </div>
+
             </div>
           </template>
         </div>
 
-        <!-- Modal Footer com a Cor Oficial da Sidebar (#0b111f) -->
+        <!-- Modal Footer (#0b111f) -->
         <div
           class="modal-footer eval-modal-footer"
-          style="padding: 16px 28px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 12px;"
+          style="padding: 16px 26px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 12px;"
         >
-          <!-- Mensagem de Feedback -->
+          <!-- Mensagem Toast -->
           <div>
             <span
               x-show="toastMsg"
@@ -227,7 +373,7 @@
             ></span>
           </div>
 
-          <!-- Botões -->
+          <!-- Botões de Ação -->
           <div style="display: flex; align-items: center; gap: 10px;">
             <button
               type="button"
@@ -238,244 +384,36 @@
               Fechar
             </button>
 
-            <!-- Disparo WhatsApp com a Pauta Formatada -->
+            <!-- Botão Salvar Rascunho (Permite continuar a reunião sem fechar) -->
             <button
               type="button"
               class="btn"
-              @click="openWhatsApp()"
-              style="font-size: 0.85rem; font-weight: 700; background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.4); padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
-              title="Abrir WhatsApp com o resumo de alinhamento e acordos formatados"
+              @click="saveAlignment()"
+              :disabled="saving"
+              style="font-size: 0.85rem; font-weight: 700; background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+              title="Salva as anotações e demandas em modo rascunho sem fechar a aferição"
             >
-              <span>📱</span>
-              <span>Enviar no WhatsApp</span>
+              <span>💾</span>
+              <span x-show="!saving">Salvar Rascunho</span>
+              <span x-show="saving">Salvando...</span>
             </button>
 
-            <!-- Salvar Pareceres e Combinados -->
+            <!-- Botão Finalizar Aferição & Liberar Relatórios -->
             <button
               type="button"
               class="btn primary"
-              @click="saveAlignment()"
+              @click="finalizeAlignment()"
               :disabled="saving"
               style="font-size: 0.85rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 8px; box-shadow: 0 4px 14px rgba(229, 169, 59, 0.35);"
             >
-              <span x-show="!saving">💾 Salvar Pareceres</span>
-              <span x-show="saving">Salvando...</span>
+              <span>🚀 Finalizar Aferição & Liberar</span>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   </template>
 </div>
 
-<script>
-function employeeEvaluationModal() {
-  return {
-    isOpen: false,
-    loadingData: false,
-    loading: false,
-    saving: false,
-    loadingSuggestion: null,
-    toastMsg: '',
-    toastSuccess: true,
-    cycleId: null,
-    employeeKey: '',
-    employeeData: {},
-    directorComments: {},
-    agreementsJamGeysa: '',
-    agreementsFauzer: '',
-
-    init() {
-      window.openEvaluationModal = (cycleId, empKey) => {
-        this.openModal({ cycleId: cycleId, employeeKey: empKey });
-      };
-      window.addEventListener('open-evaluation-modal', (e) => {
-        if (e && e.detail) {
-          this.openModal(e.detail);
-        }
-      });
-    },
-
-    openModal(detail) {
-      this.cycleId = detail.cycleId;
-      this.employeeKey = detail.employeeKey;
-      this.isOpen = true;
-      this.toastMsg = '';
-      this.fetchDetails();
-    },
-
-    closeModal() {
-      this.isOpen = false;
-      this.toastMsg = '';
-    },
-
-    showToast(msg, success = true) {
-      this.toastMsg = msg;
-      this.toastSuccess = success;
-      setTimeout(() => { this.toastMsg = ''; }, 4500);
-    },
-
-    async fetchDetails() {
-      if (!this.cycleId || !this.employeeKey) return;
-      this.loadingData = true;
-      try {
-        const resp = await fetch(`/api/relatorio/detalhes/${this.cycleId}/${this.employeeKey}`);
-        const result = await resp.json();
-        if (result.success && result.data) {
-          this.employeeData = result.data;
-          this.directorComments = {};
-          (this.employeeData.triad_questions || []).forEach(q => {
-            this.directorComments[q.id] = q.director_comment || '';
-          });
-          this.agreementsJamGeysa = this.employeeData.agreements_jam_geysa || '';
-          this.agreementsFauzer = this.employeeData.agreements_fauzer || '';
-        } else {
-          this.showToast(result.error || 'Erro ao carregar dados.', false);
-        }
-      } catch (e) {
-        this.showToast('Erro de conexão ao buscar detalhes.', false);
-      } finally {
-        this.loadingData = false;
-      }
-    },
-
-    async saveAlignment() {
-      this.saving = true;
-      this.loading = true;
-      try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-        const resp = await fetch('/api/relatorio/salvar-alinhamento', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-          },
-          body: JSON.stringify({
-            cycle_id: this.cycleId,
-            employee_key: this.employeeKey,
-            director_comments: this.directorComments,
-            agreements_jam_geysa: this.agreementsJamGeysa,
-            agreements_fauzer: this.agreementsFauzer
-          })
-        });
-        const res = await resp.json();
-        if (res.success) {
-          this.showToast(res.message || 'Pareceres e acordos salvos com sucesso!', true);
-          if (res.data) {
-            this.employeeData = res.data;
-          }
-        } else {
-          this.showToast(res.error || 'Erro ao salvar pareceres.', false);
-        }
-      } catch (e) {
-        this.showToast('Falha na requisição ao salvar pareceres.', false);
-      } finally {
-        this.saving = false;
-        this.loading = false;
-      }
-    },
-
-    async suggestIdea(q) {
-      if (!q) return;
-      this.loadingSuggestion = q.id;
-      try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-        const resp = await fetch('/api/relatorio/sugerir-comentario', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-          },
-          body: JSON.stringify({
-            question_label: q.label,
-            provided_answer: q.provided_answer,
-            role_title: this.employeeData.role_title,
-            employee_name: this.employeeData.employee_name
-          })
-        });
-        const res = await resp.json();
-        if (res.success && res.suggestion) {
-          const current = (this.directorComments[q.id] || '').trim();
-          this.directorComments[q.id] = current ? (current + ' ' + res.suggestion) : res.suggestion;
-          this.showToast('Sugestão da IA adicionada com sucesso!', true);
-        } else {
-          this.showToast(res.error || 'Não foi possível gerar a sugestão.', false);
-        }
-      } catch (e) {
-        this.showToast('Falha ao conectar ao serviço de sugestão.', false);
-      } finally {
-        this.loadingSuggestion = null;
-      }
-    },
-
-    async openWhatsApp() {
-      // Salva antes para persistir qualquer anotação recente e atualizar a URL oficial
-      await this.saveAlignment();
-      if (this.employeeData && this.employeeData.whatsapp_alignment_url) {
-        window.open(this.employeeData.whatsapp_alignment_url, '_blank');
-      } else {
-        this.showToast('Número de WhatsApp ou link indisponível para este colaborador.', false);
-      }
-    },
-
-    async toggleFeedbackRelease() {
-      const nextVal = !this.employeeData.is_feedback_released;
-      this.loading = true;
-      try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-        const resp = await fetch('/api/relatorio/toggle-liberacao', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-          },
-          body: JSON.stringify({
-            cycle_id: this.cycleId,
-            employee_key: this.employeeKey,
-            is_released: nextVal
-          })
-        });
-        const res = await resp.json();
-        if (res.success) {
-          this.employeeData.is_feedback_released = res.is_feedback_released;
-          this.showToast(res.message, true);
-        } else {
-          this.showToast(res.error || 'Erro ao alterar liberação.', false);
-        }
-      } catch (e) {
-        this.showToast('Falha ao alternar modo de liberação.', false);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    getStatusLabel(status) {
-      if (status === 'submitted_on_time') return '🟢 Entregue no Prazo';
-      if (status === 'submitted_late') return '🟡 Entregue com Atraso';
-      if (status === 'draft') return '⚪ Em Rascunho';
-      return '🔴 Pendente de Envio';
-    },
-
-    getScoreBadgeStyle(badge) {
-      if (badge === 'green') return 'background: rgba(0, 229, 153, 0.15); color: #00e599; border: 1px solid rgba(0, 229, 153, 0.4);';
-      if (badge === 'yellow') return 'background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);';
-      if (badge === 'red') return 'background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);';
-      return 'background: rgba(255, 255, 255, 0.08); color: var(--muted, #94a3b8); border: 1px solid rgba(255, 255, 255, 0.15);';
-    },
-
-    getScoreBadgeIcon(badge) {
-      if (badge === 'green') return '🟢';
-      if (badge === 'yellow') return '🟡';
-      if (badge === 'red') return '🔴';
-      return '⚪';
-    },
-
-    formatAnswerHtml(text) {
-      if (typeof window.formatReportAnswerHtml === 'function') {
-        return window.formatReportAnswerHtml(text);
-      }
-      return text || '<span style="color: var(--muted, #94a3b8); font-style: italic;">Colaborador não preencheu este campo no fechamento semanal.</span>';
-    }
-  };
-}
-</script>
+<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261026_eval_v3"></script>

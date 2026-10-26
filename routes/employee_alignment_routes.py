@@ -232,3 +232,19 @@ def api_toggle_feedback_release():
     except Exception as e:
         logger.error(f"Erro ao alternar liberação de feedback: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/relatorio/demandas-consolidadas/<int:cycle_id>", methods=["GET"])
+@login_required
+def api_get_consolidated_demands(cycle_id: int):
+    """Retorna todas as demandas de Jam, Geysa e Fauzer agregadas para toda a equipe no ciclo."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+    try:
+        from services.employee_report_dispatch_service import get_consolidated_cycle_demands
+        data = get_consolidated_cycle_demands(cycle_id)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Erro ao consolidar demandas do ciclo {cycle_id}: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+

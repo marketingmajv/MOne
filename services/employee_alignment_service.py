@@ -17,6 +17,7 @@ from database import db
 from services.employee_desired_templates import get_employee_default_desired_map
 from services.employee_reports_data import REPORTING_EMPLOYEES, get_reporting_employee_meta
 from services.employee_reports_service import _is_pg, ensure_reports_schema, get_employee_report
+from services.employee_report_dispatch_service import normalize_question_actions
 from services.gemini_client import execute_gemini_payload
 
 logger = logging.getLogger(__name__)
@@ -111,10 +112,10 @@ def generate_whatsapp_alignment_url(
         msg_lines.extend(comments_section)
         msg_lines.append("")
 
-    if agreements_jam_geysa and agreements_jam_geysa.strip():
+    if agreements_jam_geysa and isinstance(agreements_jam_geysa, str) and agreements_jam_geysa.strip():
         msg_lines.append(f"📌 *Acordos & Metas (Jam & Geysa):*\n{agreements_jam_geysa.strip()}\n")
 
-    if agreements_fauzer and agreements_fauzer.strip():
+    if agreements_fauzer and isinstance(agreements_fauzer, str) and agreements_fauzer.strip():
         msg_lines.append(f"⚡ *Sistemas & Processos (Fauzer):*\n{agreements_fauzer.strip()}\n")
 
     msg_lines.append("Contamos com seu empenho e dedicação para batermos as metas! Uma excelente semana! 🚀")
@@ -154,9 +155,13 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
 
     for q in questions:
         qid = q.get("id")
-        provided_text = raw_provided.get(qid, "").strip() if isinstance(raw_provided, dict) else ""
-        desired_text = raw_desired.get(qid, "").strip() if (isinstance(raw_desired, dict) and raw_desired.get(qid)) else default_desired.get(qid, "")
-        director_comment = raw_comments.get(qid, "").strip() if isinstance(raw_comments, dict) else ""
+        provided_text = str(raw_provided.get(qid) or "").strip() if isinstance(raw_provided, dict) else ""
+        desired_text = str(raw_desired.get(qid) or default_desired.get(qid) or "").strip() if isinstance(raw_desired, dict) else str(default_desired.get(qid) or "")
+        raw_comm_val = raw_comments.get(qid) if isinstance(raw_comments, dict) else ""
+        if isinstance(raw_comm_val, dict):
+            director_comment = str(raw_comm_val.get("employee_feedback") or raw_comm_val.get("demand_jam") or raw_comm_val.get("demand_fauzer") or "").strip()
+        else:
+            director_comment = str(raw_comm_val or "").strip()
 
         q_eval = questions_eval_map.get(qid, {})
 
@@ -201,6 +206,10 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
         "evaluated_at": report.get("evaluated_at"),
         "triad_questions": triad_questions,
         "director_comments": raw_comments if isinstance(raw_comments, dict) else {},
+        "director_actions": {
+            str(q.get("id")): normalize_question_actions(raw_comments.get(str(q.get("id"))))
+            for q in triad_questions
+        } if isinstance(raw_comments, dict) else {},
         "agreements_jam_geysa": agreements_jam_geysa,
         "agreements_fauzer": agreements_fauzer,
         "whatsapp_alignment_url": whatsapp_url,

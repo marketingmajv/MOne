@@ -386,6 +386,6 @@ window.formatReportAnswerHtml = function(text) {
     const isFirst = (offset === 0 || prefix === '' || prefix === '\n');
     const linePrefix = isFirst ? '' : '<br style="display: block; margin-top: 6px; content: \' \';">';
     const b = bullet || '';
-    return `${linePrefix}${b}<strong style="font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">${q}</strong>`;
+    return `${linePrefix}${b}<strong style="font-weight: 800; color: #38bdf8; letter-spacing: -0.01em;">${q}</strong>`;
   });
 };

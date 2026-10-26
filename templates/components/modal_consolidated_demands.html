@@ -1,0 +1,206 @@
+<!-- MODAL EXECUTIVO DE DEMANDAS CONSOLIDADAS DO CICLO (JAM, GEYSA, FAUZER) -->
+<!-- Regra Mandatória M-One: x-teleport="body" e classe modal-close-btn -->
+<div x-data="consolidatedDemandsModal()" @open-consolidated-demands-modal.window="openModal($event.detail)">
+  <template x-teleport="body">
+    <div
+      class="modal"
+      :class="{ 'show': isOpen }"
+      x-show="isOpen"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @keydown.escape.window="closeModal()"
+      style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;"
+      :style="isOpen ? 'display: flex;' : 'display: none;'"
+      @click.self="closeModal()"
+    >
+      <div
+        class="modal-card eval-modal-card"
+        style="background: #0f172a !important; color: #f8fafc !important; border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 30px 70px -15px rgba(0,0,0,0.85); overflow: hidden; padding: 0;"
+      >
+        <!-- Modal Head (#0b111f) -->
+        <div style="padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.6rem;">⚡</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #ffffff !important;">Pauta Consolidada de Demandas da Semana</h3>
+              <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: #94a3b8 !important;" x-text="data.cycle_title || 'Ciclo Semanal'"></p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="modal-close-btn"
+            @click="closeModal()"
+            title="Fechar (Esc)"
+            style="width: 36px !important; height: 36px !important; min-width: 36px !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; cursor: pointer !important;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Seletor dos 3 Líderes (#0d1527) -->
+        <div style="padding: 12px 24px; background: #0d1527 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px;">
+            <button
+              type="button"
+              @click="activeLeader = 'jam'"
+              style="padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;"
+              :style="activeLeader === 'jam' ? 'background: #fbbf24; color: #000; font-weight: 800;' : 'background: rgba(255,255,255,0.08); color: #94a3b8;'"
+            >
+              <span>👔</span>
+              <span>Jam Penitenti</span>
+              <span class="badge" style="background: rgba(0,0,0,0.25); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;" x-text="(data.jam || []).length"></span>
+            </button>
+
+            <button
+              type="button"
+              @click="activeLeader = 'geysa'"
+              style="padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;"
+              :style="activeLeader === 'geysa' ? 'background: #34d399; color: #000; font-weight: 800;' : 'background: rgba(255,255,255,0.08); color: #94a3b8;'"
+            >
+              <span>💼</span>
+              <span>Geysa</span>
+              <span class="badge" style="background: rgba(0,0,0,0.25); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;" x-text="(data.geysa || []).length"></span>
+            </button>
+
+            <button
+              type="button"
+              @click="activeLeader = 'fauzer'"
+              style="padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;"
+              :style="activeLeader === 'fauzer' ? 'background: #c084fc; color: #000; font-weight: 800;' : 'background: rgba(255,255,255,0.08); color: #94a3b8;'"
+            >
+              <span>⚡</span>
+              <span>Fauzer</span>
+              <span class="badge" style="background: rgba(0,0,0,0.25); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px;" x-text="(data.fauzer || []).length"></span>
+            </button>
+          </div>
+
+          <!-- Ações de Envio WhatsApp -->
+          <div style="display: flex; gap: 8px;">
+            <button
+              type="button"
+              @click="copyText()"
+              style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 5px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              <span x-text="copied ? '✅ Copiado!' : '📋 Copiar Pauta'"></span>
+            </button>
+            <button
+              type="button"
+              @click="openWhatsApp()"
+              style="background: rgba(37, 211, 102, 0.18); border: 1px solid rgba(37, 211, 102, 0.4); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 5px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              <span>📱 Enviar no WhatsApp</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Corpo com a Lista de Itens e Visualização da Mensagem -->
+        <div style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #0f172a !important;">
+          <template x-if="loading">
+            <div style="text-align: center; padding: 50px 20px; color: #94a3b8;">
+              <div style="font-size: 1.8rem; margin-bottom: 10px; animation: spin 1s linear infinite;">⏳</div>
+              <p style="margin: 0;">Consolidando demandas da equipe no ciclo...</p>
+            </div>
+          </template>
+
+          <template x-if="!loading">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Resumo Numérico -->
+              <div style="font-size: 0.82rem; color: #94a3b8;">
+                Exibindo <strong style="color: #f8fafc;" x-text="(data[activeLeader] || []).length"></strong> demanda(s) gerada(s) para este líder somando todos os colaboradores do ciclo.
+              </div>
+
+              <!-- Visualização da Mensagem WhatsApp -->
+              <pre
+                x-text="currentMessage"
+                style="margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; line-height: 1.55; color: #e2e8f0; white-space: pre-wrap; background: #090e17; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); max-height: 420px; overflow-y: auto;"
+              ></pre>
+            </div>
+          </template>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 12px 24px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; align-items: center; background: #0b111f !important;">
+          <button
+            type="button"
+            class="btn"
+            @click="closeModal()"
+            style="font-size: 0.85rem; font-weight: 600; padding: 7px 18px; border-radius: 8px;"
+          >
+            Fechar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </template>
+</div>
+
+<script>
+function consolidatedDemandsModal() {
+  return {
+    isOpen: false,
+    loading: false,
+    copied: false,
+    cycleId: null,
+    activeLeader: 'jam',
+    data: { jam: [], geysa: [], fauzer: [], whatsapp_jam: '', whatsapp_geysa: '', whatsapp_fauzer: '' },
+
+    openModal(detail) {
+      this.cycleId = detail && detail.cycleId ? detail.cycleId : window.__CYCLE_ID__;
+      this.isOpen = true;
+      this.copied = false;
+      this.fetchConsolidated();
+    },
+
+    closeModal() {
+      this.isOpen = false;
+    },
+
+    get currentMessage() {
+      if (this.activeLeader === 'jam') return this.data.whatsapp_jam || '';
+      if (this.activeLeader === 'geysa') return this.data.whatsapp_geysa || '';
+      if (this.activeLeader === 'fauzer') return this.data.whatsapp_fauzer || '';
+      return '';
+    },
+
+    async fetchConsolidated() {
+      if (!this.cycleId) return;
+      this.loading = true;
+      try {
+        const resp = await fetch(`/api/relatorio/demandas-consolidadas/${this.cycleId}`);
+        const res = await resp.json();
+        if (res.success && res.data) {
+          this.data = res.data;
+        }
+      } catch (e) {
+        console.error('Erro ao buscar demandas consolidadas:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    copyText() {
+      const msg = this.currentMessage;
+      if (!msg) return;
+      navigator.clipboard.writeText(msg).then(() => {
+        this.copied = true;
+        setTimeout(() => { this.copied = false; }, 2500);
+      });
+    },
+
+    openWhatsApp() {
+      const msg = this.currentMessage;
+      if (!msg) return;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  };
+}
+</script>

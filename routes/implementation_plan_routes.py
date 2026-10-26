@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 implementation_plan_bp = Blueprint("implementation_plan", __name__)
 
-
 @implementation_plan_bp.route("/gestao-interna", methods=["GET"])
 @implementation_plan_bp.route("/admin/gestao-interna", methods=["GET"])
 @implementation_plan_bp.route("/admin/plano", methods=["GET"])
+@implementation_plan_bp.route("/admin/internal/plan", methods=["GET"])
 @login_required
 def index():
     """Painel Executivo de Gestão Interna e Governança MAJ (Exclusivo para Diretoria e Administradores)."""

@@ -1428,13 +1428,14 @@ body {
   }
 
   .btn-scroll-catalog {
-    display: none; /* Despolui o cabeçalho no mobile */
+    display: none !important; /* Despolui o cabeçalho no mobile */
   }
 
   .btn-whatsapp-header {
     padding: 8px 14px;
     font-size: 0.82rem;
     gap: 6px;
+    white-space: nowrap;
   }
 
   .outlet-modal-backdrop {
