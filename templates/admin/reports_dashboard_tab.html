@@ -125,35 +125,97 @@
 
   <!-- Tabela de Monitoramento das Entregas -->
   <div class="panel" style="margin-bottom: 24px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px;">
-    <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">
-        Quadro de Entregas Semanais (7 Colaboradores Oficiais)
-      </h3>
-      <span class="muted" style="font-size: 0.78rem;">
-        Atualizado em tempo real • Sincronização com Google Docs via IA
-      </span>
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">
+          Quadro de Entregas Semanais (7 Colaboradores Oficiais)
+        </h3>
+        <span class="muted" style="font-size: 0.78rem;">
+          Atualizado em tempo real • Sincronização com Google Docs via IA
+        </span>
+      </div>
+
+      <!-- Botão e Popover de Personalizar Colunas (Padrão Prospector) -->
+      <div class="columns-customizer-wrapper" x-data="{ openCols: false, popoverTab: 'cols' }" @click.outside="openCols = false">
+        <button type="button" 
+                class="btn sm btn-columns-toggle" 
+                @click="openCols = !openCols" 
+                title="Personalizar, Ocultar, Reordenar e Ajustar Colunas e Botões da Tabela"
+                style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 12px; cursor: pointer;">
+          <span>⚙️</span>
+          <span>Colunas & Ações</span>
+        </button>
+
+        <!-- Popover Suspenso de Colunas e Ações -->
+        <div x-show="openCols" 
+             x-cloak 
+             class="columns-popover" 
+             x-transition:enter="transition ease-out duration-150" 
+             x-transition:enter-start="opacity-0 transform scale-95" 
+             x-transition:enter-end="opacity-100 transform scale-100" 
+             x-transition:leave="transition ease-in duration-100" 
+             x-transition:leave-start="opacity-100 transform scale-100" 
+             x-transition:leave-end="opacity-0 transform scale-95">
+          <div class="columns-popover-head">
+            <div class="columns-popover-title">
+              <span>⚙️</span>
+              <strong>Personalizar Tabela</strong>
+            </div>
+            <button type="button" class="columns-close-btn" @click="openCols = false" title="Fechar">✕</button>
+          </div>
+
+          <!-- Abas de Navegação do Popover -->
+          <div class="cols-popover-tabs">
+            <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'cols' }" @click="popoverTab = 'cols'">📊 Colunas</button>
+            <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'btns' }" @click="popoverTab = 'btns'">⚡ Botões Rápidos</button>
+          </div>
+
+          <!-- Painel 1: Colunas da Tabela -->
+          <div x-show="popoverTab === 'cols'">
+            <div class="columns-popover-hint">
+              <span>Arraste os títulos (<strong>Drag & Drop</strong>), ajuste larguras na borda ou selecione para exibir:</span>
+            </div>
+            <div id="reports-columns-list" class="columns-popover-list"></div>
+          </div>
+
+          <!-- Painel 2: Botões de Ação na Linha -->
+          <div x-show="popoverTab === 'btns'" style="display: none;">
+            <div class="columns-popover-hint">
+              <span>Escolha quais botões fixar diretamente na <strong>linha rápida</strong> da tabela:</span>
+            </div>
+            <div id="reports-buttons-list" class="columns-popover-list"></div>
+          </div>
+
+          <div class="columns-popover-footer">
+            <button type="button" id="btn-reset-reports-columns" class="btn sm btn-reset-cols">
+              <span>↺</span>
+              <span>Voltar ao Original</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div style="overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+    <div style="overflow-x: auto; min-height: 380px;">
+      <table class="reports-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
         <thead>
           <tr style="background: var(--panel2); border-bottom: 1px solid var(--line); color: var(--text-dim); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em;">
-            <th style="padding: 12px 18px;">Colaborador</th>
-            <th style="padding: 12px 18px;">Área & Função</th>
-            <th style="padding: 12px 18px; text-align: center;">Status da Entrega</th>
-            <th style="padding: 12px 18px; text-align: center;">Preenchimento</th>
-            <th style="padding: 12px 18px; text-align: center;">Data/Hora Envio</th>
-            <th style="padding: 12px 18px; text-align: right;">Ações</th>
+            <th data-col="colaborador" style="padding: 12px 18px;">Colaborador</th>
+            <th data-col="area" style="padding: 12px 18px;">Área & Função</th>
+            <th data-col="status" style="padding: 12px 18px; text-align: center;">Status da Entrega</th>
+            <th data-col="preenchimento" style="padding: 12px 18px; text-align: center;">Preenchimento</th>
+            <th data-col="data_envio" style="padding: 12px 18px; text-align: center;">Data/Hora Envio</th>
+            <th data-col="acoes" style="padding: 12px 18px; text-align: right; width: 310px;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for emp in summary.employees %}
-          <tr style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;"
+          <tr class="employee-row" style="border-bottom: 1px solid var(--line); transition: background 0.15s ease;"
               onmouseover="this.style.background='var(--panel2)'" 
               onmouseout="this.style.background='transparent'">
             
             <!-- Nome e Ícone -->
-            <td style="padding: 14px 18px;">
+            <td data-col="colaborador" style="padding: 14px 18px;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: var(--text);">
                   {{ emp.name[0] }}
@@ -168,9 +230,13 @@
                     </a>
                     {% endif %}
                     {% if emp.docx_filename %}
-                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.68rem; padding: 2px 6px;" title="Relatório entregue via upload de arquivo">
-                      📎 {{ 'PDF' if emp.docx_filename.endswith('.pdf') else ('TXT' if emp.docx_filename.endswith('.txt') else 'DOCX') }}
-                    </span>
+                    <a href="/admin/plano/download-docx?file={{ emp.docx_filename }}&cycle_code={{ cycle.cycle_code }}" 
+                       target="_blank" 
+                       class="badge" 
+                       style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.68rem; padding: 2px 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" 
+                       title="Clique para baixar o arquivo entregue ({{ emp.docx_filename }})">
+                      <span>📎 {{ 'PDF' if emp.docx_filename.endswith('.pdf') else ('TXT' if emp.docx_filename.endswith('.txt') else 'DOCX') }} ⤓</span>
+                    </a>
                     {% endif %}
                   </div>
                 </div>
@@ -178,7 +244,7 @@
             </td>
 
             <!-- Área & Função -->
-            <td style="padding: 14px 18px;">
+            <td data-col="area" style="padding: 14px 18px;">
               <span class="badge" style="background: rgba(217, 119, 6, 0.12); color: #d97706; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; display: inline-block;">
                 {{ emp.badge }}
               </span>
@@ -188,7 +254,7 @@
             </td>
 
             <!-- Status da Entrega -->
-            <td style="padding: 14px 18px; text-align: center;">
+            <td data-col="status" style="padding: 14px 18px; text-align: center;">
               <span class="badge {{ emp.badge_class }}" style="font-size: 0.76rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
                 <span>{{ emp.icon }}</span>
                 <span>{{ emp.status_label }}</span>
@@ -196,7 +262,7 @@
             </td>
 
             <!-- Preenchimento -->
-            <td style="padding: 14px 18px; text-align: center;">
+            <td data-col="preenchimento" style="padding: 14px 18px; text-align: center;">
               <div style="display: inline-block; width: 100px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 3px; color: var(--text-dim);">
                   <span>{{ emp.answered_count }}/{{ emp.total_questions }}</span>
@@ -209,7 +275,7 @@
             </td>
 
             <!-- Data/Hora -->
-            <td style="padding: 14px 18px; text-align: center; font-size: 0.78rem; color: var(--text-dim);">
+            <td data-col="data_envio" style="padding: 14px 18px; text-align: center; font-size: 0.78rem; color: var(--text-dim);">
               {% if emp.submitted_at %}
                 {{ emp.submitted_at|string }}
               {% else %}
@@ -217,14 +283,42 @@
               {% endif %}
             </td>
 
-            <!-- Ações -->
-            <td style="padding: 14px 18px; text-align: right;">
-              <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <!-- Botão de Sincronizar Google Doc com IA se o colaborador usar Doc -->
+            <!-- Ações (Layout Blindado para Telas Grandes e Pequenas) -->
+            <td data-col="acoes" style="padding: 12px 18px; text-align: right; white-space: nowrap;">
+              <div style="display: inline-flex; justify-content: flex-end; align-items: center; gap: 8px; position: relative;"
+                   x-data="{ menuOpen: false }"
+                   :style="menuOpen ? 'z-index: 60;' : 'z-index: 1;'"
+                   @click.outside="menuOpen = false"
+                   @keydown.escape.window="menuOpen = false">
+
+                <!-- Botão 1: Ver Respostas -->
+                <button type="button" 
+                        data-action-btn="ver_respostas"
+                        class="btn sm" 
+                        style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer; transition: all 0.15s ease;"
+                        title="Visualizar respostas e histórico do colaborador"
+                        @click.stop="openReport('{{ emp.key }}')">
+                  <span>👁️</span>
+                  <span>Ver Respostas</span>
+                </button>
+
+                <!-- Botão 2: Aferição IA (Destaque Principal) -->
+                <button type="button" 
+                        data-action-btn="afericao_ia"
+                        class="btn primary sm" 
+                        style="background: #e5a93b; color: #000; font-size: 0.76rem; font-weight: 800; padding: 6px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; border: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(229, 169, 59, 0.25); cursor: pointer; transition: all 0.15s ease;"
+                        title="Confrontar respostas fornecidas vs desejadas e gerar pontuação da IA"
+                        @click.stop="openEvaluation('{{ emp.key }}')">
+                  <span>🎯</span>
+                  <span>Aferição IA</span>
+                </button>
+
+                <!-- Botão 3: Sincronizar Google Doc (opcional na linha) -->
                 {% if emp.uses_google_doc %}
                 <button type="button" 
-                        class="btn sm" 
-                        style="background: rgba(229, 169, 59, 0.15); border: 1px solid rgba(229, 169, 59, 0.4); color: var(--accent, #e5a93b); font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"
+                        data-action-btn="sync_doc"
+                        class="btn sm btn-action-hidden" 
+                        style="background: rgba(229, 169, 59, 0.15); border: 1px solid rgba(229, 169, 59, 0.4); color: var(--accent, #e5a93b); font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;"
                         title="Ler Google Doc e sincronizar respostas com IA"
                         @click.stop="syncEmployeeDoc('{{ emp.key }}')">
                   <span>⚡</span>
@@ -232,60 +326,158 @@
                 </button>
                 {% endif %}
 
-                <!-- Botão de Upload DOCX / PDF / TXT -->
-                <label class="btn sm" 
-                       style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;"
-                       title="Subir relatório Word (.docx), PDF (.pdf) ou Texto (.txt) com auditoria e extração por IA">
+                <!-- Botão 4: Subir Arquivo (opcional na linha) -->
+                <label data-action-btn="subir_arquivo"
+                       class="btn sm btn-action-hidden" 
+                       style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0; white-space: nowrap;"
+                       title="Subir relatório Word (.docx), PDF (.pdf) ou Texto (.txt)">
                   <span>📤</span>
                   <span>Subir Arquivo</span>
                   <input type="file" 
                          accept=".docx,.pdf,.txt" 
                          style="display: none;" 
-                         :id="'docx-file-input-' + '{{ emp.key }}'"
+                         :id="'docx-file-input-direct-' + '{{ emp.key }}'"
                          @change="handleDocxSelected($event, '{{ emp.key }}')">
                 </label>
 
-                <!-- Botão de Baixar Arquivo se já enviado -->
+                <!-- Botão 5: Baixar Arquivo (opcional na linha) -->
                 {% if emp.docx_filename %}
                 <a href="/admin/plano/download-docx?file={{ emp.docx_filename }}&cycle_code={{ cycle.cycle_code }}" 
                    target="_blank" 
-                   class="btn sm" 
-                   style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
-                   title="Baixar arquivo original submetido">
+                   data-action-btn="baixar_arquivo"
+                   class="btn sm btn-action-hidden" 
+                   style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
+                   title="Baixar arquivo original entregue">
                   <span>📥</span>
                   <span>Baixar {{ 'PDF' if emp.docx_filename.endswith('.pdf') else ('TXT' if emp.docx_filename.endswith('.txt') else 'DOCX') }}</span>
                 </a>
                 {% endif %}
 
-                <!-- Botão de Cobrança WhatsApp se pendente -->
+                <!-- Botão 6: Cobrança WhatsApp (opcional na linha) -->
                 {% if emp.status in ['pending', 'draft', 'submitted_late'] %}
                 <a href="{{ emp.whatsapp_url }}" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   class="btn" 
+                   data-action-btn="cobrar_whatsapp"
+                   class="btn sm btn-action-hidden" 
                    title="Cobrar ou enviar lembrete via WhatsApp"
-                   style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.35); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                   style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.35); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 6px 12px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
                   <span>💬</span>
                   <span>Cobrar WhatsApp</span>
                 </a>
                 {% endif %}
 
-                <!-- Botão de Aferição e Confronto de Respostas IA -->
-                <button type="button" 
-                        class="btn primary sm" 
-                        style="background: #e5a93b; color: #000; font-size: 0.76rem; font-weight: 800; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: none;"
-                        title="Confrontar respostas fornecidas vs desejadas e gerar pontuação da IA"
-                        @click.stop="openEvaluation('{{ emp.key }}')">
-                  <span>🎯 Aferição IA</span>
-                </button>
+                <!-- Botão 7: Dropdown Mais Opções (Utilitários) -->
+                <div data-action-btn="menu_mais" style="position: relative; display: inline-block;">
+                  <button type="button" 
+                          class="btn sm" 
+                          style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 700; padding: 6px 10px; border-radius: 7px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.15s ease;"
+                          :style="menuOpen ? 'background: var(--line); border-color: var(--accent); color: var(--accent);' : ''"
+                          title="Mais opções e ferramentas (Sincronizar, Subir/Baixar Arquivo, WhatsApp)"
+                          @click.stop="menuOpen = !menuOpen">
+                    <span style="letter-spacing: 1px; font-weight: 700;">⋯</span>
+                    <span style="font-size: 0.65rem; opacity: 0.7;">▾</span>
+                  </button>
 
-                <!-- Botão de Ver Respostas -->
-                <button type="button" 
-                        class="btn" 
-                        style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 6px;"
-                        @click.stop="openReport('{{ emp.key }}')">
-                  👁️ Ver Respostas
-                </button>
+                  <!-- Popover do Menu Dropdown -->
+                  <div x-show="menuOpen" 
+                       x-cloak 
+                       x-transition:enter="transition ease-out duration-120"
+                       x-transition:enter-start="opacity-0 transform scale-95"
+                       x-transition:enter-end="opacity-100 transform scale-100"
+                       x-transition:leave="transition ease-in duration-90"
+                       x-transition:leave-start="opacity-100 transform scale-100"
+                       x-transition:leave-end="opacity-0 transform scale-95"
+                       style="position: absolute; right: 0; min-width: 230px; background: var(--panel, #1e293b); border: 1px solid var(--line, #334155); border-radius: 10px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05); z-index: 100; padding: 6px; text-align: left; {% if loop.index > 4 %}bottom: calc(100% + 6px);{% else %}top: calc(100% + 6px);{% endif %}">
+                    
+                    <div style="padding: 6px 10px 4px 10px; font-size: 0.68rem; font-weight: 700; color: var(--muted, #94a3b8); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); margin-bottom: 4px;">
+                      Ferramentas & Ações
+                    </div>
+
+                    <!-- Item: Sincronizar Google Doc com IA -->
+                    {% if emp.uses_google_doc %}
+                    <button type="button" 
+                            style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; color: var(--accent, #e5a93b); font-size: 0.78rem; font-weight: 600; text-align: left; cursor: pointer; transition: background 0.15s ease;"
+                            onmouseover="this.style.background='rgba(229, 169, 59, 0.12)'"
+                            onmouseout="this.style.background='transparent'"
+                            @click.stop="menuOpen = false; syncEmployeeDoc('{{ emp.key }}')">
+                      <span style="font-size: 1rem;">⚡</span>
+                      <div>
+                        <div style="line-height: 1.2;">Sincronizar Google Doc</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Extrair respostas via IA</div>
+                      </div>
+                    </button>
+                    {% endif %}
+
+                    <!-- Item: Subir Arquivo (PDF / DOCX / TXT) -->
+                    <label style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; color: #38bdf8; font-size: 0.78rem; font-weight: 600; text-align: left; cursor: pointer; margin: 0; box-sizing: border-box; transition: background 0.15s ease;"
+                           onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'"
+                           onmouseout="this.style.background='transparent'">
+                      <span style="font-size: 1rem;">📤</span>
+                      <div>
+                        <div style="line-height: 1.2;">Subir Arquivo</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">PDF, DOCX ou TXT</div>
+                      </div>
+                      <input type="file" 
+                             accept=".docx,.pdf,.txt" 
+                             style="display: none;" 
+                             :id="'docx-file-input-' + '{{ emp.key }}'"
+                             @change="menuOpen = false; handleDocxSelected($event, '{{ emp.key }}')">
+                    </label>
+
+                    <!-- Item: Baixar Arquivo Submetido -->
+                    {% if emp.docx_filename %}
+                    <a href="/admin/plano/download-docx?file={{ emp.docx_filename }}&cycle_code={{ cycle.cycle_code }}" 
+                       target="_blank" 
+                       style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; color: #10b981; font-size: 0.78rem; font-weight: 600; text-decoration: none; box-sizing: border-box; transition: background 0.15s ease;"
+                       onmouseover="this.style.background='rgba(16, 185, 129, 0.12)'"
+                       onmouseout="this.style.background='transparent'"
+                       @click="menuOpen = false">
+                      <span style="font-size: 1rem;">📥</span>
+                      <div>
+                        <div style="line-height: 1.2;">Baixar {{ 'PDF' if emp.docx_filename.endswith('.pdf') else ('TXT' if emp.docx_filename.endswith('.txt') else 'DOCX') }}</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Arquivo entregue</div>
+                      </div>
+                    </a>
+                    {% endif %}
+
+                    <!-- Item: Cobrança WhatsApp -->
+                    {% if emp.status in ['pending', 'draft', 'submitted_late'] %}
+                    <a href="{{ emp.whatsapp_url }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; color: #25d366; font-size: 0.78rem; font-weight: 600; text-decoration: none; box-sizing: border-box; transition: background 0.15s ease;"
+                       onmouseover="this.style.background='rgba(37, 211, 102, 0.12)'"
+                       onmouseout="this.style.background='transparent'"
+                       @click="menuOpen = false">
+                      <span style="font-size: 1rem;">💬</span>
+                      <div>
+                        <div style="line-height: 1.2;">Cobrar via WhatsApp</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Enviar lembrete direto</div>
+                      </div>
+                    </a>
+                    {% endif %}
+
+                    <!-- Item: Abrir Google Doc Original -->
+                    {% if emp.uses_google_doc and emp.google_doc_url %}
+                    <a href="{{ emp.google_doc_url }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; color: var(--text, #f8fafc); font-size: 0.78rem; font-weight: 500; text-decoration: none; box-sizing: border-box; border-top: 1px solid var(--line); margin-top: 4px; transition: background 0.15s ease;"
+                       onmouseover="this.style.background='var(--panel2)'"
+                       onmouseout="this.style.background='transparent'"
+                       @click="menuOpen = false">
+                      <span style="font-size: 1rem;">📄</span>
+                      <div>
+                        <div style="line-height: 1.2;">Abrir Google Doc ↗</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Visualizar na nuvem</div>
+                      </div>
+                    </a>
+                    {% endif %}
+
+                  </div>
+                </div>
+
               </div>
             </td>
 
