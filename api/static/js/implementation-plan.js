@@ -357,3 +357,35 @@ function implementationPlanApp() {
     }
   };
 }
+
+/**
+ * Formata o texto de respostas destacando perguntas (?) e rótulos (:) em negrito,
+ * mantendo as respostas normais para leitura ergonômica da Diretoria.
+ */
+window.formatReportAnswerHtml = function(text) {
+  if (!text || !String(text).trim()) {
+    return '<span style="color: var(--muted, #94a3b8); font-style: italic;">Colaborador não preencheu este campo no fechamento semanal.</span>';
+  }
+
+  const escapeHtml = (str) => String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  const clean = escapeHtml(String(text).trim());
+
+  // Regex para capturar perguntas (?) e rótulos de itens (:)
+  const qaRegex = /(^|\n|(?<=[.;])\s+)(?:([-•*]\s*)?([A-Z0-9À-Úa-z][^.?!;\n\r]{1,90}(?:\?|:)))(?=\s+|$)/g;
+
+  return clean.replace(qaRegex, (match, prefix, bullet, q, offset) => {
+    if (/^\d+:/.test(q) || /^https?:/i.test(q)) {
+      return match;
+    }
+    const isFirst = (offset === 0 || prefix === '' || prefix === '\n');
+    const linePrefix = isFirst ? '' : '<br style="display: block; margin-top: 6px; content: \' \';">';
+    const b = bullet || '';
+    return `${linePrefix}${b}<strong style="font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">${q}</strong>`;
+  });
+};

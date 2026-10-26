@@ -126,7 +126,7 @@
                 <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 14px;">
                   <div style="font-size: 0.78rem; font-weight: 700; color: #d97706; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;" x-text="q.label"></div>
                   <div x-show="q.help" style="font-size: 0.74rem; color: var(--text-dim); margin-bottom: 8px; font-style: italic;" x-text="q.help"></div>
-                  <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-text="q.answer || '(Pendente de preenchimento)'"></div>
+                  <div style="font-size: 0.88rem; color: var(--text); line-height: 1.5; white-space: pre-line;" x-html="window.formatReportAnswerHtml ? window.formatReportAnswerHtml(q.answer) : (q.answer || '(Pendente de preenchimento)')"></div>
                 </div>
               </template>
               

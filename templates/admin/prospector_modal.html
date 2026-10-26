@@ -25,10 +25,18 @@
       </div>
 
       <div class="modal-body" x-show="leadSelecionado">
-        <!-- Aviso se já foi prospectado por outro vendedor -->
-        <div x-show="leadSelecionado?.prospectado_por_nome" class="alert-banner" style="background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.35); margin-bottom: 16px; padding: 10px 14px;">
-          <div class="alert-banner-text" style="font-size: 12.5px;">
-            <strong>⚠️ Atenção:</strong> Este lead já foi acionado por <strong x-text="leadSelecionado?.prospectado_por_nome"></strong>. Você ainda pode enviar uma nova mensagem de alinhamento se necessário.
+        <!-- Aviso se já foi prospectado por outro vendedor (Prevenção de conflito e ruído na equipe) -->
+        <div x-show="leadSelecionado?.prospectado_por_nome && !mesmoVendedor()" class="alert-banner" style="background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); margin-bottom: 16px; padding: 12px 14px;">
+          <div class="alert-banner-text" style="font-size: 12.5px; color: #fca5a5;">
+            <strong style="color: #f87171;">⚠️ Conflito de Carteira / Atendimento:</strong> Este lead já foi acionado por <strong style="color: #fff;" x-text="leadSelecionado?.prospectado_por_nome"></strong> <span x-show="leadSelecionado?.prospectado_em" x-text="`em ${formatarDataLead(leadSelecionado?.prospectado_em)}`"></span>.
+            <div style="font-size: 11.5px; color: #cbd5e1; margin-top: 4px;">
+              Evite ruídos com o cliente e atrito na equipe: alinhe com seu colega antes de enviar nova mensagem. Se optar por prosseguir, sua assinatura substituirá a anterior de forma 100% limpa.
+            </div>
+          </div>
+        </div>
+        <div x-show="leadSelecionado?.prospectado_por_nome && mesmoVendedor()" class="alert-banner" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); margin-bottom: 16px; padding: 10px 14px;">
+          <div class="alert-banner-text" style="font-size: 12.5px; color: #93c5fd;">
+            <strong>ℹ️ Seu Histórico:</strong> Você já acionou este lead <span x-show="leadSelecionado?.prospectado_em" x-text="`em ${formatarDataLead(leadSelecionado?.prospectado_em)}`"></span>. Você pode enviar uma nova mensagem de follow-up se desejar.
           </div>
         </div>
 

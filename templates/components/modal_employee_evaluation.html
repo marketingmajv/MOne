@@ -137,7 +137,7 @@
                       <div
                         style="font-size: 0.84rem; color: var(--text, #f8fafc); line-height: 1.5; white-space: pre-wrap; flex: 1; min-height: 70px;"
                         :style="!q.provided_answer ? 'color: var(--muted, #94a3b8); font-style: italic;' : ''"
-                        x-text="q.provided_answer || 'Colaborador não preencheu este campo no fechamento semanal.'"
+                        x-html="formatAnswerHtml(q.provided_answer)"
                       ></div>
                     </div>
 
@@ -468,6 +468,13 @@ function employeeEvaluationModal() {
       if (badge === 'yellow') return '🟡';
       if (badge === 'red') return '🔴';
       return '⚪';
+    },
+
+    formatAnswerHtml(text) {
+      if (typeof window.formatReportAnswerHtml === 'function') {
+        return window.formatReportAnswerHtml(text);
+      }
+      return text || '<span style="color: var(--muted, #94a3b8); font-style: italic;">Colaborador não preencheu este campo no fechamento semanal.</span>';
     }
   };
 }

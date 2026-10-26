@@ -270,12 +270,25 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
         const nomeLoja = (lead.nome_fantasia || lead.nome || 'Loja').trim();
         base = `Olá, equipe da ${nomeLoja}! Tudo bem? 😊\n\n${introVendedor}.\n\nVimos que vocês são referência no segmento de duas rodas na região e estamos ampliando nossos parceiros lojistas com condições exclusivas de atacado direto de fábrica para revenda de scooters e motos elétricas MAJ.\n\nCom quem da equipe comercial ou de compras poderíamos conversar por aqui? 🚀`;
       } else {
-        // Se já contiver "Aqui é da MAJ Mobilidade...", substitui pelo nome do vendedor
-        const regexMaj = /Aqui é (da|do|represento a) MAJ Mobilidade( Elétrica)?\.?/gi;
-        if (regexMaj.test(base)) {
-          base = base.replace(regexMaj, `${introVendedor}.`);
+        // Regex abrangente que captura qualquer apresentação prévia de consultor (genérica ou com outro vendedor)
+        const regexIntroExistente = /Aqui é (?:da|do|represento a|(?:[oa]\s+[A-Za-zÀ-Úà-ú]+))\s+da\s+MAJ\s+Mobilidade(?:\s+Elétrica)?\.?\s*/gi;
+        const matches = [...base.matchAll(regexIntroExistente)];
+
+        if (matches.length > 0) {
+          // Substitui o primeiro match pela assinatura do consultor atual e remove ocorrências duplicadas subsequentes
+          let result = '';
+          let lastIndex = 0;
+          matches.forEach((m, idx) => {
+            result += base.slice(lastIndex, m.index);
+            if (idx === 0) {
+              result += `${introVendedor}. `;
+            }
+            lastIndex = m.index + m[0].length;
+          });
+          result += base.slice(lastIndex);
+          base = result.replace(/[ ]{2,}/g, ' ').trim();
         } else if (primeiroNome && !base.toLowerCase().includes(primeiroNome.toLowerCase())) {
-          // Se não possui o nome do vendedor, adiciona logo após a saudação inicial
+          // Se não possui apresentação de vendedor, adiciona logo após a saudação inicial
           const matchSaudacao = base.match(/^(Olá[,!]?( equipe da [^!]+!)?|Bom dia[,!]?|Boa tarde[,!]?)/i);
           if (matchSaudacao) {
             const saudacao = matchSaudacao[0].replace(/[!, ]+$/, '');
@@ -291,6 +304,23 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
       // Remove estritamente assinaturas formais inadequadas para WhatsApp (Att, Atenciosamente, etc)
       base = base.replace(/\n*Att,[\s\S]*$/i, '').trim();
       base = base.replace(/\n*Atenciosamente,[\s\S]*$/i, '').trim();
+
+      // Sanitização anti-duplicação: assegura que não há dois "Aqui é" no texto
+      const regexSanity = /Aqui é (?:da|do|represento a|(?:[oa]\s+[A-Za-zÀ-Úà-ú]+))\s+da\s+MAJ\s+Mobilidade(?:\s+Elétrica)?\.?\s*/gi;
+      const sanityMatches = [...base.matchAll(regexSanity)];
+      if (sanityMatches.length > 1) {
+        let clean = '';
+        let lastEnd = 0;
+        sanityMatches.forEach((m, i) => {
+          clean += base.slice(lastEnd, m.index);
+          if (i === 0) {
+            clean += `${introVendedor}. `;
+          }
+          lastEnd = m.index + m[0].length;
+        });
+        clean += base.slice(lastEnd);
+        base = clean.replace(/[ ]{2,}/g, ' ').trim();
+      }
 
       this.mensagemEditavel = base.trim();
     },
@@ -358,6 +388,13 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
       if (cleanPhone.length < 10) {
         alert('Número de celular inválido para WhatsApp: ' + rawPhone);
         return;
+      }
+
+      // Trava de confirmação contra conflito e ruído de equipe
+      if (!this.mesmoVendedor()) {
+        const respNome = this.leadSelecionado.prospectado_por_nome || 'outro consultor';
+        const prosseguir = confirm(`⚠️ ALERTA DE CONFLITO COMERCIAL:\n\nEste lead já foi abordado por ${respNome}.\n\nPara evitar ruídos com o cliente ou sobreposição com seu colega, confirme se você alinhou esta reatribuição.\n\nDeseja realmente assumir e disparar pelo seu WhatsApp?`);
+        if (!prosseguir) return;
       }
 
       this.prospectandoLoading = true;
@@ -429,6 +466,23 @@ function prospectorApp(initialTab, initialNicho, sheetsUrl, vendedorId, vendedor
         }
       } catch (e) {
         alert('Erro ao atualizar status.');
+      }
+    },
+
+    mesmoVendedor() {
+      if (!this.leadSelecionado?.prospectado_por_nome || !this.vendedorNome) return true;
+      const p1 = this.leadSelecionado.prospectado_por_nome.toLowerCase().trim();
+      const p2 = this.vendedorNome.toLowerCase().trim();
+      return p1.includes(p2) || p2.includes(p1);
+    },
+
+    formatarDataLead(dtStr) {
+      if (!dtStr) return '';
+      try {
+        const d = new Date(dtStr);
+        return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return dtStr;
       }
     },
 
