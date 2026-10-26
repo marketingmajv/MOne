@@ -15,16 +15,16 @@ O agente DEVE executar imediatamente o **Protocolo START** em 3 etapas sequencia
    - Se não estiver ativo, iniciá-lo imediatamente (`PORT=5001 .venv/bin/python3 app.py` ou `./dev.sh`).
    - Validar com `curl` que o serviço está respondendo HTTP 200.
 
-3. **Passo 03 — Varredura e Auditoria Anti-Monólito**:
+3. **Passo 03 — Varredura Anti-Monólito e Auditoria de Permissões RBAC**:
    - Executar o auditor de monólitos: `.venv/bin/python3 scripts/monolith_watcher.py --scan`.
-   - Identificar arquivos que ultrapassam a marca de 500 linhas (ex: `app.py`).
-   - Alertar o usuário e disponibilizar a lista de arquivos para aplicação do padrão de refatoração modular.
+   - Executar o auditor de permissões RBAC: `.venv/bin/python3 scripts/permissions_audit.py`.
+   - Alertar o usuário caso haja arquivos > 500 linhas ou funções novas sem cadastro no menu de permissões dos usuários (`ALL_PERMISSIONS`).
 
 4. **Passo 04 — Relatório Consolidado e Links de Teste**:
    - Gerar um relatório claro com:
      - Situação da sincronização do código (commits à frente/atrás, alterações pendentes).
      - Status dos serviços locais e conexão com o Supabase.
-     - Diagnóstico de monólitos (arquivos críticos detectados).
+     - Diagnóstico de monólitos e cobertura de permissões RBAC.
      - Link para teste local: `http://localhost:5001`
      - Link oficial de produção: `https://m-one.majmobilidade.com.br`
 
@@ -36,9 +36,9 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
 
 1. **Passo 01 — Varredura e Validação de Integridade do Código**:
    - Executar varredura profunda com o script `.venv/bin/python3 scripts/validate.py`.
-   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, integridade de templates Jinja2, **auditoria de UX/UI (modais centralizados e paleta de cores via `scripts/ux_audit.py`)**, e canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`).
+   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, integridade de templates Jinja2, **auditoria de UX/UI (modais centralizados e paleta de cores via `scripts/ux_audit.py`)**, canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`) e **auditoria de cobertura de permissões RBAC (`scripts/permissions_audit.py`)**.
    - Checar integridade da conexão Supabase IPv4 Pooler.
-   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe, UX ou rota comercial, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
+   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe, UX, rota comercial ou **módulo/função sem permissão cadastrada**, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
 
 2. **Passo 02 — Git Commit e Push Automático**:
    - Verificar arquivos alterados ou pendentes (`git status -sb`).
@@ -47,7 +47,7 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
    - Executar `git push origin main` para acionar o deploy automático na Vercel.
 
 3. **Passo 03 — Relatório de Publicação e Smoke Test Online**:
-   - Resumo da varredura preditiva (status das 6 etapas).
+   - Resumo da varredura preditiva (status das 7 etapas).
    - Detalhes do commit enviado e lista de arquivos atualizados.
    - Executar Smoke Test ao vivo com `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 no ar.
    - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br`

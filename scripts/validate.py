@@ -235,6 +235,23 @@ def check_database_config() -> bool:
         return False
 
 
+def check_permissions_coverage() -> bool:
+    """Valida a cobertura de permissões RBAC para todas as funções e rotas operacionais do M-One."""
+    print("🔐 [7/7] Auditoria de Permissões e Cobertura RBAC...")
+    try:
+        from scripts.permissions_audit import audit_permissions
+        is_ok, errors, _ = audit_permissions(verbose=False)
+        if not is_ok:
+            for err in errors:
+                print(f"  ✗ {err}")
+            return False
+        print("  ✓ 100% das funções operacionais mapeadas no menu de permissões (ALL_PERMISSIONS).")
+        return True
+    except Exception as e:
+        print(f"  ✗ ERRO na execução da auditoria de permissões: {e}")
+        return False
+
+
 def validate_all() -> bool:
     steps = [
         check_dependency_parity,
@@ -243,13 +260,14 @@ def validate_all() -> bool:
         check_ux_ui_integrity,
         check_flask_commercial_routes,
         check_database_config,
+        check_permissions_coverage,
     ]
     for step in steps:
         if not step():
             print("\n❌ FALHA NA VALIDAÇÃO PRÉ-DEPLOY! Publicação interrompida por segurança.\n")
             return False
 
-    print("\n✅ TODAS AS 6 ETAPAS PREDITIVAS (INCLUINDO UX/UI) FORAM APROVADAS! Código 100% blindado para deploy.\n")
+    print("\n✅ TODAS AS 7 ETAPAS PREDITIVAS (INCLUINDO UX/UI) FORAM APROVADAS! Código 100% blindado para deploy.\n")
     return True
 
 

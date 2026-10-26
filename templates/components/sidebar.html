@@ -23,7 +23,8 @@
 
 {% set can_payments = me and user_has_permission(me, 'payments') %}
 {% set can_fiscal = me and user_has_permission(me, 'fiscal') %}
-{% set has_financeiro = can_payments or can_fiscal %}
+{% set can_mpay = me and user_has_permission(me, 'mpay') %}
+{% set has_financeiro = can_payments or can_fiscal or can_mpay %}
 
 {% set can_docs = me and user_has_permission(me, 'document_center') %}
 {% set is_admin_or_manager = (me and (me.role in ['admin', 'support'] or ((me.username or '')|lower in ['jam', 'geysa', 'fauzer', 'support', 'admin']))) %}
@@ -57,6 +58,7 @@
 
 {% set is_active_payments = (ep == 'payments') %}
 {% set is_active_fiscal = ('fiscal' in full_ep) %}
+{% set is_active_mpay = ('mpay' in full_ep or 'm-pay' in request.path) %}
 
 {% set is_active_docs = ('document' in full_ep) %}
 {% set is_active_plan = ('implementation_plan' in full_ep or 'gestao-interna' in request.path or 'plano' in request.path) %}
@@ -332,6 +334,15 @@
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
         <span>Precificação Fiscal</span>
+      </a>
+      {% endif %}
+
+      {% if can_mpay %}
+      <a href="{{ url_for('mpay.index') }}" class="nav-item {{ 'active' if is_active_mpay else '' }}" title="M-Pay: Comprovantes & Conciliação Inteligente">
+        <svg class="nav-icon text-amber-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+        <span>M-Pay Comprovantes</span>
       </a>
       {% endif %}
     </div>

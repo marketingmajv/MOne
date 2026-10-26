@@ -31,15 +31,14 @@
     return !!preloaderEl;
   }
 
-  function show(customText, customBadge) {
+  function show(customText, customBadge, immediate = false) {
     if (!getElements()) return;
 
     clearTimeout(timeoutId);
     clearInterval(messageCycleInterval);
     clearTimeout(safetyTimeout);
 
-    // Anti-flicker delay de 150ms
-    timeoutId = setTimeout(() => {
+    const activate = () => {
       if (textEl && customText) {
         textEl.textContent = customText;
       }
@@ -67,7 +66,14 @@
       safetyTimeout = setTimeout(() => {
         hide();
       }, 10000);
-    }, 150);
+    };
+
+    if (immediate) {
+      activate();
+    } else {
+      // Anti-flicker delay de 150ms
+      timeoutId = setTimeout(activate, 150);
+    }
   }
 
   function hide() {

@@ -48,11 +48,12 @@
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
           <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; text-align: left; min-width: 175px;">
             <label style="display: block; font-size: 0.68rem; text-transform: uppercase; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em; margin-bottom: 2px;">Ciclo Semanal</label>
-            <select style="background: transparent; border: none; font-size: 0.92rem; font-weight: 800; color: #d97706; cursor: pointer; outline: none; width: 100%; padding: 0;"
-                    onchange="window.location.href='{{ url_for('implementation_plan.index', tab=active_tab) }}' + (this.value ? '&cycle_id=' + this.value : '')">
+            <select id="cycleSelector"
+                    style="background: transparent; border: none; font-size: 0.92rem; font-weight: 800; color: #d97706; cursor: pointer; outline: none; width: 100%; padding: 0;"
+                    onchange="switchReportCycle(this)">
               {% for c in all_cycles %}
               <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
-                {{ c.title }} ({{ c.cycle_code }})
+                {{ c.display_name if c.display_name else (c.title ~ ' (' ~ c.cycle_code ~ ')') }}
               </option>
               {% endfor %}
             </select>
@@ -204,4 +205,33 @@
   {% endif %}
 
 </div>
+
+<script>
+function switchReportCycle(selectEl) {
+  if (!selectEl) return;
+  const cycleId = selectEl.value;
+  const optText = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text.trim() : 'Ciclo';
+  const targetUrl = '{{ url_for("implementation_plan.index", tab=active_tab) }}' + (cycleId ? '&cycle_id=' + cycleId : '');
+  
+  // Ativa Preloader Criativo MAJ OS imediatamente
+  if (window.MOnePreloader && typeof window.MOnePreloader.show === 'function') {
+    window.MOnePreloader.show('Carregando ' + optText + '...', 'RELATÓRIOS', true);
+  } else {
+    const p = document.getElementById('monePreloader');
+    if (p) {
+      const textEl = p.querySelector('.mone-preloader-text');
+      const badgeEl = p.querySelector('.mone-preloader-badge');
+      if (textEl) textEl.textContent = 'Carregando ' + optText + '...';
+      if (badgeEl) badgeEl.textContent = 'RELATÓRIOS';
+      p.classList.add('active');
+      p.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  // Micro delay de 40ms para o navegador renderizar a camada visual do preloader
+  setTimeout(function() {
+    window.location.href = targetUrl;
+  }, 40);
+}
+</script>
 {% endblock %}

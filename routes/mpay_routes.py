@@ -50,11 +50,11 @@ except Exception as e:
 
 
 def check_mpay_access(user: dict[str, Any] | None) -> bool:
-    """Verifica se o usuário tem permissão para acessar o M-Pay (Diretoria, Financeiro, Suporte ou permissão concedida)."""
+    """Verifica se o usuário tem permissão para acessar o M-Pay via RBAC centralizado."""
     if not user:
         return False
-    role = user.get("role")
-    if role in ("admin", "finance", "support"):
+    from routes.helpers import user_has_permission
+    if user_has_permission(user, "mpay"):
         return True
     custom_perms = user.get("custom_permissions") or {}
     return bool(custom_perms.get("can_access_mpay"))

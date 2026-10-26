@@ -30,13 +30,17 @@ Este protocolo deve ser executado obrigatoriamente e imediatamente sempre que o 
    *(Ou executar `./dev.sh`)*.
 3. Validar se a rota `/login` responde com HTTP 200 via `curl -sI http://localhost:5001/login`.
 
-### Passo 03 — Varredura e Auditoria Anti-Monólito
+### Passo 03 — Varredura Anti-Monólito e Auditoria de Permissões RBAC
 1. Executar a varredura estática de monólitos:
    ```bash
    .venv/bin/python3 scripts/monolith_watcher.py --scan
    ```
-2. Analisar se há arquivos excedendo o limite de 500 linhas (como `app.py`).
-3. Registrar no relatório os arquivos críticos e alertar para a necessidade de refatoração/extração caso sejam modificados.
+2. Executar a auditoria de cobertura de permissões:
+   ```bash
+   .venv/bin/python3 scripts/permissions_audit.py
+   ```
+3. Analisar se há arquivos excedendo o limite de 500 linhas ou funções novas/órfãs sem chave no catálogo de permissões (`ALL_PERMISSIONS`).
+4. Registrar no relatório os arquivos críticos e qualquer inconsistência de permissão detectada.
 
 ### Passo 04 — Relatório de Sincronização e Links de Teste
 Apresentar ao usuário um relatório estruturado contendo:

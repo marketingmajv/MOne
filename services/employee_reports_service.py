@@ -87,7 +87,9 @@ def get_or_create_current_cycle() -> Dict[str, Any]:
 
         friday = monday + timedelta(days=4)
         deadline = datetime(friday.year, friday.month, friday.day, 18, 0, 0)
-        title = f"Ciclo Semanal {iso_week:02d}/{iso_year}"
+        cur_cnt = conn.execute("SELECT count(*) as c FROM maj_report_cycles").fetchone()
+        next_num = ((cur_cnt["c"] if isinstance(cur_cnt, dict) else cur_cnt[0]) or 0) + 1
+        title = f"Ciclo {next_num:02d} — Ciclo Semanal {iso_week:02d}/{iso_year}"
 
         if pg:
             conn.execute(
@@ -137,11 +139,20 @@ def update_cycle_deadline(cycle_id: int, new_deadline_str: str) -> bool:
 
 
 def get_all_cycles() -> List[Dict[str, Any]]:
-    """Retorna todos os ciclos ordenados do mais recente para o mais antigo."""
+    """Retorna todos os ciclos ordenados do mais recente para o mais antigo, com numeração sequencial."""
     ensure_reports_schema()
     with db() as conn:
-        rows = conn.execute("SELECT * FROM maj_report_cycles ORDER BY start_date DESC, id DESC").fetchall()
-        return [dict(r) for r in rows]
+        rows = conn.execute("SELECT * FROM maj_report_cycles ORDER BY start_date ASC, id ASC").fetchall()
+        cycles_asc = [dict(r) for r in rows]
+        for idx, c in enumerate(cycles_asc, start=1):
+            c["cycle_num"] = idx
+            c["cycle_num_str"] = f"{idx:02d}"
+            t = c.get("title") or "Ciclo Semanal"
+            if not t.lower().startswith("ciclo"):
+                c["display_name"] = f"Ciclo {idx:02d} — {t} ({c.get('cycle_code')})"
+            else:
+                c["display_name"] = f"{t} ({c.get('cycle_code')})"
+        return list(reversed(cycles_asc))
 
 
 def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:

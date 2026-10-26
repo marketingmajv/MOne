@@ -138,7 +138,7 @@ ALL_PERMISSIONS = {
         "default_roles": ["admin", "support", "stock", "finance"],
     },
 
-    # ---------------- FINANCEIRO & FISCAL (2) ----------------
+    # ---------------- FINANCEIRO & FISCAL (3) ----------------
     "payments": {
         "category": "financeiro",
         "label": "Pagamentos & Quitações",
@@ -151,6 +151,13 @@ ALL_PERMISSIONS = {
         "label": "Precificação Fiscal",
         "icon": "⚖️",
         "description": "Simulador tributário, MVAs e créditos interestaduais",
+        "default_roles": ["admin", "support", "finance"],
+    },
+    "mpay": {
+        "category": "financeiro",
+        "label": "M-Pay Comprovantes & Conciliação",
+        "icon": "💵",
+        "description": "Visualização, auditoria e conciliação de comprovantes de pagamento",
         "default_roles": ["admin", "support", "finance"],
     },
 
