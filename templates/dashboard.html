@@ -34,6 +34,9 @@
   </a>
 </div>
 
+<!-- CONTROLE EXECUTIVO DA PROMOÇÃO BLACK NOVEMBER MAJ (SHOWROOM) -->
+{% include "components/dashboard_promo_widget.html" %}
+
 <!-- TOP ROW: COCKPIT STEALTH HERO + RADAR ACONTECENDO AGORA -->
 <div class="cockpit-top-grid" style="display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; margin-bottom: 22px; align-items: stretch; width: 100%;">
   <!-- COCKPIT HERO: Potência Operacional & Portfólio Ativo -->
@@ -138,7 +141,6 @@
     </div>
   </div>
 </div>
-
 <!-- BENTO GRID: 4 MÉTRICAS CHAVE DA OPERAÇÃO REAL -->
 <div class="bento-grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px;">
   <!-- 1. Valor Global em Catálogo (ou Volume para Equipe) -->
@@ -200,7 +202,6 @@
     <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-cyan));"></div>
   </a>
   {% endif %}
-
   <!-- 4. Malha Logística & Fretes -->
   <a href="{{ url_for('freight') }}" class="bento-metric" style="position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; overflow: hidden; text-decoration: none;">
     <div>
@@ -214,7 +215,6 @@
     <div class="charge-line" style="position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; background: linear-gradient(90deg, #8b5cf6, #ec4899);"></div>
   </a>
 </div>
-
 <!-- SEÇÃO MÉDIA: CANAIS COMERCIAIS & GERADOR RÁPIDO DE CATÁLOGO -->
 <div style="display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 20px; margin-bottom: 24px; align-items: stretch;">
   <!-- Canal 1: Outlet MAJ (B2C) -->
@@ -451,7 +451,6 @@
     </div>
   </div>
 </div>
-
 <!-- MATRIZ DE AÇÕES RÁPIDAS -->
 <div class="quick-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
   {% if can_see_freight %}

@@ -45,7 +45,7 @@ body.showroom-body {
   background-color: var(--bg-studio-pure);
   color: var(--text-dark-pure);
   font-family: var(--font-sans);
-  overflow-x: hidden;
+  overflow-x: clip;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }

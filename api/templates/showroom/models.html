@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  {% if active_model %}
+    {% set model_display_name = active_model.modelo | replace(' MAJ', '') %}
+    <title>Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica</title>
+    <meta name="title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
+    <meta property="og:title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
+    <meta name="twitter:title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
+    <meta name="description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
+    <meta property="og:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
+    <meta name="twitter:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
+    {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
+    {% set abs_share_img = share_img if share_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ share_img ~ '?v=20261020') %}
+    <meta property="og:image" content="{{ abs_share_img }}">
+    <meta property="og:image:secure_url" content="{{ abs_share_img }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
+    <meta property="og:image:alt" content="Show-room {{ active_model.modelo }} • MAJ Mobilidade Elétrica">
+    <meta name="twitter:image" content="{{ abs_share_img }}">
+  {% else %}
+    <title>Show-room | MAJ Mobilidade Elétrica</title>
+    <meta name="title" content="Show-room | MAJ Mobilidade Elétrica">
+    <meta property="og:title" content="Show-room | MAJ Mobilidade Elétrica">
+    <meta name="twitter:title" content="Show-room | MAJ Mobilidade Elétrica">
+    <meta name="description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
+    <meta property="og:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
+    <meta name="twitter:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
+    <meta property="og:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
+    <meta property="og:image:secure_url" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
+    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
+  {% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="MAJ Mobilidade Elétrica">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <!-- Favicon Oficial MAJ Mobilidade Elétrica -->
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  
+  <!-- Fontes de Alta Performance Estilo Gogoro Pulse / Apple / Tesla -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=Michroma&family=Space+Grotesk:wght@500;700;800&family=Syncopate:wght@700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  <!-- Critical Inline CSS (Prevents FOUC and guarantees white studio navbar) -->
+  <style>
+    html, body { background-color: #ffffff !important; color: #111114 !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+    .showroom-header { position: fixed; top: 0; left: 0; width: 100%; height: 64px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); z-index: 1000; display: flex; align-items: center; }
+    .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; position: relative; }
+    .brand-maj-logo { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #111114 !important; text-decoration: none !important; text-transform: lowercase; }
+    .brand-maj-logo-link { display: inline-flex; align-items: center; text-decoration: none !important; transition: opacity 0.2s ease, transform 0.2s ease; flex-shrink: 0; z-index: 2; }
+    .brand-maj-logo-link:hover { opacity: 0.82; transform: translateY(-1px); }
+    .brand-maj-logo-img { height: 32px; max-height: 34px; width: auto; object-fit: contain; display: block; }
+    .header-center-title { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #111114; white-space: nowrap; pointer-events: none; z-index: 1; text-align: center; }
+    .header-title-full { display: inline; }
+    .header-title-mobile { display: none; }
+    .header-right-slot { width: 75px; flex-shrink: 0; }
+    .model-subnav-bar { position: fixed; top: 64px; left: 0; width: 100%; height: 56px; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.06); z-index: 999; display: flex; align-items: center; }
+    .subnav-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; position: relative; gap: 6px; }
+    .subnav-arrow-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #ffffff; border: 1px solid rgba(0, 0, 0, 0.08); color: #111114; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); cursor: pointer; flex-shrink: 0; transition: opacity 0.2s ease, transform 0.15s ease, background 0.2s ease; z-index: 3; padding: 0; }
+    .subnav-arrow-btn:hover { background: #f6f6f9; transform: scale(1.06); }
+    .subnav-arrow-btn:active { transform: scale(0.94); }
+    .subnav-arrow-btn.is-hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+    .subnav-models-track { display: flex !important; flex-direction: row !important; gap: 8px; overflow-x: auto; white-space: nowrap; flex: 1; padding: 4px 0; scrollbar-width: none; align-items: center; scroll-behavior: smooth; }
+    .subnav-models-track::-webkit-scrollbar { display: none; }
+    .subnav-group-separator { display: inline-block; width: 1px; height: 20px; background: rgba(0, 0, 0, 0.14); margin: 0 6px; flex-shrink: 0; align-self: center; }
+    .model-pill-item { display: inline-flex !important; align-items: center; gap: 8px; background: transparent; border: 1px solid transparent; border-radius: 100px; padding: 6px 14px; color: #55585d; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; text-decoration: none; }
+    .model-pill-item:hover { color: #111114; background: rgba(0, 0, 0, 0.04); }
+    .model-pill-item.active { background: #111114 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); }
+    .model-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #999; }
+    .model-pill-item.active .model-pill-dot { background: #ffffff; }
+    .hero-studio-stage { position: relative; min-height: calc(100vh - 120px); display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 36%, #ffffff 0%, #f6f6f9 55%, #eaeaf0 100%); overflow: hidden; padding: 20px 20px 60px; }
+    .hero-giant-backdrop { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; z-index: 1; pointer-events: none; user-select: none; }
+    .hero-giant-title { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: clamp(84px, 17vw, 250px); font-weight: 800; letter-spacing: 0.08em; line-height: 0.82; text-transform: uppercase; color: #111114; white-space: nowrap; display: inline-block; }
+    .hero-vehicle-center { position: relative; z-index: 2; width: 100%; max-width: 980px; display: flex; justify-content: center; align-items: flex-end; margin-top: 30px; }
+    .hero-vehicle-cutout { position: relative; z-index: 3; max-width: 90%; max-height: 58vh; object-fit: contain; }
+    .hero-contact-shadow { display: none; }
+    .model-panoramic-banner-wrapper { width: 100%; margin: 0; padding: 0; overflow: hidden; line-height: 0; display: none; position: relative; background: #ffffff; }
+    .model-panoramic-banner-container { width: 100%; margin: 0; padding: 0; line-height: 0; }
+    .model-panoramic-banner-img { width: 100% !important; max-width: 100% !important; height: auto !important; display: block; margin: 0; padding: 0; }
+    .model-identity-strip { width: 100%; background: #ffffff; padding: 24px 20px 8px; text-align: center; }
+    .identity-strip-inner { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+    .identity-eyebrow-row { display: flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', 'Inter', monospace, sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .identity-cat-badge { background: rgba(0, 0, 0, 0.05); padding: 3px 8px; border-radius: 6px; color: #111114; }
+    .identity-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; }
+    .identity-model-title { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: clamp(34px, 6vw, 56px); font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; color: #111114; margin: 0; line-height: 1.05; transition: opacity 0.15s ease; }
+    .identity-model-diff { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: #55585d; max-width: 680px; margin: 8px auto 0; transition: opacity 0.15s ease; }
+    .telemetry-badge-wh { background: rgba(16, 185, 129, 0.1) !important; color: #059669 !important; font-weight: 800 !important; }
+    main.showroom-viewport { margin-top: 120px; }
+    @media (max-width: 768px) {
+      .showroom-header { height: 56px !important; }
+      .header-inner { padding: 0 16px !important; }
+      .brand-maj-logo-img { height: 26px !important; max-height: 28px !important; }
+      .header-title-full { display: none !important; }
+      .header-title-mobile { display: inline !important; }
+      .header-center-title { font-size: 12px !important; letter-spacing: 1.2px !important; max-width: calc(100% - 140px) !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+      .header-right-slot { width: 60px !important; }
+      .model-subnav-bar { top: 56px !important; height: 50px !important; }
+      .subnav-inner { padding: 0 16px !important; gap: 0 !important; }
+      .subnav-arrow-btn { display: none !important; }
+      .subnav-models-track { padding: 4px 0 !important; gap: 8px !important; -webkit-overflow-scrolling: touch; }
+      .model-pill-item { padding: 6px 13px !important; font-size: 11.5px !important; }
+      main.showroom-viewport { margin-top: 106px !important; }
+      .hero-studio-stage { min-height: calc(100vh - 106px) !important; }
+      .section-cockpit-sim { padding: 32px 14px 44px !important; }
+      .cockpit-bezel-frame { min-height: 440px !important; border-radius: 18px !important; border-width: 5px !important; margin-top: 18px !important; }
+      .cockpit-screen-ui { padding: 16px 14px !important; }
+      .hud-center-stage { margin: 10px 0 !important; }
+      .hud-speedometer-val { font-size: 52px !important; line-height: 1 !important; }
+      .hud-specs-grid { gap: 8px !important; padding-top: 10px !important; }
+      .hud-spec-card { padding: 8px 10px !important; }
+      .cockpit-controls-wrapper { margin-top: 16px !important; overflow: hidden !important; width: 100% !important; padding: 4px 0 !important; }
+      .cockpit-controls-wrapper::before, .cockpit-controls-wrapper::after { content: ""; position: absolute; top: 0; bottom: 0; width: 22px; z-index: 5; pointer-events: none; }
+      .cockpit-controls-wrapper::before { left: 0; background: linear-gradient(to right, rgba(7, 7, 9, 0.95), transparent); }
+      .cockpit-controls-wrapper::after { right: 0; background: linear-gradient(to left, rgba(7, 7, 9, 0.95), transparent); }
+      .cockpit-controls-row { flex-wrap: nowrap !important; overflow-x: auto !important; justify-content: flex-start !important; padding: 4px 16px !important; gap: 8px !important; scrollbar-width: none !important; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; width: 100% !important; }
+      .cockpit-controls-row::-webkit-scrollbar { display: none !important; }
+      .cockpit-mode-btn { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 11.5px !important; border-radius: 100px !important; white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+      .btn-cat-text-full { display: none !important; }
+      .btn-cat-text-short { display: inline !important; }
+    }
+    @media (max-width: 400px) {
+      .brand-maj-logo-img { height: 24px !important; max-height: 26px !important; }
+      .header-center-title { font-size: 11.5px !important; letter-spacing: 0.8px !important; }
+      .header-right-slot { width: 56px !important; }
+      .cockpit-bezel-frame { min-height: 420px !important; }
+      .hud-speedometer-val { font-size: 46px !important; }
+    }
+    .cockpit-controls-wrapper { position: relative; width: 100%; max-width: 1200px; margin: 24px auto 0; display: flex; justify-content: center; }
+    .btn-cat-text-full { display: inline; }
+    .btn-cat-text-short { display: none; }
+  </style>
+
+  <link rel="stylesheet" href="/static/css/showroom.css?v={{ cache_id or 1 }}">
+</head>
+<body class="showroom-body">
+
+  <!-- 1. Header Global Estilo Gogoro / Apple (Clean White Navbar) -->
+  <header class="showroom-header">
+    <div class="header-inner">
+      <a href="/show-room" class="brand-maj-logo-link" title="MAJ Mobilidade Elétrica">
+        <img src="/static/img/maj-logo-official.png" onerror="this.onerror=null; this.src='/static/images/maj-logo-official.png'" alt="MAJ Mobilidade Elétrica" class="brand-maj-logo-img">
+      </a>
+      
+      <div class="header-center-title">
+        <span class="header-title-full">Show-room MAJ Mobilidade</span>
+        <span class="header-title-mobile">Show-room</span>
+      </div>
+
+      <div class="header-right-slot" aria-hidden="true"></div>
+    </div>
+  </header>
+
+  <!-- 2. Barra de Seleção de Modelos Estilo Apple / Gogoro (Subnav Elegante com Setas de Rolagem) -->
+  <nav class="model-subnav-bar">
+    <div class="subnav-inner">
+      <button class="subnav-arrow-btn prev is-hidden" id="subnavArrowPrev" aria-label="Rolar para esquerda" title="Anterior">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <div class="subnav-models-track" id="modelsCarouselNav">
+        <!-- Pílulas dos modelos geradas via showroom.js -->
+      </div>
+      <button class="subnav-arrow-btn next" id="subnavArrowNext" aria-label="Rolar para direita" title="Próximo">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+  </nav>
+
+  <!-- Container Promocional Black November MAJ (400px de altura) -->
+  {% if promo_banner and promo_banner.enabled %}
+    {% include "showroom/promo_banner.html" %}
+  {% endif %}
+
+  <!-- 3. Viewport Principal -->
+  <main class="showroom-viewport">
+    
+    <!-- Banner Panorâmico Full-Width Widescreen (Para modelos com foto widescreen de estúdio) -->
+    {% set current_slug = active_model.slug if active_model else 'max-12' %}
+    {% set banner_lookup = {
+      'max-12': '/public/images/models/banners/max-12-banner.webp',
+      'gp-1000': '/public/images/models/banners/gp-1000-banner.webp',
+      'flow-one': '/public/images/models/banners/flow-one-banner.webp',
+      'classic-1000': '/public/images/models/banners/classic-1000-banner.webp',
+      'db-zero': '/public/images/models/banners/db-zero-banner.webp',
+      'vittoria': '/public/images/models/banners/vittoria-banner.webp',
+      'nova': '/public/images/models/banners/nova-banner.webp',
+      'ride-on': '/public/images/models/banners/ride-on-banner.webp',
+      'm2': '/public/images/models/banners/m2-banner.webp',
+      'm9-pro': '/public/images/models/banners/m9-pro-banner.webp',
+      'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp',
+      'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
+      'rz-110': '/public/images/models/banners/rz-110-banner.webp',
+      'm50-pro': '/public/images/models/banners/m50-pro-banner.webp'
+    } %}
+    {% set active_banner = (active_model.banner_image if active_model and active_model.banner_image else banner_lookup.get(current_slug)) %}
+    <section class="model-panoramic-banner-wrapper" id="max12PanoramicBanner" style="display: {{ 'block' if active_banner else 'none' }}; opacity: {{ '1' if active_banner else '0' }};" aria-label="Apresentação Widescreen {{ active_model.modelo if active_model else '' }}">
+      <div class="model-panoramic-banner-container">
+        <picture id="modelPanoramicPicture">
+          <source id="modelPanoramicSource" srcset="{{ active_banner or '/public/images/models/banners/max-12-banner.webp' }}?v=20261016_2k" type="image/webp">
+          <img 
+            id="modelPanoramicImg"
+            src="{{ active_banner or '/public/images/models/banners/max-12-banner.webp' }}?v=20261016_2k" 
+            alt="{{ active_model.modelo if active_model else 'MAX 12 MAJ' }} - E-Scooter Urbana de Alta Performance" 
+            class="model-panoramic-banner-img"
+            loading="eager"
+            decoding="async"
+          >
+        </picture>
+      </div>
+    </section>
+
+    <!-- Bloco Editorial de Identidade do Modelo (Apresentação Imediata Pós-Banner) -->
+    <section class="model-identity-strip" id="modelIdentityStrip">
+      <div class="identity-strip-inner">
+        <div class="identity-eyebrow-row">
+          <span class="identity-cat-badge" id="identityCategoryBadge">{{ 'E-BIKE' if active_model and active_model.categoria == 'Bike' else 'SCOOTER' }} ELÉTRICA MAJ</span>
+          <span class="identity-live-dot" aria-hidden="true"></span>
+          <span class="identity-spec-hint" id="identityHomologationHint">CONTRAN 996 • DISPENSA CNH</span>
+        </div>
+        <h1 class="identity-model-title" id="identityModelTitle">{{ active_model.modelo if active_model else 'MAX 12 MAJ' }}</h1>
+        <p class="identity-model-diff" id="identityModelDiff">
+          {{ (active_model.sections['Uso e comercial']['Principal diferencial'] if active_model and active_model.sections and active_model.sections.get('Uso e comercial') and active_model.sections['Uso e comercial'].get('Principal diferencial') else (active_model.metrics.diferencial if active_model else 'Alta performance e mobilidade elétrica de excelência.')) }}
+        </p>
+      </div>
+    </section>
+
+    <!-- Hero Estúdio Branco Cinematográfico (Idêntico ao Gogoro Pulse) -->
+    <section class="hero-studio-stage" id="hero" style="display: {{ 'none' if active_banner else 'flex' }};">
+      
+      <!-- Letreiro Gigante Arquitetural de Fundo (Atrás do Veículo) -->
+      <div class="hero-giant-backdrop" aria-hidden="true">
+        <h1 class="hero-giant-title" id="heroModelTitle">MAX 12</h1>
+      </div>
+
+      <!-- Palco Central com Cutout Transparente e Sombra de Contato de Piso -->
+      <div class="hero-vehicle-center">
+        <!-- Recorte transparente do veículo com sombras naturais integradas -->
+        <img src="/public/images/models/cutouts/max-12.png?v=3" alt="MAX 12" class="hero-vehicle-cutout" id="heroVehicleImg">
+      </div>
+
+      <!-- Tagline Técnica de Canto Inferior Esquerdo (Exatamente como no Gogoro Pulse) -->
+      <div class="hero-bottom-tagline">
+        <div class="tagline-eyebrow" id="heroCategoryLabel">SCOOTER ELÉTRICA MAJ</div>
+        <div class="tagline-headline" id="heroTaglineHeadline">ALTA PERFORMANCE URBANA.</div>
+        <div class="tagline-desc" id="heroModelDesc">
+          Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.
+        </div>
+      </div>
+
+      <!-- Faixa Minimalista de Telemetria Canto Inferior Direito -->
+      <div class="hero-bottom-specs">
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetryPower">1.000W</span>
+          <span class="hero-spec-lbl">POTÊNCIA NOMINAL</span>
+        </div>
+        <div class="hero-spec-sep"></div>
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetrySpeed">32 km/h</span>
+          <span class="hero-spec-lbl">VELOCIDADE MÁXIMA</span>
+        </div>
+        <div class="hero-spec-sep"></div>
+        <div class="hero-spec-item">
+          <span class="hero-spec-val" id="heroTelemetryRange">Até 50 km</span>
+          <span class="hero-spec-lbl">AUTONOMIA</span>
+        </div>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div class="hero-scroll-cue">
+        <span class="scroll-arrow">↓</span>
+      </div>
+
+    </section>
+
+    <!-- 4. Scrollytelling Telemetry Section -->
+    <section class="section-telemetry-scroller" id="telemetry">
+      <div class="telemetry-grid-wrapper">
+        <div class="telemetry-big-card">
+          <div class="telemetry-eyebrow">PROPULSÃO ELÉTRICA</div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricPower">1000</span><span class="telemetry-huge-unit">W</span>
+          </div>
+          <p class="telemetry-card-desc" id="bigMetricPowerSub">
+            Motor de alta performance, capaz de enfrentar com facilidade a maioria das ladeiras urbanas em condições adequadas de carga, bateria e piso.
+          </p>
+        </div>
+
+        <div class="telemetry-big-card telemetry-card-cnh">
+          <div class="telemetry-card-top-row">
+            <div class="telemetry-eyebrow">VELOCIDADE HOMOLOGADA</div>
+            <div class="telemetry-sticker-badge">
+              <svg class="sticker-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+              <span>SEM CNH / SEM EMPLACAMENTO</span>
+            </div>
+          </div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricSpeed">32</span><span class="telemetry-huge-unit">KM/H</span>
+          </div>
+          <p class="telemetry-card-desc" id="bigMetricSpeedSub">
+            Velocidade máxima homologada de 32 km/h. Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023.
+          </p>
+        </div>
+
+        <div class="telemetry-big-card telemetry-card-battery">
+          {% set b_v = (active_model.metrics.voltagem_v | upper | replace('V', '') | trim if active_model and active_model.metrics and active_model.metrics.voltagem_v else '60') %}
+          {% set b_ah = (active_model.metrics.capacidade_ah | upper | replace('AH', '') | trim if active_model and active_model.metrics and active_model.metrics.capacidade_ah else '20') %}
+          {% set b_wh = (active_model.metrics.capacidade_wh | upper | replace('WH', '') | trim if active_model and active_model.metrics and active_model.metrics.capacidade_wh else '1200') %}
+          <div class="telemetry-card-top-row">
+            <div class="telemetry-eyebrow">BATERIA & CAPACIDADE REAL</div>
+            <div class="telemetry-sticker-badge telemetry-badge-wh">
+              <span id="bigMetricBatteryWh">{{ b_wh }}</span> WH
+            </div>
+          </div>
+          <div class="telemetry-huge-num">
+            <span id="bigMetricBatteryVolts">{{ b_v }}V {{ b_ah }}</span><span class="telemetry-huge-unit">AH</span>
+          </div>
+          <p class="telemetry-card-desc" id="bigMetricBatterySub">
+            Bateria de lítio de alta densidade energética. Autonomia estimada de até {{ active_model.metrics.autonomia_maxima_km if active_model and active_model.metrics and active_model.metrics.autonomia_maxima_km else 50 }} km em ciclo urbano.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Cockpit Digital & Telemetria de Engenharia Interativa -->
+    <section class="section-cockpit-sim" id="cockpit">
+      <div class="hero-category-label" id="cockpitEyebrowLabel">CONHEÇA A FUNDO A {{ active_model.modelo if active_model else 'MAX 12 MAJ' }}</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); text-transform: uppercase;">FICHA TÉCNICA</h2>
+      <p style="color: var(--text-muted); max-width: 650px; margin: 12px auto 0;">
+        Ficha técnica oficial e especificações de engenharia. Selecione uma seção abaixo para consultar os dados detalhados, motorização e componentes diretamente no painel interativo.
+      </p>
+
+      <div class="cockpit-bezel-frame">
+        <div class="cockpit-screen-ui" id="cockpitScreenUI">
+          <div class="hud-top-row">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="hud-pulse-live-dot"></span>
+              <span id="hudModelName" style="color: #fff; font-weight: 700; letter-spacing: 1px;">MAJ MAX 12</span>
+            </div>
+            <span id="hudSystemStatus" style="color: var(--maj-lime); font-weight: 700; letter-spacing: 1.5px; font-size: 11px;">MAJ MOBILIDADE ELÉTRICA</span>
+            <span id="hudCategoryTag" style="color: var(--maj-cyan); font-family: var(--font-telemetry); letter-spacing: 1px; font-size: 11px; text-transform: uppercase;">MOTORIZAÇÃO & DESEMPENHO</span>
+          </div>
+
+          <div class="hud-center-stage">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <div class="hud-speedometer-val" id="hudMainVal">1000</div>
+              <div class="hud-unit-label" id="hudUnitLabel">WATTS</div>
+              <div class="hud-mode-pill-active" id="hudModeBadge">POTÊNCIA NOMINAL MÁXIMA</div>
+            </div>
+          </div>
+
+          <div class="hud-specs-grid" id="hudSpecsGrid">
+            <!-- Especificações técnicas detalhadas renderizadas via showroom.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="cockpit-controls-wrapper">
+        <div class="cockpit-controls-row" id="cockpitTechControls">
+          <button class="cockpit-mode-btn active" id="btnCatMotorizacao" onclick="setCockpitCategory('motorizacao')">
+            <span class="btn-cat-icon">⚡</span>
+            <span class="btn-cat-text-full">Motorização & Desempenho</span>
+            <span class="btn-cat-text-short">Motorização</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatBateria" onclick="setCockpitCategory('bateria')">
+            <span class="btn-cat-icon">🔋</span>
+            <span class="btn-cat-text-full">Bateria & Autonomia</span>
+            <span class="btn-cat-text-short">Bateria</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatChassi" onclick="setCockpitCategory('chassi')">
+            <span class="btn-cat-icon">🛡️</span>
+            <span class="btn-cat-text-full">Chassi & Dimensões</span>
+            <span class="btn-cat-text-short">Chassi</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatSeguranca" onclick="setCockpitCategory('seguranca')">
+            <span class="btn-cat-icon">🛑</span>
+            <span class="btn-cat-text-full">Segurança & Freios</span>
+            <span class="btn-cat-text-short">Freios</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatConforto" onclick="setCockpitCategory('conforto')">
+            <span class="btn-cat-icon">👥</span>
+            <span class="btn-cat-text-full">Capacidade de Passageiros</span>
+            <span class="btn-cat-text-short">Conforto</span>
+          </button>
+          <button class="cockpit-mode-btn" id="btnCatGarantia" onclick="setCockpitCategory('garantia')">
+            <span class="btn-cat-icon">📜</span>
+            <span class="btn-cat-text-full">Garantia & Regulamentação</span>
+            <span class="btn-cat-text-short">Garantia</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Galeria de Fotos -->
+    <section class="section-gallery-vignette" id="gallery">
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 52px); text-transform: uppercase; margin-bottom: 24px;">GALERIA DE FOTOS</h2>
+
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Fotos do ensaio geradas dinamicamente em grid via showroom.js -->
+      </div>
+    </section>
+
+    <!-- Modal Lightbox Interativo de Fotos em Alta Resolução -->
+    <div id="galleryLightboxModal" class="gallery-lightbox-modal" onclick="closeGalleryLightbox(event)" style="display: none;">
+      <div class="gallery-lightbox-backdrop"></div>
+      <div class="gallery-lightbox-content" onclick="event.stopPropagation()">
+        <button class="modal-close-btn gallery-lightbox-close" onclick="closeGalleryLightbox()" title="Fechar (Esc)" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <button class="gallery-nav-btn prev" onclick="navigateGalleryLightbox(-1)" title="Foto Anterior (←)" aria-label="Anterior">
+          <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="gallery-lightbox-stage">
+          <img id="galleryLightboxImg" src="" alt="Detalhe do Veículo" class="gallery-lightbox-img">
+          <div class="gallery-lightbox-caption">
+            <span id="galleryLightboxModelName">MAJ MAX 12</span>
+            <span id="galleryLightboxCounter">Foto 1 de 8</span>
+          </div>
+        </div>
+
+        <button class="gallery-nav-btn next" onclick="navigateGalleryLightbox(1)" title="Próxima Foto (→)" aria-label="Próxima">
+          <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 8. Matriz Comparativa Interativa -->
+    <section class="section-comparison-matrix" id="comparison">
+      <div class="hero-category-label">ENGENHARIA COMPARADA</div>
+      <h2 style="font-family: var(--font-display); font-size: clamp(32px, 5vw, 52px); text-transform: uppercase;">Comparar com Outro Modelo MAJ</h2>
+      <p style="color: var(--text-muted); margin-top: 8px;">Confronte especificações lado a lado com qualquer modelo do catálogo.</p>
+
+      <div style="margin-top: 24px;">
+        <label style="font-size: 13px; color: var(--text-muted); margin-right: 12px;">Selecione o modelo para comparar:</label>
+        <select id="compareModelSelect" style="background: var(--bg-surface-elevated); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 8px; font-family: var(--font-telemetry); font-size: 13px; cursor: pointer;">
+          <!-- Opções geradas via showroom.js -->
+        </select>
+      </div>
+
+      <div class="comparison-table-outer">
+        <table class="comparison-matrix-table">
+          <thead>
+            <tr>
+              <th>Especificação Técnica</th>
+              <th class="active-col" id="compColActiveHeader">Modelo Selecionado</th>
+              <th id="compColSecondHeader">Modelo Comparado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="color: var(--text-muted);">Potência Nominal</td><td id="comp-active-potencia_nominal_w" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-potencia_nominal_w" style="font-weight: 700;">—</td></tr>
+            <tr><td style="color: var(--text-muted);">Velocidade Máxima</td><td id="comp-active-velocidade_max_kmh" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-velocidade_max_kmh" style="font-weight: 700;">—</td></tr>
+            <tr><td style="color: var(--text-muted);">Autonomia Estimada</td><td id="comp-active-autonomia_maxima_km" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-autonomia_maxima_km" style="font-weight: 700;">—</td></tr>
+            <tr><td style="color: var(--text-muted);">Carga Máxima Suportada</td><td id="comp-active-carga_maxima_kg" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-carga_maxima_kg" style="font-weight: 700;">—</td></tr>
+            <tr><td style="color: var(--text-muted);">Peso do Veículo</td><td id="comp-active-peso_kg" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-peso_kg" style="font-weight: 700;">—</td></tr>
+            <tr><td style="color: var(--text-muted);">Sistema de Freios</td><td id="comp-active-freios" style="font-weight: 700; color: #fff;">—</td><td id="comp-second-freios" style="font-weight: 700;">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- WhatsApp Flutuante com Mensagem Dinâmica do Modelo -->
+  <a id="floatingWhatsAppBtn" class="floating-whatsapp-btn" href="https://wa.me/5527996051538?text=Ol%C3%A1!%20Estou%20no%20Showroom%20MAJ%20e%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es." target="_blank" rel="noopener noreferrer" title="Falar no WhatsApp" aria-label="Falar com Consultor no WhatsApp">
+    <span class="whatsapp-btn-badge">Falar com Consultor</span>
+    <span class="whatsapp-btn-circle">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.072-2.148-.528-1.745-.722-2.871-2.493-2.958-2.608-.088-.116-.708-.941-.708-1.794s.446-1.272.607-1.446c.16-.175.348-.219.465-.219.116 0 .232.001.334.006.107.005.25-.041.391.299.144.35.494 1.206.537 1.294.044.088.073.19.014.307-.058.117-.087.19-.175.292-.087.102-.184.228-.263.307-.088.087-.18.182-.077.358.102.176.455.751.977 1.216.67.596 1.235.78 1.41.868.175.088.277.073.38-.044.102-.117.437-.51.554-.685.117-.175.233-.146.393-.088.16.058 1.019.48 1.194.568.175.088.291.131.335.204.043.073.043.423-.101.828zM12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.306A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.167c-1.63 0-3.14-.49-4.408-1.332l-.316-.21-2.96.776.79-2.883-.231-.368A8.13 8.13 0 013.833 12c0-4.503 3.664-8.167 8.167-8.167 4.503 0 8.167 3.664 8.167 8.167 0 4.503-3.664 8.167-8.167 8.167z"/>
+      </svg>
+    </span>
+  </a>
+
+  <script src="/static/js/showroom.js?v={{ cache_id or 1 }}"></script>
+  <script src="/static/js/showroom-tv.js?v={{ cache_id or 1 }}"></script>
+</body>
+</html>

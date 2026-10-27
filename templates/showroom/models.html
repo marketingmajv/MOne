@@ -53,7 +53,7 @@
   
   <!-- Critical Inline CSS (Prevents FOUC and guarantees white studio navbar) -->
   <style>
-    html, body { background-color: #ffffff !important; color: #111114 !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    html, body { background-color: #ffffff !important; color: #111114 !important; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; overflow-x: clip; -webkit-font-smoothing: antialiased; }
     .showroom-header { position: fixed; top: 0; left: 0; width: 100%; height: 64px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0, 0, 0, 0.08); z-index: 1000; display: flex; align-items: center; }
     .header-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; position: relative; }
     .brand-maj-logo { font-family: 'Chakra Petch', 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -1px; color: #111114 !important; text-decoration: none !important; text-transform: lowercase; }
@@ -171,9 +171,12 @@
       </div>
       <button class="subnav-arrow-btn next" id="subnavArrowNext" aria-label="Rolar para direita" title="Próximo">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
-    </div>
   </nav>
+
+  <!-- Container Promocional Black November MAJ (400px de altura) -->
+  {% if promo_banner and promo_banner.enabled %}
+    {% include "showroom/promo_banner.html" %}
+  {% endif %}
 
   <!-- 3. Viewport Principal -->
   <main class="showroom-viewport">

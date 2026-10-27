@@ -1,0 +1,59 @@
+<!-- Painel Executivo do Modo TV / Vitrine Automática (templates/showroom/admin_tv_panel.html) -->
+<div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:16px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">📺</span>
+        <strong style="font-size:16px;color:var(--text);">Vitrine Automática da Loja (Modo TV)</strong>
+        <span id="kioskStatusBadge" class="badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;{% if kiosk_settings and kiosk_settings.enabled %}background:rgba(0,229,153,0.15);color:#00e599;border:1px solid rgba(0,229,153,0.3);{% else %}background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);{% endif %}">
+          {% if kiosk_settings and kiosk_settings.enabled %}🟢 Autoplay Ativo{% else %}⚪ Desativado{% endif %}
+        </span>
+      </div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--text-muted);">
+        Alternância automática de veículos para a TV da loja e telões do showroom, com transição cinematográfica <em>Deslize Lateral Apple Switcher</em>.
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <a href="/show-room?tv=1" target="_blank" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+        📺 Abrir Showroom Modo TV ↗
+      </a>
+      <button type="button" class="btn primary" onclick="saveKioskSettings()" style="display:inline-flex;align-items:center;gap:6px;">
+        💾 Salvar Configurações TV
+      </button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
+    <!-- Toggle Ativo -->
+    <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <strong style="font-size:13.5px;color:var(--text);display:block;">Ativação Automática</strong>
+        <span style="font-size:12px;color:var(--text-muted);">Iniciar autoplay de slides imediatamente ao abrir a vitrine</span>
+      </div>
+      <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;margin:0;">
+        <input type="checkbox" id="kioskEnabled" {% if kiosk_settings and kiosk_settings.enabled %}checked{% endif %} style="opacity:0;width:0;height:0;">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <!-- Intervalo de Troca -->
+    <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong style="font-size:13.5px;color:var(--text);">Tempo por Modelo</strong>
+        <span id="kioskIntervalDisplay" style="font-family:monospace;font-size:13px;font-weight:700;color:var(--maj-cyan, #00d7ff);">{{ kiosk_settings.interval_seconds or 30 }} segundos</span>
+      </div>
+      <input type="range" id="kioskInterval" min="10" max="120" step="5" value="{{ kiosk_settings.interval_seconds or 30 }}" oninput="document.getElementById('kioskIntervalDisplay').textContent = this.value + ' segundos'" style="width:100%;cursor:pointer;">
+      <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:6px;">Duração que cada veículo fica em destaque antes do próximo slide.</span>
+    </div>
+
+    <!-- Pausa por Interação -->
+    <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <strong style="font-size:13.5px;color:var(--text);">Pausa ao Interagir</strong>
+        <span id="kioskPauseDisplay" style="font-family:monospace;font-size:13px;font-weight:700;color:var(--text);">{{ kiosk_settings.auto_pause_seconds or 45 }}s inatividade</span>
+      </div>
+      <input type="range" id="kioskAutoPause" min="15" max="120" step="5" value="{{ kiosk_settings.auto_pause_seconds or 45 }}" oninput="document.getElementById('kioskPauseDisplay').textContent = this.value + 's inatividade'" style="width:100%;cursor:pointer;">
+      <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:6px;">Se um cliente ou vendedor mexer na tela, o autoplay congela e retorna após inatividade.</span>
+    </div>
+  </div>
+</div>

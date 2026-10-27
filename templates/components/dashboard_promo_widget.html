@@ -1,0 +1,175 @@
+<!-- Widget Executivo de Controle da Promoção Black November MAJ (templates/components/dashboard_promo_widget.html) -->
+<!-- Permite ajustar o tamanho da faixa com trava de segurança de UX (20px a 50px) diretamente pela Dashboard -->
+<div class="dash-promo-card" style="background:var(--panel);border:1px solid rgba(0,229,153,0.25);border-radius:var(--radius-lg);padding:18px 22px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.18);">
+  <!-- Efeito sutil de iluminação de fundo -->
+  <div style="position:absolute;top:-50px;right:-50px;width:160px;height:160px;background:radial-gradient(circle, rgba(0,229,153,0.12) 0%, transparent 70%);pointer-events:none;" aria-hidden="true"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:1.35rem;">⚡</span>
+        <strong style="color:var(--text);font-size:0.95rem;font-weight:800;letter-spacing:-0.2px;">
+          Promoção Black November MAJ • Showroom
+        </strong>
+        <span id="dashPromoStatusBadge" class="badge" style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:0.3px;{% if promo_banner and promo_banner.enabled %}background:#059669;color:#ffffff;border:1px solid #047857;box-shadow:0 2px 6px rgba(5,150,105,0.25);{% else %}background:#64748b;color:#ffffff;border:1px solid #475569;{% endif %}">
+          {% if promo_banner and promo_banner.enabled %}🟢 ATIVO NO AR{% else %}⚪ OCULTO{% endif %}
+        </span>
+      </div>
+      <p style="margin:4px 0 0;font-size:12px;color:var(--muted);">
+        Ajuste o tamanho das faixas rodando em tempo real. Limite seguro de UX: 20px a 50px (miolo informativo de 140px sempre preservado).
+      </p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="/show-room" target="_blank" class="btn sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);">
+        👁️ Abrir Vitrine ↗
+      </a>
+      <a href="/admin/models#promo" class="btn sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:5px 12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);">
+        ⚙️ Painel Promoção #promo
+      </a>
+      <button type="button" id="btnDashSavePromo" onclick="dashSavePromoBannerSettings()" class="btn primary sm" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 14px;">
+        💾 Salvar Faixa
+      </button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;align-items:center;">
+    <!-- Bloco do Slider de Altura da Faixa com Limite de UX -->
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12.5px;font-weight:700;color:var(--text);">Tamanho da Faixa (Ticker)</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--muted);">Faixa:</span>
+          <span id="dashTickerHeightBadge" style="font-family:monospace;font-size:12px;font-weight:800;color:#047857;background:#d1fae5;padding:2px 8px;border-radius:5px;border:1px solid #6ee7b7;">
+            {{ promo_banner.ticker_height if promo_banner and promo_banner.ticker_height else 35 }}px
+          </span>
+          <span style="font-size:11px;color:var(--muted);margin-left:2px;">Total:</span>
+          <span id="dashContainerHeightBadge" style="font-family:monospace;font-size:12px;font-weight:800;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:5px;border:1px solid #fcd34d;">
+            {{ 140 + ((promo_banner.ticker_height if promo_banner and promo_banner.ticker_height else 35) * 2) }}px
+          </span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);width:32px;text-align:right;">20px</span>
+        <input type="range" id="dashPromoTickerHeight" min="20" max="50" step="1" 
+               value="{{ promo_banner.ticker_height if promo_banner and promo_banner.ticker_height else 35 }}" 
+               oninput="onDashTickerHeightChange(this.value)"
+               style="flex:1;accent-color:#00e599;cursor:pointer;height:6px;border-radius:3px;background:var(--line);">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);width:32px;">50px</span>
+      </div>
+
+      <!-- Presets de Tamanho -->
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">Presets:</span>
+        <button type="button" onclick="setDashTickerPreset(25)" class="btn sm" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">25px</button>
+        <button type="button" onclick="setDashTickerPreset(30)" class="btn sm" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">30px</button>
+        <button type="button" onclick="setDashTickerPreset(35)" class="btn sm" style="padding:2px 8px;font-size:11px;background:rgba(0,229,153,0.14);color:#00e599;border:1px solid rgba(0,229,153,0.3);font-weight:700;">35px ★</button>
+        <button type="button" onclick="setDashTickerPreset(40)" class="btn sm" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">40px</button>
+        <button type="button" onclick="setDashTickerPreset(45)" class="btn sm" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">45px</button>
+      </div>
+    </div>
+
+    <!-- Bloco de Status da Promoção e Feedback -->
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;justify-content:space-between;height:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong style="font-size:12.5px;color:var(--text);display:block;">Exibição no Showroom</strong>
+          <span style="font-size:11px;color:var(--muted);">Ligar ou desligar faixa instantaneamente</span>
+        </div>
+        <label style="position:relative;display:inline-block;width:42px;height:22px;cursor:pointer;margin:0;">
+          <input type="checkbox" id="dashPromoEnabled" {% if promo_banner and promo_banner.enabled %}checked{% endif %} style="opacity:0;width:0;height:0;">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div id="dashPromoFeedbackMsg" style="margin-top:10px;font-size:11.5px;color:var(--muted);min-height:18px;">
+        💡 Dica: O valor de 35px oferece equilíbrio ideal de visibilidade sem poluir o catálogo de modelos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function onDashTickerHeightChange(val) {
+  const num = Math.max(20, Math.min(50, parseInt(val, 10) || 35));
+  const badgeTh = document.getElementById('dashTickerHeightBadge');
+  const badgeCh = document.getElementById('dashContainerHeightBadge');
+  if (badgeTh) badgeTh.textContent = num + 'px';
+  if (badgeCh) badgeCh.textContent = (140 + (num * 2)) + 'px';
+}
+
+function setDashTickerPreset(val) {
+  const slider = document.getElementById('dashPromoTickerHeight');
+  if (slider) {
+    slider.value = val;
+    onDashTickerHeightChange(val);
+  }
+}
+
+async function dashSavePromoBannerSettings() {
+  const btn = document.getElementById('btnDashSavePromo');
+  const feedback = document.getElementById('dashPromoFeedbackMsg');
+  const origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Salvando...';
+
+  const rawHeight = parseInt(document.getElementById('dashPromoTickerHeight')?.value, 10) || 35;
+  const clampedHeight = Math.max(20, Math.min(50, rawHeight));
+  const isEnabled = document.getElementById('dashPromoEnabled')?.checked ?? true;
+
+  try {
+    // 1. Carrega configurações atuais para não sobrescrever outros campos
+    const curRes = await fetch('/api/models/promo-banner');
+    const curData = await curRes.json();
+
+    const payload = Object.assign({}, curData, {
+      ticker_height: clampedHeight,
+      enabled: isEnabled,
+    });
+
+    const res = await fetch('/api/models/promo-banner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar ajustes.');
+
+    // Atualiza badge de status com alto contraste
+    const badge = document.getElementById('dashPromoStatusBadge');
+    if (badge) {
+      if (isEnabled) {
+        badge.textContent = '🟢 ATIVO NO AR';
+        badge.style.background = '#059669';
+        badge.style.color = '#ffffff';
+        badge.style.border = '1px solid #047857';
+        badge.style.boxShadow = '0 2px 6px rgba(5,150,105,0.25)';
+      } else {
+        badge.textContent = '⚪ OCULTO';
+        badge.style.background = '#64748b';
+        badge.style.color = '#ffffff';
+        badge.style.border = '1px solid #475569';
+        badge.style.boxShadow = 'none';
+      }
+    }
+
+    if (feedback) {
+      feedback.innerHTML = '<span style="color:#00e599;font-weight:700;">✅ Tamanho da faixa (' + clampedHeight + 'px) atualizado com sucesso no Showroom!</span>';
+      setTimeout(() => {
+        feedback.innerHTML = '💡 Dica: O valor de 35px oferece equilíbrio ideal de visibilidade sem poluir o catálogo de modelos.';
+      }, 5000);
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ ' + err.message + '</span>';
+    } else {
+      alert('Erro ao salvar: ' + err.message);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+</script>

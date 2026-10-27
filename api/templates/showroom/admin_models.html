@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}M-One • Gestão & Ordenação de Modelos{% endblock %}
+{% block page_title %}Gestão do Showroom & Vitrine{% endblock %}
+{% block page_subtitle %}Setorização executiva: ordene veículos, configure a promoção Black November e gerencie o Modo TV da loja.{% endblock %}
+
+{% block top_actions %}
+  <a href="/show-room" target="_blank" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+    👁️ Ver Mostruário ao Vivo ↗
+  </a>
+  <button type="button" class="btn primary" id="btnSaveOrderTop" onclick="saveNewOrder()" style="display:inline-flex;align-items:center;gap:6px;">
+    💾 Salvar Nova Ordem
+  </button>
+{% endblock %}
+
+{% block content %}
+<style>
+.toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#475569; transition:.3s; border-radius:24px; }
+.toggle-slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background-color:white; transition:.3s; border-radius:50%; }
+input:checked + .toggle-slider { background-color:#00e599 !important; }
+input:checked + .toggle-slider:before { transform:translateX(20px); }
+
+/* Abas Setorizadas do Painel */
+.showroom-tabs-nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  overflow-x: auto;
+}
+.showroom-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.showroom-tab-btn:hover {
+  border-color: rgba(0, 229, 153, 0.4);
+  color: var(--text);
+}
+.showroom-tab-btn.active {
+  background: var(--card);
+  border-color: #00e599;
+  color: var(--text);
+  box-shadow: 0 4px 14px rgba(0, 229, 153, 0.15);
+}
+.showroom-tab-badge {
+  font-family: monospace;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  font-weight: 700;
+}
+[data-theme="light"] .showroom-tab-btn.active .showroom-tab-badge {
+  background: #d1fae5;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+  font-weight: 800;
+}
+[data-theme="dark"] .showroom-tab-btn.active .showroom-tab-badge,
+:root:not([data-theme="light"]) .showroom-tab-btn.active .showroom-tab-badge {
+  background: rgba(0, 229, 153, 0.22);
+  color: #00e599;
+  border: 1px solid rgba(0, 229, 153, 0.4);
+  font-weight: 800;
+}
+</style>
+
+<!-- Alerta de Sucesso / Feedback -->
+<div id="saveToast" style="display:none;padding:12px 18px;margin-bottom:18px;border-radius:8px;background:rgba(46,125,50,0.15);border:1px solid #2e7d32;color:var(--text);font-size:13px;font-weight:600;align-items:center;justify-content:space-between;">
+  <span id="saveToastMsg">✅ Ação executada com sucesso!</span>
+  <button type="button" onclick="document.getElementById('saveToast').style.display='none'" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;">✕</button>
+</div>
+
+<!-- ==============================================
+     BARRA DE NAVEGAÇÃO SETORIZADA (TABS)
+     ============================================== -->
+<div class="showroom-tabs-nav" role="tablist">
+  <button type="button" id="tabNavModelos" class="showroom-tab-btn active" onclick="switchMainTab('modelos')">
+    <span style="font-size:16px;">📋</span>
+    <span>Ordenação de Modelos</span>
+    <span class="showroom-tab-badge">{{ models|length }} modelos</span>
+  </button>
+
+  <button type="button" id="tabNavPromo" class="showroom-tab-btn" onclick="switchMainTab('promo')">
+    <span style="font-size:16px;">⚡</span>
+    <span>Promoção Black November</span>
+    <span class="showroom-tab-badge" id="tabPromoStatusIndicator">
+      {{ '🟢 Ativo' if promo_banner and promo_banner.enabled else '⚪ Oculto' }}
+    </span>
+  </button>
+
+  <button type="button" id="tabNavTv" class="showroom-tab-btn" onclick="switchMainTab('tv')">
+    <span style="font-size:16px;">📺</span>
+    <span>Vitrine Modo TV (Loja)</span>
+    <span class="showroom-tab-badge" id="tabTvStatusIndicator">
+      {{ '🟢 Autoplay' if kiosk_settings and kiosk_settings.enabled else '⚪ Desativado' }}
+    </span>
+  </button>
+</div>
+
+<!-- ==============================================
+     SETOR 1: ORDENAÇÃO DE MODELOS (ABA PRINCIPAL)
+     ============================================== -->
+<div id="sectorModelos" class="showroom-sector-pane" style="display:block;">
+  
+  <!-- Macro de Renderização do Card de Modelo -->
+  {% macro render_model_card(m, idx) %}
+  <div class="model-sort-item" data-slug="{{ m.slug }}" data-categoria="{{ m.categoria }}" draggable="true" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:grab;transition:all 0.15s ease;">
+    <div style="display:flex;align-items:center;gap:12px;flex:1;">
+      <span class="drag-handle" style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;" title="Arraste para mover">⋮⋮</span>
+      <span class="model-pos-badge" style="font-family:monospace;font-size:12.5px;font-weight:700;min-width:36px;text-align:center;padding:4px 6px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);">#{{ idx }}</span>
+      <div style="width:44px;height:44px;border-radius:8px;background:var(--card);border:1px solid var(--line);padding:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        {% if m.cutout_image %}<img src="{{ m.cutout_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+        {% elif m.images and m.images|length > 0 %}<img src="{{ m.images[0] }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+        {% else %}<span style="font-size:9px;color:var(--text-muted);">Sem foto</span>{% endif %}
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <strong style="font-size:14px;color:var(--text);">{{ m.modelo }}</strong>
+          <span class="badge" style="font-size:9.5px;padding:2px 7px;border-radius:100px;font-weight:600;{% if m.categoria == 'Scooter' %}background:rgba(0,180,216,0.15);color:#0077b6;border:1px solid rgba(0,180,216,0.3);{% else %}background:rgba(255,183,3,0.15);color:#d48b00;border:1px solid rgba(255,183,3,0.3);{% endif %}">
+            {{ m.categoria|upper }}
+          </span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:monospace;">
+          Slug: <code>{{ m.slug }}</code>
+          {% if m.metrics and m.metrics.potencia_nominal_w %} • {{ m.metrics.potencia_nominal_w }}W{% endif %}
+          {% if m.metrics and m.metrics.velocidade_max_kmh %} • {{ m.metrics.velocidade_max_kmh }} km/h{% endif %}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;gap:3px;">
+        <button type="button" class="btn sm secondary" onclick="moveModelItem(this, -1)" title="Subir" style="padding:3px 7px;">▲</button>
+        <button type="button" class="btn sm secondary" onclick="moveModelItem(this, 1)" title="Descer" style="padding:3px 7px;">▼</button>
+        <button type="button" class="btn sm secondary" onclick="moveModelToTop(this)" title="Topo" style="padding:3px 7px;font-weight:600;">🔝</button>
+      </div>
+      <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin:0 0 0 6px;font-size:11.5px;font-weight:600;">
+        <input type="checkbox" id="status-{{ m.slug }}" {% if m.is_active %}checked{% endif %} onchange="toggleModelActive('{{ m.slug }}', this.checked)" style="width:15px;height:15px;cursor:pointer;">
+        <span id="lbl-status-{{ m.slug }}" style="color:{% if m.is_active %}#2e7d32{% else %}#c62828{% endif %};">
+          {{ 'Ativo' if m.is_active else 'Inativo' }}
+        </span>
+      </label>
+    </div>
+  </div>
+  {% endmacro %}
+
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+    
+    <!-- Abas de Seleção de Modo do Menu (Categoria vs Livre) -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:14px;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button type="button" id="tabBtnCategory" onclick="setMenuMode('category')" class="btn {% if not menu_config or menu_config.mode != 'free' %}primary{% else %}secondary{% endif %}" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;">
+          🏷️ Menu por Categoria
+        </button>
+        <button type="button" id="tabBtnFree" onclick="setMenuMode('free')" class="btn {% if menu_config and menu_config.mode == 'free' %}primary{% else %}secondary{% endif %}" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;">
+          🔀 Menu Livre / Aleatório
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="modeActiveBadge" class="badge" style="font-size:11.5px;font-weight:700;padding:4px 12px;border-radius:100px;background:rgba(0,215,255,0.15);color:#00d7ff;border:1px solid rgba(0,215,255,0.35);">
+          Modo Ativo: <span id="modeActiveText">{{ 'Livre / Aleatório' if menu_config and menu_config.mode == 'free' else 'Por Categoria' }}</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- MODO 1: MENU POR CATEGORIA -->
+    <div id="panelMenuCategory" style="display:{{ 'none' if menu_config and menu_config.mode == 'free' else 'block' }};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--line);flex-wrap:wrap;gap:10px;">
+        <span style="font-size:13px;color:var(--text-muted);">
+          💡 Veículos agrupados por categoria com divisor visual. Ordene os itens dentro de cada grupo ou inverta a ordem dos grupos.
+        </span>
+        <button type="button" class="btn sm secondary" onclick="invertCategoryGroups()" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
+          ↕️ Inverter Ordem dos Grupos (Scooters ⇄ Bikes)
+        </button>
+      </div>
+
+      <div id="categoryGroupsWrapper" style="display:flex;flex-direction:column;gap:18px;">
+        {% set cat_order = menu_config.category_order if menu_config and menu_config.category_order else ['Scooter', 'Bike'] %}
+        {% for cat in cat_order %}
+        <div class="category-block" data-cat="{{ cat }}" style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--card);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:8px;">
+            <strong style="font-size:15px;color:var(--text);">
+              {{ '🛵 Scooters Elétricas' if cat|lower != 'bike' else '🚲 E-Bikes & Bicicletas' }}
+            </strong>
+            <span class="badge" style="font-size:11px;padding:2px 8px;border-radius:100px;">
+              {{ (models|selectattr('categoria', 'equalto', cat)|list)|length }} modelos
+            </span>
+          </div>
+          <div class="sortable-models-container cat-sortable-list" data-cat="{{ cat }}" style="display:flex;flex-direction:column;gap:8px;">
+            {% for m in models if m.categoria == cat %}
+              {{ render_model_card(m, loop.index) }}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- MODO 2: MENU LIVRE / ALEATÓRIO -->
+    <div id="panelMenuFree" style="display:{{ 'block' if menu_config and menu_config.mode == 'free' else 'none' }};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--line);flex-wrap:wrap;gap:10px;">
+        <span style="font-size:13px;color:var(--text-muted);">
+          💡 Divisão de categorias removida. Arraste qualquer produto para qualquer posição ou sorteie uma ordem aleatória instantânea.
+        </span>
+        <button type="button" class="btn sm primary" onclick="shuffleFreeModelsList()" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;">
+          🎲 Embaralhar Aleatoriamente (Shuffle)
+        </button>
+      </div>
+
+      <div id="sortableFreeModelsList" class="sortable-models-container" style="display:flex;flex-direction:column;gap:8px;">
+        {% for m in models %}
+          {{ render_model_card(m, loop.index) }}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Ações no Rodapé do Card -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px;border-top:1px solid var(--line);padding-top:16px;">
+      <button type="button" class="btn secondary" onclick="resetToDefaultOrder()">
+        ↺ Restaurar Ordem Original
+      </button>
+      <button type="button" class="btn primary" id="btnSaveOrder" onclick="saveNewOrder()" style="font-weight:700;">
+        💾 Salvar Configurações & Ordem do Mostruário
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     SETOR 2: PROMOÇÃO BLACK NOVEMBER MAJ
+     ============================================== -->
+<div id="sectorPromo" class="showroom-sector-pane" style="display:none;">
+  {% include "showroom/admin_promo_banner_panel.html" %}
+</div>
+
+<!-- ==============================================
+     SETOR 3: VITRINE MODO TV (LOJA)
+     ============================================== -->
+<div id="sectorTv" class="showroom-sector-pane" style="display:none;">
+  {% include "showroom/admin_tv_panel.html" %}
+</div>
+
+<!-- Configuração Inicial e Importação do Script Modular do Showroom -->
+<script>
+window.SHOWROOM_ADMIN_CONFIG = {
+  mode: '{{ menu_config.mode if menu_config and menu_config.mode else "category" }}',
+  categoryOrder: {{ (menu_config.category_order if menu_config and menu_config.category_order else ['Scooter', 'Bike']) | tojson }}
+};
+</script>
+<script src="/static/js/showroom-admin.js"></script>
+{% endblock %}

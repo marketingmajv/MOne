@@ -1,0 +1,482 @@
+<!-- Painel de Gestão da Promoção Black November MAJ (templates/showroom/admin_promo_banner_panel.html) -->
+<!-- Layout Setorizado em 2 Grupos Temáticos: Visual & Faixas (Esquerda) vs Textos & WhatsApp (Direita) -->
+<div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+  
+  <!-- Cabeçalho do Setor Promocional com Sticker de Alto Contraste -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:16px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:22px;">⚡</span>
+        <strong style="font-size:16px;color:var(--text);">Campanha & Promoção Black November MAJ</strong>
+        <span id="promoStatusBadge" class="badge" style="font-size:11.5px;font-weight:800;padding:4px 12px;border-radius:100px;letter-spacing:0.3px;{% if promo_banner and promo_banner.enabled %}background:#059669;color:#ffffff;border:1px solid #047857;box-shadow:0 2px 6px rgba(5,150,105,0.25);{% else %}background:#64748b;color:#ffffff;border:1px solid #475569;{% endif %}">
+          {% if promo_banner and promo_banner.enabled %}🟢 ATIVO NO SHOWROOM{% else %}⚪ DESATIVADO (OCULTO){% endif %}
+        </span>
+      </div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--text-muted);">
+        Banner de largura 100% com duas faixas rodando em contra-fluxo posicionado abaixo do menu de modelos no mostruário público (<code>/show-room</code>).
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <a href="/show-room" target="_blank" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+        👁️ Ver no Showroom ↗
+      </a>
+      <button type="button" class="btn primary" onclick="savePromoBannerSettings()" id="btnSavePromo" style="display:inline-flex;align-items:center;gap:6px;">
+        💾 Salvar Promoção
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid Setorizado em 2 Grupos -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px;">
+    
+    <!-- ==============================================
+         GRUPO 1 (ESQUERDA): VISUAL, ESTILO, VELOCIDADE & CORES DA FAIXA
+         ============================================== -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">
+        <span style="font-size:14px;">🎨</span>
+        <strong style="font-size:13px;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">Visual, Estilo & Formato da Faixa</strong>
+      </div>
+
+      <!-- 1.1 Switches de Exibição e Fixação no Topo -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
+        <!-- Switch Exibir no Showroom -->
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <strong style="font-size:13px;color:var(--text);display:block;">Exibir no Showroom</strong>
+            <span style="font-size:11.5px;color:var(--text-muted);">Visível no catálogo público</span>
+          </div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;margin:0;">
+            <input type="checkbox" id="promoEnabled" {% if promo_banner and promo_banner.enabled %}checked{% endif %} style="opacity:0;width:0;height:0;">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Switch Congelar no Topo (Sticky) -->
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <strong style="font-size:13px;color:var(--text);display:block;">📌 Congelar no Topo</strong>
+              <span id="promoStickyTopBadge" style="font-family:monospace;font-size:11px;font-weight:800;padding:2px 8px;border-radius:5px;{% if promo_banner and promo_banner.sticky_top %}background:#d1fae5;color:#047857;border:1px solid #6ee7b7;{% else %}background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;{% endif %}">
+                {% if promo_banner and promo_banner.sticky_top %}🟢 CONGELADO NO TOPO{% else %}⚪ LIVRE (ROLA COM A PÁGINA){% endif %}
+              </span>
+            </div>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;">Fixa o banner logo abaixo do menu de modelos durante todo o scroll.</span>
+          </div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;margin:0;">
+            <input type="checkbox" id="promoStickyTop" onchange="onStickyTopChange(this.checked)" {% if promo_banner and promo_banner.sticky_top %}checked{% endif %} style="opacity:0;width:0;height:0;">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 1.2 Controle de Altura Total do Container Promocional (160px a 360px) -->
+      <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <label for="promoContainerHeight" style="font-size:13px;font-weight:700;color:var(--text);display:inline-flex;align-items:center;gap:6px;">
+              <span>📏 Altura Total do Container</span>
+            </label>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;">
+              Dimensão vertical total do bloco promocional na tela (160px a 360px).
+            </span>
+          </div>
+          <span id="promoContainerHeightBadge" style="font-family:monospace;font-size:12.5px;font-weight:800;color:#92400e;background:#fef3c7;padding:3px 10px;border-radius:5px;border:1px solid #fcd34d;">
+            {{ promo_banner.container_height if promo_banner and promo_banner.container_height else 210 }}px
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:36px;text-align:right;">160px</span>
+          <input type="range" id="promoContainerHeight" min="160" max="360" step="5" 
+                 value="{{ promo_banner.container_height if promo_banner and promo_banner.container_height else 210 }}" 
+                 oninput="onContainerHeightChange(this.value)"
+                 style="flex:1;accent-color:#d97706;cursor:pointer;height:6px;border-radius:3px;background:var(--line);">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:36px;">360px</span>
+        </div>
+
+        <!-- Presets de Altura Total -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">Alturas:</span>
+          <button type="button" class="btn sm" onclick="setContainerHeightPreset(180)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">180px (Compacto)</button>
+          <button type="button" class="btn sm" onclick="setContainerHeightPreset(210)" style="padding:2px 8px;font-size:11px;background:rgba(217,119,6,0.15);color:#b45309;border:1px solid #d97706;font-weight:700;">210px (Recomendado)</button>
+          <button type="button" class="btn sm" onclick="setContainerHeightPreset(260)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">260px (Destaque)</button>
+          <button type="button" class="btn sm" onclick="setContainerHeightPreset(320)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">320px (Hero Banner)</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Controle de Tamanho das Faixas Rodando (Limite de UX: 20px a 50px) -->
+      <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <label for="promoTickerHeight" style="font-size:13px;font-weight:700;color:var(--text);display:inline-flex;align-items:center;gap:6px;">
+              <span>📐 Espessura das Faixas Rodando (Ticker)</span>
+            </label>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;">
+              Altura individual de cada faixa (topo e base), travada entre 20px e 50px.
+            </span>
+          </div>
+          <span id="promoTickerHeightBadge" style="font-family:monospace;font-size:12.5px;font-weight:800;color:#047857;background:#d1fae5;padding:3px 10px;border-radius:5px;border:1px solid #6ee7b7;">
+            {{ promo_banner.ticker_height if promo_banner and promo_banner.ticker_height else 35 }}px
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:32px;text-align:right;">20px</span>
+          <input type="range" id="promoTickerHeight" min="20" max="50" step="1" 
+                 value="{{ promo_banner.ticker_height if promo_banner and promo_banner.ticker_height else 35 }}" 
+                 oninput="onTickerHeightChange(this.value)"
+                 style="flex:1;accent-color:#059669;cursor:pointer;height:6px;border-radius:3px;background:var(--line);">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:32px;">50px</span>
+        </div>
+
+        <!-- Presets de Tamanho da Faixa -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">Atalhos:</span>
+          <button type="button" class="btn sm" onclick="setTickerHeightPreset(25)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">25px (Compacto)</button>
+          <button type="button" class="btn sm" onclick="setTickerHeightPreset(30)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">30px (Moderado)</button>
+          <button type="button" class="btn sm" onclick="setTickerHeightPreset(35)" style="padding:2px 8px;font-size:11px;background:rgba(5,150,105,0.15);color:#047857;border:1px solid #059669;font-weight:700;">35px (Recomendado)</button>
+          <button type="button" class="btn sm" onclick="setTickerHeightPreset(40)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">40px (Destacado)</button>
+          <button type="button" class="btn sm" onclick="setTickerHeightPreset(45)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">45px (Amplo)</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Controle de Velocidade da Faixa Dinâmica -->
+      <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <label for="promoTickerSpeed" style="font-size:13px;font-weight:700;color:var(--text);display:inline-flex;align-items:center;gap:6px;">
+              <span>⏱️ Velocidade de Rotação da Faixa</span>
+            </label>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;">
+              Tempo para uma volta completa da frase (quanto menor o tempo, mais rápida a rolagem).
+            </span>
+          </div>
+          <span id="promoTickerSpeedBadge" style="font-family:monospace;font-size:12px;font-weight:800;color:#0284c7;background:#e0f2fe;padding:2px 8px;border-radius:5px;border:1px solid #7dd3fc;">
+            {{ promo_banner.ticker_speed if promo_banner and promo_banner.ticker_speed else 24 }}s por volta
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:55px;text-align:right;">10s (Rápido)</span>
+          <input type="range" id="promoTickerSpeed" min="10" max="60" step="1" 
+                 value="{{ promo_banner.ticker_speed if promo_banner and promo_banner.ticker_speed else 24 }}" 
+                 oninput="onTickerSpeedChange(this.value)"
+                 style="flex:1;accent-color:#0284c7;cursor:pointer;height:6px;border-radius:3px;background:var(--line);">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);width:55px;">60s (Lento)</span>
+        </div>
+
+        <!-- Presets de Velocidade -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">Velocidades:</span>
+          <button type="button" class="btn sm" onclick="setTickerSpeedPreset(15)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">15s (Rápida)</button>
+          <button type="button" class="btn sm" onclick="setTickerSpeedPreset(24)" style="padding:2px 8px;font-size:11px;background:rgba(2,132,199,0.15);color:#0284c7;border:1px solid #0284c7;font-weight:700;">24s (Recomendada)</button>
+          <button type="button" class="btn sm" onclick="setTickerSpeedPreset(32)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">32s (Moderada)</button>
+          <button type="button" class="btn sm" onclick="setTickerSpeedPreset(45)" style="padding:2px 8px;font-size:11px;background:var(--panel2);color:var(--text);border:1px solid var(--line);">45s (Suave/Lenta)</button>
+        </div>
+      </div>
+
+      <!-- 1.4 Controle da Cor da Letra da Faixa Dinâmica -->
+      <div style="padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <label for="promoTickerColor" style="font-size:13px;font-weight:700;color:var(--text);display:inline-flex;align-items:center;gap:6px;">
+              <span>🎨 Cor da Letra da Faixa Dinâmica</span>
+            </label>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;">
+              Escolha a cor do texto que rola continuamente nas faixas superior e inferior.
+            </span>
+          </div>
+          <!-- Prévia da Letra -->
+          <div style="background:#030504;border:1px solid var(--line);border-radius:6px;padding:4px 10px;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#94a3b8;">Prévia:</span>
+            <span id="promoTickerColorPreview" style="font-family:'Space Grotesk',monospace;font-size:12px;font-weight:800;letter-spacing:1px;color:{{ promo_banner.ticker_color if promo_banner and promo_banner.ticker_color else '#00e599' }};">
+              ⚡ BLACK NOVEMBER MAJ
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <input type="color" id="promoTickerColor" 
+                 value="{{ promo_banner.ticker_color if promo_banner and promo_banner.ticker_color else '#00e599' }}" 
+                 oninput="onTickerColorChange(this.value)"
+                 style="width:44px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;">
+          <input type="text" id="promoTickerColorHex" 
+                 value="{{ promo_banner.ticker_color if promo_banner and promo_banner.ticker_color else '#00e599' }}" 
+                 oninput="onTickerColorHexInput(this.value)"
+                 maxlength="7"
+                 class="form-input" 
+                 style="width:90px;font-family:monospace;font-weight:700;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);text-transform:uppercase;">
+          <span style="font-size:11.5px;color:var(--text-muted);">Clique no seletor ou digite o código HEX.</span>
+        </div>
+
+        <!-- Paleta de Cores Pré-definidas -->
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:600;">Paleta MAJ:</span>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#00e599')" style="padding:3px 8px;font-size:11px;background:#030504;color:#00e599;border:1px solid #00e599;font-weight:700;">🟢 Verde Neon</button>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#e5a93b')" style="padding:3px 8px;font-size:11px;background:#030504;color:#e5a93b;border:1px solid #e5a93b;font-weight:700;">🟡 Dourado</button>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#ffffff')" style="padding:3px 8px;font-size:11px;background:#030504;color:#ffffff;border:1px solid #ffffff;font-weight:700;">⚪ Branco</button>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#ff6b35')" style="padding:3px 8px;font-size:11px;background:#030504;color:#ff6b35;border:1px solid #ff6b35;font-weight:700;">🟠 Laranja</button>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#00d7ff')" style="padding:3px 8px;font-size:11px;background:#030504;color:#00d7ff;border:1px solid #00d7ff;font-weight:700;">🔵 Ciano</button>
+          <button type="button" class="btn sm" onclick="setTickerColorPreset('#ef4444')" style="padding:3px 8px;font-size:11px;background:#030504;color:#ef4444;border:1px solid #ef4444;font-weight:700;">🔴 Vermelho</button>
+        </div>
+      </div>
+
+      <!-- 1.5 URL da Imagem da Arte Gráfica (Opcional) -->
+      <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <label for="promoBannerImage" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+          Arte Gráfica Personalizada (URL Opcional)
+        </label>
+        <input type="text" id="promoBannerImage" value="{{ (promo_banner.banner_image if promo_banner else '') or '' }}" placeholder="Ex: /public/images/promo/black-banner.webp ou URL externa" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+        <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">Se informada, substitui o layout nativo de texto pela imagem em full-width.</span>
+      </div>
+    </div>
+
+    <!-- ==============================================
+         GRUPO 2 (DIREITA): CONTEÚDO, TEXTOS & REDIRECIONAMENTO
+         ============================================== -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--line);">
+        <span style="font-size:14px;">✍️</span>
+        <strong style="font-size:13px;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">Conteúdo & Ação WhatsApp</strong>
+      </div>
+
+      <!-- 2.1 Tag / Badge e Ticker Text -->
+      <div style="display:grid;grid-template-columns:1fr;gap:14px;">
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+          <label for="promoTagText" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+            Tag / Selo Promocional
+          </label>
+          <input type="text" id="promoTagText" value="{{ (promo_banner.tag_text if promo_banner else '') or '⚡ BLACK NOVEMBER MAJ' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+        </div>
+
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+          <label for="promoTickerText" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+            Texto das Faixas Rodando (Topo e Base)
+          </label>
+          <input type="text" id="promoTickerText" value="{{ (promo_banner.ticker_text if promo_banner else '') or '⚡ BLACK NOVEMBER MAJ • ATÉ 50% OFF • PARCELAMENTO EM ATÉ 18X • PRONTA ENTREGA • GARANTIA OFICIAL DE FÁBRICA' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+          <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">Frase que rola continuamente nas duas faixas.</span>
+        </div>
+      </div>
+
+      <!-- 2.2 Título Principal e Subtítulo -->
+      <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <label for="promoHeadline" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+          Título Principal da Campanha
+        </label>
+        <input type="text" id="promoHeadline" value="{{ (promo_banner.headline if promo_banner else '') or 'A MAIOR QUEIMA DE ESTOQUE DE MOBILIDADE ELÉTRICA' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);margin-bottom:12px;">
+
+        <label for="promoSubheadline" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+          Subtítulo / Condições Comerciais
+        </label>
+        <input type="text" id="promoSubheadline" value="{{ (promo_banner.subheadline if promo_banner else '') or 'Condições exclusivas de fábrica com até 50% OFF e parcelamento facilitado em até 18X.' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+      </div>
+
+      <!-- 2.3 Stickers / Selos de Destaque (Pílulas ao lado do Botão) -->
+      <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+        <label style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+          🏷️ Stickers / Selos de Destaque (Pílulas ao lado do Botão de Ação)
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label for="promoHighlight1" style="display:block;font-size:11.5px;color:var(--text-muted);margin-bottom:4px;">
+              Sticker 1 (Esquerda)
+            </label>
+            <input type="text" id="promoHighlight1" value="{{ (promo_banner.highlight_1 if promo_banner and promo_banner.highlight_1 is defined else '') or '🔥 Até 50% OFF' }}" placeholder="Ex: 🔥 Até 50% OFF" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+          </div>
+          <div>
+            <label for="promoHighlight2" style="display:block;font-size:11.5px;color:var(--text-muted);margin-bottom:4px;">
+              Sticker 2 (Direita)
+            </label>
+            <input type="text" id="promoHighlight2" value="{{ (promo_banner.highlight_2 if promo_banner and promo_banner.highlight_2 is defined else '') or '💳 Em até 18X' }}" placeholder="Ex: 💳 Em até 18X" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+          </div>
+        </div>
+        <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:4px;">Deixe em branco para ocultar qualquer um dos stickers.</span>
+      </div>
+
+      <!-- 2.4 Botão de Ação & Link WhatsApp -->
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:12px;">
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+          <label for="promoCtaText" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+            Texto do Botão
+          </label>
+          <input type="text" id="promoCtaText" value="{{ (promo_banner.cta_text if promo_banner else '') or 'Garantir Condição Especial' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+        </div>
+
+        <div style="padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);">
+          <label for="promoCtaUrl" style="display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">
+            Link do WhatsApp / Destino
+          </label>
+          <input type="text" id="promoCtaUrl" value="{{ (promo_banner.cta_url if promo_banner else '') or 'https://wa.me/5527996051538?text=Ol%C3%A1%21+Vim+pelo+Showroom+e+quero+aproveitar+a+Black+November+MAJ%21' }}" class="form-input" style="width:100%;padding:8px 12px;font-size:13px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);">
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function onStickyTopChange(checked) {
+  const badge = document.getElementById('promoStickyTopBadge');
+  if (badge) {
+    if (checked) {
+      badge.textContent = '🟢 CONGELADO NO TOPO';
+      badge.style.background = '#d1fae5';
+      badge.style.color = '#047857';
+      badge.style.border = '1px solid #6ee7b7';
+    } else {
+      badge.textContent = '⚪ LIVRE (ROLA COM A PÁGINA)';
+      badge.style.background = '#f1f5f9';
+      badge.style.color = '#64748b';
+      badge.style.border = '1px solid #cbd5e1';
+    }
+  }
+}
+
+function onContainerHeightChange(val) {
+  const num = Math.max(160, Math.min(360, parseInt(val, 10) || 210));
+  const badgeCh = document.getElementById('promoContainerHeightBadge');
+  if (badgeCh) badgeCh.textContent = num + 'px';
+}
+
+function setContainerHeightPreset(val) {
+  const slider = document.getElementById('promoContainerHeight');
+  if (slider) {
+    slider.value = val;
+    onContainerHeightChange(val);
+  }
+}
+
+function onTickerHeightChange(val) {
+  const num = Math.max(20, Math.min(50, parseInt(val, 10) || 35));
+  const badgeTh = document.getElementById('promoTickerHeightBadge');
+  if (badgeTh) badgeTh.textContent = num + 'px';
+}
+
+function setTickerHeightPreset(val) {
+  const slider = document.getElementById('promoTickerHeight');
+  if (slider) {
+    slider.value = val;
+    onTickerHeightChange(val);
+  }
+}
+
+function onTickerSpeedChange(val) {
+  const num = Math.max(10, Math.min(60, parseInt(val, 10) || 24));
+  const badgeSpd = document.getElementById('promoTickerSpeedBadge');
+  if (badgeSpd) badgeSpd.textContent = num + 's por volta';
+}
+
+function setTickerSpeedPreset(val) {
+  const slider = document.getElementById('promoTickerSpeed');
+  if (slider) {
+    slider.value = val;
+    onTickerSpeedChange(val);
+  }
+}
+
+function onTickerColorChange(hex) {
+  const preview = document.getElementById('promoTickerColorPreview');
+  const inputHex = document.getElementById('promoTickerColorHex');
+  if (preview) preview.style.color = hex;
+  if (inputHex && inputHex.value !== hex) inputHex.value = hex;
+}
+
+function onTickerColorHexInput(val) {
+  if (val.startsWith('#') && (val.length === 4 || val.length === 7)) {
+    const inputColor = document.getElementById('promoTickerColor');
+    const preview = document.getElementById('promoTickerColorPreview');
+    if (inputColor) inputColor.value = val;
+    if (preview) preview.style.color = val;
+  }
+}
+
+function setTickerColorPreset(hex) {
+  const inputColor = document.getElementById('promoTickerColor');
+  const inputHex = document.getElementById('promoTickerColorHex');
+  const preview = document.getElementById('promoTickerColorPreview');
+  if (inputColor) inputColor.value = hex;
+  if (inputHex) inputHex.value = hex;
+  if (preview) preview.style.color = hex;
+}
+
+async function savePromoBannerSettings() {
+  const btn = document.getElementById('btnSavePromo');
+  const origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Salvando...';
+
+  const rawContainerHeight = parseInt(document.getElementById('promoContainerHeight')?.value, 10) || 210;
+  const clampedContainerHeight = Math.max(160, Math.min(360, rawContainerHeight));
+  const stickyTop = document.getElementById('promoStickyTop')?.checked ?? false;
+  const rawHeight = parseInt(document.getElementById('promoTickerHeight')?.value, 10) || 35;
+  const clampedHeight = Math.max(20, Math.min(50, rawHeight));
+  const rawSpeed = parseInt(document.getElementById('promoTickerSpeed')?.value, 10) || 24;
+  const clampedSpeed = Math.max(10, Math.min(60, rawSpeed));
+  const tickerColor = document.getElementById('promoTickerColor')?.value || '#00e599';
+
+  const payload = {
+    enabled: document.getElementById('promoEnabled').checked,
+    sticky_top: stickyTop,
+    container_height: clampedContainerHeight,
+    banner_image: document.getElementById('promoBannerImage').value.trim(),
+    ticker_height: clampedHeight,
+    ticker_speed: clampedSpeed,
+    ticker_color: tickerColor,
+    tag_text: document.getElementById('promoTagText').value.trim(),
+    ticker_text: document.getElementById('promoTickerText').value.trim(),
+    headline: document.getElementById('promoHeadline').value.trim(),
+    subheadline: document.getElementById('promoSubheadline').value.trim(),
+    highlight_1: document.getElementById('promoHighlight1')?.value.trim() ?? '',
+    highlight_2: document.getElementById('promoHighlight2')?.value.trim() ?? '',
+    cta_text: document.getElementById('promoCtaText').value.trim(),
+    cta_url: document.getElementById('promoCtaUrl').value.trim(),
+  };
+
+  try {
+    const res = await fetch('/api/models/promo-banner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar promoção.');
+
+    // Atualiza badge de status com ALTO CONTRASTE
+    const badge = document.getElementById('promoStatusBadge');
+    const tabIndicator = document.getElementById('tabPromoStatusIndicator');
+    if (badge) {
+      if (payload.enabled) {
+        badge.textContent = '🟢 ATIVO NO SHOWROOM';
+        badge.style.background = '#059669';
+        badge.style.color = '#ffffff';
+        badge.style.border = '1px solid #047857';
+        badge.style.boxShadow = '0 2px 6px rgba(5,150,105,0.25)';
+      } else {
+        badge.textContent = '⚪ DESATIVADO (OCULTO)';
+        badge.style.background = '#64748b';
+        badge.style.color = '#ffffff';
+        badge.style.border = '1px solid #475569';
+        badge.style.boxShadow = 'none';
+      }
+    }
+    if (tabIndicator) {
+      tabIndicator.textContent = payload.enabled ? '🟢 Ativo' : '⚪ Oculto';
+    }
+
+    const toast = document.getElementById('saveToast');
+    const toastMsg = document.getElementById('saveToastMsg');
+    if (toast && toastMsg) {
+      toastMsg.textContent = '✅ Configurações e estilo da faixa Black November salvos com sucesso!';
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+  } catch (err) {
+    alert('Erro ao salvar promoção: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+</script>

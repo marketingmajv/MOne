@@ -20,6 +20,10 @@ from services.maj_models_sync_service import (
     load_kiosk_settings,
     save_kiosk_settings,
 )
+from services.showroom_promo_service import (
+    load_promo_banner_settings,
+    save_promo_banner_settings,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +123,26 @@ def api_save_kiosk_settings():
     }), 200
 
 
+@showroom_bp.route("/api/models/promo-banner", methods=["GET"])
+def api_get_promo_banner():
+    """Retorna configurações do Banner Promocional do showroom."""
+    return jsonify(load_promo_banner_settings()), 200
+
+
+@showroom_bp.route("/api/models/promo-banner", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_save_promo_banner():
+    """Atualiza configurações do Banner Promocional do showroom."""
+    body = request.get_json(silent=True) or {}
+    updated = save_promo_banner_settings(body)
+    return jsonify({
+        "status": "success",
+        "message": "Configurações da promoção atualizadas com sucesso.",
+        "promo_banner": updated,
+    }), 200
+
+
 @showroom_bp.route("/admin/models", methods=["GET"])
 @showroom_bp.route("/admin/modelos", methods=["GET"])
 @login_required
@@ -129,12 +153,14 @@ def admin_models_page():
     models = get_all_models(include_inactive=True)
     kiosk_settings = load_kiosk_settings()
     menu_config = load_menu_config()
+    promo_banner = load_promo_banner_settings()
     return render_template(
         "showroom/admin_models.html",
         me=me,
         models=models,
         kiosk_settings=kiosk_settings,
         menu_config=menu_config,
+        promo_banner=promo_banner,
     )
 
 
@@ -154,6 +180,7 @@ def showroom_models_page(slug=None):
     if not active_model and models:
         active_model = models[0]
     kiosk_settings = load_kiosk_settings()
+    promo_banner = load_promo_banner_settings()
     return render_template(
         "showroom/models.html",
         models=models,
@@ -161,4 +188,5 @@ def showroom_models_page(slug=None):
         initial_slug=slug or (active_model.get("slug") if active_model else None),
         kiosk_settings=kiosk_settings,
         cache_id=cache_id,
+        promo_banner=promo_banner,
     )
