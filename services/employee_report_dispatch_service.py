@@ -297,15 +297,43 @@ def get_consolidated_cycle_demands(cycle_id: int) -> Dict[str, Any]:
                     "demand": act["demand_fauzer"]
                 })
 
+    # Incluir Status Geral dos Gestores
+    from services.manager_status_service import get_cycle_manager_status_overview
+    mgr_overview = get_cycle_manager_status_overview(cycle_id)
+    consolidated["status_jam"] = mgr_overview["jam"]
+    consolidated["status_geysa"] = mgr_overview["geysa"]
+    consolidated["status_fauzer"] = mgr_overview["fauzer"]
+
     # Formatar WhatsApp consolidado para cada um dos 3 líderes
-    def _format_lead(lead_name, lead_icon, items):
+    def _format_lead(lead_name, lead_icon, lead_key, items, team_statuses):
         lead_lines = [
             f"{lead_icon} *PAUTA CONSOLIDADA DE DEMANDAS — {lead_name.upper()}*",
             f"📅 *{cycle_title}* (Toda a Equipe)",
             "",
-            f"Total de {len(items)} demanda(s) atribuída(s) para você nesta semana:",
-            "",
         ]
+
+        # Bloco 1: Status Geral dos Colaboradores
+        if lead_key == "fauzer":
+            lead_lines.append("📊 *PARECER TÉCNICO & SUGESTÕES DE PROCESSOS (FAUZER):*")
+        else:
+            lead_lines.append(f"📊 *STATUS GERAL DA EQUIPE (AVALIAÇÃO {lead_name.upper()}):*")
+
+        if team_statuses:
+            for s in team_statuses:
+                badge = s.get("badge_icon", "⚪")
+                st_label = s.get("status_label", "Pendente")
+                emp = s.get("employee_name", "")
+                diag = (s.get("diagnosis") or "").strip()
+                if diag:
+                    lead_lines.append(f"• *{emp}:* {badge} *{st_label}* — {diag}")
+                else:
+                    lead_lines.append(f"• *{emp}:* {badge} *{st_label}*")
+            lead_lines.append("")
+        else:
+            lead_lines.append("• Nenhum colaborador avaliado ainda.\n")
+
+        # Bloco 2: Demandas e Ações Atribuídas
+        lead_lines.append(f"📝 *DEMANDAS & TAREFAS ATRIBUÍDAS AO {lead_name.upper()} ({len(items)}):*")
         if not items:
             lead_lines.append("• Nenhuma demanda pendente atribuída para esta semana! 🎉\n")
         else:
@@ -313,10 +341,11 @@ def get_consolidated_cycle_demands(cycle_id: int) -> Dict[str, Any]:
                 lead_lines.append(f"*{i}. {it['employee_name']}* ({it['role_title']}):")
                 lead_lines.append(f"   📝 {it['demand']}")
                 lead_lines.append("")
+
         return "\n".join(lead_lines).strip()
 
-    consolidated["whatsapp_jam"] = _format_lead("Jam Penitenti", "👔", consolidated["jam"])
-    consolidated["whatsapp_geysa"] = _format_lead("Geysa", "💼", consolidated["geysa"])
-    consolidated["whatsapp_fauzer"] = _format_lead("Fauzer", "⚡", consolidated["fauzer"])
+    consolidated["whatsapp_jam"] = _format_lead("Jam Penitenti", "👔", "jam", consolidated["jam"], mgr_overview["jam"])
+    consolidated["whatsapp_geysa"] = _format_lead("Geysa", "💼", "geysa", consolidated["geysa"], mgr_overview["geysa"])
+    consolidated["whatsapp_fauzer"] = _format_lead("Fauzer", "⚡", "fauzer", consolidated["fauzer"], mgr_overview["fauzer"])
 
     return consolidated

@@ -336,28 +336,40 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
         ),
         "questions": [
             {
-                "id": "resultados_comerciais",
-                "label": "1. Resultados Comerciais do Atacado na Semana",
-                "placeholder": "Pedidos fechados para lojistas, cotações ativas, volume de faturamento estimado e negociações quentes...",
-                "help": "Desempenho da carteira de atacado e cumprimento das metas."
+                "id": "prospeccao",
+                "label": "1. Prospecção (Novos Contatos, Segmentos e Oportunidades)",
+                "placeholder": "Novos contatos iniciados, principais segmentos abordados e oportunidades relevantes da prospecção...",
+                "help": "Mapeamento ativo de novos revendedores e lojistas B2B."
             },
             {
-                "id": "sinais_mercado",
-                "label": "2. Sinais Relevantes do Mercado Atacadista",
-                "placeholder": "Movimentos de concorrentes, demandas sazonais dos lojistas, regiões em alta e comportamento dos parceiros...",
-                "help": "Termômetro do mercado B2B de revendas de mobilidade elétrica."
+                "id": "follow_up",
+                "label": "2. Follow-Up (Clientes Atuais e Negociações em Andamento)",
+                "placeholder": "Clientes atuais/antigos trabalhados e negociações quentes com previsão de fechar em breve...",
+                "help": "Manutenção do relacionamento ativo com a carteira de atacado."
+            },
+            {
+                "id": "fechamentos",
+                "label": "3. Fechamentos e Vendas no Período",
+                "placeholder": "Vendas fechadas na semana, principais modelos (Max 12, GP1000, Vittoria, V80) e observações relevantes...",
+                "help": "Desempenho comercial e pedidos faturados com lojistas."
             },
             {
                 "id": "objecoes_atacado",
-                "label": "3. Objeções Mais Frequentes nas Revendas",
-                "placeholder": "Principais travas dos lojistas (ex: frete fracionado, prazo de faturamento, margem de revenda, garantias)...",
-                "help": "Base para criação de pacotes comerciais atrativos para parceiros."
+                "label": "4. Objeções Mais Frequentes nas Revendas",
+                "placeholder": "Travas dos revendedores: Preço, Prazo, Frete, Produto, Concorrência e Outros...",
+                "help": "Base para criação de pacotes comerciais atrativos e desova de estoque."
             },
             {
-                "id": "demandas_estoque",
-                "label": "4. Volume de Pronta Entrega Demandado e Prazos",
-                "placeholder": "Modelos que lojistas estão pedindo com urgência de pronta entrega e alinhamento com Jhon/estoque...",
-                "help": "Permite planejar lotes e reserva de estoque B2B."
+                "id": "sinais_mercado",
+                "label": "5. Sinais do Mercado & Concorrência",
+                "placeholder": "Produtos mais pedidos, produtos com dificuldade de saída e movimentações dos concorrentes...",
+                "help": "Termômetro do mercado atacadista de mobilidade elétrica."
+            },
+            {
+                "id": "pendencias_direcao",
+                "label": "6. Pendências, Decisões da Direção & Regras",
+                "placeholder": "Casos que exigem decisão de Jam e Geysa na reunião. Lembrete: Regra Técnica (não fornecer diagnóstico) e Regra de Remuneração (comissão 1% via NF)...",
+                "help": "Pauta executiva de alinhamento com a Diretoria."
             }
         ]
     },

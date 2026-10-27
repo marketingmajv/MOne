@@ -248,3 +248,74 @@ def api_get_consolidated_demands(cycle_id: int):
         logger.error(f"Erro ao consolidar demandas do ciclo {cycle_id}: {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+@employee_alignment_bp.route("/api/relatorio/salvar-status-gestores", methods=["POST"])
+@login_required
+def api_save_manager_status():
+    """Salva a avaliação de status (badge e parecer) de Jam, Geysa e Fauzer para um colaborador."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+    evaluations = payload.get("evaluations") or {}
+
+    if not cycle_id or not employee_key:
+        return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
+
+    try:
+        from services.manager_status_service import save_employee_manager_evaluations
+        updated = save_employee_manager_evaluations(int(cycle_id), employee_key, evaluations)
+        return jsonify({"success": True, "message": "Status da liderança salvo com sucesso!", "data": updated})
+    except Exception as e:
+        logger.error(f"Erro ao salvar status dos gestores ({employee_key}, ciclo {cycle_id}): {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/relatorio/salvar-lote-status-gestor", methods=["POST"])
+@login_required
+def api_save_batch_manager_status():
+    """Salva o status de vários colaboradores em lote para um gestor específico (Jam, Geysa ou Fauzer)."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    manager_key = (payload.get("manager_key") or "").lower().strip()
+    evaluations_map = payload.get("evaluations_map") or {}
+
+    if not cycle_id or not manager_key:
+        return jsonify({"success": False, "error": "cycle_id e manager_key são obrigatórios."}), 400
+
+    try:
+        from services.manager_status_service import save_batch_manager_status
+        updated = save_batch_manager_status(int(cycle_id), manager_key, evaluations_map)
+        return jsonify({"success": True, "message": f"Status da equipe atualizado para {manager_key.upper()}!", "data": updated})
+    except Exception as e:
+        logger.error(f"Erro ao salvar lote de status ({manager_key}, ciclo {cycle_id}): {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/relatorio/sugerir-status-gestores-ia", methods=["POST"])
+@login_required
+def api_suggest_manager_status_ai():
+    """Gera sugestões automáticas com IA para Jam, Geysa e Fauzer com base nas respostas do colaborador."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+
+    if not cycle_id or not employee_key:
+        return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
+
+    try:
+        from services.manager_status_service import suggest_manager_evaluations_ai
+        suggestions = suggest_manager_evaluations_ai(int(cycle_id), employee_key)
+        return jsonify({"success": True, "data": suggestions})
+    except Exception as e:
+        logger.error(f"Erro ao gerar sugestão de status com IA ({employee_key}, ciclo {cycle_id}): {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+

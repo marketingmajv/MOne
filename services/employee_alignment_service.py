@@ -215,6 +215,7 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
         "whatsapp_alignment_url": whatsapp_url,
         "evaluation_summary": evaluation.get("summary", ""),
         "alignment_suggestions": suggestions if suggestions else evaluation.get("alignment_suggestions", {}),
+        "manager_evaluations": __import__("services.manager_status_service", fromlist=["get_employee_manager_evaluations"]).get_employee_manager_evaluations(cycle_id, employee_key),
     }
 
 

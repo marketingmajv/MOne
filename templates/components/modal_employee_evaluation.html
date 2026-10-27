@@ -133,7 +133,7 @@
                       <span x-text="q.provided_answer ? 'Preenchido' : 'Em branco'" style="font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"></span>
                     </div>
                     <div
-                      style="font-size: 0.88rem; color: #f1f5f9 !important; line-height: 1.6; white-space: pre-wrap;"
+                      style="font-size: 0.88rem; color: #f1f5f9 !important; line-height: 1.6; white-space: normal;"
                       :style="!q.provided_answer ? 'color: #94a3b8 !important; font-style: italic;' : ''"
                       x-html="formatAnswerHtml(q.provided_answer)"
                     ></div>
@@ -278,6 +278,9 @@
                 </div>
               </template>
 
+              <!-- STATUS GERAL & DIAGNÓSTICO DA LIDERANÇA (JAM, GEYSA E FAUZER) -->
+              {% include "components/card_manager_status_evaluation.html" %}
+
               <!-- CENTRAL DOS 4 RELATÓRIOS EXECUTIVOS WHATSAPP (ABAS) -->
               <div style="background: #101726; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -416,4 +419,4 @@
   </template>
 </div>
 
-<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261026_eval_v3"></script>
+<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261027_eval_v4"></script>

@@ -359,8 +359,8 @@ function implementationPlanApp() {
 }
 
 /**
- * Formata o texto de respostas destacando perguntas (?) e rótulos (:) em negrito,
- * mantendo as respostas normais para leitura ergonômica da Diretoria.
+ * Formata o texto de respostas organizando cada item um abaixo do outro verticalmente,
+ * com bullets destacados e rótulos em negrito ciano para máxima ergonomia visual.
  */
 window.formatReportAnswerHtml = function(text) {
   if (!text || !String(text).trim()) {
@@ -372,20 +372,52 @@ window.formatReportAnswerHtml = function(text) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/\'/g, '&#039;');
 
-  const clean = escapeHtml(String(text).trim());
+  let raw = String(text).trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  raw = raw.replace(/([^\n])\s+([•*]|\-(?=\s+[A-Za-zÀ-Ú0-9]))/g, '$1\n$2');
 
-  // Regex para capturar perguntas (?) e rótulos de itens (:)
-  const qaRegex = /(^|\n|(?<=[.;])\s+)(?:([-•*]\s*)?([A-Z0-9À-Úa-z][^.?!;\n\r]{1,90}(?:\?|:)))(?=\s+|$)/g;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
 
-  return clean.replace(qaRegex, (match, prefix, bullet, q, offset) => {
-    if (/^\d+:/.test(q) || /^https?:/i.test(q)) {
-      return match;
+  const htmlItems = lines.map(line => {
+    const bulletMatch = line.match(/^([•*\-])\s*(.*)$/);
+    const hasBullet = Boolean(bulletMatch);
+    const content = hasBullet ? bulletMatch[2].trim() : line;
+
+    const labelMatch = content.match(/^([^.?!;:\n\r]{1,90}(?:\?|:))\s*(.*)$/);
+
+    if (labelMatch && !/^\d+:/.test(labelMatch[1]) && !/^https?:/i.test(labelMatch[1])) {
+      const label = escapeHtml(labelMatch[1]);
+      let rest = escapeHtml(labelMatch[2]);
+      if (rest.includes("-&gt;") || rest.includes("→")) {
+        rest = rest.replace(/\s*(?:-&gt;|→)\s*(.+)$/i, ' &rarr; <span style="color: #fbbf24; font-weight: 600;">$1</span>');
+      }
+      return `<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; line-height: 1.55;">
+  <span style="color: #38bdf8; font-weight: 800; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0;">•</span>
+  <div style="flex: 1; min-width: 0;">
+    <strong style="font-weight: 800; color: #38bdf8; letter-spacing: -0.01em;">${label}</strong>
+    ${rest ? `<span style="color: #f1f5f9 !important; margin-left: 4px;">${rest}</span>` : ''}
+  </div>
+</div>`;
     }
-    const isFirst = (offset === 0 || prefix === '' || prefix === '\n');
-    const linePrefix = isFirst ? '' : '<br style="display: block; margin-top: 6px; content: \' \';">';
-    const b = bullet || '';
-    return `${linePrefix}${b}<strong style="font-weight: 800; color: #38bdf8; letter-spacing: -0.01em;">${q}</strong>`;
+
+    if (hasBullet) {
+      let escapedContent = escapeHtml(content);
+      if (escapedContent.includes("-&gt;") || escapedContent.includes("→")) {
+        escapedContent = escapedContent.replace(/\s*(?:-&gt;|→)\s*(.+)$/i, ' &rarr; <span style="color: #fbbf24; font-weight: 600;">$1</span>');
+      }
+      return `<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; line-height: 1.55;">
+  <span style="color: #38bdf8; font-weight: 800; font-size: 0.95rem; line-height: 1.5; flex-shrink: 0;">•</span>
+  <div style="flex: 1; min-width: 0; color: #f1f5f9 !important;">
+    ${escapedContent}
+  </div>
+</div>`;
+    }
+
+    return `<div style="margin-bottom: 8px; line-height: 1.55; color: #f1f5f9 !important;">
+  ${escapeHtml(line)}
+</div>`;
   });
+
+  return `<div style="display: flex; flex-direction: column;">${htmlItems.join('')}</div>`;
 };

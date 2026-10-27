@@ -1,0 +1,151 @@
+<!-- templates/components/card_manager_status_evaluation.html -->
+<!-- PARECER & STATUS GERAL DA LIDERANÇA (JAM, GEYSA E FAUZER) -->
+<div style="background: #0d1527; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h4 style="margin: 0; font-size: 0.98rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <span>🚦 Status Geral & Diagnóstico da Liderança</span>
+      </h4>
+      <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: #94a3b8;">
+        Avaliação direta de Jam (Comercial/Geral) e Geysa (Operação/Loja) + parecer técnico de Fauzer (Sistemas/Processos).
+      </p>
+    </div>
+    
+    <button
+      type="button"
+      @click="suggestManagerEvaluationsAI()"
+      :disabled="loadingManagerSuggestion"
+      style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc; font-size: 0.76rem; font-weight: 700; padding: 5px 12px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+    >
+      <span x-text="loadingManagerSuggestion ? '⏳ Analisando...' : '⚡ Sugerir Status com IA'"></span>
+    </button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+    <!-- Card Jam -->
+    <div style="background: rgba(251, 191, 36, 0.04); border: 1px solid rgba(251, 191, 36, 0.25); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.78rem; font-weight: 800; color: #fbbf24;">👔 Jam Penitenti</span>
+        <span style="font-size: 0.7rem; color: #94a3b8;">Diretor Geral</span>
+      </div>
+      <!-- Seletor de Semáforo -->
+      <div style="display: flex; gap: 4px;">
+        <button
+          type="button"
+          @click="setManagerStatus('jam', 'aligned')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.jam?.status === 'aligned' ? 'background: #00e599; color: #000; border-color: #00e599; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟢 Alinhado
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('jam', 'attention')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.jam?.status === 'attention' ? 'background: #fbbf24; color: #000; border-color: #fbbf24; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟡 Atenção
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('jam', 'critical')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.jam?.status === 'critical' ? 'background: #f87171; color: #000; border-color: #f87171; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🔴 Crítico
+        </button>
+      </div>
+      <textarea
+        class="form-input"
+        x-model="managerEvaluations.jam.diagnosis"
+        placeholder="Parecer executivo do Jam sobre o desempenho e entregas do colaborador..."
+        rows="2"
+        style="width: 100%; font-size: 0.82rem; line-height: 1.4; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(251, 191, 36, 0.3) !important; padding: 7px 9px; resize: vertical; box-sizing: border-box;"
+      ></textarea>
+    </div>
+
+    <!-- Card Geysa -->
+    <div style="background: rgba(52, 211, 153, 0.04); border: 1px solid rgba(52, 211, 153, 0.25); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.78rem; font-weight: 800; color: #34d399;">💼 Geysa</span>
+        <span style="font-size: 0.7rem; color: #94a3b8;">Gerente Geral</span>
+      </div>
+      <!-- Seletor de Semáforo -->
+      <div style="display: flex; gap: 4px;">
+        <button
+          type="button"
+          @click="setManagerStatus('geysa', 'aligned')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.geysa?.status === 'aligned' ? 'background: #00e599; color: #000; border-color: #00e599; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟢 Alinhado
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('geysa', 'attention')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.geysa?.status === 'attention' ? 'background: #fbbf24; color: #000; border-color: #fbbf24; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟡 Atenção
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('geysa', 'critical')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.geysa?.status === 'critical' ? 'background: #f87171; color: #000; border-color: #f87171; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🔴 Crítico
+        </button>
+      </div>
+      <textarea
+        class="form-input"
+        x-model="managerEvaluations.geysa.diagnosis"
+        placeholder="Parecer operacional da Geysa sobre cumprimento de rotinas, conferências e prazos..."
+        rows="2"
+        style="width: 100%; font-size: 0.82rem; line-height: 1.4; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(52, 211, 153, 0.3) !important; padding: 7px 9px; resize: vertical; box-sizing: border-box;"
+      ></textarea>
+    </div>
+
+    <!-- Card Fauzer (Opcional & Sugestivo) -->
+    <div style="background: rgba(168, 85, 247, 0.04); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.78rem; font-weight: 800; color: #c084fc;">⚡ Fauzer</span>
+        <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 0.65rem; padding: 2px 6px;">OPCIONAL / SUGESTIVO</span>
+      </div>
+      <!-- Seletor de Semáforo -->
+      <div style="display: flex; gap: 4px;">
+        <button
+          type="button"
+          @click="setManagerStatus('fauzer', 'aligned')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.fauzer?.status === 'aligned' ? 'background: #00e599; color: #000; border-color: #00e599; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟢 Alinhado
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('fauzer', 'attention')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.fauzer?.status === 'attention' ? 'background: #fbbf24; color: #000; border-color: #fbbf24; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🟡 Atenção
+        </button>
+        <button
+          type="button"
+          @click="setManagerStatus('fauzer', 'critical')"
+          style="flex: 1; padding: 5px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+          :style="managerEvaluations?.fauzer?.status === 'critical' ? 'background: #f87171; color: #000; border-color: #f87171; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+        >
+          🔴 Crítico
+        </button>
+      </div>
+      <textarea
+        class="form-input"
+        x-model="managerEvaluations.fauzer.diagnosis"
+        placeholder="Parecer técnico sugestivo do Fauzer sobre uso do M-One, Bling e maturidade de processos..."
+        rows="2"
+        style="width: 100%; font-size: 0.82rem; line-height: 1.4; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; padding: 7px 9px; resize: vertical; box-sizing: border-box;"
+      ></textarea>
+    </div>
+  </div>
+</div>

@@ -164,21 +164,29 @@ DEFAULT_DESIRED_ANSWERS: Dict[str, Dict[str, str]] = {
         ),
     },
     "gabriel": {
-        "resultados_comerciais": (
-            "Volume total de pedidos fechados no atacado B2B na semana (em R$ e quantidade de unidades), cotações quentes em "
-            "andamento e previsão de faturamento para o fechamento do mês."
+        "prospeccao": (
+            "Mapeamento quantitativo e qualitativo de novos contatos iniciados na semana com lojistas e revendas (Pessoa Jurídica), "
+            "identificando o segmento e as reais oportunidades de negócios."
         ),
-        "sinais_mercado": (
-            "Tendências observadas junto aos lojistas e revendedores: comportamento da concorrência, modelos mais requisitados "
-            "pelo público final das revendas e regiões com maior potencial de expansão."
+        "follow_up": (
+            "Acompanhamento ativo e constante da carteira de lojistas ativos e antigos, destacando negociações quentes em "
+            "andamento com potencial e previsão clara de fechamento."
+        ),
+        "fechamentos": (
+            "Demonstrativo dos pedidos fechados na semana (modelos como Max 12, GP1000, Vittoria e bikes V80), com alinhamento "
+            "imediato junto à Marisa para controle de faturamento e notas fiscais."
         ),
         "objecoes_atacado": (
-            "Principais dificuldades apontadas pelos revendedores (ex: custo do frete fracionado, exigência de prazo de pagamento "
-            "no boleto ou margem de revenda) com propostas para destravar pedidos."
+            "Registro detalhado das principais barreiras dos revendedores (preço, frete, prazo ou concorrência desleal nos modelos "
+            "Max 12 e V20 Ultra) e proposição de alternativas para destravar pedidos."
         ),
-        "demandas_estoque": (
-            "Mapeamento do volume de veículos de pronta entrega demandado pelos lojistas para alinhamento imediato com Jhon e Jam, "
-            "evitando prometer modelos esgotados ou sem previsão de desova."
+        "sinais_mercado": (
+            "Leitura do comportamento do mercado atacadista: modelos mais procurados, produtos com menor giro e monitoramento "
+            "de movimentações de preços e promoções da concorrência."
+        ),
+        "pendencias_direcao": (
+            "Pauta executiva de pendências para deliberação de Jam e Geysa, com cumprimento rigoroso da regra técnica "
+            "(não emitir diagnósticos técnicos) e alinhamento de emissão de NF de comissão de 1%."
         ),
     },
     "fauzer": {

@@ -21,6 +21,12 @@ function employeeEvaluationModal() {
     agreementsFauzer: '',
     activeReportTab: 'employee',
     copiedTab: null,
+    loadingManagerSuggestion: false,
+    managerEvaluations: {
+      jam: { status: 'pending', diagnosis: '' },
+      geysa: { status: 'pending', diagnosis: '' },
+      fauzer: { status: 'pending', diagnosis: '', is_suggestion: true }
+    },
 
     init() {
       window.openEvaluationModal = (cycleId, empKey) => {
@@ -87,6 +93,11 @@ function employeeEvaluationModal() {
 
           this.agreementsJamGeysa = this.employeeData.agreements_jam_geysa || '';
           this.agreementsFauzer = this.employeeData.agreements_fauzer || '';
+          this.managerEvaluations = this.employeeData.manager_evaluations || {
+            jam: { status: 'pending', diagnosis: '' },
+            geysa: { status: 'pending', diagnosis: '' },
+            fauzer: { status: 'pending', diagnosis: '', is_suggestion: true }
+          };
         } else {
           this.showToast(result.error || 'Erro ao carregar dados.', false);
         }
@@ -160,6 +171,17 @@ function employeeEvaluationModal() {
           if (res.data) {
             this.employeeData = res.data;
           }
+          if (this.managerEvaluations) {
+            fetch('/api/relatorio/salvar-status-gestores', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+              body: JSON.stringify({
+                cycle_id: this.cycleId,
+                employee_key: this.employeeKey,
+                evaluations: this.managerEvaluations
+              })
+            }).catch(() => {});
+          }
           return true;
         } else {
           this.showToast(res.error || 'Erro ao salvar pareceres.', false);
@@ -182,6 +204,37 @@ function employeeEvaluationModal() {
         await this.toggleFeedbackRelease(true);
       }
       this.showToast('✅ Aferição finalizada! Os 4 relatórios foram atualizados e estão prontos para envio.', true);
+    },
+
+    setManagerStatus(mgr, status) {
+      if (!this.managerEvaluations[mgr]) {
+        this.managerEvaluations[mgr] = { status: 'pending', diagnosis: '' };
+      }
+      this.managerEvaluations[mgr].status = status;
+    },
+
+    async suggestManagerEvaluationsAI() {
+      if (!this.cycleId || !this.employeeKey) return;
+      this.loadingManagerSuggestion = true;
+      try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        const resp = await fetch('/api/relatorio/sugerir-status-gestores-ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body: JSON.stringify({ cycle_id: this.cycleId, employee_key: this.employeeKey })
+        });
+        const res = await resp.json();
+        if (res.success && res.data) {
+          this.managerEvaluations = res.data;
+          this.showToast('✨ Sugestões de status geradas com IA para Jam, Geysa e Fauzer!', true);
+        } else {
+          this.showToast(res.error || 'Não foi possível gerar sugestões.', false);
+        }
+      } catch (e) {
+        this.showToast('Erro ao conectar ao serviço de sugestão.', false);
+      } finally {
+        this.loadingManagerSuggestion = false;
+      }
     },
 
     async suggestIdea(q) {
@@ -304,6 +357,18 @@ function employeeEvaluationModal() {
       let txt = `${cfg.icon} *PAUTA DE DEMANDAS — ${cfg.name.toUpperCase()}*\n`;
       txt += `👤 *Colaborador de Origem:* ${empName} (${role})\n`;
       txt += `📅 *Ciclo:* ${cycleTitle}\n\n`;
+
+      const mgrEval = this.managerEvaluations && this.managerEvaluations[type] ? this.managerEvaluations[type] : {};
+      if (mgrEval && (mgrEval.diagnosis || (mgrEval.status && mgrEval.status !== 'pending'))) {
+        const icon = mgrEval.status === 'aligned' ? '🟢' : (mgrEval.status === 'attention' ? '🟡' : (mgrEval.status === 'critical' ? '🔴' : '⚪'));
+        const stLabel = mgrEval.status === 'aligned' ? 'Alinhado' : (mgrEval.status === 'attention' ? 'Atenção' : (mgrEval.status === 'critical' ? 'Crítico' : 'Pendente'));
+        txt += `📊 *Status Geral Atribuído pelo ${cfg.name}:* ${icon} *${stLabel}*\n`;
+        if (mgrEval.diagnosis) {
+          txt += `💬 *Parecer Executivo:* _${mgrEval.diagnosis.trim()}_\n`;
+        }
+        txt += `\n`;
+      }
+
       txt += `Ações atribuídas na reunião de aferição sob sua responsabilidade:\n\n`;
 
       let count = 0;

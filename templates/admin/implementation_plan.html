@@ -11,7 +11,7 @@
   window.__INTERNAL_ANALYSIS__ = {{ internal_analysis|tojson|safe if (internal_analysis is defined and internal_analysis) else '{}' }};
   window.__IS_CURATOR__ = {{ 'true' if is_curator else 'false' }};
 </script>
-<script src="{{ url_for('static', filename='js/implementation-plan.js') }}?v=20261026_eval_v2"></script>
+<script src="{{ url_for('static', filename='js/implementation-plan.js') }}?v=20261027_eval_v5"></script>
 <script src="{{ url_for('static', filename='js/reports-columns.js') }}?v=20261026_eval_v2"></script>
 
 <div class="content-body" x-data="implementationPlanApp()">

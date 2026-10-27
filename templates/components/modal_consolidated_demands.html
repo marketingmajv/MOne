@@ -111,17 +111,96 @@
           </template>
 
           <template x-if="!loading">
-            <div style="display: flex; flex-direction: column; gap: 14px;">
-              <!-- Resumo Numérico -->
-              <div style="font-size: 0.82rem; color: #94a3b8;">
-                Exibindo <strong style="color: #f8fafc;" x-text="(data[activeLeader] || []).length"></strong> demanda(s) gerada(s) para este líder somando todos os colaboradores do ciclo.
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Seção 1: Status Geral dos Colaboradores (Edição Rápida da Liderança) -->
+              <div style="background: #090e17; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.1rem;">🚦</span>
+                    <div>
+                      <strong style="font-size: 0.88rem; color: #ffffff;" x-text="'Status Geral da Equipe (' + activeLeader.toUpperCase() + ')'"></strong>
+                      <span x-show="activeLeader === 'fauzer'" class="badge" style="background: rgba(168,85,247,0.15); color: #c084fc; font-size: 0.65rem; margin-left: 6px;">OPCIONAL / SUGESTIVO</span>
+                      <p style="margin: 0; font-size: 0.74rem; color: #94a3b8;">Defina o badge e parecer de cada colaborador para incluir automaticamente no WhatsApp:</p>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 8px;">
+                    <button
+                      type="button"
+                      @click="saveTeamStatus()"
+                      :disabled="savingStatus"
+                      style="background: #10b981; color: #000; font-size: 0.76rem; font-weight: 800; padding: 5px 14px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+                    >
+                      <span x-text="savingStatus ? '⏳ Salvando...' : '💾 Salvar Status'"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Lista de Colaboradores em Linhas Rápidas -->
+                <div style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 4px;">
+                  <template x-for="item in currentStatusList" :key="item.employee_key">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <strong style="font-size: 0.82rem; color: #f8fafc;" x-text="item.employee_name"></strong>
+                          <span style="font-size: 0.7rem; color: #94a3b8;" x-text="'(' + item.role_title + ')'"></span>
+                        </div>
+
+                        <!-- Semáforo Rápido -->
+                        <div style="display: flex; gap: 4px;">
+                          <button
+                            type="button"
+                            @click="setStatus(item.employee_key, 'aligned')"
+                            style="padding: 3px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                            :style="item.status === 'aligned' ? 'background: #00e599; color: #000; border-color: #00e599; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+                          >
+                            🟢 Alinhado
+                          </button>
+                          <button
+                            type="button"
+                            @click="setStatus(item.employee_key, 'attention')"
+                            style="padding: 3px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                            :style="item.status === 'attention' ? 'background: #fbbf24; color: #000; border-color: #fbbf24; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+                          >
+                            🟡 Atenção
+                          </button>
+                          <button
+                            type="button"
+                            @click="setStatus(item.employee_key, 'critical')"
+                            style="padding: 3px 8px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                            :style="item.status === 'critical' ? 'background: #f87171; color: #000; border-color: #f87171; font-weight: 800;' : 'background: rgba(0,0,0,0.3); color: #94a3b8; border-color: rgba(255,255,255,0.08);'"
+                          >
+                            🔴 Crítico
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Input de Diagnóstico -->
+                      <input
+                        type="text"
+                        class="form-input"
+                        x-model="item.diagnosis"
+                        placeholder="Parecer/diagnóstico em 1 a 2 frases para o WhatsApp..."
+                        style="width: 100%; font-size: 0.78rem; border-radius: 6px; background: #000 !important; color: #f8fafc !important; border: 1px solid rgba(255,255,255,0.12) !important; padding: 5px 8px; box-sizing: border-box;"
+                      />
+                    </div>
+                  </template>
+                </div>
               </div>
 
-              <!-- Visualização da Mensagem WhatsApp -->
-              <pre
-                x-text="currentMessage"
-                style="margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; line-height: 1.55; color: #e2e8f0; white-space: pre-wrap; background: #090e17; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); max-height: 420px; overflow-y: auto;"
-              ></pre>
+              <!-- Seção 2: Resumo e Visualização da Mensagem WhatsApp -->
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 0.78rem; color: #94a3b8; display: flex; justify-content: space-between;">
+                  <span>Mensagem consolidada formatada para WhatsApp:</span>
+                  <span>Total de <strong style="color: #f8fafc;" x-text="(data[activeLeader] || []).length"></strong> demanda(s)</span>
+                </div>
+
+                <pre
+                  x-text="currentMessage"
+                  style="margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; line-height: 1.5; color: #e2e8f0; white-space: pre-wrap; background: #090e17; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); max-height: 280px; overflow-y: auto;"
+                ></pre>
+              </div>
+
             </div>
           </template>
         </div>
@@ -148,10 +227,15 @@ function consolidatedDemandsModal() {
   return {
     isOpen: false,
     loading: false,
+    savingStatus: false,
     copied: false,
     cycleId: null,
     activeLeader: 'jam',
-    data: { jam: [], geysa: [], fauzer: [], whatsapp_jam: '', whatsapp_geysa: '', whatsapp_fauzer: '' },
+    data: {
+      jam: [], geysa: [], fauzer: [],
+      status_jam: [], status_geysa: [], status_fauzer: [],
+      whatsapp_jam: '', whatsapp_geysa: '', whatsapp_fauzer: ''
+    },
 
     openModal(detail) {
       this.cycleId = detail && detail.cycleId ? detail.cycleId : window.__CYCLE_ID__;
@@ -169,6 +253,57 @@ function consolidatedDemandsModal() {
       if (this.activeLeader === 'geysa') return this.data.whatsapp_geysa || '';
       if (this.activeLeader === 'fauzer') return this.data.whatsapp_fauzer || '';
       return '';
+    },
+
+    get currentStatusList() {
+      if (this.activeLeader === 'jam') return this.data.status_jam || [];
+      if (this.activeLeader === 'geysa') return this.data.status_geysa || [];
+      if (this.activeLeader === 'fauzer') return this.data.status_fauzer || [];
+      return [];
+    },
+
+    setStatus(empKey, newStatus) {
+      const list = this.currentStatusList;
+      const it = list.find(x => x.employee_key === empKey);
+      if (it) {
+        it.status = newStatus;
+        if (newStatus === 'aligned') { it.status_label = 'Alinhado'; it.badge_icon = '🟢'; it.color = '#00e599'; }
+        else if (newStatus === 'attention') { it.status_label = 'Atenção'; it.badge_icon = '🟡'; it.color = '#fbbf24'; }
+        else if (newStatus === 'critical') { it.status_label = 'Crítico'; it.badge_icon = '🔴'; it.color = '#f87171'; }
+      }
+    },
+
+    async saveTeamStatus() {
+      if (!this.cycleId) return;
+      this.savingStatus = true;
+      try {
+        const evalsMap = {};
+        this.currentStatusList.forEach(it => {
+          evalsMap[it.employee_key] = {
+            status: it.status || 'aligned',
+            diagnosis: it.diagnosis || ''
+          };
+        });
+
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        const resp = await fetch('/api/relatorio/salvar-lote-status-gestor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body: JSON.stringify({
+            cycle_id: this.cycleId,
+            manager_key: this.activeLeader,
+            evaluations_map: evalsMap
+          })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          await this.fetchConsolidated();
+        }
+      } catch(e) {
+        console.error('Erro ao salvar status em lote:', e);
+      } finally {
+        this.savingStatus = false;
+      }
     },
 
     async fetchConsolidated() {
