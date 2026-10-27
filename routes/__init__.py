@@ -36,6 +36,7 @@ from routes.implementation_plan_routes import implementation_plan_bp
 from routes.botconversa_routes import botconversa_bp
 from routes.custom_catalog_routes import custom_catalog_bp
 from routes.prospector_routes import prospector_bp
+from routes.radar_routes import radar_bp
 from routes.maintenance_routes import maintenance_bp
 from routes.employee_portal_routes import employee_portal_bp
 from routes.employee_alignment_routes import employee_alignment_bp
@@ -76,6 +77,7 @@ ALL_BLUEPRINTS = [
     botconversa_bp,
     custom_catalog_bp,
     prospector_bp,
+    radar_bp,
     maintenance_bp,
 ]
 

@@ -107,6 +107,13 @@ ALL_PERMISSIONS = {
         "description": "Máquina automatizada de descoberta e abordagem B2B",
         "default_roles": ["admin", "support", "sales"],
     },
+    "radar": {
+        "category": "comercial",
+        "label": "Radar de Mercado",
+        "icon": "🛰️",
+        "description": "Disparos táticos de prospecção por cidade e gestão de lotes",
+        "default_roles": ["admin", "support", "sales"],
+    },
 
     # ---------------- LOGÍSTICA & ESTOQUE (4) ----------------
     "stock": {

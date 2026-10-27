@@ -13,7 +13,8 @@
 {% set can_atacado = me and user_has_permission(me, 'atacado') %}
 {% set can_showroom = me and user_has_permission(me, 'showroom') %}
 {% set can_prospector = me and user_has_permission(me, 'prospector') %}
-{% set has_comercial = can_sales or can_custom_catalogs or can_outlet or can_atacado or can_showroom or can_prospector %}
+{% set can_radar = me and user_has_permission(me, 'radar') %}
+{% set has_comercial = can_sales or can_custom_catalogs or can_outlet or can_atacado or can_showroom or can_prospector or can_radar %}
 
 {% set can_stock = me and user_has_permission(me, 'stock') %}
 {% set can_freight = me and user_has_permission(me, 'freight') %}
@@ -50,6 +51,7 @@
 {% set is_active_atacado = ('atacado' in full_ep) %}
 {% set is_active_showroom = ('showroom' in full_ep or 'model' in full_ep) %}
 {% set is_active_prospector = ('prospector' in full_ep or 'prospeccao' in full_ep) %}
+{% set is_active_radar = ('radar' in full_ep) %}
 
 {% set is_active_stock = (ep == 'stock') %}
 {% set is_active_freight = (ep == 'freight') %}
@@ -255,12 +257,21 @@
       </a>
       {% endif %}
 
-      {% if can_prospector %}
-      <a href="{{ url_for('prospector.index') }}" class="nav-item {{ 'active' if is_active_prospector else '' }}" title="Máquina de Leads e Prospecção Qualificada">
+      {% if can_radar %}
+      <a href="{{ url_for('radar.index') }}" class="nav-item {{ 'active' if is_active_radar else '' }}" title="Radar de Mercado e Missões Táticas por Cidade">
         <svg class="nav-icon" style="color: #38bdf8;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
         </svg>
-        <span>Prospecção de Leads</span>
+        <span>Radar de Mercado</span>
+      </a>
+      {% endif %}
+
+      {% if can_prospector %}
+      <a href="{{ url_for('prospector.index') }}" class="nav-item {{ 'active' if is_active_prospector else '' }}" title="Máquina de Leads e Prospecção Qualificada">
+        <svg class="nav-icon" style="color: #10b981;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+        </svg>
+        <span>Prospecção Contínua</span>
       </a>
       {% endif %}
     </div>

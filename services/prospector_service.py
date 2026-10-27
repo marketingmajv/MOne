@@ -9,19 +9,9 @@ Segregação estrita modular (< 500 linhas).
 """
 
 from __future__ import annotations
-
-import json
-import logging
-import os
-import re
-import threading
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
+import json, logging, os, re, threading, time, urllib.error, urllib.parse, urllib.request
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-
 from database import db
 from services.gemini_client import execute_gemini_payload
 
@@ -352,14 +342,14 @@ def calcular_score_lead(lead_data: Dict[str, Any], pesos: Dict[str, int]) -> Tup
 # 5. PIPELINE EXECUTIVO COMPLETO
 # -------------------------------------------------------------------------
 
-def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10) -> None:
+def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10, lote_id: Optional[str] = None) -> None:
     """Thread worker que executa o ciclo completo de prospecção e salva no Supabase."""
     global _CURRENT_JOB
     with _JOB_LOCK:
         _CURRENT_JOB = {
             "running": True, "started_at": datetime.now().isoformat(), "nicho": nicho_slug,
             "praca": praca, "total": limite, "processed": 0, "current_lead": "Buscando empresas no Google Maps...",
-            "error": None, "completed": False,
+            "error": None, "completed": False, "lote_id": lote_id,
         }
 
     def _worker():
@@ -372,13 +362,21 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
             termos = nicho_cfg.get("termos") or [nicho_cfg.get("rotulo")]
             lugares: List[Dict[str, Any]] = []
             seen_names = set()
+            cidade_alvo = praca.split("-")[0].strip().lower()
+
             for t_item in termos:
                 if len(lugares) >= limite:
                     break
                 restante = limite - len(lugares)
                 query = f"{t_item} em {praca}"
-                sub = buscar_google_maps_apify(query, max_results=min(restante, 25))
+                sub = buscar_google_maps_apify(query, max_results=min(restante * 2, 35))
                 for sl in sub:
+                    cid_sl = (sl.get("cidade") or "").strip().lower()
+                    end_sl = (sl.get("endereco") or "").lower()
+                    if cid_sl and cidade_alvo and cid_sl != cidade_alvo and cidade_alvo not in end_sl:
+                        continue
+                    if " es" in praca.lower() and (" sc" in end_sl or " florian" in end_sl or " florian" in cid_sl):
+                        continue
                     nm = (sl.get("nome") or "").strip().lower()
                     if nm and nm not in seen_names:
                         seen_names.add(nm)
@@ -399,18 +397,17 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                 cnpj_info = consultar_dados_cnpj(site_info["cnpj"]) if site_info.get("cnpj") else None
                 ia_info = analisar_lead_com_ia(p.get("nome"), p.get("categoria"), site_info.get("texto_site", ""), nicho_cfg)
 
-                emails_consolidados: List[str] = []
-                for em in (site_info.get("emails") or []):
-                    if em and em not in emails_consolidados:
-                        emails_consolidados.append(em)
-                for fonte_em in [cnpj_info.get("email") if cnpj_info else None, p.get("email")]:
-                    if fonte_em and fonte_em not in emails_consolidados:
-                        emails_consolidados.append(fonte_em)
-
+                emails_consolidados: List[str] = [e for e in dict.fromkeys((site_info.get("emails") or []) + [cnpj_info.get("email") if cnpj_info else None, p.get("email")]) if e]
                 email_principal = emails_consolidados[0] if emails_consolidados else None
                 tel_g, tipo_g = classificar_telefone(p.get("telefone_google"))
                 site_wa, tipo_site = classificar_telefone(site_info.get("whatsapp"))
                 whatsapp_valido = site_wa if tipo_site == "celular" else (tel_g if tipo_g == "celular" else None)
+
+                cid_alvo_title = praca.split("-")[0].strip()
+                cidade_detectada = (cnpj_info.get("cidade") if cnpj_info else None) or p.get("cidade") or cid_alvo_title
+                if cidade_alvo and cidade_detectada.lower() != cidade_alvo:
+                    cidade_detectada = cid_alvo_title
+                uf_detectada = (cnpj_info.get("uf") if cnpj_info else None) or ("ES" if "ES" in praca.upper() else ("SP" if "SP" in praca.upper() else ("MG" if "MG" in praca.upper() else "ES")))
 
                 lead_combinado = {**p, **site_info, **(cnpj_info or {}), "email": email_principal, "emails": emails_consolidados, "whatsapp": whatsapp_valido}
                 score, classe, sinais = calcular_score_lead(lead_combinado, nicho_cfg.get("pesos") or {})
@@ -424,14 +421,14 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                             site_titulo, whatsapp, email, emails, instagram, cnpj, razao_social, nome_fantasia, situacao_cnpj,
                             porte, capital_social, cnae_principal, cnae_descricao, data_abertura, socios, decisor_nome,
                             decisor_cargo, resumo_ia, porte_estimado, do_nicho, motivo_aderencia, gancho_comercial,
-                            score, classificacao, sinais_score, status_contato
+                            score, classificacao, sinais_score, status_contato, lote_id
                         ) VALUES (
                             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                             %s, %s, %s, %s, %s, %s, %s,
                             %s, %s, %s, %s, %s, %s, %s, %s, %s,
                             %s, %s, %s, %s, %s, %s, %s,
                             %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, 'novo'
+                            %s, %s, %s, 'novo', %s
                         )
                         ON CONFLICT (google_id) DO UPDATE SET
                             score = EXCLUDED.score, classificacao = EXCLUDED.classificacao,
@@ -441,10 +438,13 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                             emails = CASE WHEN array_length(EXCLUDED.emails, 1) > 0 THEN EXCLUDED.emails ELSE prospeccao.leads.emails END,
                             cnpj = COALESCE(EXCLUDED.cnpj, prospeccao.leads.cnpj),
                             decisor_nome = COALESCE(EXCLUDED.decisor_nome, prospeccao.leads.decisor_nome),
+                            cidade = COALESCE(EXCLUDED.cidade, prospeccao.leads.cidade),
+                            uf = COALESCE(EXCLUDED.uf, prospeccao.leads.uf),
+                            lote_id = COALESCE(EXCLUDED.lote_id, prospeccao.leads.lote_id),
                             updated_at = NOW();
                         """,
                         [
-                            p["google_id"], nicho_slug, praca, p.get("termo_busca", "loja de motos"), p["nome"], p["categoria"], p["endereco"], p["cidade"], None, p["lat"], p["lng"],
+                            p["google_id"], nicho_slug, praca, p.get("termo_busca", "loja de motos"), p["nome"], p["categoria"], p["endereco"], cidade_detectada, uf_detectada, p["lat"], p["lng"],
                             p["google_maps_url"], p["avaliacao"], p["total_avaliacoes"], p["telefone_google"], p["site"], site_info["site_status"], site_info["site_vivo"],
                             site_info["site_titulo"], whatsapp_valido, email_principal, emails_consolidados, site_info["instagram"],
                             cnpj_info.get("cnpj") if cnpj_info else None, cnpj_info.get("razao_social") if cnpj_info else None, cnpj_info.get("nome_fantasia") if cnpj_info else None,
@@ -452,9 +452,20 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
                             cnpj_info.get("cnae_codigo") if cnpj_info else None, cnpj_info.get("cnae_descricao") if cnpj_info else None, cnpj_info.get("data_abertura") if cnpj_info else None,
                             json.dumps(cnpj_info.get("socios") or []) if cnpj_info else '[]', cnpj_info.get("decisor_nome") if cnpj_info else None, cnpj_info.get("decisor_cargo") if cnpj_info else None,
                             ia_info.get("resumo"), ia_info.get("porte_estimado"), ia_info.get("do_nicho"), ia_info.get("motivo"), ia_info.get("gancho_comercial"),
-                            score, classe, json.dumps(sinais)
+                            score, classe, json.dumps(sinais), lote_id
                         ]
                     )
+                    conn.commit()
+
+            if lote_id:
+                with db() as conn:
+                    conn.execute("""
+                        UPDATE prospeccao.lotes
+                        SET total_capturados = (SELECT COUNT(*) FROM prospeccao.leads WHERE lote_id = %s::uuid),
+                            total_whatsapp = (SELECT COUNT(*) FROM prospeccao.leads WHERE lote_id = %s::uuid AND (whatsapp IS NOT NULL OR telefone_google IS NOT NULL)),
+                            status = 'concluido', updated_at = NOW()
+                        WHERE id = %s::uuid;
+                    """, [lote_id, lote_id, lote_id])
                     conn.commit()
 
             with _JOB_LOCK:
@@ -464,6 +475,13 @@ def executar_prospeccao_assincrona(nicho_slug: str, praca: str, limite: int = 10
 
         except Exception as e:
             logger.error("Erro no job de prospecção: %s", e)
+            if lote_id:
+                try:
+                    with db() as conn:
+                        conn.execute("UPDATE prospeccao.lotes SET status = 'erro', erro_msg = %s, updated_at = NOW() WHERE id = %s::uuid;", [str(e)[:250], lote_id])
+                        conn.commit()
+                except Exception:
+                    pass
             with _JOB_LOCK:
                 _CURRENT_JOB["running"] = False
                 _CURRENT_JOB["error"] = str(e)
