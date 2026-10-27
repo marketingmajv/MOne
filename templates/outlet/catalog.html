@@ -85,20 +85,20 @@
 
       <div class="hero-stats-bar">
         <div class="stat-card">
-          <strong class="stat-number">{{ items|length }}+</strong>
-          <span class="stat-label">Modelos Disponíveis</span>
+          <strong class="stat-number">{{ hero_stats.card_1_number if hero_stats else (items|length ~ '+') }}</strong>
+          <span class="stat-label">{{ hero_stats.card_1_label if hero_stats else 'Modelos Disponíveis' }}</span>
         </div>
         <div class="stat-card">
-          <strong class="stat-number">18X</strong>
-          <span class="stat-label">Parcelamento Facilitado</span>
+          <strong class="stat-number">{{ hero_stats.card_2_number if hero_stats else '18X' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_2_label if hero_stats else 'Parcelamento Facilitado' }}</span>
         </div>
         <div class="stat-card">
-          <strong class="stat-number">Até 50%</strong>
-          <span class="stat-label">Abaixo da Tabela</span>
+          <strong class="stat-number">{{ hero_stats.card_3_number if hero_stats else 'Até 50%' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_3_label if hero_stats else 'Abaixo da Tabela' }}</span>
         </div>
         <div class="stat-card">
-          <strong class="stat-number">100%</strong>
-          <span class="stat-label">Revisados e com Garantia</span>
+          <strong class="stat-number">{{ hero_stats.card_4_number if hero_stats else '100%' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_4_label if hero_stats else 'Revisados e com Garantia' }}</span>
         </div>
       </div>
     </div>

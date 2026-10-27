@@ -190,8 +190,21 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
         agreements_fauzer=agreements_fauzer
     )
 
+    cycle_title, cycle_code, cycle_display = f"Ciclo #{cycle_id}", f"W{cycle_id}", f"Ciclo #{cycle_id}"
+    with db() as conn:
+        ph = "%s" if _is_pg(conn) else "?"
+        c_row = conn.execute(f"SELECT cycle_code, title FROM maj_report_cycles WHERE id = {ph} LIMIT 1", (cycle_id,)).fetchone()
+        if c_row:
+            c_dict = dict(c_row)
+            cycle_code, cycle_title = c_dict.get("cycle_code") or cycle_code, c_dict.get("title") or cycle_title
+            short_name = cycle_title.split(" — ")[0].strip() if " — " in cycle_title else cycle_title
+            cycle_display = f"{short_name} ({cycle_code})" if cycle_code not in short_name else short_name
+
     return {
         "cycle_id": cycle_id,
+        "cycle_code": cycle_code,
+        "cycle_title": cycle_title,
+        "cycle_display": cycle_display,
         "employee_key": employee_key,
         "employee_name": emp_name,
         "role_title": meta.get("role_title") or report.get("role_title") or "",

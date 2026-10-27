@@ -89,6 +89,18 @@ def catalog():
     # Extrair categorias únicas para filtros
     all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
 
+    # 4 Cards de Destaque / Estatísticas do Hero
+    hero_stats = {
+        "card_1_number": f"{len(items)}+",
+        "card_1_label": outlet_settings.get("stat_card_1_label") or "Modelos Disponíveis",
+        "card_2_number": outlet_settings.get("stat_card_2_number") or "18X",
+        "card_2_label": outlet_settings.get("stat_card_2_label") or "Parcelamento Facilitado",
+        "card_3_number": outlet_settings.get("stat_card_3_number") or "Até 50%",
+        "card_3_label": outlet_settings.get("stat_card_3_label") or "Abaixo da Tabela",
+        "card_4_number": outlet_settings.get("stat_card_4_number") or "100%",
+        "card_4_label": outlet_settings.get("stat_card_4_label") or "Revisados e com Garantia",
+    }
+
     return render_template(
         "outlet/catalog.html",
         items=items,
@@ -102,6 +114,7 @@ def catalog():
         current_category=category,
         search_query=search,
         total_vehicles=total_vehicles,
+        hero_stats=hero_stats,
     )
 
 
@@ -151,6 +164,13 @@ def admin_outlet():
         "outlet_urgency_text": get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X"),
         "outlet_last_sync_at": get_outlet_setting("outlet_last_sync_at", ""),
         "outlet_last_sync_summary": get_outlet_setting("outlet_last_sync_summary", ""),
+        "stat_card_1_label": get_outlet_setting("stat_card_1_label", "Modelos Disponíveis"),
+        "stat_card_2_number": get_outlet_setting("stat_card_2_number", "18X"),
+        "stat_card_2_label": get_outlet_setting("stat_card_2_label", "Parcelamento Facilitado"),
+        "stat_card_3_number": get_outlet_setting("stat_card_3_number", "Até 50%"),
+        "stat_card_3_label": get_outlet_setting("stat_card_3_label", "Abaixo da Tabela"),
+        "stat_card_4_number": get_outlet_setting("stat_card_4_number", "100%"),
+        "stat_card_4_label": get_outlet_setting("stat_card_4_label", "Revisados e com Garantia"),
     }
 
     return render_template(
@@ -305,8 +325,15 @@ def update_settings():
     set_outlet_setting("outlet_title", request.form.get("outlet_title", "").strip())
     set_outlet_setting("outlet_subtitle", request.form.get("outlet_subtitle", "").strip())
     set_outlet_setting("outlet_urgency_text", request.form.get("outlet_urgency_text", "").strip())
+    set_outlet_setting("stat_card_1_label", request.form.get("stat_card_1_label", "").strip() or "Modelos Disponíveis")
+    set_outlet_setting("stat_card_2_number", request.form.get("stat_card_2_number", "").strip() or "18X")
+    set_outlet_setting("stat_card_2_label", request.form.get("stat_card_2_label", "").strip() or "Parcelamento Facilitado")
+    set_outlet_setting("stat_card_3_number", request.form.get("stat_card_3_number", "").strip() or "Até 50%")
+    set_outlet_setting("stat_card_3_label", request.form.get("stat_card_3_label", "").strip() or "Abaixo da Tabela")
+    set_outlet_setting("stat_card_4_number", request.form.get("stat_card_4_number", "").strip() or "100%")
+    set_outlet_setting("stat_card_4_label", request.form.get("stat_card_4_label", "").strip() or "Revisados e com Garantia")
 
-    audit("update_outlet_settings", "Configurações gerais do Outlet MAJ atualizadas")
+    audit("update_outlet_settings", "Configurações gerais e cards de estatísticas do Outlet MAJ atualizadas")
     flash("Configurações do Outlet salvas com sucesso!", "success")
     return redirect(url_for("outlet.admin_outlet"))
 

@@ -34,6 +34,16 @@
             <div style="min-width: 0;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #ffffff !important; letter-spacing: -0.02em;" x-text="employeeData.employee_name || 'Aferição do Colaborador'"></h3>
+                
+                <!-- Badge de Ciclo Bem Destacado -->
+                <span
+                  style="font-size: 0.78rem; padding: 3px 11px; border-radius: 8px; font-weight: 800; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.18)); color: #fbbf24; border: 1.5px solid #f59e0b; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); text-transform: uppercase; letter-spacing: 0.03em;"
+                  title="Ciclo Semanal em Aferição"
+                >
+                  <span style="font-size: 0.85rem;">📅</span>
+                  <span x-text="getCycleBadgeLabel()"></span>
+                </span>
+
                 <span
                   class="badge"
                   style="font-size: 0.72rem; padding: 3px 9px; border-radius: 6px; font-weight: 800; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); text-transform: uppercase;"
@@ -51,7 +61,7 @@
                 </template>
               </div>
               <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #94a3b8 !important;">
-                Função: <strong style="color: #f1f5f9 !important;" x-text="employeeData.role_title || ''"></strong> • Status: <span x-text="getStatusLabel(employeeData.status)" style="font-weight: 600; color: #cbd5e1;"></span>
+                Função: <strong style="color: #f1f5f9 !important;" x-text="employeeData.role_title || ''"></strong> • Ciclo: <strong style="color: #fbbf24 !important;" x-text="getCycleBadgeLabel()"></strong> • Status: <span x-text="getStatusLabel(employeeData.status)" style="font-weight: 600; color: #cbd5e1;"></span>
               </p>
             </div>
           </div>
@@ -419,4 +429,4 @@
   </template>
 </div>
 
-<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261027_eval_v4"></script>
+<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261027_eval_v5"></script>

@@ -438,6 +438,23 @@ function employeeEvaluationModal() {
       return '⚪';
     },
 
+    getCycleBadgeLabel() {
+      if (this.employeeData && this.employeeData.cycle_display) {
+        return this.employeeData.cycle_display;
+      }
+      const sel = document.getElementById('cycleSelector');
+      if (sel && sel.options && sel.selectedIndex >= 0) {
+        const opt = sel.options[sel.selectedIndex];
+        if (opt && String(opt.value) === String(this.cycleId)) {
+          const raw = opt.textContent.trim();
+          return raw.split('—')[0].trim() || raw;
+        }
+      }
+      if (this.cycleId === 5) return 'Ciclo 01 (2026-W43)';
+      if (this.cycleId === 6) return 'Ciclo 02 (2026-W44)';
+      return this.cycleId ? `Ciclo #${this.cycleId}` : 'Ciclo Ativo';
+    },
+
     formatAnswerHtml(text) {
       if (typeof window.formatReportAnswerHtml === 'function') {
         return window.formatReportAnswerHtml(text);
