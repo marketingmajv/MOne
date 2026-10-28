@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_6">
+  
+  <!-- Atacado v2 Data & Logic -->
+  <script>
+    window.V2_ITEMS_DATA = {{ items|tojson }};
+    window.V2_WA_NUMBER = "{{ whatsapp_number }}";
+    window.V2_MIN_QTY_TEXT = "{{ min_qty_text }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/atacado-v2.js') }}?v=20261028_6"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+</head>
+<body class="atacado-v2-body" x-data="atacadoV2App()">
+
+  <!-- 1. Top Urgency Ribbon -->
+  <div class="v2-top-ribbon">
+    <div class="v2-ribbon-track">
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÕES M-ONE & COLVIX</span>
+      <span>•</span>
+      <span>MARGENS ESTIMADAS DE ATÉ 48% PARA SUA LOJA</span>
+      <span>•</span>
+      <span>BAÚ ORIGINAL INCLUSO DE FÁBRICA</span>
+      <span>•</span>
+      <span>ESTOQUE DE PEÇAS NO BRASIL COM GARANTIA OFICIAL</span>
+      <span>•</span>
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÕES M-ONE & COLVIX</span>
+      <span>•</span>
+      <span>MARGENS ESTIMADAS DE ATÉ 48% PARA SUA LOJA</span>
+    </div>
+  </div>
+
+  <!-- 2. Header Executivo B2B -->
+  <header class="v2-header">
+    <div class="v2-container v2-header-inner">
+      <a href="/atacado/v2" class="v2-brand-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="v2-brand-logo">
+        <div class="v2-brand-text">
+          <span class="v2-brand-title">MAJ MOBILIDADE</span>
+          <span class="v2-brand-badge">ATACADO & REVENDA CNPJ</span>
+        </div>
+      </a>
+
+      <div class="v2-header-actions">
+        <!-- Gatilho do Lote Misto -->
+        <button type="button" class="v2-btn-cart-trigger" x-show="hasLotItems()" @click="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" title="Ver Meu Lote de Atacado">
+          <span class="v2-cart-lbl-desktop">📦 Meu Lote:</span>
+          <span class="v2-cart-lbl-mobile">📦</span>
+          <span class="v2-cart-badge" x-text="getTotalVehicles() + ' un'"></span>
+          <strong class="v2-cart-price-desktop" style="color: #fff;">R$ <span x-text="formatPrice(getTotalCost())"></span></strong>
+        </button>
+
+        <a :href="'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá! Sou lojista e gostaria de falar com um Consultor de Expansão CNPJ da MAJ Mobilidade.')" 
+           target="_blank" 
+           class="v2-btn-header-wa" 
+           title="Falar com Consultor CNPJ no WhatsApp">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span class="v2-wa-text-full">Consultor CNPJ</span>
+          <span class="v2-wa-text-short">CNPJ</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3. Hero B2B: Valor & Decisão Comercial -->
+  <section class="v2-hero">
+    <div class="v2-container">
+      <div class="v2-hero-pill">
+        <span>⚡ CATÁLOGO OFICIAL DE DECISÃO COMERCIAL</span>
+      </div>
+      <h1 class="v2-hero-title">
+        <span class="v2-hero-line-1">Menor risco operacional.</span>
+        <span class="v2-hero-line-2"><span class="hl-emerald">Maior margem de revenda</span> para a sua loja.</span>
+      </h1>
+      <p class="v2-hero-subtitle">
+        Compre direto da importadora oficial com estoque no Brasil, baú incluso de fábrica e peças de reposição a pronta entrega. Monte seu lote misto abaixo e veja seu lucro projetado em tempo real.
+      </p>
+
+      <div class="v2-hero-metrics">
+        <div class="v2-metric-card">
+          <span class="v2-metric-num">A partir de 3 un.</span>
+          <span class="v2-metric-desc">Lote Mínimo Flexível</span>
+        </div>
+        <div class="v2-metric-card">
+          <span class="v2-metric-num">Até 48%</span>
+          <span class="v2-metric-desc">Margem Bruta Estimada</span>
+        </div>
+        <div class="v2-metric-card">
+          <span class="v2-metric-num">Baú Incluso</span>
+          <span class="v2-metric-desc">Economia de até R$ 450/un</span>
+        </div>
+        <div class="v2-metric-card">
+          <span class="v2-metric-num">100% Peças</span>
+          <span class="v2-metric-desc">Estoque Nacional ES/SP</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Seção 1: ⭐ Trilha Campeões de Giro & Equilíbrio (Recomendado) -->
+  <section class="v2-track-section v2-track-campeoes" id="campeoes">
+    <div class="v2-container">
+      <div class="v2-track-header">
+        <div class="v2-track-eyebrow">
+          <span>⭐ RECOMENDADO PARA 80% DOS LOJISTAS</span>
+        </div>
+        <h2 class="v2-track-title">Campeões de Giro & Equilíbrio</h2>
+        <p class="v2-track-desc">
+          Os modelos mais consagrados do mercado. Excelente velocidade de venda ao consumidor final com alta margem bruta por unidade.
+        </p>
+      </div>
+
+      <div class="v2-cards-grid">
+        <template x-for="item in items.filter(i => i.track === 'campeoes')" :key="item.id">
+          <div class="v2-card card-featured">
+            
+            <div class="v2-card-media" @click="openModal(item.id)">
+              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
+              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
+            </div>
+
+            <div class="v2-card-body">
+              <div class="v2-card-header">
+                <span class="v2-card-cat" x-text="item.category || 'Scooter Elétrica'"></span>
+                <h3 class="v2-card-name" x-text="item.name"></h3>
+              </div>
+
+              <!-- Diferenciais MAJ -->
+              <div class="v2-card-differentiators">
+                <template x-if="item.differentiator">
+                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
+                </template>
+                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
+                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
+              </div>
+
+              <!-- Preço & Margem com Desconto Escalonado -->
+              <div class="v2-card-pricing-block">
+                <div class="v2-pricing-row">
+                  <span class="v2-price-label">Atacado à vista:</span>
+                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
+                </div>
+                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                </div>
+                <div class="v2-price-retail-row">
+                  <span class="v2-price-label">Sugerido Varejo:</span>
+                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
+                </div>
+                <div class="v2-profit-badge">
+                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
+                  <div>
+                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
+                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ações & Seletor de Quantidade -->
+              <div class="v2-card-actions">
+                <div class="v2-qty-selector">
+                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
+                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
+                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
+                </div>
+                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
+                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
+                </button>
+                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
+                  Ficha
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Seção 2: ⚡ Trilha Entrada & Giro Rápido -->
+  <section class="v2-track-section v2-track-entrada" id="entrada">
+    <div class="v2-container">
+      <div class="v2-track-header">
+        <div class="v2-track-eyebrow">
+          <span>⚡ MENOR TÍQUETE INICIAL</span>
+        </div>
+        <h2 class="v2-track-title">Entrada & Giro Rápido</h2>
+        <p class="v2-track-desc">
+          Investimento inicial reduzido para testar seu ponto de venda e obter giro ágil de mercadoria.
+        </p>
+      </div>
+
+      <div class="v2-cards-grid">
+        <template x-for="item in items.filter(i => i.track === 'entrada')" :key="item.id">
+          <div class="v2-card">
+            
+            <div class="v2-card-media" @click="openModal(item.id)">
+              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
+              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
+            </div>
+
+            <div class="v2-card-body">
+              <div class="v2-card-header">
+                <span class="v2-card-cat" x-text="item.category || 'Veículo Elétrico'"></span>
+                <h3 class="v2-card-name" x-text="item.name"></h3>
+              </div>
+
+              <!-- Diferenciais -->
+              <div class="v2-card-differentiators">
+                <template x-if="item.differentiator">
+                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
+                </template>
+                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
+                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
+              </div>
+
+              <!-- Preço & Margem com Desconto Escalonado -->
+              <div class="v2-card-pricing-block">
+                <div class="v2-pricing-row">
+                  <span class="v2-price-label">Atacado à vista:</span>
+                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
+                </div>
+                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                </div>
+                <div class="v2-price-retail-row">
+                  <span class="v2-price-label">Sugerido Varejo:</span>
+                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
+                </div>
+                <div class="v2-profit-badge">
+                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
+                  <div>
+                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
+                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ações -->
+              <div class="v2-card-actions">
+                <div class="v2-qty-selector">
+                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
+                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
+                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
+                </div>
+                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
+                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
+                </button>
+                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
+                  Ficha
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Seção 3: 🚀 Trilha Alta Autonomia 72V & Linha Premium -->
+  <section class="v2-track-section v2-track-autonomia" id="autonomia">
+    <div class="v2-container">
+      <div class="v2-track-header">
+        <div class="v2-track-eyebrow">
+          <span>🚀 MÁXIMO ALCANCE & 72V</span>
+        </div>
+        <h2 class="v2-track-title">Alta Autonomia 72V & Linha Premium</h2>
+        <p class="v2-track-desc">
+          Projetadas para quem busca maior alcance por carga, subidas íngremes e acabamento de alto padrão.
+        </p>
+      </div>
+
+      <div class="v2-cards-grid">
+        <template x-for="item in items.filter(i => i.track === 'autonomia')" :key="item.id">
+          <div class="v2-card">
+            
+            <div class="v2-card-media" @click="openModal(item.id)">
+              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
+              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
+            </div>
+
+            <div class="v2-card-body">
+              <div class="v2-card-header">
+                <span class="v2-card-cat" x-text="item.category || 'Scooter Premium'"></span>
+                <h3 class="v2-card-name" x-text="item.name"></h3>
+              </div>
+
+              <!-- Diferenciais -->
+              <div class="v2-card-differentiators">
+                <template x-if="item.differentiator">
+                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
+                </template>
+                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
+                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
+              </div>
+
+              <!-- Preço & Margem com Desconto Escalonado -->
+              <div class="v2-card-pricing-block">
+                <div class="v2-pricing-row">
+                  <span class="v2-price-label">Atacado à vista:</span>
+                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
+                </div>
+                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                </div>
+                <div class="v2-price-retail-row">
+                  <span class="v2-price-label">Sugerido Varejo:</span>
+                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
+                </div>
+                <div class="v2-profit-badge">
+                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
+                  <div>
+                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
+                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ações -->
+              <div class="v2-card-actions">
+                <div class="v2-qty-selector">
+                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
+                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
+                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
+                </div>
+                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
+                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
+                </button>
+                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
+                  Ficha
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Seção 4: ⚔️ Comparativo MAJ vs Concorrência -->
+  <section class="v2-comparison-section" id="comparativo">
+    <div class="v2-container">
+      <div class="v2-comp-header">
+        <span class="v2-track-eyebrow" style="background: rgba(229,169,59,0.15); color: #e5a93b; border: 1px solid rgba(229,169,59,0.3);">
+          ⚔️ INTELIGÊNCIA DE MERCADO
+        </span>
+        <h2 class="v2-comp-title">
+          Por que a MAJ entrega mais lucro real para sua loja?
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0 auto; max-width: 780px;">
+          Não compare apenas o preço de compra aparente. Veja o custo real depois que o produto entra na sua loja:
+        </p>
+      </div>
+
+      <div class="v2-comp-table-wrap">
+        <table class="v2-comp-table">
+          <thead>
+            <tr>
+              <th>Critério de Avaliação</th>
+              <th class="col-maj">MAJ Mobilidade Elétrica</th>
+              <th>Marcas Tradicionais de Mercado</th>
+              <th>Outras Importadoras / Paralelas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Baú Traseiro Incluso de Fábrica</strong></td>
+              <td class="col-maj"><span class="v2-check">✓ Incluso sem custo extra</span> (Economia de R$ 450)</td>
+              <td><span class="v2-cross">✗ Não acompanha baú</span> (Lojista paga +R$ 450 por fora)</td>
+              <td><span class="v2-cross">✗ Raro ou cobrado a parte</span></td>
+            </tr>
+            <tr>
+              <td><strong>Energia Real da Bateria</strong></td>
+              <td class="col-maj"><span class="v2-check">✓ Até 1.440 Wh reais</span> (72V 20Ah / +20% de energia)</td>
+              <td>60V 20Ah (1.200 Wh)</td>
+              <td>48V 15Ah (720 Wh / baixa autonomia)</td>
+            </tr>
+            <tr>
+              <td><strong>Estoque de Peças no Brasil</strong></td>
+              <td class="col-maj"><span class="v2-check">✓ Galpões Próprios ES e SP</span> (Envio imediato)</td>
+              <td><span class="v2-cross">✗ Dependente de lotes</span></td>
+              <td><span class="v2-cross">✗ Espera de até 90 dias da China</span></td>
+            </tr>
+            <tr>
+              <td><strong>Garantia Oficial com Suporte Técnico</strong></td>
+              <td class="col-maj"><span class="v2-check">✓ 1 Ano de Garantia de Fábrica</span></td>
+              <td>Variável por revendedor</td>
+              <td>Geralmente limitada a 90 dias</td>
+            </tr>
+            <tr>
+              <td><strong>Condição de Pagamento</strong></td>
+              <td class="col-maj"><span class="v2-check">✓ À vista no 1º pedido; faturamento no 2º</span></td>
+              <td>Exige antecipado total</td>
+              <td>À vista ou depósitos fracionados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Modal de Detalhes e Fotos (Componente Modular Teleportado) -->
+  {% include 'atacado/catalog_modal_v2.html' %}
+
+  <!-- 9. Montador de Pedido / Lote Misto Flutuante (Drawer Inferior) -->
+  <div class="v2-lot-drawer" :class="{ 'is-active': hasLotItems() }">
+    <template x-if="getNextTierIncentive()">
+      <div class="v2-lot-tier-banner" x-text="getNextTierIncentive()"></div>
+    </template>
+    <div class="v2-container v2-lot-drawer-inner">
+      <div class="v2-lot-summary-group">
+        <div class="v2-lot-badge-count">
+          <span>📦 Lote:</span>
+          <strong x-text="getTotalVehicles() + ' un'"></strong>
+          <template x-if="getActiveTier() > 1">
+            <span class="v2-lot-tier-badge" x-text="getActiveTier() === 3 ? 'FAIXA OURO (-R$ 200/un)' : 'FAIXA PRATA (-R$ 100/un)'"></span>
+          </template>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label">Investimento:</span>
+          <span class="v2-lot-fig-val">R$ <span x-text="formatPrice(getTotalCost())"></span></span>
+          <template x-if="getTotalVolumeSavings() > 0">
+            <small style="color: #00cc88; font-size: 0.70rem; display: block; font-weight: 700;">Economia: -R$ <span x-text="formatPrice(getTotalVolumeSavings())"></span></small>
+          </template>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label">Sugerido Varejo:</span>
+          <span class="v2-lot-fig-val" style="color: #cbd5e1;">R$ <span x-text="formatPrice(getTotalTurnover())"></span></span>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label" style="color: #e5a93b;">🔥 Lucro Loja:</span>
+          <span class="v2-lot-fig-val v2-lot-fig-profit">+R$ <span x-text="formatPrice(getTotalProfit())"></span></span>
+        </div>
+      </div>
+
+      <div class="v2-lot-actions">
+        <button type="button" class="v2-btn-clear-lot" @click="clearLot()" title="Limpar lote">
+          Limpar Lote
+        </button>
+        <a :href="getLotWhatsAppUrl()" target="_blank" class="v2-btn-submit-lot">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span>Fechar Pedido de Lote no WhatsApp</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

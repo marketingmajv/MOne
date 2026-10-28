@@ -150,7 +150,10 @@
             </td>
             <td style="padding: 10px 16px;">
               <strong style="color: var(--text); font-size: 0.95rem; display: block;">{{ item.name }}</strong>
-              <small style="color: var(--muted); display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-size: 0.70rem; margin-top: 2px; display: inline-block;">
+                {{ item.differentiator or item.badge or 'Sem sticker' }}
+              </span>
+              <small style="color: var(--muted); display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;">
                 {{ item.color or 'Cores diversas' }}
               </small>
             </td>
@@ -274,6 +277,14 @@
         <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
       </div>
 
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">🏷️ Diferencial do Modelo (Sticker / Selo do Catálogo)</label>
+        <input type="text" name="badge" id="atacado_form_badge" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: 🎁 Baú Incluso de Fábrica ou 🛞 Pneus Fat Tire 20x4.0">
+        <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+          Exibido como chip de vantagem no card e na modal. Deixe em branco para usar o padrão de fábrica.
+        </small>
+      </div>
+
       <!-- Galeria de Fotos e Foto Capa do Atacado -->
       <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
         <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Atacado</label>
@@ -320,6 +331,7 @@
     document.getElementById('atacado_form_stock_qty').value = '1';
     document.getElementById('atacado_form_show_on_demand').checked = false;
     document.getElementById('atacado_form_color').value = '';
+    document.getElementById('atacado_form_badge').value = '';
     document.getElementById('atacado_form_description').value = '';
     ATACADO_CURRENT_GALLERY = [];
     ATACADO_CURRENT_IMAGE_MAIN = '';
@@ -344,6 +356,7 @@
     document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
     document.getElementById('atacado_form_show_on_demand').checked = !!item.show_on_demand;
     document.getElementById('atacado_form_color').value = item.color || '';
+    document.getElementById('atacado_form_badge').value = item.differentiator || item.badge || '';
     document.getElementById('atacado_form_description').value = item.description || '';
 
     ATACADO_CURRENT_IMAGE_MAIN = item.image_main || '';

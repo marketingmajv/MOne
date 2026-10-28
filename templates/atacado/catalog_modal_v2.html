@@ -1,0 +1,155 @@
+{#
+  M-One MAJ Atacado v2 Product Modal (templates/atacado/catalog_modal_v2.html)
+  Modal Interativo de Ficha Técnica, Fotos e Decisão Comercial.
+  Em conformidade rigorosa com diretrizes de UX (teleport body, SVG close, dark theme).
+#}
+
+<template x-teleport="body">
+  <div class="v2-modal-backdrop"
+       x-show="modalOpen"
+       x-cloak
+       @click.self="closeModal()"
+       @keydown.escape.window="closeModal()">
+    
+    <div class="v2-modal-card" x-show="modalOpen" x-transition:enter="fade-in">
+      
+      <!-- Botão Fechar Padronizado (SVG Geométrico Perfeito) -->
+      <button type="button" class="modal-close-btn v2-modal-close-btn" @click="closeModal()" aria-label="Fechar Modal" style="padding: 0; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <template x-if="selectedItem">
+        <div style="display: flex; flex-direction: column; overflow-y: auto; max-height: calc(90vh - 20px); padding: 24px;">
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+            
+            <!-- Coluna de Imagem e Galeria -->
+            <div class="v2-modal-gallery">
+              <div class="v2-modal-main-img-box">
+                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" 
+                     :alt="selectedItem.name" 
+                     class="v2-modal-main-img"
+                     @error="$event.target.src='/static/logo.png'">
+
+                <!-- Botões de Navegação e Contador de Fotos -->
+                <template x-if="getItemGallery(selectedItem).length > 1">
+                  <div>
+                    <button type="button" class="v2-gallery-nav-btn v2-gallery-nav-prev" @click="prevImage()" aria-label="Foto Anterior">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button type="button" class="v2-gallery-nav-btn v2-gallery-nav-next" @click="nextImage()" aria-label="Próxima Foto">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    <span class="v2-modal-img-counter">
+                      📸 <span x-text="getActiveImageIndex()"></span> / <span x-text="getItemGallery(selectedItem).length"></span> fotos
+                    </span>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Thumbs da Galeria -->
+              <div class="v2-modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
+                <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
+                  <div class="v2-modal-thumb-item"
+                       :class="{ 'is-active': activeImage === img }"
+                       @click="activeImage = img">
+                    <img :src="img" alt="Foto miniatura" loading="lazy">
+                  </div>
+                </template>
+              </div>
+
+              <!-- Selos de Vantagem MAJ -->
+              <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+                <template x-if="selectedItem.has_trunk">
+                  <div style="background: rgba(229, 169, 59, 0.12); border: 1px solid var(--border-gold); padding: 8px 12px; border-radius: 8px; font-size: 0.76rem; color: var(--gold); font-weight: 800;">
+                    🎁 Acompanha Baú Traseiro Original de Fábrica (Economia de R$ 450)
+                  </div>
+                </template>
+                <template x-if="!selectedItem.has_trunk && selectedItem.differentiator">
+                  <div style="background: rgba(229, 169, 59, 0.12); border: 1px solid var(--border-gold); padding: 8px 12px; border-radius: 8px; font-size: 0.76rem; color: var(--gold); font-weight: 800;" x-text="'⭐ Diferencial de Fábrica: ' + selectedItem.differentiator">
+                  </div>
+                </template>
+                <div style="background: rgba(0, 204, 136, 0.12); border: 1px solid var(--border-emerald); padding: 8px 12px; border-radius: 8px; font-size: 0.76rem; color: var(--emerald); font-weight: 800;">
+                  ⚡ Energia Real: <span x-text="selectedItem.battery_wh"></span> Wh • Garantia Oficial com Peças no Brasil
+                </div>
+              </div>
+            </div>
+
+            <!-- Coluna de Informações Comerciais & Ficha Técnica -->
+            <div>
+              <div style="font-size: 0.74rem; font-weight: 800; text-transform: uppercase; color: var(--emerald); letter-spacing: 0.05em;" x-text="selectedItem.category || 'Atacado CNPJ'"></div>
+              <h2 style="font-size: 1.6rem; font-weight: 900; margin: 4px 0 14px; letter-spacing: -0.02em;" x-text="selectedItem.name"></h2>
+
+              <!-- Bloco de Preço e Margem do Lojista -->
+              <div style="background: var(--bg-main); border: 1px solid var(--border-line); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Preço de Atacado (à vista CNPJ):</span>
+                  <span style="font-size: 1.45rem; font-weight: 900; color: var(--emerald);">R$ <span x-text="formatPrice(getItemCurrentPrice(selectedItem))"></span></span>
+                </div>
+
+                <!-- Escala de Desconto por Volume no Modal -->
+                <div class="v2-tier-scale" style="margin: 10px 0 12px;" title="Desconto escalonado por volume total do lote">
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_1)"></span></strong></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_2)"></span></strong><small>-R$ 100</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
+                  <span style="font-size: 0.76rem; color: var(--text-dim);">Preço Sugerido de Revenda:</span>
+                  <span style="font-size: 0.90rem; color: var(--text-muted); font-weight: 700;">R$ <span x-text="formatPrice(selectedItem.price_retail_suggested || selectedItem.price_original)"></span></span>
+                </div>
+                <div style="margin-top: 10px; background: linear-gradient(90deg, rgba(229, 169, 59, 0.2), rgba(0, 204, 136, 0.2)); border: 1px solid var(--border-gold); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75rem; font-weight: 800; color: var(--gold); text-transform: uppercase;">Lucro Estimado para sua Loja:</span>
+                  <span style="font-size: 1rem; font-weight: 900; color: #fff;">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(selectedItem))"></span> (<span x-text="getItemCurrentMarginPct(selectedItem)"></span>%)</span>
+                </div>
+              </div>
+
+              <!-- Condições e Localização -->
+              <div style="display: flex; gap: 8px; font-size: 0.76rem; margin-bottom: 16px; flex-wrap: wrap;">
+                <span style="background: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 6px; color: var(--text-muted);">
+                  📍 Galpão: <strong style="color: #fff;" x-text="selectedItem.location || 'M-One & COLVIX'"></strong>
+                </span>
+                <span style="background: rgba(0,204,136,0.15); color: var(--emerald); padding: 4px 10px; border-radius: 6px; font-weight: 800;">📦 Valor a partir de 3 unidades</span>
+              </div>
+
+              <!-- Ficha Técnica -->
+              <div style="border-top: 1px solid var(--border-line); padding-top: 14px;">
+                <h4 style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); margin: 0 0 10px; letter-spacing: 0.05em;">Especificações Técnicas</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem;">
+                  <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                    <div style="background: var(--bg-main); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-line);"
+                         x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco') && typeof val === 'string'">
+                      <span style="color: var(--text-dim); display: block;" x-text="key"></span>
+                      <strong style="color: var(--text-main);" x-text="val"></strong>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Ação de Adicionar ao Lote -->
+              <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="button" 
+                        class="v2-btn-add-lot" 
+                        style="height: 44px; font-size: 0.90rem; flex: 1;"
+                        @click="addDirect(selectedItem); finishModalAdd();">
+                  🛒 Adicionar ao Meu Lote de Atacado
+                </button>
+                <a :href="getItemWhatsAppUrl(selectedItem)" 
+                   target="_blank" 
+                   style="height: 44px; background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.4); color: #25D366; border-radius: var(--radius-btn); padding: 0 16px; font-weight: 800; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                  Falar no WhatsApp
+                </a>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </template>
+
+    </div>
+  </div>
+</template>

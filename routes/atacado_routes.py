@@ -119,6 +119,130 @@ def catalog_no_prices():
 
 
 
+def _enrich_atacado_v2_items(items):
+    """Enriquece itens com margem estimada, enquadramento em trilhas, métricas Wh e diferenciais técnicos."""
+    CAMPEOES_SLUGS = {"max-12", "flow-one", "m2", "classic-1000", "gp1000", "classic"}
+    ENTRADA_SLUGS = {"v8-mini-ultra", "ride-on", "v20-ultra", "v80-pro", "m9-pro", "m50-pro"}
+    AUTONOMIA_SLUGS = {"rz-110", "vittoria", "nova", "x15-pro", "db-zero", "sport-701-short"}
+
+    DIFFERENTIATORS_DEFAULT = {
+        "max-12": "🎁 Baú Incluso de Fábrica",
+        "v20-ultra": "🛞 Pneus Fat Tire 20x4.0",
+        "m9-pro": "☕ Estilo Café Racer Vintage",
+        "flow-one": "🎁 Baú Porta-Capacete Espaçoso",
+        "ride-on": "⚡ Chassi Ultraleve e Ágil",
+        "m2": "🎁 Baú Incluso de Fábrica",
+        "vittoria": "🎁 Baú Clássico Incluso",
+        "gp1000": "⚡ Sistema 72V 30Ah",
+        "v80-pro": "🛡️ Quadro Reforçado Ergonômico",
+        "jm-125": "🚀 Super Motor 3000W",
+        "nova": "🔑 Partida Keyless + Alarme",
+        "x15-pro": "🏎️ Duplo Amortecedor Reforçado",
+        "mantis": "🏁 Chassi Esportivo Firme",
+        "classic-1000": "🎁 Baú Retrô Incluso",
+        "v8-mini-ultra": "🚲 Quadro Baixo Step-Through",
+        "rz-110": "💡 Faróis Ultra Potentes",
+        "m50-pro": "✈️ Alumínio Aeroespacial",
+        "db-zero": "🛸 Design Futurista Silver Black",
+        "sport-701-short": "🏁 Suspensão Invertida Esportiva",
+        "q8": "🧺 Quadro Rebaixado Conforto",
+    }
+    
+    WH_LOOKUP = {
+        "flow-one": 1440, "m2": 1440, "gp1000": 1440, "vittoria": 1440, "classic-1000": 1440,
+        "rz-110": 1440, "max-12": 1200, "nova": 1200, "x15-pro": 1200, "db-zero": 1200,
+        "v20-ultra": 960, "ride-on": 960, "m9-pro": 960, "v80-pro": 960, "v8-mini-ultra": 720, "m50-pro": 960
+    }
+
+    for item in items:
+        slug = (item.get("slug") or "").lower().strip()
+        p_out = float(item.get("price_outlet") or 0)
+        p_orig = float(item.get("price_original") or 0)
+        
+        # Patamares de desconto escalonado por volume
+        item["price_tier_1"] = p_out
+        item["price_tier_2"] = max(0.0, round(p_out - 100.0, 2))
+        item["price_tier_3"] = max(0.0, round(p_out - 200.0, 2))
+
+        if p_orig > p_out and p_out > 0:
+            margin_reais = round(p_orig - p_out, 2)
+            margin_pct = int(round((margin_reais / p_out) * 100))
+        else:
+            margin_reais = round(p_out * 0.35, 2) if p_out > 0 else 0
+            margin_pct = 35 if p_out > 0 else 0
+            p_orig = round(p_out + margin_reais, 2)
+            
+        item["margin_reais"] = margin_reais
+        item["margin_percent"] = margin_pct
+        item["price_retail_suggested"] = p_orig
+        
+        if slug in CAMPEOES_SLUGS:
+            item["track"] = "campeoes"
+        elif slug in ENTRADA_SLUGS:
+            item["track"] = "entrada"
+        elif slug in AUTONOMIA_SLUGS:
+            item["track"] = "autonomia"
+        else:
+            if p_out <= 5500:
+                item["track"] = "entrada"
+            elif p_out <= 7700:
+                item["track"] = "campeoes"
+            else:
+                item["track"] = "autonomia"
+                
+        raw_badge = (item.get("badge") or "").strip()
+        if raw_badge and raw_badge not in ["VENDA ATACADO CNPJ", "EXCLUSIVO CNPJ", "NOVO"]:
+            item["differentiator"] = raw_badge
+        else:
+            item["differentiator"] = DIFFERENTIATORS_DEFAULT.get(slug, "⚡ Pronta Entrega Brasil")
+
+        item["has_trunk"] = any(w in item["differentiator"].lower() for w in ["baú", "bau", "porta-capacete"])
+        item["battery_wh"] = WH_LOOKUP.get(slug, 1200)
+
+        # Garantir galeria sempre íntegra como lista de fotos
+        gal = item.get("images_gallery")
+        if isinstance(gal, str):
+            try: gal = json.loads(gal)
+            except Exception: gal = []
+        if not isinstance(gal, list): gal = []
+        main_img = item.get("image_main")
+        if main_img and main_img not in gal:
+            gal = [main_img] + gal
+        item["images_gallery"] = gal
+
+    return items
+
+
+@atacado_bp.route("/atacado/v2")
+@atacado_bp.route("/catalogo-cnpj/v2")
+def catalog_v2():
+    """Nova Landing Page Comercial de Atacado B2B v2 (Decisão comercial, 3 trilhas e lote misto)."""
+    ensure_atacado_schema()
+    items = get_all_atacado_items(status="active", only_available=True)
+    items = _enrich_atacado_v2_items(items)
+
+    track_campeoes = [i for i in items if i.get("track") == "campeoes"]
+    track_entrada = [i for i in items if i.get("track") == "entrada"]
+    track_autonomia = [i for i in items if i.get("track") == "autonomia"]
+
+    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
+    min_qty_text = get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades")
+
+    return render_template(
+        "atacado/catalog_v2.html",
+        items=items,
+        track_campeoes=track_campeoes,
+        track_entrada=track_entrada,
+        track_autonomia=track_autonomia,
+        whatsapp_number=whatsapp_number,
+        min_qty_text=min_qty_text,
+        title="MAJ ATACADO B2B • DECISÃO COMERCIAL",
+        subtitle="Condições Exclusivas para Revendedores & Lojistas CNPJ • Galpões M-One & COLVIX",
+        total_vehicles=sum(int(i.get("stock_qty") or 0) for i in items)
+    )
+
+
 @atacado_bp.route("/atacado/<identifier>")
 def product_detail(identifier):
     """Detalhes de um produto de atacado (JSON ou redirecionamento)."""
@@ -149,6 +273,7 @@ def admin_atacado():
     search = request.args.get("q", "").strip()
 
     items = get_all_atacado_items(status=status_filter if status_filter != "all" else None, search=search)
+    items = _enrich_atacado_v2_items(items)
     
     total_qty = sum(int(i.get("stock_qty") or 0) for i in items)
     total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in items)
@@ -234,7 +359,7 @@ def admin_atacado_save():
             "stock_qty": request.form.get("stock_qty"),
             "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
             "location": request.form.get("location"),
-            "badge": request.form.get("badge"),
+            "badge": request.form.get("badge") or request.form.get("differentiator"),
             "description": request.form.get("description"),
             "image_main": main_img,
             "images_gallery": gallery_imgs,
