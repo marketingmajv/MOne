@@ -6,6 +6,7 @@ Segregação modular estrita (< 500 linhas).
 
 from __future__ import annotations
 import csv, io, logging
+from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request, Response
 from routes.helpers import audit, current_user, login_required, roles_required
 from services.prospector_service import (
@@ -21,6 +22,7 @@ from services.radar_service import (
     obter_cidades_rastreadas,
     obter_metricas_radar,
 )
+from services.radar_excel_service import gerar_planilha_radar_multi_abas
 from database import db
 
 logger = logging.getLogger(__name__)
@@ -219,3 +221,56 @@ def exportar_radar_csv():
     csv_data = "\ufeff" + output.getvalue()
     slug_cidade = (cidade if cidade != "all" else "geral").lower().replace(" ", "_")
     return Response(csv_data, mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": f"attachment; filename=radar_{slug_cidade}.csv"})
+
+
+@radar_bp.route("/radar/exportar-excel", methods=["GET", "POST"])
+@login_required
+@roles_required("admin", "support", "sales")
+def exportar_radar_excel():
+    """Gera e exporta planilha Excel (.xlsx) executiva multi-abas por cidade."""
+    # Coleta cidades selecionadas (via POST json/form ou GET query string)
+    cidades: List[str] = []
+    if request.method == "POST":
+        if request.is_json:
+            cidades = request.json.get("cidades") or []
+        else:
+            cidades = request.form.getlist("cidades") or request.form.getlist("cidades[]")
+    
+    if not cidades:
+        cidades_param = request.args.get("cidades", "").strip()
+        if cidades_param:
+            cidades = [c.strip() for c in cidades_param.split(",") if c.strip()]
+
+    # Fallback: se nenhuma cidade informada, exporta todas as cidades já prospectadas
+    if not cidades:
+        cidades_rastreadas = obter_cidades_rastreadas()
+        cidades = [cr["cidade"] for cr in cidades_rastreadas if cr.get("cidade")]
+
+    apenas_wa = (
+        request.args.get("whatsapp_only") == "1"
+        or request.form.get("whatsapp_only") == "1"
+        or (request.is_json and request.json.get("whatsapp_only") is True)
+    )
+    status_filtro = (
+        request.args.get("status")
+        or request.form.get("status")
+        or (request.is_json and request.json.get("status"))
+        or "all"
+    )
+
+    buf = gerar_planilha_radar_multi_abas(
+        cidades_selecionadas=cidades,
+        apenas_wa=apenas_wa,
+        status_filtro=status_filtro
+    )
+    
+    audit("radar_exportar_excel", f"Exportação multi-abas de {len(cidades)} cidades em Excel (.xlsx)")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"radar_leads_multi_abas_{timestamp}.xlsx"
+    
+    return Response(
+        buf.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

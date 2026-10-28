@@ -5,16 +5,16 @@
 #}
 
 <div class="table-responsive">
-  <table class="leads-table">
+  <table class="leads-table compact-table">
     <thead>
       <tr>
-        <th style="width: 75px; text-align: center;">Classe</th>
-        <th style="min-width: 220px;">Empresa & Decisor</th>
-        <th style="min-width: 170px;">Localização</th>
-        <th style="min-width: 200px;">Contato Telefônico</th>
-        <th style="width: 100px; text-align: center;">Canais</th>
-        <th style="width: 130px;">Status</th>
-        <th style="width: 140px; text-align: right;">Ação</th>
+        <th data-col="classe" style="width: 70px; text-align: center;">Classe</th>
+        <th data-col="empresa" style="min-width: 200px;">Empresa & Decisor</th>
+        <th data-col="localizacao" style="min-width: 140px;">Localização</th>
+        <th data-col="contato" style="min-width: 170px;">Contato Telefônico</th>
+        <th data-col="canais" style="width: 95px; text-align: center;">Canais</th>
+        <th data-col="status" style="width: 135px;">Status</th>
+        <th data-col="acoes" style="width: 115px; text-align: right;">Ação</th>
       </tr>
     </thead>
     <tbody>
@@ -22,7 +22,7 @@
         {% for l in leads %}
         <tr class="lead-row" id="radar-lead-{{ l.id }}">
           <!-- 1. CLASSE & SCORE -->
-          <td style="text-align: center;">
+          <td data-col="classe" style="text-align: center;">
             <div class="score-badge badge-{{ l.classificacao|lower }}" title="Score Comercial: {{ l.score }}/100">
               <strong>{{ l.classificacao }}</strong>
               <span>{{ l.score }} pts</span>
@@ -30,7 +30,7 @@
           </td>
 
           <!-- 2. EMPRESA & DECISOR -->
-          <td>
+          <td data-col="empresa">
             <div class="company-cell">
               <strong class="company-name" title="{{ l.nome }}">{{ l.nome }}</strong>
               {% if l.decisor_nome %}
@@ -49,7 +49,7 @@
           </td>
 
           <!-- 3. CIDADE / UF -->
-          <td>
+          <td data-col="localizacao">
             <div class="nicho-praça-cell">
               <span class="location-badge">
                 <span>📍</span>
@@ -59,7 +59,7 @@
           </td>
 
           <!-- 4. CONTATO TELEFÔNICO -->
-          <td>
+          <td data-col="contato">
             <div class="contact-telefonia-cell">
               {% if l.whatsapp %}
               <a href="https://wa.me/{{ l.whatsapp }}?text={{ (l.gancho_comercial or 'Olá! Tudo bem?')|urlencode }}" target="_blank" class="phone-pill wa" title="WhatsApp Verificado (Clique para conversar)" @click="marcarProspectado('{{ l.id }}', '{{ l.nome }}')">
@@ -75,7 +75,7 @@
           </td>
 
           <!-- 5. CANAIS DIGITAIS -->
-          <td style="text-align: center;">
+          <td data-col="canais" style="text-align: center;">
             <div class="channel-actions-cell">
               {% if l.site %}
               <a href="{{ l.site }}" target="_blank" class="ch-btn site" title="Site da Empresa">🌐</a>
@@ -90,8 +90,9 @@
           </td>
 
           <!-- 6. STATUS DO FUNIL -->
-          <td>
-            <select class="lead-status-select" @change="atualizarStatusLead('{{ l.id }}', $event.target.value)">
+          <td data-col="status">
+            <select class="lead-status-select status-{{ l.status_contato or 'novo' }}" 
+                    @change="atualizarStatusLead('{{ l.id }}', $event.target.value); $el.className = 'lead-status-select status-' + $event.target.value">
               <option value="novo" {% if l.status_contato == 'novo' %}selected{% endif %}>Novo</option>
               <option value="prospectado" {% if l.status_contato == 'prospectado' %}selected{% endif %}>Prospectado</option>
               <option value="em_negociacao" {% if l.status_contato == 'em_negociacao' %}selected{% endif %}>Em Negociação</option>
@@ -101,9 +102,9 @@
           </td>
 
           <!-- 7. AÇÃO WHATSAPP -->
-          <td style="text-align: right;">
+          <td data-col="acoes" style="text-align: right;">
             {% if l.whatsapp %}
-            <button type="button" class="btn primary sm" @click="abrirModalAbordagem({{ l|tojson }})" style="padding: 5px 12px; font-size: 11.5px;">
+            <button type="button" class="btn primary sm" @click="abrirModalAbordagem({{ l|tojson }})" style="padding: 5px 11px; font-size: 11.5px; border-radius: 8px;">
               <span>💬 Abordar</span>
             </button>
             {% else %}
@@ -114,7 +115,7 @@
         {% endfor %}
       {% else %}
         <tr>
-          <td colspan="7" style="text-align: center; padding: 50px 20px; color: var(--muted, #94a3b8);">
+          <td colspan="7" class="empty-state" style="text-align: center; padding: 50px 20px; color: var(--muted, #94a3b8);">
             <span style="font-size: 32px; display: block; margin-bottom: 8px;">📍</span>
             <strong>Nenhum lead encontrado para os filtros selecionados.</strong>
             <p style="margin: 6px 0 0 0; font-size: 12.5px;">Digite o nome da cidade no topo e clique em <strong>Rastrear Cidade</strong> para buscar lojas agora.</p>

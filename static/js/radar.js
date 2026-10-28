@@ -28,6 +28,11 @@ function radarApp(cidadeSelecionada, jobStatusInitial, defaultNicho) {
     modalAbordagemAberto: false,
     leadSelecionado: null,
     mensagemAbordagem: '',
+    modalExportAberto: false,
+    cidadesSelecionadasExport: [],
+    exportApenasWa: false,
+    exportStatusFiltro: 'all',
+    exportandoExcel: false,
 
     init() {
       if (this.jobStatus && this.jobStatus.running) {
@@ -134,6 +139,82 @@ function radarApp(cidadeSelecionada, jobStatusInitial, defaultNicho) {
         }
       } catch (e) {
         alert('Erro ao atualizar status: ' + e);
+      }
+    },
+
+    abrirModalExport(cidadesLista) {
+      if (this.cidadesSelecionadasExport.length === 0) {
+        if (this.cidadeSelecionada && this.cidadeSelecionada !== 'all') {
+          this.cidadesSelecionadasExport = [this.cidadeSelecionada];
+        } else if (Array.isArray(cidadesLista)) {
+          this.cidadesSelecionadasExport = cidadesLista.map(c => typeof c === 'string' ? c : c.cidade).filter(Boolean);
+        }
+      }
+      this.modalExportAberto = true;
+    },
+
+    marcarTodasCidades(cidadesLista) {
+      if (Array.isArray(cidadesLista)) {
+        this.cidadesSelecionadasExport = cidadesLista.map(c => typeof c === 'string' ? c : c.cidade).filter(Boolean);
+      }
+    },
+
+    desmarcarTodasCidades() {
+      this.cidadesSelecionadasExport = [];
+    },
+
+    toggleCidadeExport(cidadeNome) {
+      const idx = this.cidadesSelecionadasExport.indexOf(cidadeNome);
+      if (idx > -1) {
+        this.cidadesSelecionadasExport.splice(idx, 1);
+      } else {
+        this.cidadesSelecionadasExport.push(cidadeNome);
+      }
+    },
+
+    isCidadeSelecionada(cidadeNome) {
+      return this.cidadesSelecionadasExport.includes(cidadeNome);
+    },
+
+    async baixarPlanilhaExcel() {
+      if (!this.cidadesSelecionadasExport || this.cidadesSelecionadasExport.length === 0) {
+        alert('Selecione ao menos uma cidade para exportar a planilha.');
+        return;
+      }
+      this.exportandoExcel = true;
+      try {
+        const payload = {
+          cidades: this.cidadesSelecionadasExport,
+          whatsapp_only: this.exportApenasWa,
+          status: this.exportStatusFiltro
+        };
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+        const resp = await fetch('/radar/exportar-excel', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error('Falha ao gerar o arquivo Excel.');
+        const blob = await resp.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const agora = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        a.download = `radar_leads_multi_abas_${agora}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        this.modalExportAberto = false;
+        this.alertaMsg = `Planilha gerada com sucesso! (${this.cidadesSelecionadasExport.length} abas de cidades)`;
+      } catch (err) {
+        alert('Erro ao exportar planilha Excel: ' + err.message);
+      } finally {
+        this.exportandoExcel = false;
       }
     }
   };

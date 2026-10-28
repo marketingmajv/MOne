@@ -5,8 +5,9 @@
 {% block page_subtitle %}Rastreamento Georreferenciado & Descoberta Ativa de Lojas Comerciais{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261027_v3">
-<script src="{{ url_for('static', filename='js/radar.js') }}?v=20261027_v3"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/prospector.css') }}?v=20261028_v1">
+<script src="{{ url_for('static', filename='js/radar.js') }}?v=20261028_v1"></script>
+<script src="{{ url_for('static', filename='js/radar-columns.js') }}?v=20261028_v1"></script>
 <style>
   /* Barra de Rastreamento Linear Simples (Estilo Google) */
   .radar-search-box {
@@ -285,43 +286,78 @@
 
   <!-- Tabela de Leads Ampla Ocupando 100% da Largura -->
   <div class="panel" style="padding: 0; overflow: hidden; border-radius: 16px;">
-    <!-- Cabeçalho e Barra de Filtros Internos -->
-    <div class="table-header-bar">
-      <div class="table-header-title">
+    <!-- Cabeçalho e Barra de Ferramentas Unificada Compacta (Otimizada para 13") -->
+    <div class="radar-table-toolbar">
+      <div class="radar-toolbar-left">
         <span>📋</span>
         <span>
           Leads Encontrados: 
           <strong>{{ (cidade_filtro|title) if cidade_filtro != 'all' else 'Todas as Cidades' }}</strong>
-          <span style="font-weight: 600; font-size: 13px; color: var(--muted, #94a3b8);">({{ total_leads }} lojas • {{ total_wa }} com WhatsApp)</span>
+          <span style="font-weight: 600; font-size: 12.5px; color: var(--muted, #94a3b8);">({{ total_leads }} lojas • {{ total_wa }} com WhatsApp)</span>
         </span>
       </div>
 
-      <!-- Filtros Rápidos da Tabela -->
-      <form method="GET" action="{{ url_for('radar.index') }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <input type="hidden" name="cidade" value="{{ cidade_filtro }}">
-        
-        <input type="text" 
-               name="busca" 
-               value="{{ busca }}" 
-               placeholder="Filtrar por nome, sócio ou CNPJ..." 
-               class="form-input" 
-               style="font-size: 12px; padding: 6px 10px; width: 220px;">
+      <div class="radar-toolbar-right">
+        <!-- Filtros Rápidos da Tabela -->
+        <form method="GET" action="{{ url_for('radar.index') }}" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0;">
+          <input type="hidden" name="cidade" value="{{ cidade_filtro }}">
+          
+          <input type="text" 
+                 name="busca" 
+                 value="{{ busca }}" 
+                 placeholder="Filtrar por nome, sócio ou CNPJ..." 
+                 class="form-input" 
+                 style="font-size: 11.5px; padding: 5px 9px; width: 180px; height: 32px; border-radius: 8px;">
 
-        <label class="checkbox-label" style="font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-          <input type="checkbox" name="whatsapp_only" value="1" {% if apenas_wa %}checked{% endif %} onchange="this.form.submit()">
-          <span style="color: var(--text, #f8fafc);">Só WhatsApp</span>
-        </label>
+          <label class="checkbox-label" style="font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+            <input type="checkbox" name="whatsapp_only" value="1" {% if apenas_wa %}checked{% endif %} onchange="this.form.submit()">
+            <span style="color: var(--text, #f8fafc);">Só WhatsApp</span>
+          </label>
 
-        <button type="submit" class="btn primary sm" style="padding: 6px 12px;">Filtrar</button>
-        {% if busca or apenas_wa %}
-        <a href="{{ url_for('radar.index', cidade=cidade_filtro) }}" class="btn sm" style="padding: 6px 12px;">Limpar</a>
-        {% endif %}
+          <button type="submit" class="btn primary sm" style="padding: 5px 10px; font-size: 11.5px; height: 32px; border-radius: 8px;">Filtrar</button>
+          {% if busca or apenas_wa %}
+          <a href="{{ url_for('radar.index', cidade=cidade_filtro) }}" class="btn sm" style="padding: 5px 10px; font-size: 11.5px; height: 32px; border-radius: 8px;">Limpar</a>
+          {% endif %}
+        </form>
 
-        <a href="{{ url_for('radar.exportar_radar_csv', cidade=cidade_filtro) }}" class="btn sm" style="padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;" title="Exportar leads em CSV">
+        <!-- Botão e Popover de Personalizar Colunas (Padrão Prospector) -->
+        <div class="columns-customizer-wrapper" x-data="{ openCols: false }" @click.outside="openCols = false" style="position: relative;">
+          <button type="button" class="btn sm btn-columns-toggle" @click="openCols = !openCols" title="Personalizar e Reordenar Colunas da Tabela" style="padding: 5px 10px; font-size: 11.5px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px;">
+            <span>⚙️</span>
+            <span>Colunas</span>
+          </button>
+
+          <!-- Popover Suspenso de Colunas -->
+          <div x-show="openCols" x-cloak class="columns-popover" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95">
+            <div class="columns-popover-head">
+              <div class="columns-popover-title">
+                <span>⚙️</span>
+                <strong>Personalizar Colunas</strong>
+              </div>
+              <button type="button" class="columns-close-btn" @click="openCols = false" title="Fechar">✕</button>
+            </div>
+
+            <div class="columns-popover-hint">
+              <span>Arraste os títulos no cabeçalho (<strong>Drag &amp; Drop</strong>) ou use os seletores abaixo:</span>
+            </div>
+
+            <!-- Lista Dinâmica de Colunas (renderizada por radar-columns.js) -->
+            <div id="radar-columns-list" class="columns-popover-list"></div>
+
+            <div class="columns-popover-footer">
+              <button type="button" id="btn-reset-radar-columns" class="btn sm btn-reset-cols">
+                <span>↺</span>
+                <span>Voltar ao Original</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn sm" @click="abrirModalExport({{ cidades_rastreadas|tojson }})" style="padding: 5px 10px; font-size: 11.5px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px;" title="Exportar leads em Planilha Excel Multi-Abas por Cidade">
           <span>📥</span>
-          <span>Exportar CSV</span>
-        </a>
-      </form>
+          <span>Exportar Excel</span>
+        </button>
+      </div>
     </div>
 
     <!-- Tabela Modular de Leads -->
@@ -356,5 +392,8 @@
       </div>
     </div>
   </template>
+
+  <!-- Modal Executivo de Exportação de Leads em Planilha Excel Multi-Abas -->
+  {% include 'admin/radar_export_modal.html' %}
 </div>
 {% endblock %}
