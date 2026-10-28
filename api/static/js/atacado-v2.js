@@ -5,7 +5,7 @@ function atacadoV2App() {
     items: serverItems,
     waNumber: serverWaNumber,
     searchQuery: "",
-    selectedTrack: "all",
+    currentFilter: "all", // 'all' | 'mais_vendidos' | 'mais_baratos' | 'scooters' | 'bikes'
     
     // Modal
     modalOpen: false,
@@ -14,6 +14,85 @@ function atacadoV2App() {
 
     // Montador de Lote Misto (Armazenado localmente)
     lot: {},
+    itemSelectedTiers: {}, // Seleção individual por produto (default tier 3: mais barato)
+
+    setFilter(filterName) {
+      if (this.currentFilter === filterName) {
+        this.currentFilter = "all";
+      } else {
+        this.currentFilter = filterName;
+      }
+    },
+
+    getDisplayItems() {
+      let list = [...this.items];
+      // Ocultar produtos sem preco na planilha
+      list = list.filter(i => (parseFloat(i.price_outlet) || 0) > 0);
+
+      if (this.searchQuery && this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        list = list.filter(i => (i.name && i.name.toLowerCase().includes(q)) || (i.slug && i.slug.toLowerCase().includes(q)));
+      }
+
+      if (this.currentFilter === "mais_vendidos") {
+        return list.filter(i => i.is_best_seller);
+      }
+      if (this.currentFilter === "mais_baratos") {
+        return list.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
+      }
+      if (this.currentFilter === "scooters") {
+        return list.filter(i => i.vehicle_type === "scooter" || (!i.vehicle_type && !["m9-pro","m50-pro","v20-ultra","v8-mini-ultra","v80-pro"].includes(i.slug)));
+      }
+      if (this.currentFilter === "bikes") {
+        return list.filter(i => i.vehicle_type === "bike" || (i.slug && ["m9-pro","m50-pro","v20-ultra","v8-mini-ultra","v80-pro"].includes(i.slug)));
+      }
+      return list;
+    },
+
+    // Seleção individual por produto (01: padrão no mais barato / 02: individual sem afetar outros)
+    getItemTier(item) {
+      if (!item) return 3;
+      const qty = this.getQty(item.id);
+      if (qty >= 21) return 3;
+      if (qty >= 11) return 2;
+      if (qty >= 1) return 1;
+      return this.itemSelectedTiers[item.id] || 3;
+    },
+
+    getItemDisplayPrice(item) {
+      if (!item) return 0;
+      const tier = this.getItemTier(item);
+      if (tier === 3) return item.price_tier_3 || item.price_outlet;
+      if (tier === 2) return item.price_tier_2 || item.price_outlet;
+      return item.price_tier_1 || item.price_outlet;
+    },
+
+    getItemDisplayMarginReais(item) {
+      if (!item) return 0;
+      const price = this.getItemDisplayPrice(item);
+      const retail = parseFloat(item.price_retail_suggested || item.price_original) || 0;
+      return Math.max(0, retail - price);
+    },
+
+    getItemDisplayMarginPct(item) {
+      if (!item) return 0;
+      const price = this.getItemDisplayPrice(item);
+      if (price <= 0) return 0;
+      const margin = this.getItemDisplayMarginReais(item);
+      return Math.round((margin / price) * 100);
+    },
+
+    selectTierDirect(item, tier) {
+      if (!item) return;
+      this.itemSelectedTiers[item.id] = tier;
+      if (tier === 3) {
+        this.setQty(item, 21);
+      } else if (tier === 2) {
+        this.setQty(item, 11);
+      } else {
+        this.setQty(item, 3);
+      }
+    },
 
     init() {
       // Carregar lote salvo no LocalStorage
@@ -52,7 +131,15 @@ function atacadoV2App() {
       const qty = parseInt(newQty, 10);
       if (isNaN(qty) || qty <= 0) {
         delete this.lot[item.id];
+        delete this.itemSelectedTiers[item.id];
       } else {
+        if (qty >= 21) {
+          this.itemSelectedTiers[item.id] = 3;
+        } else if (qty >= 11) {
+          this.itemSelectedTiers[item.id] = 2;
+        } else {
+          this.itemSelectedTiers[item.id] = 1;
+        }
         this.lot[item.id] = {
           id: item.id,
           name: item.name,

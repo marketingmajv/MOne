@@ -151,7 +151,8 @@ def _enrich_atacado_v2_items(items):
     WH_LOOKUP = {
         "flow-one": 1440, "m2": 1440, "gp1000": 1440, "vittoria": 1440, "classic-1000": 1440,
         "rz-110": 1440, "max-12": 1200, "nova": 1200, "x15-pro": 1200, "db-zero": 1200,
-        "v20-ultra": 960, "ride-on": 960, "m9-pro": 960, "v80-pro": 960, "v8-mini-ultra": 720, "m50-pro": 960
+        "v20-ultra": 960, "ride-on": 960, "m9-pro": 960, "v80-pro": 960, "v8-mini-ultra": 720, "m50-pro": 960,
+        "mantis": 1200, "jm-125": 1440
     }
 
     for item in items:
@@ -199,6 +200,17 @@ def _enrich_atacado_v2_items(items):
         item["has_trunk"] = any(w in item["differentiator"].lower() for w in ["baú", "bau", "porta-capacete"])
         item["battery_wh"] = WH_LOOKUP.get(slug, 1200)
 
+        # Mapeamento do tipo de veículo (Scooter vs Bike)
+        BIKE_SLUGS = {"m9-pro", "m50-pro", "v20-ultra", "v8-mini-ultra", "v80-pro"}
+        if slug in BIKE_SLUGS or "bike" in (item.get("category") or "").lower() or "bike" in slug:
+            item["vehicle_type"] = "bike"
+            item["category_display"] = "Bike Elétrica"
+        else:
+            item["vehicle_type"] = "scooter"
+            item["category_display"] = "Scooter Elétrica"
+
+        item["is_best_seller"] = bool(item.get("is_best_seller"))
+
         # Garantir galeria sempre íntegra como lista de fotos
         gal = item.get("images_gallery")
         if isinstance(gal, str):
@@ -219,6 +231,8 @@ def catalog_v2():
     """Nova Landing Page Comercial de Atacado B2B v2 (Decisão comercial, 3 trilhas e lote misto)."""
     ensure_atacado_schema()
     items = get_all_atacado_items(status="active", only_available=True)
+    # Ocultar produtos que nao tem preco na planilha
+    items = [i for i in items if float(i.get("price_outlet") or 0) > 0]
     items = _enrich_atacado_v2_items(items)
 
     track_campeoes = [i for i in items if i.get("track") == "campeoes"]
@@ -358,6 +372,7 @@ def admin_atacado_save():
             "installment_18": request.form.get("installment_18"),
             "stock_qty": request.form.get("stock_qty"),
             "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
+            "is_best_seller": request.form.get("is_best_seller") in ["1", "true", "on", True],
             "location": request.form.get("location"),
             "badge": request.form.get("badge") or request.form.get("differentiator"),
             "description": request.form.get("description"),

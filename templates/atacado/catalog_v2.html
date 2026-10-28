@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_8">
   
   <!-- Atacado v2 Data & Logic -->
   <script>
@@ -28,7 +28,7 @@
     window.V2_WA_NUMBER = "{{ whatsapp_number }}";
     window.V2_MIN_QTY_TEXT = "{{ min_qty_text }}";
   </script>
-  <script src="{{ url_for('static', filename='js/atacado-v2.js') }}?v=20261028_6"></script>
+  <script src="{{ url_for('static', filename='js/atacado-v2.js') }}?v=20261028_8"></script>
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
 </head>
@@ -90,50 +90,62 @@
         <span>⚡ CATÁLOGO OFICIAL DE DECISÃO COMERCIAL</span>
       </div>
       <h1 class="v2-hero-title">
-        <span class="v2-hero-line-1">Menor risco operacional.</span>
-        <span class="v2-hero-line-2"><span class="hl-emerald">Maior margem de revenda</span> para a sua loja.</span>
+        <span class="v2-hero-line-1">Mais segurança para você.</span>
+        <span class="v2-hero-line-2 hl-emerald">Mais margem pra sua loja.</span>
       </h1>
-      <p class="v2-hero-subtitle">
-        Compre direto da importadora oficial com estoque no Brasil, baú incluso de fábrica e peças de reposição a pronta entrega. Monte seu lote misto abaixo e veja seu lucro projetado em tempo real.
-      </p>
 
-      <div class="v2-hero-metrics">
-        <div class="v2-metric-card">
-          <span class="v2-metric-num">A partir de 3 un.</span>
-          <span class="v2-metric-desc">Lote Mínimo Flexível</span>
-        </div>
-        <div class="v2-metric-card">
-          <span class="v2-metric-num">Até 48%</span>
-          <span class="v2-metric-desc">Margem Bruta Estimada</span>
-        </div>
-        <div class="v2-metric-card">
-          <span class="v2-metric-num">Baú Incluso</span>
-          <span class="v2-metric-desc">Economia de até R$ 450/un</span>
-        </div>
-        <div class="v2-metric-card">
-          <span class="v2-metric-num">100% Peças</span>
-          <span class="v2-metric-desc">Estoque Nacional ES/SP</span>
-        </div>
+      <div class="v2-hero-filters-bar">
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                :class="{ 'is-active': currentFilter === 'mais_vendidos' }" 
+                @click="setFilter('mais_vendidos')">
+          ⭐ MAIS VENDIDOS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                :class="{ 'is-active': currentFilter === 'mais_baratos' }" 
+                @click="setFilter('mais_baratos')">
+          💰 MAIS BARATOS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                :class="{ 'is-active': currentFilter === 'scooters' }" 
+                @click="setFilter('scooters')">
+          🛵 SCOOTERS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                :class="{ 'is-active': currentFilter === 'bikes' }" 
+                @click="setFilter('bikes')">
+          🚲 BIKES
+        </button>
+        <template x-if="currentFilter !== 'all'">
+          <button type="button" 
+                  class="v2-hero-filter-btn btn-reset" 
+                  @click="setFilter('all')">
+            ✕ Ver Todos (<span x-text="items.length"></span>)
+          </button>
+        </template>
       </div>
     </div>
   </section>
 
-  <!-- 4. Seção 1: ⭐ Trilha Campeões de Giro & Equilíbrio (Recomendado) -->
-  <section class="v2-track-section v2-track-campeoes" id="campeoes">
+  <!-- 4. Catálogo de Veículos (Grid Unificado Filtrável) -->
+  <section class="v2-track-section" id="catalogo">
     <div class="v2-container">
       <div class="v2-track-header">
         <div class="v2-track-eyebrow">
-          <span>⭐ RECOMENDADO PARA 80% DOS LOJISTAS</span>
+          <span x-text="currentFilter === 'mais_vendidos' ? '⭐ MODELOS COM MAIOR VELOCIDADE DE SAÍDA' : (currentFilter === 'mais_baratos' ? '💰 MENOR TÍQUETE INICIAL DE INVESTIMENTO' : (currentFilter === 'scooters' ? '🛵 LINHA COMPLETA DE SCOOTERS ELÉTRICAS' : (currentFilter === 'bikes' ? '🚲 BIKES ELÉTRICAS DE ALTA PERFORMANCE' : '⚡ ESTOQUE GLOBAL PRONTA ENTREGA CNPJ')))"></span>
         </div>
-        <h2 class="v2-track-title">Campeões de Giro & Equilíbrio</h2>
+        <h2 class="v2-track-title" x-text="currentFilter === 'mais_vendidos' ? 'Mais Vendidos da Categoria' : (currentFilter === 'mais_baratos' ? 'Modelos Mais Baratos' : (currentFilter === 'scooters' ? 'Scooters Elétricas MAJ' : (currentFilter === 'bikes' ? 'Bikes Elétricas MAJ' : 'Catálogo Completo Atacado')))"></h2>
         <p class="v2-track-desc">
-          Os modelos mais consagrados do mercado. Excelente velocidade de venda ao consumidor final com alta margem bruta por unidade.
+          Selecione a quantidade de cada modelo para montar seu lote misto a partir de 3 unidades com desconto escalonado automático.
         </p>
       </div>
 
       <div class="v2-cards-grid">
-        <template x-for="item in items.filter(i => i.track === 'campeoes')" :key="item.id">
-          <div class="v2-card card-featured">
+        <template x-for="item in getDisplayItems()" :key="item.id">
+          <div class="v2-card" :class="{ 'card-featured': item.is_best_seller }">
             
             <div class="v2-card-media" @click="openModal(item.id)">
               <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
@@ -142,7 +154,7 @@
 
             <div class="v2-card-body">
               <div class="v2-card-header">
-                <span class="v2-card-cat" x-text="item.category || 'Scooter Elétrica'"></span>
+                <span class="v2-card-cat" x-text="item.category || (item.vehicle_type === 'bike' ? 'Bike Elétrica' : 'Scooter Elétrica')"></span>
                 <h3 class="v2-card-name" x-text="item.name"></h3>
               </div>
 
@@ -155,26 +167,30 @@
                 <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
               </div>
 
-              <!-- Preço & Margem com Desconto Escalonado -->
+              <!-- Preço & Margem com Desconto Escalonado Clicável -->
               <div class="v2-card-pricing-block">
-                <div class="v2-pricing-row">
-                  <span class="v2-price-label">Atacado à vista:</span>
-                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
+                <!-- Régua de 3 preços: menor preço na frente, intermediário no meio, maior preço por último -->
+                <div class="v2-tier-scale" title="Clique no preço para selecionar a faixa de quantidade correspondente">
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 3 }" @click.stop="selectTierDirect(item, 3)">
+                    <span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small>
+                  </div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 2 }" @click.stop="selectTierDirect(item, 2)">
+                    <span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small>
+                  </div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 1 }" @click.stop="selectTierDirect(item, 1)">
+                    <span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong>
+                  </div>
                 </div>
-                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
-                </div>
+
                 <div class="v2-price-retail-row">
                   <span class="v2-price-label">Sugerido Varejo:</span>
-                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
+                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested || item.price_original)"></span></span>
                 </div>
                 <div class="v2-profit-badge">
                   <span class="v2-profit-label">Seu Lucro Estimado:</span>
                   <div>
-                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
-                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
+                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(item))"></span></span>
+                    <span class="v2-profit-pct" x-text="getItemDisplayMarginPct(item) + '%'"></span>
                   </div>
                 </div>
               </div>
@@ -201,230 +217,60 @@
     </div>
   </section>
 
-  <!-- 5. Seção 2: ⚡ Trilha Entrada & Giro Rápido -->
-  <section class="v2-track-section v2-track-entrada" id="entrada">
-    <div class="v2-container">
-      <div class="v2-track-header">
-        <div class="v2-track-eyebrow">
-          <span>⚡ MENOR TÍQUETE INICIAL</span>
-        </div>
-        <h2 class="v2-track-title">Entrada & Giro Rápido</h2>
-        <p class="v2-track-desc">
-          Investimento inicial reduzido para testar seu ponto de venda e obter giro ágil de mercadoria.
-        </p>
-      </div>
-
-      <div class="v2-cards-grid">
-        <template x-for="item in items.filter(i => i.track === 'entrada')" :key="item.id">
-          <div class="v2-card">
-            
-            <div class="v2-card-media" @click="openModal(item.id)">
-              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
-              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
-            </div>
-
-            <div class="v2-card-body">
-              <div class="v2-card-header">
-                <span class="v2-card-cat" x-text="item.category || 'Veículo Elétrico'"></span>
-                <h3 class="v2-card-name" x-text="item.name"></h3>
-              </div>
-
-              <!-- Diferenciais -->
-              <div class="v2-card-differentiators">
-                <template x-if="item.differentiator">
-                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
-                </template>
-                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
-                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
-              </div>
-
-              <!-- Preço & Margem com Desconto Escalonado -->
-              <div class="v2-card-pricing-block">
-                <div class="v2-pricing-row">
-                  <span class="v2-price-label">Atacado à vista:</span>
-                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
-                </div>
-                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
-                </div>
-                <div class="v2-price-retail-row">
-                  <span class="v2-price-label">Sugerido Varejo:</span>
-                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
-                </div>
-                <div class="v2-profit-badge">
-                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
-                  <div>
-                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
-                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Ações -->
-              <div class="v2-card-actions">
-                <div class="v2-qty-selector">
-                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
-                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
-                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
-                </div>
-                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
-                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
-                </button>
-                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
-                  Ficha
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </section>
-
-  <!-- 6. Seção 3: 🚀 Trilha Alta Autonomia 72V & Linha Premium -->
-  <section class="v2-track-section v2-track-autonomia" id="autonomia">
-    <div class="v2-container">
-      <div class="v2-track-header">
-        <div class="v2-track-eyebrow">
-          <span>🚀 MÁXIMO ALCANCE & 72V</span>
-        </div>
-        <h2 class="v2-track-title">Alta Autonomia 72V & Linha Premium</h2>
-        <p class="v2-track-desc">
-          Projetadas para quem busca maior alcance por carga, subidas íngremes e acabamento de alto padrão.
-        </p>
-      </div>
-
-      <div class="v2-cards-grid">
-        <template x-for="item in items.filter(i => i.track === 'autonomia')" :key="item.id">
-          <div class="v2-card">
-            
-            <div class="v2-card-media" @click="openModal(item.id)">
-              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
-              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
-            </div>
-
-            <div class="v2-card-body">
-              <div class="v2-card-header">
-                <span class="v2-card-cat" x-text="item.category || 'Scooter Premium'"></span>
-                <h3 class="v2-card-name" x-text="item.name"></h3>
-              </div>
-
-              <!-- Diferenciais -->
-              <div class="v2-card-differentiators">
-                <template x-if="item.differentiator">
-                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
-                </template>
-                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
-                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
-              </div>
-
-              <!-- Preço & Margem com Desconto Escalonado -->
-              <div class="v2-card-pricing-block">
-                <div class="v2-pricing-row">
-                  <span class="v2-price-label">Atacado à vista:</span>
-                  <span class="v2-price-wholesale">R$ <span x-text="formatPrice(getItemCurrentPrice(item))"></span></span>
-                </div>
-                <div class="v2-tier-scale" title="Desconto escalonado por volume total do lote">
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
-                </div>
-                <div class="v2-price-retail-row">
-                  <span class="v2-price-label">Sugerido Varejo:</span>
-                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested)"></span></span>
-                </div>
-                <div class="v2-profit-badge">
-                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
-                  <div>
-                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(item))"></span></span>
-                    <span class="v2-profit-pct" x-text="getItemCurrentMarginPct(item) + '%'"></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Ações -->
-              <div class="v2-card-actions">
-                <div class="v2-qty-selector">
-                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
-                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
-                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
-                </div>
-                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
-                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
-                </button>
-                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
-                  Ficha
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </section>
-
-  <!-- 7. Seção 4: ⚔️ Comparativo MAJ vs Concorrência -->
-  <section class="v2-comparison-section" id="comparativo">
+  <!-- 5. Seção de Vantagens: Porque comprar na MAJ é mais vantagem? -->
+  <section class="v2-comparison-section" id="vantagens">
     <div class="v2-container">
       <div class="v2-comp-header">
-        <span class="v2-track-eyebrow" style="background: rgba(229,169,59,0.15); color: #e5a93b; border: 1px solid rgba(229,169,59,0.3);">
-          ⚔️ INTELIGÊNCIA DE MERCADO
+        <span class="v2-track-eyebrow" style="background: rgba(0,204,136,0.15); color: var(--emerald); border: 1px solid rgba(0,204,136,0.3);">
+          ⭐ PARCERIA DIRETA B2B
         </span>
         <h2 class="v2-comp-title">
-          Por que a MAJ entrega mais lucro real para sua loja?
+          Porque comprar na MAJ é mais vantagem?
         </h2>
-        <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0 auto; max-width: 780px;">
-          Não compare apenas o preço de compra aparente. Veja o custo real depois que o produto entra na sua loja:
-        </p>
       </div>
 
-      <div class="v2-comp-table-wrap">
-        <table class="v2-comp-table">
-          <thead>
-            <tr>
-              <th>Critério de Avaliação</th>
-              <th class="col-maj">MAJ Mobilidade Elétrica</th>
-              <th>Marcas Tradicionais de Mercado</th>
-              <th>Outras Importadoras / Paralelas</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Baú Traseiro Incluso de Fábrica</strong></td>
-              <td class="col-maj"><span class="v2-check">✓ Incluso sem custo extra</span> (Economia de R$ 450)</td>
-              <td><span class="v2-cross">✗ Não acompanha baú</span> (Lojista paga +R$ 450 por fora)</td>
-              <td><span class="v2-cross">✗ Raro ou cobrado a parte</span></td>
-            </tr>
-            <tr>
-              <td><strong>Energia Real da Bateria</strong></td>
-              <td class="col-maj"><span class="v2-check">✓ Até 1.440 Wh reais</span> (72V 20Ah / +20% de energia)</td>
-              <td>60V 20Ah (1.200 Wh)</td>
-              <td>48V 15Ah (720 Wh / baixa autonomia)</td>
-            </tr>
-            <tr>
-              <td><strong>Estoque de Peças no Brasil</strong></td>
-              <td class="col-maj"><span class="v2-check">✓ Galpões Próprios ES e SP</span> (Envio imediato)</td>
-              <td><span class="v2-cross">✗ Dependente de lotes</span></td>
-              <td><span class="v2-cross">✗ Espera de até 90 dias da China</span></td>
-            </tr>
-            <tr>
-              <td><strong>Garantia Oficial com Suporte Técnico</strong></td>
-              <td class="col-maj"><span class="v2-check">✓ 1 Ano de Garantia de Fábrica</span></td>
-              <td>Variável por revendedor</td>
-              <td>Geralmente limitada a 90 dias</td>
-            </tr>
-            <tr>
-              <td><strong>Condição de Pagamento</strong></td>
-              <td class="col-maj"><span class="v2-check">✓ À vista no 1º pedido; faturamento no 2º</span></td>
-              <td>Exige antecipado total</td>
-              <td>À vista ou depósitos fracionados</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="v2-advantages-grid">
+        <!-- 01 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🛠️</div>
+          <h3 class="v2-advantage-title">Pós-venda direto com nossa equipe técnica</h3>
+          <p class="v2-advantage-desc">Conte com um canal direto para tirar dúvidas e receber suporte técnico.</p>
+        </div>
+
+        <!-- 02 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">👨‍🏫</div>
+          <h3 class="v2-advantage-title">Treinamento para o técnico da sua loja</h3>
+          <p class="v2-advantage-desc">Preparamos sua equipe para realizar montagens e atender melhor seus clientes.</p>
+        </div>
+
+        <!-- 03 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">⚡</div>
+          <h3 class="v2-advantage-title">Experiência em mobilidade elétrica desde 2018</h3>
+          <p class="v2-advantage-desc">São anos de atuação no segmento para apoiar sua loja com conhecimento e experiência.</p>
+        </div>
+
+        <!-- 04 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">📦</div>
+          <h3 class="v2-advantage-title">Peças de reposição à pronta entrega</h3>
+          <p class="v2-advantage-desc">Tenha acesso a peças para agilizar a manutenção e o atendimento aos seus clientes.</p>
+        </div>
+
+        <!-- 05 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🏭</div>
+          <h3 class="v2-advantage-title">Produtos direto da fábrica, sem intermediários</h3>
+          <p class="v2-advantage-desc">Negocie diretamente com a MAJ e tenha mais proximidade com quem fabrica e fornece os produtos.</p>
+        </div>
+
+        <!-- 06 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🚚</div>
+          <h3 class="v2-advantage-title">Facilidade no envio dos pedidos</h3>
+          <p class="v2-advantage-desc">Mais praticidade para receber os produtos e abastecer sua loja.</p>
+        </div>
       </div>
     </div>
   </section>

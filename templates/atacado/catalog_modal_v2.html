@@ -87,14 +87,14 @@
               <div style="background: var(--bg-main); border: 1px solid var(--border-line); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
                   <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Preço de Atacado (à vista CNPJ):</span>
-                  <span style="font-size: 1.45rem; font-weight: 900; color: var(--emerald);">R$ <span x-text="formatPrice(getItemCurrentPrice(selectedItem))"></span></span>
+                  <span style="font-size: 1.45rem; font-weight: 900; color: var(--emerald);">R$ <span x-text="formatPrice(getItemDisplayPrice(selectedItem))"></span></span>
                 </div>
 
                 <!-- Escala de Desconto por Volume no Modal -->
-                <div class="v2-tier-scale" style="margin: 10px 0 12px;" title="Desconto escalonado por volume total do lote">
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 1 }"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_1)"></span></strong></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 2 }"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_2)"></span></strong><small>-R$ 100</small></div>
-                  <div class="v2-tier-col" :class="{ 'is-active': getActiveTier() === 3 }"><span>21+ un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                <div class="v2-tier-scale" style="margin: 10px 0 12px;" title="Clique para selecionar a quantidade da faixa no lote">
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(selectedItem) === 3 }" @click="selectTierDirect(selectedItem, 3)"><span>21+ un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_3)"></span></strong><small class="gold">-R$ 200</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(selectedItem) === 2 }" @click="selectTierDirect(selectedItem, 2)"><span>11-20 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_2)"></span></strong><small>-R$ 100</small></div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(selectedItem) === 1 }" @click="selectTierDirect(selectedItem, 1)"><span>Até 10 un</span><strong>R$ <span x-text="formatPrice(selectedItem.price_tier_1)"></span></strong></div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
@@ -103,7 +103,7 @@
                 </div>
                 <div style="margin-top: 10px; background: linear-gradient(90deg, rgba(229, 169, 59, 0.2), rgba(0, 204, 136, 0.2)); border: 1px solid var(--border-gold); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-size: 0.75rem; font-weight: 800; color: var(--gold); text-transform: uppercase;">Lucro Estimado para sua Loja:</span>
-                  <span style="font-size: 1rem; font-weight: 900; color: #fff;">+R$ <span x-text="formatPrice(getItemCurrentMarginReais(selectedItem))"></span> (<span x-text="getItemCurrentMarginPct(selectedItem)"></span>%)</span>
+                  <span style="font-size: 1rem; font-weight: 900; color: #fff;">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(selectedItem))"></span> (<span x-text="getItemDisplayMarginPct(selectedItem)"></span>%)</span>
                 </div>
               </div>
 

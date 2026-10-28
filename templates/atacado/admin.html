@@ -272,6 +272,18 @@
         <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
       </div>
 
+      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; background: rgba(0, 204, 136, 0.05); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <label for="atacado_form_is_best_seller" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
+            ⭐ Destaque como "Mais Vendido"
+          </label>
+          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+            Exibido com prioridade e incluído no filtro rápido <strong>[MAIS VENDIDOS]</strong> do catálogo.
+          </small>
+        </div>
+        <input type="checkbox" name="is_best_seller" id="atacado_form_is_best_seller" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
+      </div>
+
       <div style="margin-bottom: 14px;">
         <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
         <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
@@ -330,6 +342,7 @@
     document.getElementById('atacado_form_price_atacado_plus').value = '';
     document.getElementById('atacado_form_stock_qty').value = '1';
     document.getElementById('atacado_form_show_on_demand').checked = false;
+    document.getElementById('atacado_form_is_best_seller').checked = false;
     document.getElementById('atacado_form_color').value = '';
     document.getElementById('atacado_form_badge').value = '';
     document.getElementById('atacado_form_description').value = '';
@@ -355,6 +368,7 @@
     document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
     document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
     document.getElementById('atacado_form_show_on_demand').checked = !!item.show_on_demand;
+    document.getElementById('atacado_form_is_best_seller').checked = !!item.is_best_seller;
     document.getElementById('atacado_form_color').value = item.color || '';
     document.getElementById('atacado_form_badge').value = item.differentiator || item.badge || '';
     document.getElementById('atacado_form_description').value = item.description || '';

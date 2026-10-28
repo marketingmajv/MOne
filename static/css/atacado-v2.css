@@ -245,34 +245,53 @@ body.atacado-v2-body {
   margin: 0 auto 30px;
   line-height: 1.5;
 }
-.v2-hero-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  max-width: 1040px;
-  margin: 0 auto;
-}
-.v2-metric-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-line);
-  padding: 16px 14px;
-  border-radius: 12px;
+/* Hero Filter Buttons (Substituem os cards de métricas) */
+.v2-hero-filters-bar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 28px auto 0;
 }
-.v2-metric-num {
-  font-size: 1.45rem;
-  font-weight: 900;
-  color: var(--emerald);
-  letter-spacing: -0.02em;
+.v2-hero-filter-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.02em;
 }
-.v2-metric-desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-top: 4px;
+.v2-hero-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 204, 136, 0.4);
+  transform: translateY(-2px);
+  color: #fff;
+}
+.v2-hero-filter-btn.is-active {
+  background: rgba(0, 204, 136, 0.18);
+  border-color: #00cc88;
+  color: #00e599;
+  box-shadow: 0 0 16px rgba(0, 204, 136, 0.35);
+}
+.v2-hero-filter-btn.btn-reset {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  font-size: 0.80rem;
+  padding: 8px 14px;
+}
+.v2-hero-filter-btn.btn-reset:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* 4. Trilhas Verticais de Compra (Vertical Sections) */
@@ -485,10 +504,17 @@ body.atacado-v2-body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 4px 2px;
-  border-radius: 5px;
+  padding: 5px 3px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+}
+.v2-tier-col:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
 .v2-tier-col span {
   font-size: 0.60rem;
@@ -653,9 +679,10 @@ body.atacado-v2-body {
 
 /* 6. Seção Comparativa MAJ vs Concorrência */
 .v2-comparison-section {
-  padding: 60px 0;
+  padding: 60px 0 160px;
   background: radial-gradient(circle at 50% 50%, rgba(229, 169, 59, 0.06) 0%, transparent 70%);
   border-bottom: 1px solid var(--border-line);
+  margin-bottom: 60px;
 }
 .v2-comp-header {
   text-align: center;
@@ -682,40 +709,67 @@ body.atacado-v2-body {
     font-size: 0.65rem;
   }
 }
-.v2-comp-table-wrap {
-  overflow-x: auto;
-  border-radius: var(--radius-card);
-  border: 1px solid var(--border-line);
+/* 6. Vantagens Comerciais MAJ (Cards do Rodapé) */
+.v2-advantages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 28px;
+  margin-bottom: 40px;
+}
+@media (max-width: 991px) {
+  .v2-advantages-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .v2-advantages-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+.v2-advantage-card {
   background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 14px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
-.v2-comp-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.88rem;
+.v2-advantage-card:hover {
+  border-color: rgba(0, 204, 136, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
-.v2-comp-table th, .v2-comp-table td {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-line);
+.v2-advantage-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(0, 204, 136, 0.12);
+  border: 1px solid rgba(0, 204, 136, 0.25);
+  color: #00cc88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
 }
-.v2-comp-table th {
-  background: var(--panel);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-.v2-comp-table th.col-maj {
-  color: var(--emerald);
-  background: rgba(0, 204, 136, 0.1);
-}
-.v2-comp-table td.col-maj {
-  background: rgba(0, 204, 136, 0.04);
-  font-weight: 700;
+.v2-advantage-title {
+  font-size: 1.02rem;
+  font-weight: 800;
   color: #fff;
+  margin: 0;
+  line-height: 1.35;
 }
-.v2-check { color: var(--emerald); font-weight: 900; }
-.v2-cross { color: #ef4444; font-weight: 900; }
+.v2-advantage-desc {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
 
 /* 7. Montador de Pedido / Lote Misto Flutuante (Floating Drawer) */
 .v2-lot-drawer {

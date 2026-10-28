@@ -59,6 +59,10 @@ def normalize_model_name(name: str) -> str:
         return "FLOW ONE"
     if u in ["V8 MINI", "V8-MINI"]:
         return "V8 MINI ULTRA"
+    if u in ["JM 125", "JM125", "JM-125"]:
+        return "JM 125"
+    if u in ["MANTIS", "MANTIS "]:
+        return "MANTIS"
     return n
 
 
@@ -118,9 +122,17 @@ def ensure_atacado_schema():
                     conn.commit()
                 except Exception as e:
                     logger.debug("Atacado Schema stmt error: %s", e)
+        if is_pg:
+            try:
+                conn.execute("ALTER TABLE atacado_items ADD COLUMN IF NOT EXISTS show_on_demand BOOLEAN DEFAULT FALSE")
+                conn.execute("ALTER TABLE atacado_items ADD COLUMN IF NOT EXISTS is_best_seller BOOLEAN DEFAULT FALSE")
+                conn.commit()
+            except Exception:
+                pass
         else:
             try:
                 conn.execute("ALTER TABLE atacado_items ADD COLUMN show_on_demand BOOLEAN DEFAULT 0")
+                conn.execute("ALTER TABLE atacado_items ADD COLUMN is_best_seller BOOLEAN DEFAULT 0")
                 conn.commit()
             except Exception:
                 pass
@@ -235,6 +247,7 @@ def get_all_atacado_items(status: Optional[str] = None, search: Optional[str] = 
         for r in rows:
             item = dict(r)
             item["show_on_demand"] = bool(item.get("show_on_demand"))
+            item["is_best_seller"] = bool(item.get("is_best_seller"))
             if item.get("images_gallery") and isinstance(item["images_gallery"], str):
                 try:
                     item["images_gallery"] = json.loads(item["images_gallery"])
@@ -338,6 +351,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
         status = (data.get("status") or "active").strip()
         sort_order = int(data.get("sort_order") or 0)
         notes = (data.get("notes") or "").strip()
+        is_best_seller = bool(data.get("is_best_seller"))
 
         if item_id:
             query = """
@@ -347,7 +361,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                 installment_12 = ?, installment_18 = ?, installments_text = ?,
                 stock_qty = ?, location = ?, badge = ?, specs_json = ?,
                 description = ?, image_main = ?, images_gallery = ?,
-                status = ?, show_on_demand = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                status = ?, show_on_demand = ?, is_best_seller = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """
             run_exec(
@@ -359,7 +373,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, show_on_demand, sort_order, notes, item_id
+                    status, show_on_demand, is_best_seller, sort_order, notes, item_id
                 )
             )
             conn.commit()
@@ -373,14 +387,14 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                 installment_12, installment_18, installments_text,
                 stock_qty, location, badge, specs_json,
                 description, image_main, images_gallery,
-                status, show_on_demand, sort_order, notes
+                status, show_on_demand, is_best_seller, sort_order, notes
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?, ?
+                ?, ?, ?, ?, ?
             )
             """
             if is_pg:
@@ -395,7 +409,7 @@ def save_atacado_item(data: Dict[str, Any], item_id: Optional[int] = None) -> in
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, show_on_demand, sort_order, notes
+                    status, show_on_demand, is_best_seller, sort_order, notes
                 )
             )
             conn.commit()
