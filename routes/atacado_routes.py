@@ -234,9 +234,47 @@ def _enrich_atacado_v2_items(items):
 
 @atacado_bp.route("/atacado/v2")
 @atacado_bp.route("/catalogo-cnpj/v2")
+@atacado_bp.route("/atacado/v2-preview")
 def catalog_v2():
-    """Redirecionamento de contingência: V2 desativada do ar, direcionando para o catálogo oficial /atacado."""
-    return redirect(url_for("atacado.catalog"), code=302)
+    """Visualização da V2 para consulta interna/local (?preview=1 ou /atacado/v2-preview)."""
+    if not request.args.get("preview") and request.path != "/atacado/v2-preview":
+        return redirect(url_for("atacado.catalog"), code=302)
+    ensure_atacado_schema()
+    items = _enrich_atacado_v2_items([i for i in get_all_atacado_items(status="active", only_available=True) if float(i.get("price_outlet") or 0) > 0])
+    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
+    return render_template(
+        "atacado/catalog_v2.html", items=items,
+        track_campeoes=[i for i in items if i.get("track") == "campeoes"],
+        track_entrada=[i for i in items if i.get("track") == "entrada"],
+        track_autonomia=[i for i in items if i.get("track") == "autonomia"],
+        whatsapp_number=re.sub(r"\D", "", str(raw_wa)) or "5527996051538",
+        min_qty_text=get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades"),
+        title="MAJ ATACADO B2B • CONSULTA V2",
+        subtitle="Condições Exclusivas para Revendedores & Lojistas CNPJ",
+        total_vehicles=sum(int(i.get("stock_qty") or 0) for i in items)
+    )
+
+
+@atacado_bp.route("/atacado/v3")
+@atacado_bp.route("/catalogo-cnpj/v3")
+def catalog_v3():
+    """Nova Versão Atacado B2B v3: Base sólida do Atacado original com evolução progressiva de elementos da V2."""
+    ensure_atacado_schema()
+    items = _enrich_atacado_v2_items(get_all_atacado_items(status="active", only_available=True))
+    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
+    whatsapp_message = get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido.")
+    whatsapp_floating_message = get_atacado_setting("whatsapp_floating_message", "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.")
+    return render_template(
+        "atacado/catalog_v3.html", items=items, whatsapp_number=whatsapp_number,
+        whatsapp_message=whatsapp_message, whatsapp_floating_message=whatsapp_floating_message,
+        title=get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE"),
+        subtitle=get_atacado_setting("atacado_subtitle", "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"),
+        urgency_text=get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • MODELOS A PRONTA ENTREGA"),
+        min_qty_text=get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades"),
+        all_categories=sorted(list({i.get("category") for i in items if i.get("category")})),
+        show_prices=True,
+    )
 
 
 @atacado_bp.route("/atacado/<identifier>")

@@ -50,32 +50,21 @@
         <!-- Q4 -->
         <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 4 }">
           <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 4 ? null : 4)">
-            <span class="v2-faq-q">🎁 As scooters e bikes elétricas acompanham baú de carga?</span>
+            <span class="v2-faq-q">💳 Quais são as formas de pagamento para compras com CNPJ?</span>
             <span class="v2-faq-icon" x-text="activeFaq === 4 ? '−' : '+'"></span>
           </button>
           <div class="v2-faq-body" x-show="activeFaq === 4">
-            <p>Sim! Os principais modelos utilitários e de trabalho (como MAX 12, Flow One, M2, Classic 1000 e Vittoria) já acompanham <strong>baú traseiro instalado de fábrica sem custo adicional</strong>. Isso representa uma economia real de até R$ 450 por unidade e agrega enorme valor de revenda imediata na sua vitrine.</p>
-          </div>
-        </div>
-
-        <!-- Q5 -->
-        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 5 }">
-          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 5 ? null : 5)">
-            <span class="v2-faq-q">💳 Quais são as formas de pagamento para compras com CNPJ?</span>
-            <span class="v2-faq-icon" x-text="activeFaq === 5 ? '−' : '+'"></span>
-          </button>
-          <div class="v2-faq-body" x-show="activeFaq === 5">
             <p>Faturamos exclusivamente com Nota Fiscal Eletrônica (NF-e). Oferecemos condições comerciais competitivas com desconto à vista via PIX ou TED, além de parcelamento em até 12x ou 18x no cartão de crédito corporativo para preservar o fluxo de caixa da sua revenda.</p>
           </div>
         </div>
 
-        <!-- Q6: Política de Proteção ao Lojista (Não-Canibalização) -->
-        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 6 }">
-          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 6 ? null : 6)">
+        <!-- Q5: Política de Proteção ao Lojista (Não-Canibalização) -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 5 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 5 ? null : 5)">
             <span class="v2-faq-q">🤝 Como a MAJ protege os preços da minha revenda em relação ao consumidor final?</span>
-            <span class="v2-faq-icon" x-text="activeFaq === 6 ? '−' : '+'"></span>
+            <span class="v2-faq-icon" x-text="activeFaq === 5 ? '−' : '+'"></span>
           </button>
-          <div class="v2-faq-body" x-show="activeFaq === 6">
+          <div class="v2-faq-body" x-show="activeFaq === 5">
             <p><strong>Nossa prioridade estratégica é o sucesso da rede de revendedores parceiros.</strong> A MAJ não queima preços nem compete com as lojas parceiras. Nossos canais pontuais de varejo operam exclusivamente com lotes específicos de desova e cotas limitadas, preservando as margens recomendadas de 25% a 45% das lojas físicas em todo o Brasil.</p>
           </div>
         </div>
