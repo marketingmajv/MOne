@@ -235,33 +235,8 @@ def _enrich_atacado_v2_items(items):
 @atacado_bp.route("/atacado/v2")
 @atacado_bp.route("/catalogo-cnpj/v2")
 def catalog_v2():
-    """Nova Landing Page Comercial de Atacado B2B v2 (Decisão comercial, 3 trilhas e lote misto)."""
-    ensure_atacado_schema()
-    items = get_all_atacado_items(status="active", only_available=True)
-    # Ocultar produtos que nao tem preco na planilha
-    items = [i for i in items if float(i.get("price_outlet") or 0) > 0]
-    items = _enrich_atacado_v2_items(items)
-
-    track_campeoes = [i for i in items if i.get("track") == "campeoes"]
-    track_entrada = [i for i in items if i.get("track") == "entrada"]
-    track_autonomia = [i for i in items if i.get("track") == "autonomia"]
-
-    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
-    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
-    min_qty_text = get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades")
-
-    return render_template(
-        "atacado/catalog_v2.html",
-        items=items,
-        track_campeoes=track_campeoes,
-        track_entrada=track_entrada,
-        track_autonomia=track_autonomia,
-        whatsapp_number=whatsapp_number,
-        min_qty_text=min_qty_text,
-        title="MAJ ATACADO B2B • DECISÃO COMERCIAL",
-        subtitle="Condições Exclusivas para Revendedores & Lojistas CNPJ • Galpões M-One & COLVIX",
-        total_vehicles=sum(int(i.get("stock_qty") or 0) for i in items)
-    )
+    """Redirecionamento de contingência: V2 desativada do ar, direcionando para o catálogo oficial /atacado."""
+    return redirect(url_for("atacado.catalog"), code=302)
 
 
 @atacado_bp.route("/atacado/<identifier>")
