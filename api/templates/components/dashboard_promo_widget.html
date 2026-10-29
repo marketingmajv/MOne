@@ -78,7 +78,7 @@
           <span style="font-size:11px;color:var(--muted);">Ligar ou desligar faixa instantaneamente</span>
         </div>
         <label style="position:relative;display:inline-block;width:42px;height:22px;cursor:pointer;margin:0;">
-          <input type="checkbox" id="dashPromoEnabled" {% if promo_banner and promo_banner.enabled %}checked{% endif %} style="opacity:0;width:0;height:0;">
+          <input type="checkbox" id="dashPromoEnabled" onchange="onDashPromoEnabledChange(this.checked)" {% if promo_banner and promo_banner.enabled %}checked{% endif %} style="opacity:0;width:0;height:0;">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -104,6 +104,54 @@ function setDashTickerPreset(val) {
   if (slider) {
     slider.value = val;
     onDashTickerHeightChange(val);
+  }
+}
+
+async function onDashPromoEnabledChange(checked) {
+  const badge = document.getElementById('dashPromoStatusBadge');
+  const feedback = document.getElementById('dashPromoFeedbackMsg');
+
+  if (badge) {
+    if (checked) {
+      badge.textContent = '🟢 ATIVO NO AR';
+      badge.style.background = '#059669';
+      badge.style.color = '#ffffff';
+      badge.style.border = '1px solid #047857';
+      badge.style.boxShadow = '0 2px 6px rgba(5,150,105,0.25)';
+    } else {
+      badge.textContent = '⚪ OCULTO';
+      badge.style.background = '#64748b';
+      badge.style.color = '#ffffff';
+      badge.style.border = '1px solid #475569';
+      badge.style.boxShadow = 'none';
+    }
+  }
+
+  try {
+    const res = await fetch('/api/models/promo-banner/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: checked }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao alternar status do banner.');
+
+    if (feedback) {
+      feedback.innerHTML = checked 
+        ? '<span style="color:#00e599;font-weight:700;">🟢 Banner LIGADO com sucesso no Showroom!</span>'
+        : '<span style="color:#94a3b8;font-weight:700;">⚪ Banner DESLIGADO com sucesso no Showroom!</span>';
+      setTimeout(() => {
+        feedback.innerHTML = '💡 Dica: O valor de 35px oferece equilíbrio ideal de visibilidade sem poluir o catálogo de modelos.';
+      }, 4000);
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.innerHTML = '<span style="color:#ef4444;font-weight:700;">❌ ' + err.message + '</span>';
+    } else {
+      alert('Erro: ' + err.message);
+    }
+    const cb = document.getElementById('dashPromoEnabled');
+    if (cb) cb.checked = !checked;
   }
 }
 
