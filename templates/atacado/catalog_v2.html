@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_9">
   
   <!-- Atacado v2 Data & Logic -->
   <script>
@@ -163,13 +163,12 @@
                 @click="setFilter('bikes')">
           🚲 BIKES
         </button>
-        <template x-if="currentFilter !== 'all' || currentBuyerPath">
-          <button type="button" 
-                  class="v2-hero-filter-btn btn-reset" 
-                  @click="setFilter('all'); currentBuyerPath = null;">
-            ✕ Ver Todos (<span x-text="items.length"></span>)
-          </button>
-        </template>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                :class="{ 'is-active': currentFilter === 'all' && !currentBuyerPath }" 
+                @click="setFilter('all'); currentBuyerPath = null;">
+          📋 TODOS OS MODELOS (<span x-text="items.length"></span>)
+        </button>
       </div>
     </div>
   </section>

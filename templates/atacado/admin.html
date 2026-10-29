@@ -138,6 +138,7 @@
             <th style="padding: 12px 16px;">Preço Atacado Plus</th>
             <th style="padding: 12px 16px;">Estoque Real</th>
             <th style="padding: 12px 16px;">Se Zerado</th>
+            <th style="padding: 12px 16px;">Mais Vendido</th>
             <th style="padding: 12px 16px;">Status</th>
             <th style="padding: 12px 16px; text-align: right;">Ações</th>
           </tr>
@@ -195,6 +196,15 @@
               </button>
             </td>
             <td style="padding: 10px 16px;">
+              <button type="button" 
+                      class="btn sm" 
+                      style="{{ 'background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;' if item.is_best_seller else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      onclick="toggleAtacadoBestSeller({{ item.id }}, this)"
+                      title="Clique para marcar/desmarcar como Mais Vendido">
+                {{ '⭐ Mais Vendido' if item.is_best_seller else '☆ Padrão' }}
+              </button>
+            </td>
+            <td style="padding: 10px 16px;">
               <form action="{{ url_for('atacado.admin_atacado_status', item_id=item.id) }}" method="POST" style="margin: 0;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% if item.status == 'active' %}
@@ -221,114 +231,8 @@
   </div>
 </div>
 
-<!-- Modal Edição / Criação Produto Atacado -->
-<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target === this) closeAtacadoModal()">
-  <div style="background: var(--bg-card, #121722); border: 1px solid var(--border-gold, #00cc88); border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #fff;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3 id="atacadoModalTitle" style="font-size: 1.2rem; font-weight: 800; margin: 0; color: #00cc88;">+ Editar Produto Atacado</h3>
-      <button type="button" class="modal-close-btn" onclick="closeAtacadoModal()" title="Fechar modal" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
-    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateAtacadoFormPayload(this)">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="item_id" id="atacado_form_item_id">
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Nome do Modelo</label>
-          <input type="text" name="name" id="atacado_form_name" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado À Vista (R$)</label>
-          <input type="number" step="0.01" name="price_outlet" id="atacado_form_price_outlet" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado Plus (R$)</label>
-          <input type="number" step="0.01" name="price_atacado_plus" id="atacado_form_price_atacado_plus" style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Estoque Total (Unidades)</label>
-          <input type="number" name="stock_qty" id="atacado_form_stock_qty" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-      </div>
-
-      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(229, 169, 59, 0.25); border-radius: 8px; background: rgba(229, 169, 59, 0.05); display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <label for="atacado_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
-            📦 Exibir como "Sob Encomenda" se estoque estiver zerado
-          </label>
-          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-            Se desmarcado, o modelo é automaticamente ocultado do catálogo CNPJ ao zerar o estoque.
-          </small>
-        </div>
-        <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
-      </div>
-
-      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; background: rgba(0, 204, 136, 0.05); display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <label for="atacado_form_is_best_seller" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
-            ⭐ Destaque como "Mais Vendido"
-          </label>
-          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-            Exibido com prioridade e incluído no filtro rápido <strong>[MAIS VENDIDOS]</strong> do catálogo.
-          </small>
-        </div>
-        <input type="checkbox" name="is_best_seller" id="atacado_form_is_best_seller" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
-        <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">🏷️ Diferencial do Modelo (Sticker / Selo do Catálogo)</label>
-        <input type="text" name="badge" id="atacado_form_badge" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: 🎁 Baú Incluso de Fábrica ou 🛞 Pneus Fat Tire 20x4.0">
-        <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-          Exibido como chip de vantagem no card e na modal. Deixe em branco para usar o padrão de fábrica.
-        </small>
-      </div>
-
-      <!-- Galeria de Fotos e Foto Capa do Atacado -->
-      <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
-        <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Atacado</label>
-        <small style="color: var(--muted); display: block; margin-bottom: 10px; font-size: 0.75rem;">
-          Envie fotos do modelo para o catálogo de atacado. Selecione qual foto será a <strong>Foto Capa (Principal)</strong>.
-        </small>
-
-        <input type="hidden" name="image_main" id="atacado_form_image_main">
-        <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
-
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
-        </div>
-
-        <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
-
-        <!-- Preview da Galeria e Foto Capa -->
-        <div id="atacado_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px;"></div>
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Descrição / Observações de Atacado</label>
-        <textarea name="description" id="atacado_form_description" rows="2" style="width: 100%; padding: 8px; font-size: 0.85rem;"></textarea>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-        <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
-        <button type="submit" id="atacado_save_btn" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
-      </div>
-    </form>
-  </div>
-</div>
+<!-- Modal Edição / Criação Produto Atacado (Modular Anti-Monólito) -->
+{% include 'atacado/admin_form_modal.html' %}
 
 <script>
   const ATACADO_ITEMS_LIST = {{ items|tojson }};
@@ -387,194 +291,9 @@
     document.getElementById('atacadoModalTitle').textContent = 'Editar Produto: ' + (item.name || '');
     document.getElementById('atacadoFormModal').style.display = 'flex';
   }
-
-  function renderAtacadoGalleryPreview() {
-    const container = document.getElementById('atacado_gallery_preview_container');
-    const mainInput = document.getElementById('atacado_form_image_main');
-    const galleryInput = document.getElementById('atacado_form_images_gallery');
-
-    if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN;
-    if (galleryInput) galleryInput.value = JSON.stringify(ATACADO_CURRENT_GALLERY);
-
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (ATACADO_CURRENT_GALLERY.length === 0) {
-      container.innerHTML = '<small style="grid-column: 1 / -1; color: var(--muted); font-style: italic;">Nenhuma foto na galeria ainda.</small>';
-      return;
-    }
-
-    ATACADO_CURRENT_GALLERY.forEach((imgUrl, index) => {
-      const isMain = (imgUrl === ATACADO_CURRENT_IMAGE_MAIN) || (index === 0 && !ATACADO_CURRENT_IMAGE_MAIN);
-      if (isMain && !ATACADO_CURRENT_IMAGE_MAIN) {
-        ATACADO_CURRENT_IMAGE_MAIN = imgUrl;
-        if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN;
-      }
-
-      const card = document.createElement('div');
-      card.style.cssText = `
-        position: relative;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 2px solid ${isMain ? '#00cc88' : 'var(--line, #334155)'};
-        background: rgba(0,0,0,0.3);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 4px;
-      `;
-
-      card.innerHTML = `
-        <img src="${imgUrl}" style="width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: center; border-radius: 6px;" onerror="this.src='/static/logo.png'">
-        ${isMain ? '<span style="position: absolute; top: 6px; left: 6px; background: #00cc88; color: #000; font-weight: 800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">⭐ CAPA</span>' : ''}
-        <div style="display: flex; gap: 4px; width: 100%; margin-top: 4px;">
-          ${!isMain ? `<button type="button" class="btn sm" onclick="setAtacadoCoverPhoto(${index})" style="flex: 1; padding: 2px; font-size: 0.65rem; background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0,204,136,0.3);">Capa</button>` : ''}
-          <button type="button" class="btn sm" onclick="removeAtacadoPhotoFromGallery(${index})" style="padding: 2px 6px; font-size: 0.65rem; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);">✕</button>
-        </div>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  function setAtacadoCoverPhoto(index) {
-    if (ATACADO_CURRENT_GALLERY[index]) {
-      ATACADO_CURRENT_IMAGE_MAIN = ATACADO_CURRENT_GALLERY[index];
-      renderAtacadoGalleryPreview();
-    }
-  }
-
-  function removeAtacadoPhotoFromGallery(index) {
-    const removed = ATACADO_CURRENT_GALLERY.splice(index, 1)[0];
-    if (ATACADO_CURRENT_IMAGE_MAIN === removed) {
-      ATACADO_CURRENT_IMAGE_MAIN = ATACADO_CURRENT_GALLERY.length > 0 ? ATACADO_CURRENT_GALLERY[0] : '';
-    }
-    renderAtacadoGalleryPreview();
-  }
-
-  function validateAtacadoFormPayload(form) {
-    const statusDiv = document.getElementById('atacado_upload_status_badge');
-    const mainInput = document.getElementById('atacado_form_image_main');
-    const galleryInput = document.getElementById('atacado_form_images_gallery');
-
-    if (mainInput) mainInput.value = ATACADO_CURRENT_IMAGE_MAIN || '';
-    if (galleryInput) galleryInput.value = JSON.stringify(ATACADO_CURRENT_GALLERY || []);
-
-    const mainImg = mainInput?.value || '';
-    const galleryJson = galleryInput?.value || '';
-    const totalChars = mainImg.length + galleryJson.length;
-    const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);
-
-    if (sizeMb > 3.8) {
-      alert(`⚠️ O tamanho total da galeria (${sizeMb.toFixed(1)} MB) ultrapassaria o limite máximo de envio da Vercel (4.5 MB). Por favor, remova 1 ou 2 fotos antes de salvar.`);
-      if (statusDiv) {
-        statusDiv.style.display = 'block';
-        statusDiv.style.color = '#ef4444';
-        statusDiv.textContent = `⚠️ Tamanho do lote grande (${sizeMb.toFixed(1)} MB / máx 3.8 MB). Remova 1 ou 2 fotos.`;
-      }
-      return false;
-    }
-    return true;
-  }
-
-  function handleAtacadoGalleryUpload(input) {
-    const files = input.files;
-    const statusDiv = document.getElementById('atacado_upload_status_badge');
-    const saveBtn = document.getElementById('atacado_save_btn');
-    if (!files || files.length === 0) return;
-
-    if (ATACADO_CURRENT_GALLERY.length >= 12) {
-      if (statusDiv) {
-        statusDiv.style.display = 'block';
-        statusDiv.style.color = '#ef4444';
-        statusDiv.textContent = '⚠️ Limite máximo de 12 fotos por produto atingido.';
-      }
-      input.value = '';
-      return;
-    }
-
-    if (saveBtn) {
-      saveBtn.disabled = true;
-      saveBtn.style.opacity = '0.5';
-      saveBtn.style.cursor = 'wait';
-      saveBtn.textContent = '⏳ Processando fotos...';
-    }
-
-    if (statusDiv) {
-      statusDiv.style.display = 'block';
-      statusDiv.style.color = '#e5a93b';
-      statusDiv.textContent = `Otimizando e comprimindo ${files.length} foto(s)... Aguarde finalizar antes de salvar.`;
-    }
-
-    let processedCount = 0;
-    const availableSlots = 12 - ATACADO_CURRENT_GALLERY.length;
-    const totalFiles = Math.min(files.length, availableSlots);
-
-    Array.from(files).slice(0, totalFiles).forEach(file => {
-      compressAtacadoImage(file, 640, 0.50, (base64Data) => {
-        if (base64Data && !ATACADO_CURRENT_GALLERY.includes(base64Data)) {
-          ATACADO_CURRENT_GALLERY.push(base64Data);
-          if (!ATACADO_CURRENT_IMAGE_MAIN) {
-            ATACADO_CURRENT_IMAGE_MAIN = base64Data;
-          }
-        }
-        processedCount++;
-        if (processedCount === totalFiles) {
-          renderAtacadoGalleryPreview();
-          const mainImg = document.getElementById('atacado_form_image_main')?.value || '';
-          const galleryJson = document.getElementById('atacado_form_images_gallery')?.value || '';
-          const totalMb = ((mainImg.length + galleryJson.length) * 3 / 4) / (1024 * 1024);
-          if (statusDiv) {
-            statusDiv.style.display = 'block';
-            statusDiv.style.color = '#00cc88';
-            statusDiv.textContent = `✅ ${ATACADO_CURRENT_GALLERY.length} foto(s) otimizada(s) (~${totalMb.toFixed(2)} MB - Pronto para salvar).`;
-            setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
-          }
-          if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.style.opacity = '1';
-            saveBtn.style.cursor = 'pointer';
-            saveBtn.textContent = 'Salvar no Atacado';
-          }
-          input.value = '';
-        }
-      });
-    });
-  }
-
-  function compressAtacadoImage(file, maxWidth, quality, callback) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        callback(dataUrl);
-      };
-      img.onerror = function() {
-        console.warn("Erro ao processar imagem:", file ? file.name : "desconhecido");
-        callback(null);
-      };
-      img.src = e.target.result;
-    };
-    reader.onerror = function() {
-      console.warn("Erro ao ler arquivo:", file ? file.name : "desconhecido");
-      callback(null);
-    };
-    reader.readAsDataURL(file);
-  }
-
+</script>
+<script src="{{ url_for('static', filename='js/atacado-admin.js') }}"></script>
+<script>
   async function toggleAtacadoOnDemand(itemId, btn) {
     try {
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
@@ -605,5 +324,36 @@
     }
   }
   window.toggleAtacadoOnDemand = toggleAtacadoOnDemand;
+
+  async function toggleAtacadoBestSeller(itemId, btn) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const res = await fetch(`/admin/atacado/toggle-best-seller/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.is_best_seller) {
+          btn.textContent = '⭐ Mais Vendido';
+          btn.style.background = 'rgba(0, 204, 136, 0.15)';
+          btn.style.color = '#00cc88';
+          btn.style.borderColor = 'rgba(0, 204, 136, 0.35)';
+        } else {
+          btn.textContent = '☆ Padrão';
+          btn.style.background = 'rgba(148, 163, 184, 0.1)';
+          btn.style.color = 'var(--muted)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao alternar mais vendido no atacado:', err);
+    }
+  }
+  window.toggleAtacadoBestSeller = toggleAtacadoBestSeller;
 </script>
 {% endblock %}

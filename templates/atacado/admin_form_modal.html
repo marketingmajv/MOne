@@ -1,0 +1,109 @@
+<!-- Modal Edição / Criação Produto Atacado (Modular Anti-Monólito) -->
+<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target === this) closeAtacadoModal()">
+  <div style="background: var(--bg-card, #121722); border: 1px solid var(--border-gold, #00cc88); border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #fff;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 id="atacadoModalTitle" style="font-size: 1.2rem; font-weight: 800; margin: 0; color: #00cc88;">+ Editar Produto Atacado</h3>
+      <button type="button" class="modal-close-btn" onclick="closeAtacadoModal()" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateAtacadoFormPayload(this)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="item_id" id="atacado_form_item_id">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Nome do Modelo</label>
+          <input type="text" name="name" id="atacado_form_name" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado À Vista (R$)</label>
+          <input type="number" step="0.01" name="price_outlet" id="atacado_form_price_outlet" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado Plus (R$)</label>
+          <input type="number" step="0.01" name="price_atacado_plus" id="atacado_form_price_atacado_plus" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Estoque Total (Unidades)</label>
+          <input type="number" name="stock_qty" id="atacado_form_stock_qty" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(229, 169, 59, 0.25); border-radius: 8px; background: rgba(229, 169, 59, 0.05); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <label for="atacado_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
+            📦 Exibir como "Sob Encomenda" se estoque estiver zerado
+          </label>
+          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+            Se desmarcado, o modelo é automaticamente ocultado do catálogo CNPJ ao zerar o estoque.
+          </small>
+        </div>
+        <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
+      </div>
+
+      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; background: rgba(0, 204, 136, 0.05); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <label for="atacado_form_is_best_seller" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
+            ⭐ Destaque como "Mais Vendido"
+          </label>
+          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+            Exibido com prioridade e incluído no filtro rápido <strong>[MAIS VENDIDOS]</strong> do catálogo.
+          </small>
+        </div>
+        <input type="checkbox" name="is_best_seller" id="atacado_form_is_best_seller" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
+        <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">🏷️ Diferencial do Modelo (Sticker / Selo do Catálogo)</label>
+        <input type="text" name="badge" id="atacado_form_badge" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: 🎁 Baú Incluso de Fábrica ou 🛞 Pneus Fat Tire 20x4.0">
+        <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
+          Exibido como chip de vantagem no card e na modal. Deixe em branco para usar o padrão de fábrica.
+        </small>
+      </div>
+
+      <!-- Galeria de Fotos e Foto Capa do Atacado -->
+      <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
+        <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Atacado</label>
+        <small style="color: var(--muted); display: block; margin-bottom: 10px; font-size: 0.75rem;">
+          Envie fotos do modelo para o catálogo de atacado. Selecione qual foto será a <strong>Foto Capa (Principal)</strong>.
+        </small>
+
+        <input type="hidden" name="image_main" id="atacado_form_image_main">
+        <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
+
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
+        </div>
+
+        <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
+
+        <!-- Preview da Galeria e Foto Capa -->
+        <div id="atacado_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px;"></div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Descrição / Observações de Atacado</label>
+        <textarea name="description" id="atacado_form_description" rows="2" style="width: 100%; padding: 8px; font-size: 0.85rem;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
+        <button type="submit" id="atacado_save_btn" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
+      </div>
+    </form>
+  </div>
+</div>
+

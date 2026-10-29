@@ -245,28 +245,37 @@ body.atacado-v2-body {
   margin: 0 auto 30px;
   line-height: 1.5;
 }
-/* Hero Filter Buttons (Substituem os cards de métricas) */
+/* Hero Filter Buttons (Compactos em linha única) */
 .v2-hero-filters-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  max-width: 900px;
-  margin: 28px auto 0;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: 960px;
+  margin: 14px auto 0;
+  padding: 4px 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.v2-hero-filters-bar::-webkit-scrollbar {
+  display: none;
 }
 .v2-hero-filter-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  padding: 10px 22px;
-  font-size: 0.88rem;
+  padding: 6px 14px;
+  font-size: 0.78rem;
   font-weight: 800;
   color: var(--text-main);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   letter-spacing: 0.02em;
 }
@@ -1333,19 +1342,19 @@ body.atacado-v2-body {
 .v2-buyer-paths {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
   max-width: 960px;
-  margin: 26px auto 0;
+  margin: 16px auto 0;
 }
 
 .v2-buyer-path-card {
   background: var(--bg-card);
   border: 1px solid var(--border-line);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;

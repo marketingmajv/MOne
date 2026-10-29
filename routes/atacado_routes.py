@@ -412,6 +412,20 @@ def admin_atacado_toggle_on_demand(item_id):
     return redirect(url_for("atacado.admin_atacado"))
 
 
+@atacado_bp.route("/admin/atacado/toggle-best-seller/<int:item_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def admin_atacado_toggle_best_seller(item_id):
+    """Alterna o destaque de Mais Vendido do produto no catálogo de atacado."""
+    from services.atacado_service import toggle_atacado_best_seller
+    new_val = toggle_atacado_best_seller(item_id)
+    audit("toggle_atacado_best_seller", f"Item Atacado ID={item_id} is_best_seller alterado para {new_val}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "is_best_seller": new_val})
+    flash("Destaque Mais Vendido atualizado!", "success")
+    return redirect(url_for("atacado.admin_atacado"))
+
+
 @atacado_bp.route("/admin/atacado/status/<int:item_id>", methods=["POST"])
 @login_required
 @roles_required("admin", "support")

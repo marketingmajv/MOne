@@ -442,6 +442,19 @@ def toggle_atacado_show_on_demand(item_id: int) -> bool:
         return new_val
 
 
+def toggle_atacado_best_seller(item_id: int) -> bool:
+    ensure_atacado_schema()
+    with db() as conn:
+        row = run_exec(conn, "SELECT is_best_seller FROM atacado_items WHERE id = ?", (item_id,)).fetchone()
+        if not row:
+            return False
+        current = bool(row["is_best_seller"] if isinstance(row, dict) else row[0])
+        new_val = not current
+        run_exec(conn, "UPDATE atacado_items SET is_best_seller = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_val, item_id))
+        conn.commit()
+        return new_val
+
+
 def delete_atacado_item(item_id: int):
     ensure_atacado_schema()
     with db() as conn:
