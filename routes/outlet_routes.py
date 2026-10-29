@@ -76,11 +76,11 @@ def catalog():
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     whatsapp_message = outlet_settings.get(
         "whatsapp_message",
-        "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"
+        "Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?"
     )
     whatsapp_floating_message = outlet_settings.get(
         "whatsapp_floating_message",
-        "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de falar com um consultor."
+        "Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor."
     )
     title = outlet_settings.get("outlet_title") or "OUTLET MAJ MOBILIDADE"
     subtitle = outlet_settings.get("outlet_subtitle") or "Queima de Estoque Oficial • Veículos Elétricos com Descontos Exclusivos"
@@ -157,8 +157,8 @@ def admin_outlet():
 
     settings = {
         "whatsapp_number": get_outlet_setting("whatsapp_number", "5527999999999"),
-        "whatsapp_message": get_outlet_setting("whatsapp_message", "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e tenho interesse. Ainda está disponível?"),
-        "whatsapp_floating_message": get_outlet_setting("whatsapp_floating_message", "Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor."),
+        "whatsapp_message": get_outlet_setting("whatsapp_message", "Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?"),
+        "whatsapp_floating_message": get_outlet_setting("whatsapp_floating_message", "Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor."),
         "outlet_title": get_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE"),
         "outlet_subtitle": get_outlet_setting("outlet_subtitle", "Queima de Estoque Oficial • Mais de 440 Veículos Elétricos"),
         "outlet_urgency_text": get_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X"),

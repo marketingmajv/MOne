@@ -579,7 +579,7 @@
           if (this.modalOpen && this.selectedItem && this.selectedItem.name === model && this.selectedColorObj && this.selectedColorObj.colors) {
             activeName = `${model} (Cor: ${this.selectedColorObj.colors})`;
           }
-          const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} no Outlet MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
+          const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
           const msg = template.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
           return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
@@ -587,7 +587,7 @@
 
         getFloatingWhatsAppUrl() {
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
-          const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando no Outlet MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
+          const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
           return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
         }
       };

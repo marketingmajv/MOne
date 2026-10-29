@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_OUTLET_DIR = BASE_DIR / "static" / "img" / "outlet"
 
 DEFAULT_WHATSAPP = "5527996051538"  # Configurável pelo admin
-DEFAULT_WA_MESSAGE = "Olá! Vi o modelo {model} no Outlet MAJ Mobilidade por {price} e gostaria de saber mais informações."
+DEFAULT_WA_MESSAGE = "Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?"
 
 
 def slugify(text: str) -> str:

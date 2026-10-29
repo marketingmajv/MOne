@@ -368,7 +368,8 @@ def find_photos_for_model(model_name: str) -> list[str]:
 def seed_outlet():
     ensure_outlet_schema()
     set_outlet_setting("whatsapp_number", "5527999999999")
-    set_outlet_setting("whatsapp_message", "Olá! Gostei do {model} no Outlet MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?")
+    set_outlet_setting("whatsapp_message", "Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?")
+    set_outlet_setting("whatsapp_floating_message", "Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.")
     set_outlet_setting("outlet_title", "OUTLET MAJ MOBILIDADE")
     set_outlet_setting("outlet_subtitle", "Queima de Estoque Oficial • Mais de 440 Veículos Elétricos com Descontos Exclusivos")
     set_outlet_setting("outlet_urgency_text", "ÚLTIMAS UNIDADES A PRONTA ENTREGA • PARCELAMENTO EM ATÉ 18X")
