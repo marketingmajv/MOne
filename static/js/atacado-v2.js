@@ -6,6 +6,7 @@ function atacadoV2App() {
     waNumber: serverWaNumber,
     searchQuery: "",
     currentFilter: "all", // 'all' | 'mais_vendidos' | 'mais_baratos' | 'scooters' | 'bikes'
+    currentBuyerPath: null, // null | 'iniciante' | 'mix' | 'reposicao'
     
     // Modal
     modalOpen: false,
@@ -17,6 +18,7 @@ function atacadoV2App() {
     itemSelectedTiers: {}, // Seleção individual por produto (default tier 3: mais barato)
 
     setFilter(filterName) {
+      this.currentBuyerPath = null;
       if (this.currentFilter === filterName) {
         this.currentFilter = "all";
       } else {
@@ -24,10 +26,54 @@ function atacadoV2App() {
       }
     },
 
+    selectBuyerPath(path) {
+      if (this.currentBuyerPath === path) {
+        this.currentBuyerPath = null;
+      } else {
+        this.currentBuyerPath = path;
+        this.currentFilter = "all";
+      }
+    },
+
+    getTrackEyebrow() {
+      if (this.currentBuyerPath === "iniciante") return "🌱 SELEÇÃO PARA INICIANTES EM REVENDA";
+      if (this.currentBuyerPath === "mix") return "📈 EXPANSÃO DE MIX E MARGEM POTENCIAL";
+      if (this.currentBuyerPath === "reposicao") return "📦 ALTA DISPONIBILIDADE IMEDIATA";
+      if (this.currentFilter === "mais_vendidos") return "⭐ MODELOS COM MAIOR VELOCIDADE DE SAÍDA";
+      if (this.currentFilter === "mais_baratos") return "💰 MENOR TÍQUETE INICIAL DE INVESTIMENTO";
+      if (this.currentFilter === "scooters") return "🛵 LINHA COMPLETA DE SCOOTERS ELÉTRICAS";
+      if (this.currentFilter === "bikes") return "🚲 BIKES ELÉTRICAS DE ALTA PERFORMANCE";
+      return "⚡ ESTOQUE GLOBAL PRONTA ENTREGA CNPJ";
+    },
+
+    getTrackTitle() {
+      if (this.currentBuyerPath === "iniciante") return "Modelos Recomendados para Início";
+      if (this.currentBuyerPath === "mix") return "Mix Diversificado para Sua Loja";
+      if (this.currentBuyerPath === "reposicao") return "Reposição Imediata com Maior Estoque";
+      if (this.currentFilter === "mais_vendidos") return "Mais Vendidos da Categoria";
+      if (this.currentFilter === "mais_baratos") return "Modelos Mais Baratos";
+      if (this.currentFilter === "scooters") return "Scooters Elétricas MAJ";
+      if (this.currentFilter === "bikes") return "Bikes Elétricas MAJ";
+      return "Catálogo Completo Atacado";
+    },
+
     getDisplayItems() {
       let list = [...this.items];
       // Ocultar produtos sem preco na planilha
       list = list.filter(i => (parseFloat(i.price_outlet) || 0) > 0);
+
+      // Trilhas de Decisão B2B (Seção 8 do Estudo)
+      if (this.currentBuyerPath === "iniciante") {
+        const inicianteSlugs = ["max-12", "flow-one", "v20-ultra", "m9-pro", "v8-mini-ultra"];
+        return list.filter(i => inicianteSlugs.includes(i.slug));
+      }
+      if (this.currentBuyerPath === "mix") {
+        const mixSlugs = ["gp1000", "jm-125", "mantis", "nova", "vittoria", "x15-pro", "db-zero", "classic-1000"];
+        return list.filter(i => mixSlugs.includes(i.slug));
+      }
+      if (this.currentBuyerPath === "reposicao") {
+        return list.filter(i => (parseInt(i.stock_qty) || 0) >= 10).sort((a, b) => (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0));
+      }
 
       if (this.searchQuery && this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase().trim();
@@ -76,10 +122,11 @@ function atacadoV2App() {
 
     getItemDisplayMarginPct(item) {
       if (!item) return 0;
-      const price = this.getItemDisplayPrice(item);
-      if (price <= 0) return 0;
+      const retail = parseFloat(item.price_retail_suggested || item.price_original) || 0;
+      if (retail <= 0) return 0;
       const margin = this.getItemDisplayMarginReais(item);
-      return Math.round((margin / price) * 100);
+      // Margem Bruta Real sobre a venda sugerida
+      return Math.round((margin / retail) * 100);
     },
 
     selectTierDirect(item, tier) {
@@ -284,7 +331,7 @@ function atacadoV2App() {
         if (unitDiscount > 0) {
           text += ` (Preço Base: R$ ${this.formatPrice(item.price_outlet)} com desconto de -R$ ${this.formatPrice(unitDiscount)})`;
         }
-        text += `\n  Sugerido Varejo: R$ ${this.formatPrice(item.price_original)} | Lucro: +R$ ${this.formatPrice(itemMargin * item.qty)}\n`;
+        text += `\n  Sugerido Varejo: R$ ${this.formatPrice(item.price_original)} | Margem Bruta: +R$ ${this.formatPrice(itemMargin * item.qty)}\n`;
         if (item.has_trunk) {
           text += `  🎁 _Acessório: Baú incluso de fábrica_\n`;
         }
@@ -298,9 +345,9 @@ function atacadoV2App() {
       }
       text += `*Investimento Total:* R$ ${this.formatPrice(this.getTotalCost())}\n`;
       text += `*Faturamento Estimado:* R$ ${this.formatPrice(this.getTotalTurnover())}\n`;
-      text += `🚀 *LUCRO ESTIMADO DA MINHA LOJA: +R$ ${this.formatPrice(this.getTotalProfit())}*\n`;
+      text += `🚀 *GANHO BRUTO ESTIMADO DA LOJA: +R$ ${this.formatPrice(this.getTotalProfit())}*\n`;
       text += "----------------------------------------\n";
-      text += "Olá! Montei este lote de atacado pelo catálogo oficial com desconto de volume e gostaria de confirmar a disponibilidade e o frete para o meu CNPJ.";
+      text += "Olá! Montei este lote de atacado pelo catálogo oficial com desconto de volume e gostaria de confirmar a disponibilidade e a cotação de frete para o meu CNPJ/cidade.";
 
       return `https://wa.me/${this.waNumber}?text=${encodeURIComponent(text)}`;
     },

@@ -1,0 +1,85 @@
+  <!-- 6. Seção de Dúvidas Frequentes do Revendedor (FAQ B2B) -->
+  <section class="v2-faq-section" id="duvidas" x-data="{ activeFaq: null }">
+    <div class="v2-container">
+      <div class="v2-comp-header">
+        <span class="v2-track-eyebrow" style="background: rgba(229,169,59,0.15); color: var(--gold); border: 1px solid rgba(229,169,59,0.3);">
+          💬 TRANSPARÊNCIA COMERCIAL
+        </span>
+        <h2 class="v2-comp-title">
+          Dúvidas Frequentes do Revendedor (FAQ B2B)
+        </h2>
+        <p style="color: var(--text-dim); font-size: 0.90rem; max-width: 650px; margin: 8px auto 0;">
+          Tudo o que sua loja precisa saber sobre logística, garantia oficial, pedido mínimo e faturamento direto.
+        </p>
+      </div>
+
+      <div class="v2-faq-list">
+        <!-- Q1 -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 1 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 1 ? null : 1)">
+            <span class="v2-faq-q">🚚 Como funciona o frete e o envio para a minha cidade?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 1 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 1">
+            <p>Enviamos para todo o Brasil através de transportadoras rodoviárias parceiras com tabela corporativa negociada, garantindo menor custo por unidade. Você também pode optar por coleta com sua transportadora de preferência (modalidade FOB). Os pedidos saem com seguro total e nota fiscal diretamente dos nossos galpões em Vitória/ES.</p>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 2 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 2 ? null : 2)">
+            <span class="v2-faq-q">📦 Posso misturar modelos diferentes no pedido mínimo de 3 unidades?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 2 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 2">
+            <p><strong>Sim, com certeza!</strong> O pedido mínimo da MAJ é a partir de 3 unidades e você tem liberdade total para montar um <em>Lote Misto</em> (por exemplo: 1 MAX 12, 1 Flow One e 1 V20 Ultra). Isso permite abastecer sua loja com opções variadas para o seu cliente final sem imobilizar muito capital.</p>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 3 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 3 ? null : 3)">
+            <span class="v2-faq-q">🛡️ Como funciona a garantia oficial e reposição de peças?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 3 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 3">
+            <p>Todos os veículos contam com garantia oficial da MAJ Mobilidade contra defeitos de fabricação. O grande diferencial da MAJ é que <strong>mantemos estoque próprio de peças de reposição no Brasil</strong> e canal técnico direto para suporte aos mecânicos e lojistas parceiros, eliminando meses de espera de importação da China.</p>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 4 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 4 ? null : 4)">
+            <span class="v2-faq-q">🎁 As scooters e bikes elétricas acompanham baú de carga?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 4 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 4">
+            <p>Sim! Os principais modelos utilitários e de trabalho (como MAX 12, Flow One, M2, Classic 1000 e Vittoria) já acompanham <strong>baú traseiro instalado de fábrica sem custo adicional</strong>. Isso representa uma economia real de até R$ 450 por unidade e agrega enorme valor de revenda imediata na sua vitrine.</p>
+          </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 5 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 5 ? null : 5)">
+            <span class="v2-faq-q">💳 Quais são as formas de pagamento para compras com CNPJ?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 5 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 5">
+            <p>Faturamos exclusivamente com Nota Fiscal Eletrônica (NF-e). Oferecemos condições comerciais competitivas com desconto à vista via PIX ou TED, além de parcelamento em até 12x ou 18x no cartão de crédito corporativo para preservar o fluxo de caixa da sua revenda.</p>
+          </div>
+        </div>
+
+        <!-- Q6: Política de Proteção ao Lojista (Não-Canibalização) -->
+        <div class="v2-faq-item" :class="{ 'is-open': activeFaq === 6 }">
+          <button type="button" class="v2-faq-trigger" @click="activeFaq = (activeFaq === 6 ? null : 6)">
+            <span class="v2-faq-q">🤝 Como a MAJ protege os preços da minha revenda em relação ao consumidor final?</span>
+            <span class="v2-faq-icon" x-text="activeFaq === 6 ? '−' : '+'"></span>
+          </button>
+          <div class="v2-faq-body" x-show="activeFaq === 6">
+            <p><strong>Nossa prioridade estratégica é o sucesso da rede de revendedores parceiros.</strong> A MAJ não queima preços nem compete com as lojas parceiras. Nossos canais pontuais de varejo operam exclusivamente com lotes específicos de desova e cotas limitadas, preservando as margens recomendadas de 25% a 45% das lojas físicas em todo o Brasil.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+

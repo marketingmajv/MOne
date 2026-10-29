@@ -49,6 +49,19 @@ def slugify(text: str) -> str:
     return text.strip("-")
 
 
+def round_retail_commercial(val: float) -> float:
+    """Arredonda preços sugeridos para o padrão psicológico de varejo (terminados em 90 ou centenas cheias)."""
+    if not val or val <= 0:
+        return 0.0
+    nearest_hundred = round(val / 100) * 100
+    if abs(val - nearest_hundred) <= 3.0:
+        return float(nearest_hundred)
+    cand_lower = (int(val) // 100) * 100 + 90
+    cand_upper = cand_lower + 100
+    cand = cand_lower if abs(val - cand_lower) <= abs(val - cand_upper) else cand_upper
+    return float(cand)
+
+
 def normalize_model_name(name: str) -> str:
     """Normaliza nomes de modelos (ex: X13 é MAX 12, FLOW ON é FLOW ONE, V8 MINI é V8 MINI ULTRA)."""
     n = (name or "").strip()
@@ -479,6 +492,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 wholesale_prices[model] = {
                     "atacado": parse_price_str(r[1]),
                     "atacado_plus": parse_price_str(r[2]),
+                    "sugerido_varejo": parse_price_str(r[4]) if len(r) > 4 else 0.0,
                     "varejo_12x": parse_price_str(r[5]) if len(r) > 5 else 0.0,
                     "varejo_12x_parc": parse_price_str(r[6]) if len(r) > 6 else 0.0,
                     "varejo_18x_parc": parse_price_str(r[7]) if len(r) > 7 else 0.0,
@@ -574,6 +588,8 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             p12 = pinfo.get("varejo_12x_parc") or (round((price_atacado * 1.1416) / 12, 2) if price_atacado > 0 else 0.0)
             p18 = pinfo.get("varejo_18x_parc") or (round((price_atacado * 1.1855) / 18, 2) if price_atacado > 0 else 0.0)
             p12_total = pinfo.get("varejo_12x") or (round(price_atacado * 1.1416, 2) if price_atacado > 0 else 0.0)
+            # Preço sugerido oficial definido pela diretoria (Jam): Coluna F (12x sem juros no varejo) arredondado comercialmente
+            p_sugerido_varejo = round_retail_commercial(p12_total)
 
             # Lista de cores (sem expor unidades)
             colors_dict = sinfo["colors"]
@@ -631,7 +647,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 "category": "Atacado CNPJ",
                 "condition": "Novo na caixa / Revisado",
                 "color": colors_str,
-                "price_original": p12_total,
+                "price_original": p_sugerido_varejo,
                 "price_outlet": price_atacado,
                 "price_atacado_plus": price_atacado_plus,
                 "installment_12": p12,

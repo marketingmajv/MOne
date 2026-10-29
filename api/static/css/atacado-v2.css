@@ -1205,3 +1205,195 @@ body.atacado-v2-body {
     padding: 5px 8px;
   }
 }
+
+/* ==========================================================================
+   Seção FAQ B2B (Dúvidas do Revendedor)
+   ========================================================================== */
+.v2-faq-section {
+  padding: 50px 0 70px;
+  border-top: 1px solid var(--border-line);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.v2-faq-list {
+  max-width: 820px;
+  margin: 32px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.v2-faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.v2-faq-item:hover {
+  border-color: rgba(229, 169, 59, 0.3);
+}
+
+.v2-faq-item.is-open {
+  border-color: rgba(0, 204, 136, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  background: rgba(26, 32, 44, 0.85);
+}
+
+.v2-faq-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.96rem;
+  gap: 14px;
+}
+
+.v2-faq-trigger:hover {
+  color: var(--gold);
+}
+
+.v2-faq-q {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.v2-faq-icon {
+  font-size: 1.3rem;
+  color: var(--gold);
+  font-weight: 800;
+  min-width: 24px;
+  text-align: right;
+  line-height: 1;
+}
+
+.v2-faq-body {
+  padding: 12px 22px 20px;
+  color: var(--text-muted);
+  font-size: 0.90rem;
+  line-height: 1.65;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.v2-faq-body p {
+  margin: 0;
+}
+
+.v2-faq-body strong {
+  color: #f8fafc;
+}
+
+.v2-faq-body em {
+  color: var(--emerald);
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Hero Subtítulo & Provas Institucionais (Seção 7)
+   ========================================================================== */
+.v2-hero-subtitle {
+  color: var(--text-dim);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 12px auto 0;
+}
+
+.v2-hero-proof-pills {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.v2-proof-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-line);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   Trilhas de Compra Guiada do Lojista (Seção 8)
+   ========================================================================== */
+.v2-buyer-paths {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 960px;
+  margin: 26px auto 0;
+}
+
+.v2-buyer-path-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  color: var(--text-main);
+}
+
+.v2-buyer-path-card:hover {
+  border-color: rgba(229, 169, 59, 0.4);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.v2-buyer-path-card.is-selected {
+  border-color: var(--emerald);
+  background: rgba(0, 204, 136, 0.1);
+  box-shadow: 0 0 16px rgba(0, 204, 136, 0.2);
+}
+
+.v2-path-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.v2-path-info strong {
+  display: block;
+  font-size: 0.86rem;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.v2-path-info small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.v2-margin-disclaimer {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-top: 5px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .v2-buyer-paths {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 18px;
+  }
+}

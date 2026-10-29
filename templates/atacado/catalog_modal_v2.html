@@ -98,12 +98,15 @@
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;">
-                  <span style="font-size: 0.76rem; color: var(--text-dim);">Preço Sugerido de Revenda:</span>
+                  <span style="font-size: 0.76rem; color: var(--text-dim);">Sugerido Varejo (12x sem juros):</span>
                   <span style="font-size: 0.90rem; color: var(--text-muted); font-weight: 700;">R$ <span x-text="formatPrice(selectedItem.price_retail_suggested || selectedItem.price_original)"></span></span>
                 </div>
                 <div style="margin-top: 10px; background: linear-gradient(90deg, rgba(229, 169, 59, 0.2), rgba(0, 204, 136, 0.2)); border: 1px solid var(--border-gold); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 0.75rem; font-weight: 800; color: var(--gold); text-transform: uppercase;">Lucro Estimado para sua Loja:</span>
-                  <span style="font-size: 1rem; font-weight: 900; color: #fff;">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(selectedItem))"></span> (<span x-text="getItemDisplayMarginPct(selectedItem)"></span>%)</span>
+                  <span style="font-size: 0.75rem; font-weight: 800; color: var(--gold); text-transform: uppercase;">Margem Bruta Estimada da Loja:</span>
+                  <span style="font-size: 1rem; font-weight: 900; color: #fff;">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(selectedItem))"></span> (<span x-text="getItemDisplayMarginPct(selectedItem)"></span>% margem)</span>
+                </div>
+                <div style="font-size: 0.68rem; color: var(--text-dim); margin-top: 6px; line-height: 1.3;">
+                  *Margem bruta estimada antes de frete, impostos e despesas da sua revenda. Preço de varejo sugerido de referência (12x sem juros).
                 </div>
               </div>
 

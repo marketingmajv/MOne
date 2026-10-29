@@ -93,6 +93,50 @@
         <span class="v2-hero-line-1">Mais segurança para você.</span>
         <span class="v2-hero-line-2 hl-emerald">Mais margem pra sua loja.</span>
       </h1>
+      <p class="v2-hero-subtitle">
+        Scooters e bikes elétricas para revenda, com peças e suporte técnico no Brasil.<br/>
+        Comece com apenas 3 unidades mistas direto da importadora e conte com a estrutura da MAJ.
+      </p>
+
+      <div class="v2-hero-proof-pills">
+        <span class="v2-proof-pill">📦 Pedido Inicial a partir de 3 un</span>
+        <span class="v2-proof-pill">🛠️ Peças à Pronta Entrega no Brasil</span>
+        <span class="v2-proof-pill">👨‍🏫 Treinamento & Suporte Direto</span>
+      </div>
+
+      <!-- Trilhas de Decisão do Lojista (Seção 8 do Estudo) -->
+      <div class="v2-buyer-paths">
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'iniciante' }" 
+                @click="selectBuyerPath('iniciante')">
+          <div class="v2-path-icon">🔰</div>
+          <div class="v2-path-info">
+            <strong>Estou Começando a Revender</strong>
+            <small>Trio inicial: menor tíquete e alto giro comercial</small>
+          </div>
+        </button>
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'mix' }" 
+                @click="selectBuyerPath('mix')">
+          <div class="v2-path-icon">🚀</div>
+          <div class="v2-path-info">
+            <strong>Quero Ampliar o Mix da Loja</strong>
+            <small>Veículos de alta potência, autonomia e margem superior</small>
+          </div>
+        </button>
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'reposicao' }" 
+                @click="selectBuyerPath('reposicao')">
+          <div class="v2-path-icon">📦</div>
+          <div class="v2-path-info">
+            <strong>Reposição com Maior Estoque</strong>
+            <small>Modelos com maior volume imediato em Vitória/ES</small>
+          </div>
+        </button>
+      </div>
 
       <div class="v2-hero-filters-bar">
         <button type="button" 
@@ -119,10 +163,10 @@
                 @click="setFilter('bikes')">
           🚲 BIKES
         </button>
-        <template x-if="currentFilter !== 'all'">
+        <template x-if="currentFilter !== 'all' || currentBuyerPath">
           <button type="button" 
                   class="v2-hero-filter-btn btn-reset" 
-                  @click="setFilter('all')">
+                  @click="setFilter('all'); currentBuyerPath = null;">
             ✕ Ver Todos (<span x-text="items.length"></span>)
           </button>
         </template>
@@ -135,9 +179,9 @@
     <div class="v2-container">
       <div class="v2-track-header">
         <div class="v2-track-eyebrow">
-          <span x-text="currentFilter === 'mais_vendidos' ? '⭐ MODELOS COM MAIOR VELOCIDADE DE SAÍDA' : (currentFilter === 'mais_baratos' ? '💰 MENOR TÍQUETE INICIAL DE INVESTIMENTO' : (currentFilter === 'scooters' ? '🛵 LINHA COMPLETA DE SCOOTERS ELÉTRICAS' : (currentFilter === 'bikes' ? '🚲 BIKES ELÉTRICAS DE ALTA PERFORMANCE' : '⚡ ESTOQUE GLOBAL PRONTA ENTREGA CNPJ')))"></span>
+          <span x-text="getTrackEyebrow()"></span>
         </div>
-        <h2 class="v2-track-title" x-text="currentFilter === 'mais_vendidos' ? 'Mais Vendidos da Categoria' : (currentFilter === 'mais_baratos' ? 'Modelos Mais Baratos' : (currentFilter === 'scooters' ? 'Scooters Elétricas MAJ' : (currentFilter === 'bikes' ? 'Bikes Elétricas MAJ' : 'Catálogo Completo Atacado')))"></h2>
+        <h2 class="v2-track-title" x-text="getTrackTitle()"></h2>
         <p class="v2-track-desc">
           Selecione a quantidade de cada modelo para montar seu lote misto a partir de 3 unidades com desconto escalonado automático.
         </p>
@@ -183,15 +227,18 @@
                 </div>
 
                 <div class="v2-price-retail-row">
-                  <span class="v2-price-label">Sugerido Varejo:</span>
+                  <span class="v2-price-label">Sugerido Varejo (12x):</span>
                   <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested || item.price_original)"></span></span>
                 </div>
                 <div class="v2-profit-badge">
-                  <span class="v2-profit-label">Seu Lucro Estimado:</span>
+                  <span class="v2-profit-label">Margem Bruta Estimada:</span>
                   <div>
                     <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(item))"></span></span>
-                    <span class="v2-profit-pct" x-text="getItemDisplayMarginPct(item) + '%'"></span>
+                    <span class="v2-profit-pct" x-text="getItemDisplayMarginPct(item) + '% margem'"></span>
                   </div>
+                </div>
+                <div class="v2-margin-disclaimer">
+                  *Margem bruta estimada antes de frete e despesas da revenda. Varejo de referência.
                 </div>
               </div>
 
@@ -275,6 +322,12 @@
     </div>
   </section>
 
+  <!-- 6. Seção de Dúvidas Frequentes do Revendedor (FAQ B2B Modular) -->
+  {% include 'atacado/faq_section.html' %}
+
+  <!-- 7. Seções Fase 2 (Fotos de Estoque & Depoimentos - Ocultos até captação de mídia) -->
+  {% include 'atacado/phase2_hidden_blocks.html' %}
+
   <!-- 8. Modal de Detalhes e Fotos (Componente Modular Teleportado) -->
   {% include 'atacado/catalog_modal_v2.html' %}
 
@@ -304,7 +357,7 @@
           <span class="v2-lot-fig-val" style="color: #cbd5e1;">R$ <span x-text="formatPrice(getTotalTurnover())"></span></span>
         </div>
         <div class="v2-lot-figure">
-          <span class="v2-lot-fig-label" style="color: #e5a93b;">🔥 Lucro Loja:</span>
+          <span class="v2-lot-fig-label" style="color: #e5a93b;">💰 Ganho Bruto Estimado:</span>
           <span class="v2-lot-fig-val v2-lot-fig-profit">+R$ <span x-text="formatPrice(getTotalProfit())"></span></span>
         </div>
       </div>

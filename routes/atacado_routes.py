@@ -149,7 +149,7 @@ def _enrich_atacado_v2_items(items):
     }
     
     WH_LOOKUP = {
-        "flow-one": 1440, "m2": 1440, "gp1000": 1440, "vittoria": 1440, "classic-1000": 1440,
+        "flow-one": 1440, "m2": 1440, "gp1000": 2160, "vittoria": 1440, "classic-1000": 1440,
         "rz-110": 1440, "max-12": 1200, "nova": 1200, "x15-pro": 1200, "db-zero": 1200,
         "v20-ultra": 960, "ride-on": 960, "m9-pro": 960, "v80-pro": 960, "v8-mini-ultra": 720, "m50-pro": 960,
         "mantis": 1200, "jm-125": 1440
@@ -167,11 +167,12 @@ def _enrich_atacado_v2_items(items):
 
         if p_orig > p_out and p_out > 0:
             margin_reais = round(p_orig - p_out, 2)
-            margin_pct = int(round((margin_reais / p_out) * 100))
+            # Margem Bruta Real calculada sobre o preço de venda sugerido (varejo)
+            margin_pct = int(round((margin_reais / p_orig) * 100))
         else:
-            margin_reais = round(p_out * 0.35, 2) if p_out > 0 else 0
-            margin_pct = 35 if p_out > 0 else 0
-            p_orig = round(p_out + margin_reais, 2)
+            margin_pct = 30 if p_out > 0 else 0
+            p_orig = round(p_out / 0.70, 2) if p_out > 0 else 0
+            margin_reais = round(p_orig - p_out, 2) if p_out > 0 else 0
             
         item["margin_reais"] = margin_reais
         item["margin_percent"] = margin_pct
@@ -211,13 +212,19 @@ def _enrich_atacado_v2_items(items):
 
         item["is_best_seller"] = bool(item.get("is_best_seller"))
 
-        # Garantir galeria sempre íntegra como lista de fotos
+        # Garantir fotos limpas (evitar base64 pesado no DOM) e galeria íntegra
+        main_img = item.get("image_main")
+        if not main_img or str(main_img).startswith("data:"):
+            main_img = f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{slug}/{slug}-01.jpg"
+            item["image_main"] = main_img
+
         gal = item.get("images_gallery")
         if isinstance(gal, str):
             try: gal = json.loads(gal)
             except Exception: gal = []
         if not isinstance(gal, list): gal = []
-        main_img = item.get("image_main")
+        # Limpar fotos base64 da galeria substituindo pela foto principal limpa
+        gal = [img for img in gal if img and not str(img).startswith("data:")]
         if main_img and main_img not in gal:
             gal = [main_img] + gal
         item["images_gallery"] = gal
