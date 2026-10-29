@@ -9,13 +9,46 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from database import db
 
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROMO_BANNER_FILE = BASE_DIR / "static" / "data" / "models_promo_banner.json"
 API_PROMO_BANNER_FILE = BASE_DIR / "api" / "static" / "data" / "models_promo_banner.json"
+
+_schema_ensured = False
+
+
+def ensure_showroom_settings_schema():
+    """Garante a existência da tabela showroom_settings no Supabase/PostgreSQL."""
+    global _schema_ensured
+    if _schema_ensured:
+        return
+    try:
+        with db() as conn:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            sql = """
+            CREATE TABLE IF NOT EXISTS showroom_settings (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """ if is_pg else """
+            CREATE TABLE IF NOT EXISTS showroom_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+            conn.execute(sql)
+            conn.commit()
+            _schema_ensured = True
+    except Exception as e:
+        logger.warning("Erro ao garantir schema showroom_settings: %s", e)
+
 
 DEFAULT_PROMO_BANNER_SETTINGS: Dict[str, Any] = {
     "enabled": True,
@@ -38,7 +71,25 @@ DEFAULT_PROMO_BANNER_SETTINGS: Dict[str, Any] = {
 
 
 def load_promo_banner_settings() -> Dict[str, Any]:
-    """Carrega as configurações do Banner da Black November do Showroom."""
+    """Carrega as configurações do Banner da Black November do Showroom a partir do Supabase."""
+    ensure_showroom_settings_schema()
+    try:
+        with db() as conn:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            sql = "SELECT value FROM showroom_settings WHERE key = %s" if is_pg else "SELECT value FROM showroom_settings WHERE key = ?"
+            row = conn.execute(sql, ("promo_banner",)).fetchone()
+            if row:
+                raw_val = row["value"] if isinstance(row, dict) else row[0]
+                if raw_val:
+                    data = json.loads(raw_val)
+                    if isinstance(data, dict):
+                        merged = dict(DEFAULT_PROMO_BANNER_SETTINGS)
+                        merged.update(data)
+                        return merged
+    except Exception as e:
+        logger.warning("Erro ao carregar promo_banner do banco de dados: %s", e)
+
+    # Fallback para arquivos locais se não houver registro no banco ainda
     for p in [PROMO_BANNER_FILE, API_PROMO_BANNER_FILE]:
         if p.is_file():
             try:
@@ -54,7 +105,7 @@ def load_promo_banner_settings() -> Dict[str, Any]:
 
 
 def save_promo_banner_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
-    """Salva as configurações do Banner da Black November nos arquivos de dados."""
+    """Salva as configurações do Banner da Black November no banco de dados Supabase e arquivos locais."""
     curr = load_promo_banner_settings()
 
     # Sanitização com clamp estrito de UX para a altura da faixa (20px a 50px)
@@ -105,12 +156,48 @@ def save_promo_banner_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
         "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     })
 
+    # Persistência oficial no Supabase (PostgreSQL IPv4)
+    ensure_showroom_settings_schema()
+    try:
+        with db() as conn:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            val_json = json.dumps(curr, ensure_ascii=False)
+            if is_pg:
+                conn.execute(
+                    """
+                    INSERT INTO showroom_settings (key, value, updated_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+                    """,
+                    ("promo_banner", val_json)
+                )
+            else:
+                conn.execute(
+                    "INSERT OR REPLACE INTO showroom_settings (key, value) VALUES (?, ?)",
+                    ("promo_banner", val_json)
+                )
+            conn.commit()
+    except Exception as e:
+        logger.error("Erro ao salvar promo_banner no banco de dados Supabase: %s", e)
+
+    # Backup nos arquivos locais
     for p in [PROMO_BANNER_FILE, API_PROMO_BANNER_FILE]:
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
             with open(p, "w", encoding="utf-8") as f:
                 json.dump(curr, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.error("Erro ao salvar banner promocional em %s: %s", p, e)
+            logger.debug("Não foi possível salvar backup local em %s: %s", p, e)
 
     return curr
+
+
+def toggle_promo_banner_status(enabled: Optional[bool] = None) -> bool:
+    """Alterna imediatamente o status de exibição do banner no Showroom."""
+    curr = load_promo_banner_settings()
+    if enabled is None:
+        curr["enabled"] = not curr.get("enabled", True)
+    else:
+        curr["enabled"] = bool(enabled)
+    save_promo_banner_settings(curr)
+    return curr["enabled"]

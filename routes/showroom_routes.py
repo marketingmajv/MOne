@@ -143,6 +143,21 @@ def api_save_promo_banner():
     }), 200
 
 
+@showroom_bp.route("/api/models/promo-banner/toggle", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_toggle_promo_banner():
+    """Alterna imediatamente o status de ativação do banner promocional."""
+    from services.showroom_promo_service import toggle_promo_banner_status
+    body = request.get_json(silent=True) or {}
+    new_state = toggle_promo_banner_status(body.get("enabled"))
+    return jsonify({
+        "status": "success",
+        "enabled": new_state,
+        "message": f"Banner promocional {'ativado' if new_state else 'desativado'} com sucesso."
+    }), 200
+
+
 @showroom_bp.route("/admin/models", methods=["GET"])
 @showroom_bp.route("/admin/modelos", methods=["GET"])
 @login_required

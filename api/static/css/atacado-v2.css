@@ -247,14 +247,15 @@ body.atacado-v2-body {
 }
 /* Hero Filter Buttons (Compactos em linha única) */
 .v2-hero-filters-bar {
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
   justify-content: center;
   gap: 8px;
-  flex-wrap: nowrap;
-  max-width: 960px;
-  margin: 14px auto 0;
-  padding: 4px 6px;
+  flex-wrap: nowrap !important;
+  max-width: 100%;
+  width: max-content;
+  margin: 12px auto 0;
+  padding: 4px 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -262,20 +263,27 @@ body.atacado-v2-body {
 .v2-hero-filters-bar::-webkit-scrollbar {
   display: none;
 }
+@media (max-width: 768px) {
+  .v2-hero-filters-bar {
+    justify-content: flex-start !important;
+    width: 100%;
+    padding: 4px 16px;
+  }
+}
 .v2-hero-filter-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  padding: 6px 14px;
-  font-size: 0.78rem;
+  padding: 6px 13px;
+  font-size: 0.76rem;
   font-weight: 800;
   color: var(--text-main);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  gap: 5px;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   letter-spacing: 0.02em;
 }

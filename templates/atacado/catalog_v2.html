@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261028_9">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261029_1630">
   
   <!-- Atacado v2 Data & Logic -->
   <script>
@@ -138,36 +138,41 @@
         </button>
       </div>
 
-      <div class="v2-hero-filters-bar">
+      <div class="v2-hero-filters-bar" style="display: flex !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center !important;">
         <button type="button" 
                 class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'all' && !currentBuyerPath }" 
+                @click="setFilter('all'); currentBuyerPath = null;">
+          📋 TODOS OS MODELOS (<span x-text="items.length"></span>)
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
                 :class="{ 'is-active': currentFilter === 'mais_vendidos' }" 
                 @click="setFilter('mais_vendidos')">
           ⭐ MAIS VENDIDOS
         </button>
         <button type="button" 
                 class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
                 :class="{ 'is-active': currentFilter === 'mais_baratos' }" 
                 @click="setFilter('mais_baratos')">
           💰 MAIS BARATOS
         </button>
         <button type="button" 
                 class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
                 :class="{ 'is-active': currentFilter === 'scooters' }" 
                 @click="setFilter('scooters')">
           🛵 SCOOTERS
         </button>
         <button type="button" 
                 class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
                 :class="{ 'is-active': currentFilter === 'bikes' }" 
                 @click="setFilter('bikes')">
           🚲 BIKES
-        </button>
-        <button type="button" 
-                class="v2-hero-filter-btn" 
-                :class="{ 'is-active': currentFilter === 'all' && !currentBuyerPath }" 
-                @click="setFilter('all'); currentBuyerPath = null;">
-          📋 TODOS OS MODELOS (<span x-text="items.length"></span>)
         </button>
       </div>
     </div>
