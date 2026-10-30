@@ -218,6 +218,41 @@ def public_catalog(slug: str):
     # Categorias únicas para tabs de navegação
     categories = sorted(list({i.get("category") for i in items if i.get("category")}))
 
+    # Se a matriz de origem for Atacado, renderiza o template unificado Atacado V3 oficial
+    if catalog.get("source_matrix") == "atacado":
+        import re
+        raw_wa = catalog.get("whatsapp_number") or "5527996051538"
+        clean_wa = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
+        if not clean_wa.startswith("55") and len(clean_wa) <= 11:
+            clean_wa = f"55{clean_wa}"
+
+        title = catalog.get("title") or "MAJ ATACADO MOBILIDADE"
+        subtitle = catalog.get("client_name") or "Catálogo Oficial de Atacado • Condições e Preços Exclusivos CNPJ"
+        wa_tpl = (
+            f"Olá! Tenho interesse no modelo {{model}} no Catálogo de Atacado {title} (CNPJ). "
+            f"Gostaria de solicitar uma cotação/pedido."
+        )
+        wa_floating = (
+            f"Olá! Estou navegando no Catálogo de Atacado {title} (CNPJ) e gostaria de falar com um consultor comercial."
+        )
+        current_logo = catalog.get("logo_url") or url_for("static", filename="images/custom_catalogs/partner_logo.png")
+
+        return render_template(
+            "custom_catalog/atacado_view.html",
+            catalog=catalog,
+            items=items,
+            categories=categories,
+            title=title,
+            subtitle=subtitle,
+            whatsapp_number=clean_wa,
+            whatsapp_message=wa_tpl,
+            whatsapp_floating_message=wa_floating,
+            show_prices=True,
+            current_logo=current_logo,
+            active_category=category_filter or "all",
+            search_query=search_filter,
+        )
+
     return render_template(
         "custom_catalog/view.html",
         catalog=catalog,

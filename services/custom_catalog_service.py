@@ -91,6 +91,13 @@ def ensure_custom_catalogs_schema():
         except Exception as e:
             logger.debug("Schema stmt notice: %s", e)
 
+        # Migração idempotente para enable_tiered_pricing
+        try:
+            conn.execute("ALTER TABLE maj_custom_catalogs ADD COLUMN enable_tiered_pricing BOOLEAN DEFAULT TRUE")
+            conn.commit()
+        except Exception:
+            pass
+
         _custom_catalogs_schema_ensured = True
 
 
@@ -304,7 +311,8 @@ def increment_catalog_whatsapp_clicks(catalog_id: int):
 def get_matrix_raw_items(matrix: str) -> List[Dict[str, Any]]:
     """Retorna os itens originais da matriz solicitada (Outlet ou Atacado)."""
     if matrix.lower() == "atacado":
-        return get_all_atacado_items(status="active")
+        from services.atacado_enrichment_service import enrich_atacado_items
+        return enrich_atacado_items(get_all_atacado_items(status="active", only_available=True))
     return get_all_outlet_items(status="active")
 
 
@@ -358,14 +366,26 @@ def resolve_custom_catalog_products(catalog: Dict[str, Any]) -> List[Dict[str, A
 
         has_valid_price = show_price and (final_price > 0.0)
 
-        # Parcelamento estimado (apenas para Outlet/Varejo B2C com preço válido; Atacado é estritamente à vista)
+        # Parcelamento estimado e 3 Patamares de Preço (Atacado)
         is_atacado = str(matrix).strip().lower() == "atacado"
-        if not is_atacado and has_valid_price:
-            inst_12 = round((final_price * 1.15) / 12.0, 2)
-            inst_18 = round((final_price * 1.22) / 18.0, 2)
-        else:
+        if is_atacado:
+            # 3 Tiers escalonados do Atacado baseados no preço do vendedor
+            p_base = final_price if has_valid_price else 0.0
+            price_tier_1 = p_base
+            price_tier_2 = max(0.0, round(p_base - 100.0, 2)) if p_base > 0 else 0.0
+            price_tier_3 = max(0.0, round(p_base - 200.0, 2)) if p_base > 0 else 0.0
             inst_12 = 0.0
             inst_18 = 0.0
+        else:
+            price_tier_1 = 0.0
+            price_tier_2 = 0.0
+            price_tier_3 = 0.0
+            if has_valid_price:
+                inst_12 = round((final_price * 1.15) / 12.0, 2)
+                inst_18 = round((final_price * 1.22) / 18.0, 2)
+            else:
+                inst_12 = 0.0
+                inst_18 = 0.0
 
         # Estoque
         stock_qty = item.get("stock_qty", 0)
@@ -395,6 +415,10 @@ def resolve_custom_catalog_products(catalog: Dict[str, Any]) -> List[Dict[str, A
         p_item = dict(item)
         p_item.update({
             "computed_price": final_price,
+            "price_outlet": final_price,
+            "price_tier_1": price_tier_1,
+            "price_tier_2": price_tier_2,
+            "price_tier_3": price_tier_3,
             "show_price": has_valid_price,
             "computed_installment_12": inst_12,
             "computed_installment_18": inst_18,
