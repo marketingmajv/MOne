@@ -45,9 +45,10 @@
             <!-- Coluna Detalhes e Ações -->
             <div class="modal-info-col">
               <div class="modal-header-tag">
-                <span class="modal-category" x-text="selectedItem.category || 'Veículo Elétrico'"></span>
+                <span class="modal-category" {% if catalog.source_matrix == 'atacado' %}style="color: #00cc88;"{% endif %} x-text="selectedItem.category || ({% if catalog.source_matrix == 'atacado' %}'Atacado CNPJ'{% else %}'Veículo Elétrico'{% endif %})"></span>
                 {% if catalog.source_matrix == 'atacado' %}
                 <span class="badge-cnpj">VENDA EXCLUSIVA CNPJ</span>
+                <span class="badge-first-purchase">🏷️ PRIMEIRA COMPRA ACIMA DE TRÊS UNIDADES</span>
                 {% else %}
                 <span class="partner-brand-badge">⚡ Pronta Entrega</span>
                 {% endif %}
@@ -91,7 +92,7 @@
                 <h3>Ficha Técnica & Especificações</h3>
                 <div class="specs-table">
                   <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                    <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco')">
+                    <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco') && !key.toLowerCase().includes('cor')">
                       <span class="spec-k" x-text="key"></span>
                       <span class="spec-v" x-text="val"></span>
                     </div>

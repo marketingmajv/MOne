@@ -641,7 +641,7 @@ def sync_atacado_catalog() -> Dict[str, Any]:
 
             specs_obj["Disponibilidade"] = "Pronta Entrega" if total_qty > 0 else "Sob Encomenda"
             specs_obj["Localização do Estoque"] = sources_str
-            specs_obj["Cores Disponíveis"] = colors_str
+            specs_obj.pop("Cores Disponíveis", None)
 
             # Verificar se produto já existe no banco atacado
             existing = run_exec(conn, "SELECT id, image_main, images_gallery, show_on_demand FROM atacado_items WHERE name = ?", (model,)).fetchone()

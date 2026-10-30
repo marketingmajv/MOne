@@ -206,7 +206,7 @@
           <div class="card-badges">
             <span class="badge-cnpj">CNPJ ATACADO</span>
             <template x-if="item.is_best_seller">
-              <span class="badge-stock" style="background: rgba(229,169,59,0.2); color: #f59e0b; border: 1px solid rgba(229,169,59,0.4);">⭐ Mais Vendido</span>
+              <span class="badge-stock badge-best-seller">⭐ Mais Vendido</span>
             </template>
             <template x-if="item.stock_qty > 0">
               <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
@@ -231,7 +231,7 @@
 
           <!-- Conteúdo do Card -->
           <div class="card-body">
-            <div class="card-category" x-text="item.category || 'Atacado CNPJ'"></div>
+            <div class="card-first-purchase-tag">🏷️ PRIMEIRA COMPRA ACIMA DE TRÊS UNIDADES</div>
             <h2 class="card-title" x-text="item.name"></h2>
 
             {% if show_prices %}

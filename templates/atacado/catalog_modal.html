@@ -35,6 +35,7 @@
             <div class="modal-header-tag">
               <span class="modal-category" style="color: #00cc88;" x-text="selectedItem.category || 'Atacado CNPJ'"></span>
               <span class="badge-cnpj">VENDA EXCLUSIVA CNPJ</span>
+              <span class="badge-first-purchase">🏷️ PRIMEIRA COMPRA ACIMA DE TRÊS UNIDADES</span>
             </div>
             <h2 class="modal-title" x-text="selectedItem.name"></h2>
             
@@ -70,7 +71,7 @@
               <h3>Ficha Técnica & Especificações</h3>
               <div class="specs-table">
                 <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                  <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco')">
+                  <div class="spec-row" x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco') && !key.toLowerCase().includes('cor')">
                     <span class="spec-k" x-text="key"></span>
                     <span class="spec-v" x-text="val"></span>
                   </div>

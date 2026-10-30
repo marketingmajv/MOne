@@ -218,12 +218,22 @@
           
           <!-- Badges -->
           <div class="card-badges">
-            <template x-if="item.stock_qty > 0">
-              <span class="badge-stock" x-text="item.stock_qty + ' disponível(is)'"></span>
-            </template>
-            <template x-if="item.category">
-              <span class="badge-custom" x-text="item.category"></span>
-            </template>
+            {% if catalog.source_matrix == 'atacado' %}
+              <span class="badge-cnpj">CNPJ ATACADO</span>
+              <template x-if="item.stock_qty > 0">
+                <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
+              </template>
+              <template x-if="item.stock_qty <= 0">
+                <span class="badge-stock badge-sob-encomenda">📦 Sob Encomenda</span>
+              </template>
+            {% else %}
+              <template x-if="item.stock_qty > 0">
+                <span class="badge-stock" x-text="item.stock_qty + ' disponível(is)'"></span>
+              </template>
+              <template x-if="item.category">
+                <span class="badge-custom" x-text="item.category"></span>
+              </template>
+            {% endif %}
           </div>
 
           <!-- Imagem -->
@@ -240,7 +250,11 @@
 
           <!-- Conteúdo do Card -->
           <div class="card-body">
-            <div class="card-category" x-text="item.category || 'Veículo Elétrico'"></div>
+            {% if catalog.source_matrix == 'atacado' %}
+              <div class="card-first-purchase-tag">🏷️ PRIMEIRA COMPRA ACIMA DE TRÊS UNIDADES</div>
+            {% else %}
+              <div class="card-category" x-text="item.category || 'Veículo Elétrico'"></div>
+            {% endif %}
             <h2 class="card-title" x-text="item.name" style="font-size: 1.15rem; font-weight: 700;"></h2>
 
             <!-- Ficha Técnica Rápida -->
