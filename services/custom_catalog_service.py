@@ -181,6 +181,8 @@ def save_or_update_custom_catalog(data: Dict[str, Any], catalog_id: Optional[int
     sync_stock = bool(data.get("sync_stock", True))
     is_white_label = bool(data.get("is_white_label", True))
     logo_url = (data.get("logo_url") or "").strip()
+    if not logo_url:
+        logo_url = "/static/images/custom_catalogs/partner_logo.png"
     whatsapp_number = re.sub(r"\D", "", data.get("whatsapp_number") or "")
     if whatsapp_number and not whatsapp_number.startswith("55") and len(whatsapp_number) <= 11:
         whatsapp_number = f"55{whatsapp_number}"

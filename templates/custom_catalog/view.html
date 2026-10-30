@@ -135,7 +135,7 @@
     </div>
   </div>
 
-  {% set current_logo = catalog.logo_url or (url_for('static', filename='images/custom_catalogs/partner_logo.png') if catalog.slug == 'vinicius' else None) %}
+  {% set current_logo = catalog.logo_url or url_for('static', filename='images/custom_catalogs/partner_logo.png') %}
 
   <!-- Header do Catálogo Personalizado -->
   <header class="outlet-header">
