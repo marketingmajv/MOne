@@ -20,6 +20,7 @@ from services.atacado_service import (
     set_atacado_setting,
     sync_atacado_catalog
 )
+from services.atacado_enrichment_service import enrich_atacado_items
 
 atacado_bp = Blueprint("atacado", __name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,17 +40,10 @@ except Exception as e:
 # ROTAS PÚBLICAS DO CATÁLOGO MAJ ATACADO (CNPJ)
 # -------------------------------------------------------------------------
 
-def _render_atacado_catalog(show_prices=True):
-    """Função auxiliar para renderizar o catálogo de atacado (com ou sem preços)."""
+def _render_atacado_v3_catalog(show_prices: bool = True):
+    """Renderiza a Versão Oficial V3 do Catálogo Atacado B2B (com ou sem preços)."""
     ensure_atacado_schema()
-    category = request.args.get("categoria", "").strip()
-    search = request.args.get("busca", "").strip()
-
-    items = get_all_atacado_items(status="active", search=search if search else None, only_available=True)
-    
-    if category and category != "all":
-        items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
-
+    items = enrich_atacado_items(get_all_atacado_items(status="active", only_available=True))
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     
@@ -58,24 +52,19 @@ def _render_atacado_catalog(show_prices=True):
             "whatsapp_message",
             "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido."
         )
+        subtitle = get_atacado_setting(
+            "atacado_subtitle",
+            "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"
+        )
     else:
         whatsapp_message = "Olá! Tenho interesse no modelo {model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação."
+        subtitle = "Catálogo Oficial de Atacado • Mostruário CNPJ para Revendedores e Frotas"
 
     whatsapp_floating_message = get_atacado_setting(
         "whatsapp_floating_message",
         "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."
     )
     title = get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE")
-    total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
-    
-    if show_prices:
-        subtitle = get_atacado_setting(
-            "atacado_subtitle",
-            "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"
-        )
-    else:
-        subtitle = "Catálogo Oficial de Atacado • Mostruário CNPJ para Revendedores e Frotas"
-
     urgency_text = get_atacado_setting(
         "atacado_urgency_text",
         "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • MODELOS A PRONTA ENTREGA"
@@ -84,7 +73,60 @@ def _render_atacado_catalog(show_prices=True):
         "atacado_min_qty_text",
         "Valor a partir de 3 unidades"
     )
+    all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
 
+    return render_template(
+        "atacado/catalog_v3.html",
+        items=items,
+        whatsapp_number=whatsapp_number,
+        whatsapp_message=whatsapp_message,
+        whatsapp_floating_message=whatsapp_floating_message,
+        title=title,
+        subtitle=subtitle,
+        urgency_text=urgency_text,
+        min_qty_text=min_qty_text,
+        all_categories=all_categories,
+        show_prices=show_prices,
+    )
+
+
+def _render_atacado_v1_catalog(show_prices: bool = True):
+    """Renderiza a Versão Guardada V1 (Legada) do Catálogo Atacado B2B (com ou sem preços)."""
+    ensure_atacado_schema()
+    category = request.args.get("categoria", "").strip()
+    search = request.args.get("busca", "").strip()
+
+    items = get_all_atacado_items(status="active", search=search if search else None, only_available=True)
+    if category and category != "all":
+        items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
+
+    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
+    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
+
+    if show_prices:
+        whatsapp_message = get_atacado_setting(
+            "whatsapp_message",
+            "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido."
+        )
+        subtitle = get_atacado_setting(
+            "atacado_subtitle",
+            "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"
+        )
+    else:
+        whatsapp_message = "Olá! Tenho interesse no modelo {model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação."
+        subtitle = "Catálogo Oficial de Atacado • Mostruário CNPJ para Revendedores e Frotas"
+
+    whatsapp_floating_message = get_atacado_setting(
+        "whatsapp_floating_message",
+        "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado."
+    )
+    title = get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE (V1 Guardada)")
+    total_vehicles = sum(int(i.get("stock_qty") or 0) for i in items)
+    urgency_text = get_atacado_setting(
+        "atacado_urgency_text",
+        "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • MODELOS A PRONTA ENTREGA"
+    )
+    min_qty_text = get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades")
     all_categories = sorted(list({i.get("category") for i in items if i.get("category")}))
 
     return render_template(
@@ -99,138 +141,54 @@ def _render_atacado_catalog(show_prices=True):
         min_qty_text=min_qty_text,
         all_categories=all_categories,
         total_vehicles=total_vehicles,
-        show_prices=show_prices
+        show_prices=show_prices,
     )
 
 
+# --- ROTAS OFICIAIS (VERSÃO V3) ---
+
 @atacado_bp.route("/atacado")
+@atacado_bp.route("/catalogo-cnpj")
+@atacado_bp.route("/atacado/v3")
+@atacado_bp.route("/catalogo-cnpj/v3")
 def catalog():
-    """Landing Page Pública do Catálogo MAJ Atacado CNPJ (Com Preço ou Sem Preço via query param)."""
+    """Catálogo Oficial MAJ Atacado CNPJ (V3 Oficial)."""
     sem_preco = request.args.get("sem_preco", "").lower() in ["1", "true", "sim", "yes"] or request.args.get("hide_prices", "").lower() in ["1", "true", "sim", "yes"]
-    return _render_atacado_catalog(show_prices=not sem_preco)
+    return _render_atacado_v3_catalog(show_prices=not sem_preco)
 
 
 @atacado_bp.route("/atacado/sem-preco")
 @atacado_bp.route("/atacado-sem-preco")
 @atacado_bp.route("/atacado/catalogo-sem-preco")
+@atacado_bp.route("/catalogo-cnpj/sem-preco")
 def catalog_no_prices():
-    """Landing Page Pública do Catálogo MAJ Atacado CNPJ sem Exibição de Preços."""
-    return _render_atacado_catalog(show_prices=False)
+    """Catálogo Oficial MAJ Atacado CNPJ sem Exibição de Preços (V3 Oficial)."""
+    return _render_atacado_v3_catalog(show_prices=False)
+
+
+# --- ROTAS GUARDADAS (VERSÃO V1 / LEGADO) ---
+
+@atacado_bp.route("/atacado/v1")
+@atacado_bp.route("/atacado/legado")
+@atacado_bp.route("/catalogo-cnpj/v1")
+@atacado_bp.route("/catalogo-cnpj/legado")
+def catalog_v1():
+    """Versão Guardada V1 (Legada) do Catálogo MAJ Atacado CNPJ."""
+    sem_preco = request.args.get("sem_preco", "").lower() in ["1", "true", "sim", "yes"] or request.args.get("hide_prices", "").lower() in ["1", "true", "sim", "yes"]
+    return _render_atacado_v1_catalog(show_prices=not sem_preco)
+
+
+@atacado_bp.route("/atacado/v1/sem-preco")
+@atacado_bp.route("/atacado/legado/sem-preco")
+@atacado_bp.route("/catalogo-cnpj/v1/sem-preco")
+@atacado_bp.route("/catalogo-cnpj/legado/sem-preco")
+def catalog_v1_no_prices():
+    """Versão Guardada V1 (Legada) do Catálogo MAJ Atacado CNPJ sem Exibição de Preços."""
+    return _render_atacado_v1_catalog(show_prices=False)
 
 
 
-def _enrich_atacado_v2_items(items):
-    """Enriquece itens com margem estimada, enquadramento em trilhas, métricas Wh e diferenciais técnicos."""
-    CAMPEOES_SLUGS = {"max-12", "flow-one", "m2", "classic-1000", "gp1000", "classic"}
-    ENTRADA_SLUGS = {"v8-mini-ultra", "ride-on", "v20-ultra", "v80-pro", "m9-pro", "m50-pro"}
-    AUTONOMIA_SLUGS = {"rz-110", "vittoria", "nova", "x15-pro", "db-zero", "sport-701-short"}
-
-    DIFFERENTIATORS_DEFAULT = {
-        "max-12": "🎁 Baú Incluso de Fábrica",
-        "v20-ultra": "🛞 Pneus Fat Tire 20x4.0",
-        "m9-pro": "☕ Estilo Café Racer Vintage",
-        "flow-one": "🎁 Baú Porta-Capacete Espaçoso",
-        "ride-on": "⚡ Chassi Ultraleve e Ágil",
-        "m2": "🎁 Baú Incluso de Fábrica",
-        "vittoria": "🎁 Baú Clássico Incluso",
-        "gp1000": "⚡ Sistema 72V 30Ah",
-        "v80-pro": "🛡️ Quadro Reforçado Ergonômico",
-        "jm-125": "🚀 Super Motor 3000W",
-        "nova": "🔑 Partida Keyless + Alarme",
-        "x15-pro": "🏎️ Duplo Amortecedor Reforçado",
-        "mantis": "🏁 Chassi Esportivo Firme",
-        "classic-1000": "🎁 Baú Retrô Incluso",
-        "v8-mini-ultra": "🚲 Quadro Baixo Step-Through",
-        "rz-110": "💡 Faróis Ultra Potentes",
-        "m50-pro": "✈️ Alumínio Aeroespacial",
-        "db-zero": "🛸 Design Futurista Silver Black",
-        "sport-701-short": "🏁 Suspensão Invertida Esportiva",
-        "q8": "🧺 Quadro Rebaixado Conforto",
-    }
-    
-    WH_LOOKUP = {
-        "flow-one": 1440, "m2": 1440, "gp1000": 2160, "vittoria": 1440, "classic-1000": 1440,
-        "rz-110": 1440, "max-12": 1200, "nova": 1200, "x15-pro": 1200, "db-zero": 1200,
-        "v20-ultra": 960, "ride-on": 960, "m9-pro": 960, "v80-pro": 960, "v8-mini-ultra": 720, "m50-pro": 960,
-        "mantis": 1200, "jm-125": 1440
-    }
-
-    for item in items:
-        slug = (item.get("slug") or "").lower().strip()
-        p_out = float(item.get("price_outlet") or 0)
-        p_orig = float(item.get("price_original") or 0)
-        
-        # Patamares de desconto escalonado por volume
-        item["price_tier_1"] = p_out
-        item["price_tier_2"] = max(0.0, round(p_out - 100.0, 2))
-        item["price_tier_3"] = max(0.0, round(p_out - 200.0, 2))
-
-        if p_orig > p_out and p_out > 0:
-            margin_reais = round(p_orig - p_out, 2)
-            # Margem Bruta Real calculada sobre o preço de venda sugerido (varejo)
-            margin_pct = int(round((margin_reais / p_orig) * 100))
-        else:
-            margin_pct = 30 if p_out > 0 else 0
-            p_orig = round(p_out / 0.70, 2) if p_out > 0 else 0
-            margin_reais = round(p_orig - p_out, 2) if p_out > 0 else 0
-            
-        item["margin_reais"] = margin_reais
-        item["margin_percent"] = margin_pct
-        item["price_retail_suggested"] = p_orig
-        
-        if slug in CAMPEOES_SLUGS:
-            item["track"] = "campeoes"
-        elif slug in ENTRADA_SLUGS:
-            item["track"] = "entrada"
-        elif slug in AUTONOMIA_SLUGS:
-            item["track"] = "autonomia"
-        else:
-            if p_out <= 5500:
-                item["track"] = "entrada"
-            elif p_out <= 7700:
-                item["track"] = "campeoes"
-            else:
-                item["track"] = "autonomia"
-                
-        raw_badge = (item.get("badge") or "").strip()
-        if raw_badge and raw_badge not in ["VENDA ATACADO CNPJ", "EXCLUSIVO CNPJ", "NOVO"]:
-            item["differentiator"] = raw_badge
-        else:
-            item["differentiator"] = DIFFERENTIATORS_DEFAULT.get(slug, "⚡ Pronta Entrega Brasil")
-
-        item["has_trunk"] = any(w in item["differentiator"].lower() for w in ["baú", "bau", "porta-capacete"])
-        item["battery_wh"] = WH_LOOKUP.get(slug, 1200)
-
-        # Mapeamento do tipo de veículo (Scooter vs Bike)
-        BIKE_SLUGS = {"m9-pro", "m50-pro", "v20-ultra", "v8-mini-ultra", "v80-pro"}
-        if slug in BIKE_SLUGS or "bike" in (item.get("category") or "").lower() or "bike" in slug:
-            item["vehicle_type"] = "bike"
-            item["category_display"] = "Bike Elétrica"
-        else:
-            item["vehicle_type"] = "scooter"
-            item["category_display"] = "Scooter Elétrica"
-
-        item["is_best_seller"] = bool(item.get("is_best_seller"))
-
-        # Garantir fotos limpas (evitar base64 pesado no DOM) e galeria íntegra
-        main_img = item.get("image_main")
-        if not main_img or str(main_img).startswith("data:"):
-            main_img = f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{slug}/{slug}-01.jpg"
-            item["image_main"] = main_img
-
-        gal = item.get("images_gallery")
-        if isinstance(gal, str):
-            try: gal = json.loads(gal)
-            except Exception: gal = []
-        if not isinstance(gal, list): gal = []
-        # Limpar fotos base64 da galeria substituindo pela foto principal limpa
-        gal = [img for img in gal if img and not str(img).startswith("data:")]
-        if main_img and main_img not in gal:
-            gal = [main_img] + gal
-        item["images_gallery"] = gal
-
-    return items
-
+# --- CONSULTA INTERNA V2 ---
 
 @atacado_bp.route("/atacado/v2")
 @atacado_bp.route("/catalogo-cnpj/v2")
@@ -240,7 +198,7 @@ def catalog_v2():
     if not request.args.get("preview") and request.path != "/atacado/v2-preview":
         return redirect(url_for("atacado.catalog"), code=302)
     ensure_atacado_schema()
-    items = _enrich_atacado_v2_items([i for i in get_all_atacado_items(status="active", only_available=True) if float(i.get("price_outlet") or 0) > 0])
+    items = enrich_atacado_items([i for i in get_all_atacado_items(status="active", only_available=True) if float(i.get("price_outlet") or 0) > 0])
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     return render_template(
         "atacado/catalog_v2.html", items=items,
@@ -252,28 +210,6 @@ def catalog_v2():
         title="MAJ ATACADO B2B • CONSULTA V2",
         subtitle="Condições Exclusivas para Revendedores & Lojistas CNPJ",
         total_vehicles=sum(int(i.get("stock_qty") or 0) for i in items)
-    )
-
-
-@atacado_bp.route("/atacado/v3")
-@atacado_bp.route("/catalogo-cnpj/v3")
-def catalog_v3():
-    """Nova Versão Atacado B2B v3: Base sólida do Atacado original com evolução progressiva de elementos da V2."""
-    ensure_atacado_schema()
-    items = _enrich_atacado_v2_items(get_all_atacado_items(status="active", only_available=True))
-    raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
-    whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
-    whatsapp_message = get_atacado_setting("whatsapp_message", "Olá! Tenho interesse no modelo {model} no Atacado MAJ Mobilidade (CNPJ) por {price} (valor a partir de 3 unidades). Gostaria de solicitar uma cotação/pedido.")
-    whatsapp_floating_message = get_atacado_setting("whatsapp_floating_message", "Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.")
-    return render_template(
-        "atacado/catalog_v3.html", items=items, whatsapp_number=whatsapp_number,
-        whatsapp_message=whatsapp_message, whatsapp_floating_message=whatsapp_floating_message,
-        title=get_atacado_setting("atacado_title", "MAJ ATACADO MOBILIDADE"),
-        subtitle=get_atacado_setting("atacado_subtitle", "Catálogo Oficial de Atacado • Modelos Elétricos com Condições e Preços Exclusivos para CNPJ"),
-        urgency_text=get_atacado_setting("atacado_urgency_text", "CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES E CNPJ • MODELOS A PRONTA ENTREGA"),
-        min_qty_text=get_atacado_setting("atacado_min_qty_text", "Valor a partir de 3 unidades"),
-        all_categories=sorted(list({i.get("category") for i in items if i.get("category")})),
-        show_prices=True,
     )
 
 

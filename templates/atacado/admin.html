@@ -24,8 +24,11 @@
           ⚡ Sincronizar Estoques & Preços (COLVIX + MAJ)
         </button>
       </form>
-      <a href="{{ url_for('atacado.catalog') }}" target="_blank" class="btn" style="background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--line);">
-        🌐 Ver Catálogo Atacado
+      <a href="{{ url_for('atacado.catalog') }}" target="_blank" class="btn" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;">
+        🌐 Ver Catálogo Oficial (V3) ↗
+      </a>
+      <a href="{{ url_for('atacado.catalog_v1') }}" target="_blank" class="btn" style="background: rgba(255, 255, 255, 0.05); color: var(--muted); border: 1px solid var(--line); font-size: 0.82rem;" title="Abrir versão anterior arquivada (V1)">
+        📜 Versão Guardada V1 ↗
       </a>
       <button type="button" class="btn primary" onclick="openAtacadoModal()" style="font-weight: 700;">
         + Novo Produto Atacado
