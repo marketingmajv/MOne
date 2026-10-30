@@ -55,6 +55,32 @@
               </div>
               <h2 class="modal-title" x-text="selectedItem.name"></h2>
               
+              <!-- Box de Preço Atacado com Stickers Escalonados por Volume -->
+              {% if catalog.source_matrix == 'atacado' %}
+              <div class="modal-pricing-box">
+                <div class="sticker-min-qty" style="margin-bottom: 8px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                  <span>Tabela de Preços Escalonados por Volume (CNPJ)</span>
+                </div>
+                
+                <div class="card-tiers-stickers modal-tiers-stickers" x-show="selectedItem.computed_price > 0 || selectedItem.price_outlet > 0">
+                  <div class="tier-sticker">
+                    <span class="tier-label">Até 10 un</span>
+                    <span class="tier-val" x-text="'R$ ' + formatPrice(selectedItem.price_tier_1 || selectedItem.computed_price || selectedItem.price_outlet)"></span>
+                  </div>
+                  <div class="tier-sticker">
+                    <span class="tier-label">11 a 20 un</span>
+                    <span class="tier-val" x-text="'R$ ' + formatPrice(selectedItem.price_tier_2 || ((selectedItem.computed_price || selectedItem.price_outlet) - 100))"></span>
+                  </div>
+                  <div class="tier-sticker best-tier">
+                    <span class="tier-label">🔥 21+ un</span>
+                    <span class="tier-val" x-text="'R$ ' + formatPrice(selectedItem.price_tier_3 || ((selectedItem.computed_price || selectedItem.price_outlet) - 200))"></span>
+                  </div>
+                </div>
+
+                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'"></div>
+              </div>
+              {% else %}
               <!-- Box de Preço Personalizado -->
               <div class="modal-pricing-box">
                 <template x-if="selectedItem.show_price && selectedItem.computed_price > 0">
@@ -62,7 +88,7 @@
                     <div class="price-to">
                       <span class="currency">R$</span>
                       <span class="amount" x-text="formatPrice(selectedItem.computed_price)"></span>
-                      <span class="payment-method">{% if catalog.source_matrix == 'atacado' %}à vista CNPJ (PIX / Transferência){% else %}à vista{% endif %}</span>
+                      <span class="payment-method">à vista</span>
                     </div>
                     <template x-if="selectedItem.computed_installment_12 > 0">
                       <div class="price-installments" style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">
@@ -83,6 +109,7 @@
                      x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'">
                 </div>
               </div>
+              {% endif %}
 
               <!-- Descrição -->
               <p class="modal-desc" x-show="selectedItem.description" x-text="selectedItem.description"></p>
