@@ -12,7 +12,47 @@ from typing import Any, Dict, List, Optional
 # Usuários com acesso à visualização consolidada e gestão de prazos (Diretoria & Gerência)
 ADMIN_MANAGERS = {"jam", "geysa", "fauzer", "support", "admin"}
 
-# Mapeamento oficial dos 7 colaboradores que enviam relatórios semanais
+# Mapeamento oficial dos colaboradores que enviam relatórios semanais
+# Questionário padronizado para Vendedores Comerciais de Atacado B2B (Gabriel e Gustavo)
+ATACADO_QUESTIONS = [
+    {
+        "id": "prospeccao",
+        "label": "1. Prospecção (Novos Contatos, Segmentos e Oportunidades)",
+        "placeholder": "Novos contatos iniciados, principais segmentos abordados e oportunidades relevantes da prospecção...",
+        "help": "Mapeamento ativo de novos revendedores e lojistas B2B."
+    },
+    {
+        "id": "follow_up",
+        "label": "2. Follow-Up (Clientes Atuais e Negociações em Andamento)",
+        "placeholder": "Clientes atuais/antigos trabalhados e negociações quentes com previsão de fechar em breve...",
+        "help": "Manutenção do relacionamento ativo com a carteira de atacado."
+    },
+    {
+        "id": "fechamentos",
+        "label": "3. Fechamentos e Vendas no Período",
+        "placeholder": "Vendas fechadas na semana, principais modelos (Max 12, GP1000, Vittoria, V80) e observações relevantes...",
+        "help": "Desempenho comercial e pedidos faturados com lojistas."
+    },
+    {
+        "id": "objecoes_atacado",
+        "label": "4. Objeções Mais Frequentes nas Revendas",
+        "placeholder": "Travas dos revendedores: Preço, Prazo, Frete, Produto, Concorrência e Outros...",
+        "help": "Base para criação de pacotes comerciais atrativos e desova de estoque."
+    },
+    {
+        "id": "sinais_mercado",
+        "label": "5. Sinais do Mercado & Concorrência",
+        "placeholder": "Produtos mais pedidos, produtos com dificuldade de saída e movimentações dos concorrentes...",
+        "help": "Termômetro do mercado atacadista de mobilidade elétrica."
+    },
+    {
+        "id": "pendencias_direcao",
+        "label": "6. Pendências, Decisões da Direção & Regras",
+        "placeholder": "Casos que exigem decisão de Jam e Geysa na reunião. Lembrete: Regra Técnica (não fornecer diagnóstico) e Regra de Remuneração (comissão 1% via NF)...",
+        "help": "Pauta executiva de alinhamento com a Diretoria."
+    }
+]
+
 REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
     "marisa": {
         "key": "marisa",
@@ -137,12 +177,12 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
     "ricardo": {
         "key": "ricardo",
         "username": "ricardo",
-        "name": "Ricardo Santos",
+        "name": "Ricardo Bourguignon",
         "role_title": "Gerente de Oficina e Pós-Vendas",
         "area": "Oficina Técnica",
         "badge": "OFICINA",
         "badge_color": "cyan",
-        "phone": "5527999990003",
+        "phone": "5527998846260",
         "deadline_day": "Sexta-feira",
         "deadline_time": "18:00",
         "instructions": (
@@ -328,50 +368,29 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
         "area": "Comercial (Atacado & Expansão)",
         "badge": "ATACADO B2B",
         "badge_color": "indigo",
-        "phone": "5527999990006",
+        "phone": "5527998867335",
         "deadline_day": "Sexta-feira",
         "deadline_time": "18:00",
         "instructions": (
             "Resumo comercial semanal de resultados, sinais do mercado atacadista e relacionamento com revendedores."
         ),
-        "questions": [
-            {
-                "id": "prospeccao",
-                "label": "1. Prospecção (Novos Contatos, Segmentos e Oportunidades)",
-                "placeholder": "Novos contatos iniciados, principais segmentos abordados e oportunidades relevantes da prospecção...",
-                "help": "Mapeamento ativo de novos revendedores e lojistas B2B."
-            },
-            {
-                "id": "follow_up",
-                "label": "2. Follow-Up (Clientes Atuais e Negociações em Andamento)",
-                "placeholder": "Clientes atuais/antigos trabalhados e negociações quentes com previsão de fechar em breve...",
-                "help": "Manutenção do relacionamento ativo com a carteira de atacado."
-            },
-            {
-                "id": "fechamentos",
-                "label": "3. Fechamentos e Vendas no Período",
-                "placeholder": "Vendas fechadas na semana, principais modelos (Max 12, GP1000, Vittoria, V80) e observações relevantes...",
-                "help": "Desempenho comercial e pedidos faturados com lojistas."
-            },
-            {
-                "id": "objecoes_atacado",
-                "label": "4. Objeções Mais Frequentes nas Revendas",
-                "placeholder": "Travas dos revendedores: Preço, Prazo, Frete, Produto, Concorrência e Outros...",
-                "help": "Base para criação de pacotes comerciais atrativos e desova de estoque."
-            },
-            {
-                "id": "sinais_mercado",
-                "label": "5. Sinais do Mercado & Concorrência",
-                "placeholder": "Produtos mais pedidos, produtos com dificuldade de saída e movimentações dos concorrentes...",
-                "help": "Termômetro do mercado atacadista de mobilidade elétrica."
-            },
-            {
-                "id": "pendencias_direcao",
-                "label": "6. Pendências, Decisões da Direção & Regras",
-                "placeholder": "Casos que exigem decisão de Jam e Geysa na reunião. Lembrete: Regra Técnica (não fornecer diagnóstico) e Regra de Remuneração (comissão 1% via NF)...",
-                "help": "Pauta executiva de alinhamento com a Diretoria."
-            }
-        ]
+        "questions": ATACADO_QUESTIONS
+    },
+    "gustavo": {
+        "key": "gustavo",
+        "username": "gustavo",
+        "name": "Gustavo",
+        "role_title": "Vendedor Comercial / Atacado B2B",
+        "area": "Comercial (Atacado & Expansão)",
+        "badge": "ATACADO B2B",
+        "badge_color": "indigo",
+        "phone": "5527993161803",
+        "deadline_day": "Sexta-feira",
+        "deadline_time": "18:00",
+        "instructions": (
+            "Resumo comercial semanal de resultados, sinais do mercado atacadista e relacionamento com revendedores."
+        ),
+        "questions": ATACADO_QUESTIONS
     },
     "fauzer": {
         "key": "fauzer",

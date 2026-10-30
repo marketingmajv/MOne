@@ -189,6 +189,32 @@ DEFAULT_DESIRED_ANSWERS: Dict[str, Dict[str, str]] = {
             "(não emitir diagnósticos técnicos) e alinhamento de emissão de NF de comissão de 1%."
         ),
     },
+    "gustavo": {
+        "prospeccao": (
+            "Mapeamento quantitativo e qualitativo de novos contatos iniciados na semana com lojistas e revendas (Pessoa Jurídica), "
+            "identificando o segmento e as reais oportunidades de negócios."
+        ),
+        "follow_up": (
+            "Acompanhamento ativo e constante da carteira de lojistas ativos e antigos, destacando negociações quentes em "
+            "andamento com potencial e previsão clara de fechamento."
+        ),
+        "fechamentos": (
+            "Demonstrativo dos pedidos fechados na semana (modelos como Max 12, GP1000, Vittoria e bikes V80), com alinhamento "
+            "imediato junto à Marisa para controle de faturamento e notas fiscais."
+        ),
+        "objecoes_atacado": (
+            "Registro detalhado das principais barreiras dos revendedores (preço, frete, prazo ou concorrência desleal nos modelos "
+            "Max 12 e V20 Ultra) e proposição de alternativas para destravar pedidos."
+        ),
+        "sinais_mercado": (
+            "Leitura do comportamento do mercado atacadista: modelos mais procurados, produtos com menor giro e monitoramento "
+            "de movimentações de preços e promoções da concorrência."
+        ),
+        "pendencias_direcao": (
+            "Pauta executiva de pendências para deliberação de Jam e Geysa, com cumprimento rigoroso da regra técnica "
+            "(não emitir diagnósticos técnicos) e alinhamento de emissão de NF de comissão de 1%."
+        ),
+    },
     "fauzer": {
         "marketing_investimento": (
             "Demonstrativo do investimento semanal em tráfego pago (Meta Ads / Google Ads), CPL apurado por canal, volume de leads "

@@ -454,7 +454,7 @@ def get_monday_consolidation_briefing(cycle_id: int) -> Dict[str, Any]:
             ("Serviços Liberados", "servicos_concluidos"), ("OS Atrasadas / Pendentes", "os_pendentes"),
             ("Retrabalhos", "retrabalhos"), ("Defeitos Recorrentes", "defeitos_recorrentes"), ("Peças & Ferramentas", "necessidade_pecas")
         ]),
-        ("4. Voz do Cliente, Vendas & Objeções", "Luiza & Gabriel", "COMERCIAL", "emerald", "luiza", [
+        ("4. Voz do Cliente, Vendas & Objeções", "Luiza, Gabriel & Gustavo", "COMERCIAL", "emerald", "luiza", [
             ("Modelos Mais Procurados", "modelos_procurados"), ("Objeções Comerciais", "objecoes_perdas"),
             ("Preços Considerados Altos", "precos_altos"), ("Sugestão da Semana", "sugestao_comercial")
         ]),

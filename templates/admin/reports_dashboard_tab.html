@@ -109,7 +109,7 @@
                 class="btn" 
                 style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
                 @click="analyzeAllAI()"
-                title="Confronta respostas e gera aferição de IA para todos os 7 colaboradores">
+                title="Confronta respostas e gera aferição de IA para todos os {{ summary.employees|length }} colaboradores">
           <span>⚡ Aferir Todos com IA</span>
         </button>
 
@@ -128,7 +128,7 @@
     <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div>
         <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">
-          Quadro de Entregas Semanais (7 Colaboradores Oficiais)
+          Quadro de Entregas Semanais ({{ summary.employees|length }} Colaboradores Oficiais)
         </h3>
         <span class="muted" style="font-size: 0.78rem;">
           Atualizado em tempo real • Sincronização com Google Docs via IA
