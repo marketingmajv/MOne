@@ -78,6 +78,15 @@ O agente DEVE executar imediatamente o **Protocolo RELATÓRIO FAUZER** em 3 etap
 
 ---
 
+## Protocolo Especial: [Relatório do Ciclo 2]
+Sempre que o usuário digitar `[Relatório do Ciclo Dois]`, `[relatório do ciclo 2]`, `relatório do ciclo dois`, `relatorio do ciclo 2` ou variações:
+O agente DEVE:
+1. Recuperar e carregar imediatamente o documento oficial [docs/RELATORIO_CICLO_2.md](file:///Users/macstudio-maj/Documents/Desenvolvimento/Aplicativos/MOne/docs/RELATORIO_CICLO_2.md).
+2. Apresentar a estrutura executiva consolidada (Demandas, Entregas por Área de Negócio, Confiabilidade Técnica e Indicadores).
+3. Disponibilizar o bloco de WhatsApp pronto para cópia e envio à gerência e diretoria.
+
+---
+
 ## Regras de Negócio e Desenvolvimento
 - **Porta Local**: Usar sempre a porta `5001` (a porta 5000 do macOS é ocupada pelo AirPlay / ControlCenter).
 - **Banco de Dados**: Usar sempre o pooler IPv4 oficial do Supabase:
