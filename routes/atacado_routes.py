@@ -21,6 +21,7 @@ from services.atacado_service import (
     sync_atacado_catalog
 )
 from services.atacado_enrichment_service import enrich_atacado_items
+_enrich_atacado_v2_items = enrich_atacado_items
 
 atacado_bp = Blueprint("atacado", __name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -243,7 +244,7 @@ def admin_atacado():
     search = request.args.get("q", "").strip()
 
     items = get_all_atacado_items(status=status_filter if status_filter != "all" else None, search=search)
-    items = _enrich_atacado_v2_items(items)
+    items = enrich_atacado_items(items)
     
     total_qty = sum(int(i.get("stock_qty") or 0) for i in items)
     total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in items)

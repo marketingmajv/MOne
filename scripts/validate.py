@@ -200,6 +200,19 @@ def check_flask_commercial_routes() -> bool:
                 return False
             print("  ✓ Canal Comercial /show-room (Showroom): HTTP 200 OK")
 
+            # 5. Painel administrativo de Atacado B2B
+            from database import db
+            with db() as conn:
+                adm_row = conn.execute("SELECT id FROM users WHERE role = 'admin' AND active = TRUE LIMIT 1").fetchone()
+                adm_uid = adm_row["id"] if adm_row else 1
+            with client.session_transaction() as sess:
+                sess["user_id"] = adm_uid
+            res_admin_atacado = client.get("/admin/atacado")
+            if res_admin_atacado.status_code != 200:
+                print(f"  ✗ Falha no painel /admin/atacado: HTTP {res_admin_atacado.status_code}")
+                return False
+            print("  ✓ Painel Administrativo /admin/atacado: HTTP 200 OK")
+
         return True
     except Exception as e:
         print(f"  ✗ ERRO na inicialização da aplicação ou rotas: {e}")
