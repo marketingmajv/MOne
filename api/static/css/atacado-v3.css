@@ -213,24 +213,27 @@
   margin-top: 2px;
 }
 
-/* Sub-barra Mobile de Filtros do Cabeçalho */
-.header-filters-subbar {
-  display: none;
-  width: 100%;
-  background: rgba(13, 20, 28, 0.96);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 8px 14px;
-}
+/* Sub-barra Mobile de Filtros do Cabeçalho e Destaques Mobile */
+.header-filters-subbar { display: none; width: 100%; background: rgba(13, 20, 28, 0.96); border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 6px 10px; box-sizing: border-box; }
+.hero-stats-desktop { display: grid; }
+.hero-stats-mobile-ribbon { display: none; }
 
 @media (max-width: 900px) {
-  .header-filters-desktop {
-    display: none !important;
-  }
-  .header-filters-subbar {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
+  .header-filters-desktop { display: none !important; }
+  .header-filters-subbar { display: flex !important; justify-content: center !important; }
+  .header-filters-mobile-grid { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; width: 100% !important; max-width: 500px !important; gap: 6px !important; box-sizing: border-box !important; }
+  .header-filters-mobile-grid .btn-v3-filter { width: 100% !important; min-width: 0 !important; padding: 6px 2px !important; font-size: 0.72rem !important; justify-content: center !important; text-align: center !important; gap: 3px !important; box-sizing: border-box !important; }
+}
+
+@media (max-width: 768px) {
+  .hero-stats-desktop { display: none !important; }
+  .hero-stats-mobile-ribbon { display: inline-flex !important; align-items: center !important; justify-content: center !important; flex-wrap: wrap !important; gap: 6px 8px !important; background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(0, 204, 136, 0.25) !important; border-radius: 9999px !important; padding: 5px 12px !important; margin: 8px auto 0 !important; font-size: 0.74rem !important; color: #e2e8f0 !important; }
+  .hero-stats-mobile-ribbon .stats-ribbon-pill { display: inline-flex !important; align-items: center !important; gap: 4px !important; font-weight: 600 !important; white-space: nowrap !important; }
+  .hero-stats-mobile-ribbon .stats-ribbon-pill strong { color: #00cc88 !important; font-weight: 800 !important; }
+  .hero-stats-mobile-ribbon .pill-separator { color: rgba(255, 255, 255, 0.25) !important; font-size: 0.7rem !important; }
+  .outlet-hero { padding: 20px 0 16px !important; }
+  .hero-title { font-size: clamp(1.4rem, 6vw, 1.85rem) !important; margin: 6px 0 4px !important; }
+  .hero-subtitle { font-size: 0.82rem !important; margin: 0 auto 8px !important; max-width: 95% !important; line-height: 1.35 !important; }
 }
 
 /* Otimização Específica Mobile Header Atacado */

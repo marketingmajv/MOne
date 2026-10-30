@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}?v=20261029_v3">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v3.css') }}?v=20261029_wa_widget">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v3.css') }}?v=20261030_mobile_hero">
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
 </head>
@@ -79,9 +79,9 @@
       </div>
     </div>
 
-    <!-- Sub-barra de Filtros para Mobile/Tablet -->
+    <!-- Sub-barra de Filtros para Mobile/Tablet (Compactada em 1 Linha Fixa) -->
     <div class="header-filters-subbar">
-      <nav class="header-filters-v3" aria-label="Filtros Rápidos Mobile">
+      <nav class="header-filters-v3 header-filters-mobile-grid" aria-label="Filtros Rápidos Mobile">
         <button type="button" 
                 class="btn-v3-filter" 
                 :class="{ 'is-active': currentFilter === 'all' }" 
@@ -92,13 +92,13 @@
                 class="btn-v3-filter" 
                 :class="{ 'is-active': currentFilter === 'mais_vendidos' }" 
                 @click="setFilter('mais_vendidos')">
-          ⭐ Mais Vendidos
+          ⭐ Populares
         </button>
         <button type="button" 
                 class="btn-v3-filter" 
                 :class="{ 'is-active': currentFilter === 'mais_baratos' }" 
                 @click="setFilter('mais_baratos')">
-          💰 Mais Baratos
+          💰 Menor Preço
         </button>
       </nav>
     </div>
@@ -114,7 +114,8 @@
       <h1 class="hero-title">{{ title }}</h1>
       <p class="hero-subtitle">{{ subtitle }}</p>
 
-      <div class="hero-stats-bar">
+      <!-- Desktop Hero Stats Bar (Grid 4 colunas) -->
+      <div class="hero-stats-bar hero-stats-desktop">
         <div class="stat-card">
           <strong class="stat-number is-numeric" style="color: #00cc88;">{{ items|length }}+</strong>
           <span class="stat-label">Modelos Disponíveis</span>
@@ -130,6 +131,24 @@
         <div class="stat-card">
           <strong class="stat-number">PEÇAS DE REPOSIÇÃO</strong>
           <span class="stat-label">À pronta entrega no Brasil</span>
+        </div>
+      </div>
+
+      <!-- Mobile Micro-Faixa de Destaques (1 linha compacta e discreta de 26px) -->
+      <div class="hero-stats-mobile-ribbon" aria-label="Destaques Atacado MAJ">
+        <div class="stats-ribbon-pill">
+          <span class="pill-dot">⚡</span>
+          <span><strong>{{ items|length }}+</strong> Modelos</span>
+        </div>
+        <span class="pill-separator">•</span>
+        <div class="stats-ribbon-pill">
+          <span class="pill-dot">🏢</span>
+          <span>Preço Atacado CNPJ</span>
+        </div>
+        <span class="pill-separator">•</span>
+        <div class="stats-ribbon-pill">
+          <span class="pill-dot">📦</span>
+          <span>Pronta Entrega Brasil</span>
         </div>
       </div>
     </div>
