@@ -91,6 +91,9 @@ function employeePortal() {
         if (data.status === 'success') {
           const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           this.autoSaveMessage = `✓ Rascunho salvo às ${nowStr}`;
+          if (data.report && data.report.status) {
+            this.reportStatus = data.report.status;
+          }
           if (!isSilent) alert('💾 Rascunho salvo com sucesso na nuvem!');
         } else {
           this.autoSaveMessage = 'Falha ao salvar';

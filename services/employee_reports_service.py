@@ -246,6 +246,7 @@ def save_or_submit_report(
         deadline = cycle["deadline"] if cycle else now
 
         # Define status
+        is_fauzer = employee_key.lower().strip() == "fauzer"
         if is_draft:
             status = "draft"
             submitted_at = None
@@ -258,7 +259,6 @@ def save_or_submit_report(
                 except Exception:
                     deadline_dt = now
 
-            is_fauzer = employee_key.lower().strip() == "fauzer"
             if is_fauzer or now <= deadline_dt:
                 status = "submitted_on_time"
             else:
