@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solicitar Catálogo Exclusivo | MAJ Mobilidade</title>
+  <meta name="description" content="Solicite seu catálogo de vendas personalizado MAJ Mobilidade com link próprio e atendimento direto no seu WhatsApp.">
+
+  <!-- OpenGraph -->
+  <meta property="og:title" content="Solicitar Catálogo Exclusivo | MAJ Mobilidade">
+  <meta property="og:description" content="Tenha seu próprio catálogo de scooters e bikes elétricas MAJ com seu WhatsApp e sua marca.">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #07090e; --bg-card: #0f141d; --panel: #131b27; --panel2: #182232;
+      --line: rgba(255, 255, 255, 0.09); --line-active: rgba(0, 204, 136, 0.4);
+      --emerald: #00cc88; --emerald-glow: rgba(0, 204, 136, 0.25);
+      --text: #f8fafc; --text-muted: #94a3b8; --text-dim: #64748b; --gold: #e5a93b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-main); color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px 16px; line-height: 1.5;
+    }
+    .form-container {
+      width: 100%; max-width: 620px; background: var(--bg-card); border: 1px solid var(--line);
+      border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65); overflow: hidden; position: relative;
+    }
+    .form-container::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #059669, #00cc88, #e5a93b);
+    }
+    .form-header {
+      padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid var(--line);
+      background: radial-gradient(circle at 50% 0%, rgba(0, 204, 136, 0.08) 0%, transparent 75%);
+    }
+    .logo-img { height: 42px; margin-bottom: 16px; }
+    .badge-tag {
+      display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 204, 136, 0.12);
+      color: var(--emerald); border: 1px solid rgba(0, 204, 136, 0.35); font-size: 0.74rem; font-weight: 800;
+      padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .form-title { font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .form-subtitle { font-size: 0.88rem; color: var(--text-muted); max-width: 480px; margin: 0 auto; }
+    .form-body { padding: 28px 32px 36px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 0.84rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .form-input {
+      width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 14px; color: var(--text); font-size: 0.92rem; font-family: inherit; outline: none; transition: all 0.2s ease;
+    }
+    .form-input:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(0, 204, 136, 0.15); }
+    .form-input::placeholder { color: var(--text-dim); }
+    .slug-preview-box {
+      display: flex; align-items: center; background: var(--panel2); border: 1px solid var(--line);
+      border-radius: 10px; overflow: hidden; transition: border-color 0.2s;
+    }
+    .slug-preview-box:focus-within { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(0, 204, 136, 0.15); }
+    .slug-prefix {
+      padding: 12px 14px; background: rgba(255, 255, 255, 0.04); color: var(--text-muted);
+      font-size: 0.84rem; font-family: monospace; border-right: 1px solid var(--line); white-space: nowrap;
+    }
+    .slug-input {
+      flex: 1; border: none; background: transparent; padding: 12px 14px; color: var(--emerald);
+      font-weight: 700; font-family: monospace; font-size: 0.92rem; outline: none;
+    }
+    .invite-box {
+      background: rgba(229, 169, 59, 0.08); border: 1.5px dashed rgba(229, 169, 59, 0.4);
+      border-radius: 12px; padding: 16px; margin-bottom: 22px;
+    }
+    .invite-status-ok { color: var(--emerald); font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+    .invite-status-err { color: #ef4444; font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+    .btn-submit {
+      width: 100%; background: linear-gradient(135deg, #059669, #00cc88); color: #000; font-weight: 800;
+      font-size: 1rem; padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;
+      box-shadow: 0 4px 18px rgba(0, 204, 136, 0.3); margin-top: 8px;
+    }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 204, 136, 0.45); }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .footer-note { text-align: center; font-size: 0.78rem; color: var(--text-dim); margin-top: 20px; }
+    .success-container { padding: 48px 32px; text-align: center; }
+    .success-icon {
+      width: 72px; height: 72px; border-radius: 50%; background: rgba(0, 204, 136, 0.15);
+      border: 2px solid var(--emerald); color: var(--emerald); display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 20px; font-size: 2rem;
+    }
+    .bento-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; text-align: left;
+    }
+    .bento-card {
+      background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    }
+    .bento-card.full { grid-column: 1 / -1; }
+    .bento-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);
+      letter-spacing: 0.04em; margin-bottom: 4px; display: block;
+    }
+    .bento-val {
+      font-size: 0.92rem; font-weight: 800; color: var(--text); word-break: break-word;
+    }
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 99999; background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-box {
+      width: min(560px, 94vw); max-height: 90vh; overflow-y: auto; background: var(--bg-card);
+      border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+      padding: 24px; box-sizing: border-box;
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); color: var(--text-muted);
+      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0; transition: all 0.15s ease;
+    }
+    .modal-close-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    @media (max-width: 600px) {
+      .form-header { padding: 24px 20px 18px; }
+      .form-body { padding: 20px 20px 28px; }
+      .form-title { font-size: 1.25rem; }
+      .slug-prefix { font-size: 0.76rem; padding: 10px; }
+      .bento-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body x-data="requestFormApp()">
+
+  <div class="form-container">
+    
+    <!-- Estado 1: Convite Obrigatório Não Encontrado ou Expirado -->
+    <template x-if="!hasValidToken">
+      <div style="padding: 48px 32px; text-align: center;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(229, 169, 59, 0.15); border: 2px solid var(--gold); color: var(--gold); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2rem;">
+          🔒
+        </div>
+        <div>
+          <span class="badge-tag" style="background: rgba(229, 169, 59, 0.15); color: var(--gold); border-color: rgba(229, 169, 59, 0.4);">CONVITE EXCLUSIVO NECESSÁRIO</span>
+        </div>
+        <h2 style="font-size: 1.5rem; font-weight: 900; color: #fff; margin: 12px 0 8px;">Acesso Restrito para Parceiros</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem; max-width: 440px; margin: 0 auto 24px; line-height: 1.6;" x-text="tokenMessage || 'Esta página é exclusiva para parceiros e exige um link de convite oficial enviado por um consultor MAJ.'"></p>
+        <a href="https://wa.me/5527996051538?text=Olá!%20Gostaria%20de%20solicitar%20um%20link%20de%20convite%20para%20o%20Catálogo%20de%20Vendedor%20MAJ." target="_blank" class="btn-submit" style="text-decoration: none; max-width: 320px; margin: 0 auto; display: inline-flex;">
+          💬 Falar com Consultor no WhatsApp
+        </a>
+      </div>
+    </template>
+
+    <!-- Estado 2: Formulário Ativo com Token Válido -->
+    <template x-if="hasValidToken && !submitted">
+      <div>
+        <div class="form-header">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="logo-img">
+          <div>
+            <span class="badge-tag">⭐ VENDEDOR EXTERNO & LOJISTA</span>
+          </div>
+          <h1 class="form-title">Solicite seu Catálogo Exclusivo</h1>
+          <p class="form-subtitle">
+            Tenha seu catálogo próprio conectado ao estoque da MAJ Mobilidade, com atendimento direcionado ao seu WhatsApp.
+          </p>
+        </div>
+
+        <form @submit.prevent="openConfirmModal()" class="form-body">
+          
+          <!-- Chave de Convite Comercial / Token Randômico Descartável -->
+          <div class="invite-box">
+            <label class="form-label" style="color: var(--gold); display: flex; justify-content: space-between; align-items: center;">
+              <span>🔑 Token de Acesso Autorizado *</span>
+              <small style="font-weight: 700; color: var(--emerald); font-size: 0.72rem; text-transform: uppercase;">⚡ Descartável após o envio</small>
+            </label>
+            <input type="text" 
+                   x-model="form.invite_code" 
+                   readonly
+                   required 
+                   class="form-input" 
+                   style="text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; font-family: monospace; font-size: 1rem; opacity: 0.9; cursor: not-allowed; background: rgba(0,0,0,0.25);">
+            
+            <div class="invite-status-ok" style="margin-top: 8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Token de uso único ativo! Expirará automaticamente assim que a solicitação for enviada.</span>
+            </div>
+          </div>
+
+          <!-- Nome do Vendedor / Responsável -->
+          <div class="form-group">
+            <label class="form-label">Nome Completo do Solicitante / Vendedor *</label>
+            <input type="text" x-model="form.applicant_name" @input="autoSlug()" required placeholder="Ex: CARLOS EDUARDO SILVEIRA" class="form-input" style="text-transform: uppercase; font-weight: 600;">
+          </div>
+
+          <!-- Nome da Loja / Negócio (Opcional para vendedores externos) -->
+          <div class="form-group">
+            <label class="form-label" style="display: flex; justify-content: space-between;">
+              <span>Nome da Loja ou Razão Social</span>
+              <small style="font-weight: 500; color: var(--text-dim);">(Opcional se vendedor externo)</small>
+            </label>
+            <input type="text" x-model="form.store_name" @input="autoSlug()" placeholder="Ex: AUTOVIX MOBILIDADE ELÉTRICA (ou deixe em branco)" class="form-input" style="text-transform: uppercase; font-weight: 600;">
+          </div>
+
+          <!-- WhatsApp de Atendimento -->
+          <div class="form-group">
+            <label class="form-label">WhatsApp Oficial com DDD *</label>
+            <input type="tel" x-model="form.whatsapp_number" @input="formatWhatsApp()" required placeholder="(27) 99605-1538" class="form-input">
+            <small style="color: var(--text-dim); font-size: 0.75rem; margin-top: 4px; display: block;">É para este número que os clientes enviarão os pedidos do catálogo.</small>
+          </div>
+
+          <!-- Cidade e Estado -->
+          <div class="form-group">
+            <label class="form-label">Cidade e Estado (UF) *</label>
+            <input type="text" x-model="form.city_state" required placeholder="Ex: VITÓRIA / ES" class="form-input" style="text-transform: uppercase; font-weight: 600;">
+          </div>
+
+          <!-- Sugestão de Link Exclusivo (Slug) -->
+          <div class="form-group">
+            <label class="form-label">Sugestão de Link Exclusivo (Slug) *</label>
+            <div class="slug-preview-box">
+              <span class="slug-prefix">m-one.../c/</span>
+              <input type="text" x-model="form.suggested_slug" required placeholder="autovix" class="slug-input">
+            </div>
+            <small style="color: var(--text-dim); font-size: 0.75rem; margin-top: 4px; display: block;">Seu link público final será personalizado (sujeito à aprovação).</small>
+          </div>
+
+          <!-- Observações Opcionais -->
+          <div class="form-group">
+            <label class="form-label">Observações / Mensagem Adicional (Opcional)</label>
+            <textarea x-model="form.notes" rows="2" placeholder="Conte um pouco sobre sua atuação, marcas ou dúvidas..." class="form-input" style="text-transform: uppercase; line-height: 1.4; resize: vertical;"></textarea>
+          </div>
+
+          <!-- Botão que abre a Conferência -->
+          <button type="submit" class="btn-submit" :disabled="loading">
+            <span>🔍 Conferir Dados e Continuar</span>
+          </button>
+
+          <p class="footer-note">
+            🔒 Seus dados estão protegidos. A liberação do catálogo é processada pela equipe comercial da MAJ Mobilidade.
+          </p>
+        </form>
+      </div>
+    </template>
+
+    <!-- Estado 3: Confirmação de Sucesso -->
+    <template x-if="submitted">
+      <div class="success-container">
+        <div class="success-icon">✓</div>
+        <h2 style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 10px;">Solicitação Enviada!</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 440px; margin: 0 auto 24px; line-height: 1.6;">
+          Recebemos sua requisição de catálogo para <strong><span x-text="form.store_name || form.applicant_name"></span></strong>. Nossa equipe comercial fará a conferência dos dados e entrará em contato via WhatsApp para ativar seu link exclusivo!
+        </p>
+
+        <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: left; font-size: 0.88rem;">
+          <div style="margin-bottom: 6px;"><span style="color: var(--text-dim);">WhatsApp:</span> <strong x-text="form.whatsapp_number" style="color: var(--text);"></strong></div>
+          <div style="margin-bottom: 6px;"><span style="color: var(--text-dim);">Link Solicitado:</span> <strong style="color: var(--emerald);" x-text="'/c/' + form.suggested_slug"></strong></div>
+          <div><span style="color: var(--text-dim);">Cidade:</span> <strong x-text="form.city_state" style="color: var(--text);"></strong></div>
+        </div>
+
+        <button type="button" @click="resetForm()" class="btn-submit" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--line); box-shadow: none;">
+          Enviar Outra Solicitação
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <!-- Modal de Conferência de Dados Bento Card (Teleportado para o body) -->
+  <template x-teleport="body">
+    <div x-show="showConfirmModal" 
+         x-cloak 
+         class="modal-overlay"
+         @keydown.escape.window="closeConfirmModal()">
+      <div class="modal-box">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+          <div>
+            <span class="badge-tag" style="margin-bottom: 6px;">🔍 REVISÃO ANTES DO ENVIO</span>
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #fff;">Conferência de Dados</h3>
+            <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; display: block;">Confira se todas as informações estão corretas antes de finalizar.</small>
+          </div>
+          <button type="button" @click="closeConfirmModal()" class="modal-close-btn" title="Fechar e voltar à edição" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="bento-grid">
+          <div class="bento-card">
+            <span class="bento-label">👤 Solicitante / Vendedor</span>
+            <div class="bento-val" x-text="(form.applicant_name || '').toUpperCase()"></div>
+          </div>
+
+          <div class="bento-card">
+            <span class="bento-label">🏬 Loja ou Razão Social</span>
+            <div class="bento-val" x-text="(form.store_name || '').toUpperCase() || '👤 VENDEDOR EXTERNO'"></div>
+          </div>
+
+          <div class="bento-card">
+            <span class="bento-label">💬 WhatsApp de Atendimento</span>
+            <div class="bento-val" style="color: var(--emerald); font-family: monospace;" x-text="form.whatsapp_number"></div>
+          </div>
+
+          <div class="bento-card">
+            <span class="bento-label">📍 Cidade / UF</span>
+            <div class="bento-val" x-text="(form.city_state || '').toUpperCase()"></div>
+          </div>
+
+          <div class="bento-card full" style="background: rgba(0, 204, 136, 0.08); border-color: rgba(0, 204, 136, 0.35);">
+            <span class="bento-label" style="color: var(--emerald);">🔗 Link Exclusivo Solicitado</span>
+            <div class="bento-val" style="color: #fff; font-family: monospace; font-size: 1rem;">
+              <span>https://m-one.majmobilidade.com.br/c/</span><strong style="color: var(--emerald);" x-text="(form.suggested_slug || '').toLowerCase()"></strong>
+            </div>
+            <small style="color: var(--text-muted); font-size: 0.74rem; display: block; margin-top: 4px;">Este será seu link personalizado para atender seus clientes.</small>
+          </div>
+
+          <div class="bento-card full" style="background: rgba(229, 169, 59, 0.08); border-color: rgba(229, 169, 59, 0.35);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="bento-label" style="color: var(--gold);">🔑 Token Descartável</span>
+                <strong style="font-family: monospace; font-size: 0.95rem; color: #fff;" x-text="form.invite_code"></strong>
+              </div>
+              <span style="font-size: 0.72rem; color: var(--gold); font-weight: 700; text-transform: uppercase;">⚡ Expirará após o envio</span>
+            </div>
+          </div>
+
+          <template x-if="form.notes">
+            <div class="bento-card full">
+              <span class="bento-label">📝 Observações</span>
+              <div class="bento-val" style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted);" x-text="(form.notes || '').toUpperCase()"></div>
+            </div>
+          </template>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px;">
+          <button type="button" @click="closeConfirmModal()" class="btn" style="background: rgba(255, 255, 255, 0.06); color: var(--text); border: 1px solid var(--line); padding: 11px 20px; border-radius: 10px; font-weight: 700; cursor: pointer;">
+            ✏️ Editar / Ajustar
+          </button>
+          <button type="button" @click="submitForm()" :disabled="loading" class="btn primary" style="background: linear-gradient(135deg, #059669, #00cc88); color: #000; border: none; padding: 11px 24px; border-radius: 10px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(0, 204, 136, 0.3);">
+            <span x-show="!loading">✓ Confirmar e Enviar</span>
+            <span x-show="loading" style="display: none;">⏳ Enviando...</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </template>
+
+  <script>
+    function requestFormApp() {
+      const serverToken = {{ (initial_token or '')|tojson }};
+      const hasValidToken = {{ 'true' if has_valid_token else 'false' }};
+      const tokenMessage = {{ (token_message or '')|tojson }};
+
+      return {
+        hasValidToken: hasValidToken,
+        tokenMessage: tokenMessage,
+        showConfirmModal: false,
+        loading: false,
+        submitted: false,
+        form: {
+          invite_code: serverToken.toUpperCase(),
+          applicant_name: '',
+          store_name: '',
+          whatsapp_number: '',
+          city_state: '',
+          suggested_slug: '',
+          notes: ''
+        },
+
+        autoSlug() {
+          if (!this.form.suggested_slug || this.form.suggested_slug === this.prevAutoSlug) {
+            const baseText = (this.form.store_name || this.form.applicant_name || '').toLowerCase();
+            const raw = baseText
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^a-z0-9]/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '');
+            this.form.suggested_slug = raw;
+            this.prevAutoSlug = raw;
+          }
+        },
+
+        formatWhatsApp() {
+          let v = this.form.whatsapp_number.replace(/\D/g, '');
+          if (v.length > 11) v = v.substring(0, 11);
+          if (v.length > 6) {
+            this.form.whatsapp_number = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+          } else if (v.length > 2) {
+            this.form.whatsapp_number = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+          } else if (v.length > 0) {
+            this.form.whatsapp_number = `(${v}`;
+          }
+        },
+
+        openConfirmModal() {
+          if (!this.form.applicant_name || !this.form.applicant_name.trim()) {
+            alert('Por favor, informe seu nome completo.');
+            return;
+          }
+          if (!this.form.whatsapp_number || this.form.whatsapp_number.replace(/\D/g, '').length < 10) {
+            alert('Por favor, informe um WhatsApp válido com DDD.');
+            return;
+          }
+          if (!this.form.city_state || !this.form.city_state.trim()) {
+            alert('Por favor, informe sua cidade e estado.');
+            return;
+          }
+          if (!this.form.suggested_slug || !this.form.suggested_slug.trim()) {
+            alert('Por favor, informe a sugestão de link (slug).');
+            return;
+          }
+          this.showConfirmModal = true;
+        },
+
+        closeConfirmModal() {
+          this.showConfirmModal = false;
+        },
+
+        async submitForm() {
+          this.loading = true;
+          const payload = {
+            invite_code: (this.form.invite_code || '').trim().toUpperCase(),
+            applicant_name: (this.form.applicant_name || '').trim().toUpperCase(),
+            store_name: (this.form.store_name || '').trim().toUpperCase(),
+            whatsapp_number: this.form.whatsapp_number,
+            city_state: (this.form.city_state || '').trim().toUpperCase(),
+            suggested_slug: (this.form.suggested_slug || '').trim().toLowerCase(),
+            notes: (this.form.notes || '').trim().toUpperCase()
+          };
+
+          try {
+            const res = await fetch('/solicitar-catalogo', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+              },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              this.showConfirmModal = false;
+              this.submitted = true;
+            } else {
+              alert(data.error || 'Erro ao processar solicitação. Verifique os dados.');
+            }
+          } catch(e) {
+            alert('Falha na conexão com o servidor. Tente novamente em instantes.');
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        resetForm() {
+          this.submitted = false;
+          this.form.applicant_name = '';
+          this.form.store_name = '';
+          this.form.whatsapp_number = '';
+          this.form.city_state = '';
+          this.form.suggested_slug = '';
+          this.form.notes = '';
+        }
+      };
+    }
+  </script>
+</body>
+</html>

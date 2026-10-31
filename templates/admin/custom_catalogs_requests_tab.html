@@ -1,0 +1,212 @@
+{#
+  M-One Custom Catalog Requests Tab (templates/admin/custom_catalogs_requests_tab.html)
+  Aba de gestão de solicitações de novos catálogos de vendedores externos.
+  Anti-monólito modular (< 500 linhas).
+#}
+<style>
+  /* Slug do Catálogo com Alto Contraste */
+  .request-slug-tag {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #0284C7;
+  }
+  [data-theme="dark"] .request-slug-tag {
+    color: #38BDF8;
+  }
+
+  /* Status Badges com Alto Contraste Dual-Theme */
+  .badge-req-pending {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  [data-theme="dark"] .badge-req-pending {
+    background: rgba(245, 158, 11, 0.18);
+    color: #FBBF24;
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  .badge-req-approved {
+    background: #ECFDF5;
+    color: #065F46;
+    border: 1px solid #6EE7B7;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  [data-theme="dark"] .badge-req-approved {
+    background: rgba(0, 204, 136, 0.18);
+    color: #00E599;
+    border-color: rgba(0, 204, 136, 0.4);
+  }
+
+  .badge-req-rejected {
+    background: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  [data-theme="dark"] .badge-req-rejected {
+    background: rgba(239, 68, 68, 0.18);
+    color: #F87171;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+</style>
+
+<div class="panel" style="padding: 0; overflow: hidden; margin-top: 16px;" x-show="activeTab === 'requests'">
+  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text);">Solicitações de Catálogo de Vendedores Externos</h3>
+      <small class="muted">Gerencie pedidos de ativação, código de convite comercial e homologação de links exclusivos</small>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <!-- Gerador de Link Descartável sob Demanda (Apenas este botão para envio a parceiros) -->
+      <button type="button" class="btn primary" @click="generateOneTimeLink()" title="Gera um link com token exclusivo que expira após o uso" style="padding: 8px 16px; font-size: 0.85rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+        <span>⚡ Gerar Link Descartável</span>
+      </button>
+
+      <!-- Filtro de Busca -->
+      <input type="text" x-model="searchRequest" placeholder="Buscar por vendedor, loja, slug..." class="form-input" style="max-width: 240px; font-size: 0.85rem;">
+
+      <!-- Filtro de Status -->
+      <select x-model="filterRequestStatus" class="form-input" style="max-width: 140px; font-size: 0.85rem;">
+        <option value="all">Todos os Status</option>
+        <option value="pendente">⏳ Pendentes</option>
+        <option value="aprovada">✅ Aprovadas</option>
+        <option value="recusada">❌ Recusadas</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table class="table" style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); background: rgba(255,255,255,0.02); text-align: left;">
+          <th style="padding: 12px 18px;">Data & Solicitante</th>
+          <th style="padding: 12px 14px;">Loja / Negócio</th>
+          <th style="padding: 12px 14px;">WhatsApp & Local</th>
+          <th style="padding: 12px 14px;">Link Solicitado (Slug)</th>
+          <th style="padding: 12px 14px; text-align: center;">Status</th>
+          <th style="padding: 12px 18px; text-align: right;">Ações de Homologação</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="req in filteredRequests()" :key="req.id">
+          <tr style="border-bottom: 1px solid var(--border, rgba(255,255,255,0.04));">
+            <td style="padding: 14px 18px;">
+              <div style="font-weight: 700; color: var(--text); font-size: 0.92rem;" x-text="req.applicant_name"></div>
+              <small class="muted" style="font-size: 0.76rem;" x-text="req.created_at_str"></small>
+            </td>
+
+            <td style="padding: 14px 14px;">
+              <template x-if="req.store_name">
+                <div style="font-weight: 700; color: var(--text); font-size: 0.9rem;" x-text="req.store_name"></div>
+              </template>
+              <template x-if="!req.store_name">
+                <span class="badge" style="background: rgba(100, 116, 139, 0.15); color: var(--muted); font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">👤 VENDEDOR EXTERNO</span>
+              </template>
+              <template x-if="req.notes">
+                <small class="muted" style="font-size: 0.74rem; display: block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;" :title="req.notes" x-text="'Obs: ' + req.notes"></small>
+              </template>
+            </td>
+
+            <td style="padding: 14px 14px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-family: monospace; font-size: 0.82rem; color: var(--text);" x-text="req.whatsapp_number"></span>
+                <a :href="'https://wa.me/55' + req.whatsapp_number.replace(/\D/g, '')" target="_blank" class="btn" title="Falar no WhatsApp" style="padding: 2px 6px; font-size: 0.72rem; text-decoration: none; background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.4);">
+                  💬
+                </a>
+              </div>
+              <small class="muted" style="font-size: 0.76rem;" x-text="req.city_state || 'Local não informado'"></small>
+            </td>
+
+            <td style="padding: 14px 14px;">
+              <span class="request-slug-tag" x-text="'/c/' + req.suggested_slug"></span>
+            </td>
+
+            <td style="padding: 14px 14px; text-align: center;">
+              <template x-if="req.status === 'pendente'">
+                <span class="badge-req-pending">
+                  ⏳ Pendente
+                </span>
+              </template>
+              <template x-if="req.status === 'aprovada'">
+                <span class="badge-req-approved">
+                  ✅ Aprovada
+                </span>
+              </template>
+              <template x-if="req.status === 'recusada'">
+                <span class="badge-req-rejected">
+                  ❌ Recusada
+                </span>
+              </template>
+            </td>
+
+            <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <!-- Ação se Pendente: Analisar & Aprovar -->
+                <template x-if="req.status === 'pendente'">
+                  <div style="display: inline-flex; gap: 6px;">
+                    <button type="button" class="btn primary" @click="approveRequest(req)" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                      <span>⚡ Analisar & Aprovar</span>
+                    </button>
+                    <button type="button" class="btn" @click="rejectRequest(req.id)" title="Recusar Solicitação" style="padding: 6px 10px; font-size: 0.8rem; color: #ef4444;">
+                      ❌
+                    </button>
+                  </div>
+                </template>
+
+                <!-- Ação se Aprovada: Enviar Link no WhatsApp & Ver Catálogo -->
+                <template x-if="req.status === 'aprovada'">
+                  <div style="display: inline-flex; gap: 6px;">
+                    <button type="button" class="btn primary" @click="sendWhatsAppApproved(req)" style="padding: 6px 10px; font-size: 0.8rem; background: #25D366; color: #000; font-weight: 800; border: none; display: inline-flex; align-items: center; gap: 4px;" title="Enviar Link Pronto no WhatsApp">
+                      <span>💬 Enviar WhatsApp</span>
+                    </button>
+                    <template x-if="req.created_catalog_slug">
+                      <a :href="'/c/' + req.created_catalog_slug" target="_blank" class="btn" title="Visualizar Catálogo" style="padding: 6px 8px; font-size: 0.8rem; text-decoration: none;">
+                        👁️
+                      </a>
+                    </template>
+                  </div>
+                </template>
+
+                <!-- Excluir Registro -->
+                <button type="button" class="btn" title="Excluir Registro" @click="deleteRequest(req.id)" style="padding: 6px 8px; font-size: 0.8rem; color: #ef4444; opacity: 0.7;">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        </template>
+
+        <template x-if="filteredRequests().length === 0">
+          <tr>
+            <td colspan="6" style="padding: 42px; text-align: center;" class="muted">
+              <div style="font-size: 1rem; font-weight: 600; color: var(--text);">Nenhuma solicitação encontrada com os filtros atuais</div>
+              <p style="margin: 6px 0 0; font-size: 0.82rem;">Compartilhe o link de solicitação com seus parceiros para receber novos cadastros.</p>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -25,6 +25,18 @@ from services.custom_catalog_service import (
     save_or_update_custom_catalog,
     toggle_custom_catalog_status,
 )
+from services.custom_catalog_requests_service import (
+    consume_catalog_invite_token,
+    create_catalog_request,
+    delete_catalog_request,
+    generate_one_time_token,
+    get_catalog_invite_code,
+    list_catalog_requests,
+    set_catalog_invite_code,
+    update_catalog_request_status,
+    validate_catalog_invite_code,
+    validate_catalog_invite_token,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +66,9 @@ def admin_dashboard():
     """Painel principal de Gestão de Catálogos Personalizados."""
     ensure_custom_catalogs_schema()
     catalogs = list_custom_catalogs()
+    requests_list = list_catalog_requests()
+    pending_count = sum(1 for r in requests_list if r.get("status") == "pendente")
+    invite_code = get_catalog_invite_code()
 
     # Métricas consolidadas
     total_views = sum(int(c.get("views_count") or 0) for c in catalogs)
@@ -67,6 +82,9 @@ def admin_dashboard():
     return render_template(
         "admin/custom_catalogs_dashboard.html",
         catalogs=catalogs,
+        requests=requests_list,
+        pending_requests_count=pending_count,
+        invite_code=invite_code,
         total_views=total_views,
         total_clicks=total_clicks,
         active_count=active_count,
@@ -87,6 +105,8 @@ def save_catalog():
 
     catalog_id_raw = data.get("id") or data.get("catalog_id")
     catalog_id = int(catalog_id_raw) if catalog_id_raw else None
+    request_id_raw = data.get("request_id")
+    request_id = int(request_id_raw) if request_id_raw else None
 
     # Normalização de booleanos
     sync_stock = data.get("sync_stock") in (True, 1, "1", "true", "on", "True")
@@ -106,9 +126,9 @@ def save_catalog():
         overrides_json = {}
 
     payload = {
-        "title": data.get("title", "").strip(),
-        "client_name": data.get("client_name", "").strip(),
-        "slug": data.get("slug", "").strip(),
+        "title": data.get("title", "").strip().upper(),
+        "client_name": data.get("client_name", "").strip().upper(),
+        "slug": data.get("slug", "").strip().lower(),
         "source_matrix": data.get("source_matrix", "outlet").strip().lower(),
         "pricing_mode": data.get("pricing_mode", "fixed_matrix").strip().lower(),
         "percentage_markup": float(data.get("percentage_markup") or 0.0),
@@ -126,6 +146,8 @@ def save_catalog():
     try:
         saved = save_or_update_custom_catalog(payload, catalog_id=catalog_id)
         user_name = (current_user() or {}).get("name", "Sistema")
+        if request_id:
+            update_catalog_request_status(request_id, "aprovada", catalog_id=saved.get("id"), approved_by=user_name)
         audit("custom_catalog_save", f"Catálogo '{saved.get('title')}' ({saved.get('slug')}) salvo por {user_name}")
         if is_json:
             return jsonify({"success": True, "catalog": saved})
@@ -271,3 +293,138 @@ def track_whatsapp_click(slug: str):
         increment_catalog_whatsapp_clicks(catalog["id"])
         return jsonify({"success": True})
     return jsonify({"success": False, "error": "Catálogo não encontrado"}), 404
+
+
+# -------------------------------------------------------------------------
+# SOLICITAÇÃO PÚBLICA DE CATÁLOGO (VENDEDORES EXTERNOS & LOJISTAS)
+# -------------------------------------------------------------------------
+
+@custom_catalog_bp.route("/solicitar-catalogo", methods=["GET", "POST"])
+@custom_catalog_bp.route("/quero-meu-catalogo", methods=["GET", "POST"])
+def request_catalog_form():
+    """Página pública de solicitação com token randômico descartável a cada abertura."""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form.to_dict()
+        code = (data.get("invite_code") or "").strip().upper()
+
+        check = validate_catalog_invite_token(code)
+        if not check.get("valid"):
+            return jsonify({
+                "success": False,
+                "error": check.get("reason") or "Código de convite ou token inválido ou expirado."
+            }), 400
+
+        applicant_name = (data.get("applicant_name") or "").strip().upper()
+        store_name = (data.get("store_name") or "").strip().upper()
+        whatsapp = (data.get("whatsapp_number") or "").strip()
+
+        if not applicant_name or not whatsapp:
+            return jsonify({
+                "success": False,
+                "error": "Preencha todos os campos obrigatórios (Nome do Vendedor e WhatsApp)."
+            }), 400
+
+        try:
+            req_id = create_catalog_request(data)
+            display_target = store_name if store_name else f"VENDEDOR {applicant_name}"
+            audit("custom_catalog_request_submitted", f"Nova solicitação de catálogo #{req_id} para '{display_target}' ({applicant_name}) com token {code}")
+            return jsonify({"success": True, "request_id": req_id})
+        except Exception as e:
+            logger.error("Erro ao registrar solicitação de catálogo: %s", e, exc_info=True)
+            return jsonify({"success": False, "error": "Falha ao gravar solicitação. Tente novamente."}), 500
+
+    # GET: Exige obrigatoriamente um link com token gerado pelo consultor
+    param_token = (request.args.get("convite") or request.args.get("token") or "").strip().upper()
+    if not param_token:
+        return render_template(
+            "custom_catalog/request_form.html",
+            has_valid_token=False,
+            token_error="missing",
+            token_message="Esta página é exclusiva para parceiros e exige um link de convite oficial enviado por um consultor MAJ."
+        )
+
+    check = validate_catalog_invite_token(param_token)
+    if not check.get("valid"):
+        return render_template(
+            "custom_catalog/request_form.html",
+            has_valid_token=False,
+            token_error="expired",
+            expired_token=param_token,
+            token_message=check.get("reason") or "Este link de convite já foi utilizado ou expirou. Solicite um novo link ao seu consultor comercial."
+        )
+
+    return render_template(
+        "custom_catalog/request_form.html",
+        has_valid_token=True,
+        initial_token=param_token
+    )
+
+
+@custom_catalog_bp.route("/api/solicitar-catalogo/validar-convite", methods=["POST"])
+def api_validate_invite():
+    """Valida em tempo real se o código de convite ou token de uso único é válido."""
+    data = request.get_json(silent=True) or {}
+    code = (data.get("invite_code") or "").strip().upper()
+    res = validate_catalog_invite_token(code)
+    return jsonify({"valid": res.get("valid"), "reason": res.get("reason", "")})
+
+
+@custom_catalog_bp.route("/admin/catalogos/generate-token", methods=["POST"])
+@catalog_access_required
+def admin_generate_token():
+    """Gera sob demanda um novo token randômico descartável de uso único."""
+    user_name = (current_user() or {}).get("name", "Admin")
+    tok = generate_one_time_token(created_by=user_name)
+    return jsonify({"success": True, "token": tok})
+
+
+# -------------------------------------------------------------------------
+# GESTÃO ADMINISTRATIVA DE SOLICITAÇÕES (/admin/catalogos/requests)
+# -------------------------------------------------------------------------
+
+@custom_catalog_bp.route("/admin/catalogos/requests/<int:req_id>/status", methods=["POST"])
+@catalog_access_required
+def update_request_status_route(req_id: int):
+    """Atualiza o status de uma solicitação (ex: recusada, pendente)."""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    status = (data.get("status") or "").strip().lower()
+    if status not in ["pendente", "aprovada", "recusada"]:
+        return jsonify({"success": False, "error": "Status inválido"}), 400
+
+    user_name = (current_user() or {}).get("name", "Admin")
+    update_catalog_request_status(req_id, status, approved_by=user_name if status == "aprovada" else None)
+    audit("custom_catalog_request_status", f"Solicitação #{req_id} alterada para '{status}' por {user_name}")
+
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.accept_mimetypes.accept_json:
+        return jsonify({"success": True, "ok": True, "status": status})
+    flash(f"Status da solicitação #{req_id} alterado para {status}.", "success")
+    return redirect(url_for("custom_catalog.admin_dashboard"))
+
+
+@custom_catalog_bp.route("/admin/catalogos/requests/<int:req_id>/delete", methods=["POST"])
+@catalog_access_required
+def delete_request_route(req_id: int):
+    """Exclui uma solicitação de catálogo."""
+    ok = delete_catalog_request(req_id)
+    user_name = (current_user() or {}).get("name", "Admin")
+    audit("custom_catalog_request_delete", f"Solicitação #{req_id} excluída por {user_name}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.accept_mimetypes.accept_json:
+        return jsonify({"success": ok, "ok": ok})
+    flash("Solicitação excluída com sucesso.", "success")
+    return redirect(url_for("custom_catalog.admin_dashboard"))
+
+
+@custom_catalog_bp.route("/admin/catalogos/settings/invite-code", methods=["POST"])
+@catalog_access_required
+def update_invite_code_route():
+    """Atualiza a chave de convite comercial para solicitações de vendedores."""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    new_code = (data.get("invite_code") or "").strip().upper()
+    saved_code = set_catalog_invite_code(new_code)
+    user_name = (current_user() or {}).get("name", "Admin")
+    audit("custom_catalog_invite_code_update", f"Código de convite atualizado para '{saved_code}' por {user_name}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "invite_code": saved_code})
+    flash(f"Código de convite atualizado para: {saved_code}", "success")
+    return redirect(url_for("custom_catalog.admin_dashboard"))
+
