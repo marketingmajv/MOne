@@ -392,3 +392,43 @@ def delete_catalog_request(request_id: int) -> bool:
         _run_exec(conn, "DELETE FROM maj_custom_catalog_requests WHERE id = ?", (request_id,))
         conn.commit()
         return True
+
+
+DEFAULT_CONSULTANT_WHATSAPP = "27996051538"
+
+
+def get_catalog_consultant_whatsapp() -> str:
+    """Recupera o número de WhatsApp do consultor oficial para solicitações."""
+    ensure_catalog_requests_schema()
+    try:
+        with db() as conn:
+            row = _run_exec(conn, "SELECT value FROM maj_catalog_settings WHERE key = ?", ("consultant_whatsapp",)).fetchone()
+            if row:
+                val = (row["value"] if isinstance(row, dict) else row[0]) or ""
+                val = re.sub(r"\D", "", str(val))
+                if len(val) >= 10:
+                    return val
+    except Exception as e:
+        logger.warning("Erro ao ler consultant_whatsapp: %s", e)
+    return DEFAULT_CONSULTANT_WHATSAPP
+
+
+def set_catalog_consultant_whatsapp(number: str) -> str:
+    """Atualiza o número de WhatsApp do consultor oficial."""
+    ensure_catalog_requests_schema()
+    clean = re.sub(r"\D", "", number or "")
+    if len(clean) < 10:
+        clean = DEFAULT_CONSULTANT_WHATSAPP
+    with db() as conn:
+        pg = _is_pg(conn)
+        sql = """
+            INSERT INTO maj_catalog_settings (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+        """ if pg else """
+            INSERT OR REPLACE INTO maj_catalog_settings (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+        """
+        _run_exec(conn, sql, ("consultant_whatsapp", clean))
+        conn.commit()
+    return clean

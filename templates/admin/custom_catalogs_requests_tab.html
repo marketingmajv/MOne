@@ -84,6 +84,13 @@
         <span>⚡ Gerar Link Descartável</span>
       </button>
 
+      <!-- Configurar WhatsApp do Consultor Oficial -->
+      <button type="button" class="btn" @click="editConsultantWhatsApp()" title="Configurar número de WhatsApp para onde os vendedores sem convite serão direcionados" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+        <span style="color: #25D366; font-size: 1rem;">💬</span>
+        <span>WhatsApp Consultor: <strong style="color: var(--text);" x-text="formatWhatsAppDisplay(consultantWhatsApp)"></strong></span>
+        <span style="font-size: 0.75rem; opacity: 0.75;">✏️</span>
+      </button>
+
       <!-- Filtro de Busca -->
       <input type="text" x-model="searchRequest" placeholder="Buscar por vendedor, loja, slug..." class="form-input" style="max-width: 240px; font-size: 0.85rem;">
 

@@ -30,8 +30,10 @@ from services.custom_catalog_requests_service import (
     create_catalog_request,
     delete_catalog_request,
     generate_one_time_token,
+    get_catalog_consultant_whatsapp,
     get_catalog_invite_code,
     list_catalog_requests,
+    set_catalog_consultant_whatsapp,
     set_catalog_invite_code,
     update_catalog_request_status,
     validate_catalog_invite_code,
@@ -69,6 +71,7 @@ def admin_dashboard():
     requests_list = list_catalog_requests()
     pending_count = sum(1 for r in requests_list if r.get("status") == "pendente")
     invite_code = get_catalog_invite_code()
+    consultant_whatsapp = get_catalog_consultant_whatsapp()
 
     # Métricas consolidadas
     total_views = sum(int(c.get("views_count") or 0) for c in catalogs)
@@ -85,6 +88,7 @@ def admin_dashboard():
         requests=requests_list,
         pending_requests_count=pending_count,
         invite_code=invite_code,
+        consultant_whatsapp=consultant_whatsapp,
         total_views=total_views,
         total_clicks=total_clicks,
         active_count=active_count,
@@ -335,11 +339,13 @@ def request_catalog_form():
 
     # GET: Exige obrigatoriamente um link com token gerado pelo consultor
     param_token = (request.args.get("convite") or request.args.get("token") or "").strip().upper()
+    consultant_whatsapp = get_catalog_consultant_whatsapp()
     if not param_token:
         return render_template(
             "custom_catalog/request_form.html",
             has_valid_token=False,
             token_error="missing",
+            consultant_whatsapp=consultant_whatsapp,
             token_message="Esta página é exclusiva para parceiros e exige um link de convite oficial enviado por um consultor MAJ."
         )
 
@@ -350,13 +356,15 @@ def request_catalog_form():
             has_valid_token=False,
             token_error="expired",
             expired_token=param_token,
+            consultant_whatsapp=consultant_whatsapp,
             token_message=check.get("reason") or "Este link de convite já foi utilizado ou expirou. Solicite um novo link ao seu consultor comercial."
         )
 
     return render_template(
         "custom_catalog/request_form.html",
         has_valid_token=True,
-        initial_token=param_token
+        initial_token=param_token,
+        consultant_whatsapp=consultant_whatsapp,
     )
 
 
@@ -426,5 +434,20 @@ def update_invite_code_route():
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"success": True, "invite_code": saved_code})
     flash(f"Código de convite atualizado para: {saved_code}", "success")
+    return redirect(url_for("custom_catalog.admin_dashboard"))
+
+
+@custom_catalog_bp.route("/admin/catalogos/settings/consultant-whatsapp", methods=["POST"])
+@catalog_access_required
+def update_consultant_whatsapp_route():
+    """Atualiza o número de WhatsApp do consultor para solicitações de catálogo."""
+    data = request.get_json(silent=True) or request.form.to_dict()
+    new_num = (data.get("consultant_whatsapp") or "").strip()
+    saved = set_catalog_consultant_whatsapp(new_num)
+    user_name = (current_user() or {}).get("name", "Admin")
+    audit("custom_catalog_consultant_whatsapp_update", f"WhatsApp do Consultor atualizado para '{saved}' por {user_name}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.accept_mimetypes.accept_json:
+        return jsonify({"success": True, "ok": True, "consultant_whatsapp": saved})
+    flash(f"WhatsApp do Consultor atualizado para: {saved}", "success")
     return redirect(url_for("custom_catalog.admin_dashboard"))
 
