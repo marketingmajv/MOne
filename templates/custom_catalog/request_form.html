@@ -11,14 +11,12 @@
   <meta property="og:description" content="Tenha seu próprio catálogo de scooters e bikes elétricas MAJ com seu WhatsApp e sua marca.">
   <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
   <meta property="og:type" content="website">
-
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
-
   <style>
     :root {
       --bg-main: #07090e; --bg-card: #0f141d; --panel: #131b27; --panel2: #182232;
@@ -248,7 +246,18 @@
 
     <!-- Estado 3: Confirmação de Sucesso -->
     <template x-if="submitted">
-      <div class="success-container">
+      <div class="success-container" style="position: relative;">
+        <!-- Topo com Logo MAJ e Botão Fechar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" style="height: 28px; width: auto; object-fit: contain;">
+          <button type="button" @click="closeSuccess()" class="modal-close-btn" title="Fechar" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
         <div class="success-icon">✓</div>
         <h2 style="font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: 10px;">Solicitação Enviada!</h2>
         <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 440px; margin: 0 auto 24px; line-height: 1.6;">
@@ -261,9 +270,14 @@
           <div><span style="color: var(--text-dim);">Cidade:</span> <strong x-text="form.city_state" style="color: var(--text);"></strong></div>
         </div>
 
-        <button type="button" @click="resetForm()" class="btn-submit" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--line); box-shadow: none;">
-          Enviar Outra Solicitação
-        </button>
+        <div style="display: flex; gap: 12px;">
+          <button type="button" @click="resetForm()" class="btn-submit" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--line); box-shadow: none; flex: 1;">
+            Enviar Outra
+          </button>
+          <button type="button" @click="closeSuccess()" class="btn-submit" style="background: rgba(255, 255, 255, 0.04); color: var(--text-muted); border: 1px solid var(--line); box-shadow: none; flex: 1;">
+            Fechar Janela
+          </button>
+        </div>
       </div>
     </template>
   </div>
@@ -276,18 +290,21 @@
          @keydown.escape.window="closeConfirmModal()">
       <div class="modal-box">
         
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
-          <div>
-            <span class="badge-tag" style="margin-bottom: 6px;">🔍 REVISÃO ANTES DO ENVIO</span>
-            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #fff;">Conferência de Dados</h3>
-            <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; display: block;">Confira se todas as informações estão corretas antes de finalizar.</small>
-          </div>
+        <!-- Topo com Logo MAJ e Botão Fechar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" style="height: 28px; width: auto; object-fit: contain;">
           <button type="button" @click="closeConfirmModal()" class="modal-close-btn" title="Fechar e voltar à edição" aria-label="Fechar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
+        </div>
+
+        <div style="margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+          <span class="badge-tag" style="margin-bottom: 6px;">🔍 REVISÃO ANTES DO ENVIO</span>
+          <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #fff;">Conferência de Dados</h3>
+          <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; display: block;">Confira se todas as informações estão corretas antes de finalizar.</small>
         </div>
 
         <div class="bento-grid">
@@ -465,6 +482,11 @@
           this.form.city_state = '';
           this.form.suggested_slug = '';
           this.form.notes = '';
+        },
+
+        closeSuccess() {
+          try { window.close(); } catch(e) {}
+          window.location.href = 'https://m-one.majmobilidade.com.br';
         }
       };
     }
