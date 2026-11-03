@@ -403,6 +403,13 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
                 m_val["share_image"] = f"/public/images/models/share/{m_val.get('slug', '')}.jpg"
             final_list.append(m_val)
 
+        # Aplicar soberania de overrides e novos modelos do painel
+        try:
+            from services.showroom_crud_service import merge_showroom_overrides
+            final_list = merge_showroom_overrides(final_list)
+        except Exception as oe:
+            logger.warning(f"Erro ao mesclar overrides do showroom: {oe}")
+
         # Ordenar por Modo de Menu (Categoria vs Livre/Aleatório)
         menu_cfg = load_menu_config()
         mode = menu_cfg.get("mode", "category")

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-03T18:56:12Z",
+  "updated_at": "2026-11-03T21:32:35Z",
   "total_models": 14,
   "total_all": 17,
   "menu_mode": "free",
@@ -22,7 +22,7 @@
           "Marca": "Smarda",
           "Versão / ano": "2026",
           "Código interno": "MSKU0446",
-          "Status": "Pendente",
+          "Status": "Ativo",
           "Responsável": "Luiza/Leo",
           "Última atualização": "2026-08-31 00:00:00"
         },
@@ -58,7 +58,11 @@
           "Altura do assento (cm)": "76",
           "Porta-objetos / baú": "Porta-Objetos",
           "Conforto e ergonomia": "Muito bom — adequada para trajetos urbanos e uso prolongado, com posição relaxada e boa acomodação geral do piloto.",
-          "Observações estruturais": "Chassi construído em aço carbono de alta qualidade, com conjunto de peças metálicas que reforça a sensação de firmeza. Os acabamentos plásticos complementam a estrutura com visual bem integrado e funcional."
+          "Observações estruturais": "Chassi construído em aço carbono de alta qualidade, com conjunto de peças metálicas que reforça a sensação de firmeza. Os acabamentos plásticos complementam a estrutura com visual bem integrado e funcional.",
+          "Carga máxima suportada (kg)": "180",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidraulico",
+          "Suspensão": "Dupla dianteira e traseira",
+          "Aro / Pneu": "Aro 12"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -92,7 +96,9 @@
           "Prazo de entrega": "Pronta entrega",
           "Exige CNH?": "Não",
           "Exige emplacamento?": "Não",
-          "Observação legal / fonte": "https://www.in.gov.br/en/web/dou/-/resolucao-contran-n-996-de-15-de-junho-de-2023-491553873"
+          "Observação legal / fonte": "https://www.in.gov.br/en/web/dou/-/resolucao-contran-n-996-de-15-de-junho-de-2023-491553873",
+          "Diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
+          "Pontos fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano."
         },
         "Texto livre": {
           "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios hidráulicos",
@@ -118,11 +124,12 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos"
         }
       },
       "banner_image": "/public/images/models/banners/max-12-banner.webp",
-      "cutout_image": "/public/images/models/cutouts/max-12.png",
+      "cutout_image": "/public/images/models/banners/max-12-banner.webp",
       "share_image": "/public/images/models/share/max-12.jpg",
       "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
@@ -148,9 +155,16 @@
         "peso_kg": "75kg",
         "freios": "Diant: Hidráulico / Tras: Hidraulico",
         "diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios hidráulicos",
+        "descricao_livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano."
-      }
+      },
+      "promo_banner_image": "/public/images/models/banners/max-12-banner-promo.webp",
+      "active_image_type": "atemporal",
+      "active_banner_type": "atemporal",
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/max-12-banner.webp",
+      "display_image": "/public/images/models/banners/max-12-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -290,7 +304,11 @@
         "diferencial": "Motor de alto desempenho, cinco níveis de assistência, câmbio Shimano de sete velocidades e freios hidráulicos para uma condução versátil.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano de sete velocidades; freios hidráulicos; aro 20; quadro robusto; boa versatilidade entre pedal e assistência elétrica."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m9-pro-banner.webp",
+      "display_image": "/public/images/models/banners/m9-pro-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -430,7 +448,11 @@
         "diferencial": "Praticidade urbana com boa autonomia, baú e posição de pilotagem natural, oferecendo equilíbrio entre conforto e facilidade de uso.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Bateria removível de 60 V e 24 Ah; motor de 1.000 W com pico registrado de 2.400 W; baú; posição natural; boa autonomia; estrutura consistente e peso inferior ao de várias scooters equivalentes."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/flow-one-banner.webp",
+      "display_image": "/public/images/models/banners/flow-one-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -567,7 +589,11 @@
         "diferencial": "Quadro rebaixado em S, que facilita subir e descer, combinado com câmbio Shimano, freios hidráulicos e recursos práticos para o uso familiar.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\nAutonomia de até 50 km*\n Câmbio Shimano 7 velocidades\n Aro 20\"\n Freios a disco hidráulico\nSuporta até 160 kg\nLuzes de segurança, NFC, retrovisor esquerdo e cadeado dianteiro",
         "pontos_fortes": "Quadro rebaixado em S para embarque fácil; conforto excelente; motor de 1.000 W com pico registrado de 1.920 W; câmbio Shimano; freios hidráulicos; aro 20; NFC, luzes, retrovisor e cadeado dianteiro; proposta prática para uso familiar."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m50-pro-banner.webp",
+      "display_image": "/public/images/models/banners/m50-pro-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -707,7 +733,11 @@
         "diferencial": "Estilo clássico, banco amplo e posição de pilotagem relaxada, combinados com boa capacidade de bateria para trajetos urbanos confortáveis.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Estilo clássico; banco amplo; pilotagem relaxada; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; estrutura sólida e autonomia máxima estimada entre as maiores da linha."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/classic-1000-banner.webp",
+      "display_image": "/public/images/models/banners/classic-1000-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -846,7 +876,11 @@
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano; freios hidráulicos; aro 20; quadro reforçado; conforto e estabilidade para pisos variados."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/v20-ultra-banner.webp",
+      "display_image": "/public/images/models/banners/v20-ultra-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -964,7 +998,11 @@
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
         "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
       },
-      "share_image": "/public/images/models/share/db-zero.jpg"
+      "share_image": "/public/images/models/share/db-zero.jpg",
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/db-zero-banner.webp",
+      "display_image": "/public/images/models/banners/db-zero-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1028,7 +1066,11 @@
         "diferencial": "",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 65 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro",
         "pontos_fortes": ""
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/gp-1000-banner.webp",
+      "display_image": "/public/images/models/banners/gp-1000-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1092,7 +1134,11 @@
         "diferencial": "",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": ""
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m2-banner.webp",
+      "display_image": "/public/images/models/banners/m2-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1232,7 +1278,11 @@
         "diferencial": "Equilíbrio entre conforto, estabilidade e praticidade, com postura ereta, comandos acessíveis e estrutura robusta para o cotidiano.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; boa autonomia; freios a disco; postura ereta; estabilidade; porta-objetos e estrutura robusta."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/nova-banner.webp",
+      "display_image": "/public/images/models/banners/nova-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -1372,7 +1422,11 @@
         "diferencial": "Dimensões compactas e aro 16 que favorecem a adaptação e a condução por pessoas de menor estatura, além de facilitar manobras, transporte e armazenamento.",
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \nSuporta até 120 kg\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/v8-mini-banner.webp",
+      "display_image": "/public/images/models/banners/v8-mini-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1512,7 +1566,11 @@
         "diferencial": "Excelente custo-benefício em uma scooter mais leve e prática, com baú e dimensões favoráveis para trajetos urbanos curtos.",
         "descricao_livre": "Motor 800W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 150 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Excelente custo-benefício; estrutura leve e compacta; baú; posição ereta; motor de alta performance para uso urbano; bateria removível; fácil condução e dimensões favoráveis para trajetos curtos."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/ride-on-banner.webp",
+      "display_image": "/public/images/models/banners/ride-on-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1652,7 +1710,11 @@
         "diferencial": "Ergonomia semelhante à de um ciclomotor, com boa acomodação, baú e estrutura reforçada para uso urbano frequente.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Ergonomia semelhante à de ciclomotor; boa acomodação; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; freios a disco e estrutura reforçada."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/rz-110-banner.webp",
+      "display_image": "/public/images/models/banners/rz-110-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -1792,7 +1854,11 @@
         "diferencial": "Excelente conforto de pilotagem aliado à bateria de maior capacidade e ao motor de alto desempenho, ideal para quem busca autonomia e comodidade.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Conforto considerado excelente; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; boa capacidade de carga; posição ereta e estrutura robusta para uso frequente."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/vittoria-banner.webp",
+      "display_image": "/public/images/models/banners/vittoria-banner.webp"
     }
   ],
   "all_models": [
@@ -1806,7 +1872,7 @@
           "Marca": "Smarda",
           "Versão / ano": "2026",
           "Código interno": "MSKU0446",
-          "Status": "Pendente",
+          "Status": "Ativo",
           "Responsável": "Luiza/Leo",
           "Última atualização": "2026-08-31 00:00:00"
         },
@@ -1842,7 +1908,11 @@
           "Altura do assento (cm)": "76",
           "Porta-objetos / baú": "Porta-Objetos",
           "Conforto e ergonomia": "Muito bom — adequada para trajetos urbanos e uso prolongado, com posição relaxada e boa acomodação geral do piloto.",
-          "Observações estruturais": "Chassi construído em aço carbono de alta qualidade, com conjunto de peças metálicas que reforça a sensação de firmeza. Os acabamentos plásticos complementam a estrutura com visual bem integrado e funcional."
+          "Observações estruturais": "Chassi construído em aço carbono de alta qualidade, com conjunto de peças metálicas que reforça a sensação de firmeza. Os acabamentos plásticos complementam a estrutura com visual bem integrado e funcional.",
+          "Carga máxima suportada (kg)": "180",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidraulico",
+          "Suspensão": "Dupla dianteira e traseira",
+          "Aro / Pneu": "Aro 12"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -1876,7 +1946,9 @@
           "Prazo de entrega": "Pronta entrega",
           "Exige CNH?": "Não",
           "Exige emplacamento?": "Não",
-          "Observação legal / fonte": "https://www.in.gov.br/en/web/dou/-/resolucao-contran-n-996-de-15-de-junho-de-2023-491553873"
+          "Observação legal / fonte": "https://www.in.gov.br/en/web/dou/-/resolucao-contran-n-996-de-15-de-junho-de-2023-491553873",
+          "Diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
+          "Pontos fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano."
         },
         "Texto livre": {
           "Descrição comercial livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios hidráulicos",
@@ -1902,11 +1974,12 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos"
         }
       },
       "banner_image": "/public/images/models/banners/max-12-banner.webp",
-      "cutout_image": "/public/images/models/cutouts/max-12.png",
+      "cutout_image": "/public/images/models/banners/max-12-banner.webp",
       "share_image": "/public/images/models/share/max-12.jpg",
       "hero_image": "/public/images/models/banners/max-12-banner.webp",
       "images": [
@@ -1932,9 +2005,16 @@
         "peso_kg": "75kg",
         "freios": "Diant: Hidráulico / Tras: Hidraulico",
         "diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios hidráulicos",
+        "descricao_livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano."
-      }
+      },
+      "promo_banner_image": "/public/images/models/banners/max-12-banner-promo.webp",
+      "active_image_type": "atemporal",
+      "active_banner_type": "atemporal",
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/max-12-banner.webp",
+      "display_image": "/public/images/models/banners/max-12-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -2074,7 +2154,11 @@
         "diferencial": "Motor de alto desempenho, cinco níveis de assistência, câmbio Shimano de sete velocidades e freios hidráulicos para uma condução versátil.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano de sete velocidades; freios hidráulicos; aro 20; quadro robusto; boa versatilidade entre pedal e assistência elétrica."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m9-pro-banner.webp",
+      "display_image": "/public/images/models/banners/m9-pro-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -2214,7 +2298,11 @@
         "diferencial": "Praticidade urbana com boa autonomia, baú e posição de pilotagem natural, oferecendo equilíbrio entre conforto e facilidade de uso.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Bateria removível de 60 V e 24 Ah; motor de 1.000 W com pico registrado de 2.400 W; baú; posição natural; boa autonomia; estrutura consistente e peso inferior ao de várias scooters equivalentes."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/flow-one-banner.webp",
+      "display_image": "/public/images/models/banners/flow-one-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -2351,7 +2439,11 @@
         "diferencial": "Quadro rebaixado em S, que facilita subir e descer, combinado com câmbio Shimano, freios hidráulicos e recursos práticos para o uso familiar.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\nAutonomia de até 50 km*\n Câmbio Shimano 7 velocidades\n Aro 20\"\n Freios a disco hidráulico\nSuporta até 160 kg\nLuzes de segurança, NFC, retrovisor esquerdo e cadeado dianteiro",
         "pontos_fortes": "Quadro rebaixado em S para embarque fácil; conforto excelente; motor de 1.000 W com pico registrado de 1.920 W; câmbio Shimano; freios hidráulicos; aro 20; NFC, luzes, retrovisor e cadeado dianteiro; proposta prática para uso familiar."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m50-pro-banner.webp",
+      "display_image": "/public/images/models/banners/m50-pro-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -2491,7 +2583,11 @@
         "diferencial": "Estilo clássico, banco amplo e posição de pilotagem relaxada, combinados com boa capacidade de bateria para trajetos urbanos confortáveis.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Estilo clássico; banco amplo; pilotagem relaxada; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; estrutura sólida e autonomia máxima estimada entre as maiores da linha."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/classic-1000-banner.webp",
+      "display_image": "/public/images/models/banners/classic-1000-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -2630,7 +2726,11 @@
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano; freios hidráulicos; aro 20; quadro reforçado; conforto e estabilidade para pisos variados."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/v20-ultra-banner.webp",
+      "display_image": "/public/images/models/banners/v20-ultra-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -2748,7 +2848,11 @@
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 45 km*\n Suporta até 150 kg\n Freio a disco e design futurista",
         "pontos_fortes": "Linhas futuristas em Silver Black; peso reduzido; torque instantâneo; freios hidráulicos e bateria de lítio 60V 20Ah."
       },
-      "share_image": "/public/images/models/share/db-zero.jpg"
+      "share_image": "/public/images/models/share/db-zero.jpg",
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/db-zero-banner.webp",
+      "display_image": "/public/images/models/banners/db-zero-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -2812,7 +2916,11 @@
         "diferencial": "",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 65 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro",
         "pontos_fortes": ""
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/gp-1000-banner.webp",
+      "display_image": "/public/images/models/banners/gp-1000-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -2876,7 +2984,11 @@
         "diferencial": "",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": ""
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/m2-banner.webp",
+      "display_image": "/public/images/models/banners/m2-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -3016,7 +3128,11 @@
         "diferencial": "Equilíbrio entre conforto, estabilidade e praticidade, com postura ereta, comandos acessíveis e estrutura robusta para o cotidiano.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; boa autonomia; freios a disco; postura ereta; estabilidade; porta-objetos e estrutura robusta."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/nova-banner.webp",
+      "display_image": "/public/images/models/banners/nova-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -3156,7 +3272,11 @@
         "diferencial": "Dimensões compactas e aro 16 que favorecem a adaptação e a condução por pessoas de menor estatura, além de facilitar manobras, transporte e armazenamento.",
         "descricao_livre": "Motor 500W\nAté 32 km/h\nAutonomia de até 35 km*\nAro 16\" \nSuporta até 120 kg\nCompacta e prática para o dia a dia",
         "pontos_fortes": "Formato compacto; aro 16; fácil adaptação para pessoas de menor estatura; cinco níveis de assistência; bateria removível; condução simples; facilidade para manobrar, transportar e guardar."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/v8-mini-banner.webp",
+      "display_image": "/public/images/models/banners/v8-mini-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -3296,7 +3416,11 @@
         "diferencial": "Excelente custo-benefício em uma scooter mais leve e prática, com baú e dimensões favoráveis para trajetos urbanos curtos.",
         "descricao_livre": "Motor 800W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 150 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Excelente custo-benefício; estrutura leve e compacta; baú; posição ereta; motor de alta performance para uso urbano; bateria removível; fácil condução e dimensões favoráveis para trajetos curtos."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/ride-on-banner.webp",
+      "display_image": "/public/images/models/banners/ride-on-banner.webp"
     },
     {
       "categoria": "Bike",
@@ -3436,7 +3560,11 @@
         "diferencial": "Boa estabilidade e conforto, com motor de alto desempenho, câmbio Shimano e freios hidráulicos para alternar entre pedal e assistência elétrica.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
         "pontos_fortes": "Boa estabilidade e conforto; motor de 1.000 W com pico registrado de 1.920 W; câmbio Shimano de sete velocidades; freios hidráulicos; bateria de 15,6 Ah; aro 20 e condução equilibrada entre pedal e assistência."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "",
+      "display_image": "/public/images/models/cutouts/v80-pro.png"
     },
     {
       "categoria": "Scooter",
@@ -3576,7 +3704,11 @@
         "diferencial": "Ergonomia semelhante à de um ciclomotor, com boa acomodação, baú e estrutura reforçada para uso urbano frequente.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Ergonomia semelhante à de ciclomotor; boa acomodação; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; freios a disco e estrutura reforçada."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/rz-110-banner.webp",
+      "display_image": "/public/images/models/banners/rz-110-banner.webp"
     },
     {
       "categoria": "Scooter",
@@ -3716,7 +3848,11 @@
         "diferencial": "Conforto excelente em uma versão mais compacta que o modelo anterior, mantendo porte semelhante ao da MAX 12, com baú e marcha a ré.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Conforto excelente; motor de 1.000 W com pico registrado de 2.400 W; três modos; marcha a ré; baú; boa acomodação e chassi firme. É mais compacta que a versão anterior, mantendo porte semelhante ao da MAX 12."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "",
+      "display_image": "/public/images/models/cutouts/sport-701-short.png"
     },
     {
       "categoria": "Scooter",
@@ -3856,7 +3992,11 @@
         "diferencial": "Excelente conforto de pilotagem aliado à bateria de maior capacidade e ao motor de alto desempenho, ideal para quem busca autonomia e comodidade.",
         "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
         "pontos_fortes": "Conforto considerado excelente; motor de 1.000 W com pico registrado de 2.400 W; bateria removível de 60 V e 24 Ah; baú; boa capacidade de carga; posição ereta e estrutura robusta para uso frequente."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "/public/images/models/banners/vittoria-banner.webp",
+      "display_image": "/public/images/models/banners/vittoria-banner.webp"
     },
     {
       "categoria": "Triciclo",
@@ -3987,7 +4127,11 @@
         "diferencial": "Configuração de três rodas que prioriza estabilidade, marcha a ré e espaço para objetos, oferecendo praticidade e segurança nas manobras cotidianas.",
         "descricao_livre": "Motor 800W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco dianteiro e traseiro a tambor",
         "pontos_fortes": "Configuração de três rodas; boa estabilidade em baixa velocidade; marcha a ré; dois lugares; porta-objetos; bateria removível de 60 V e 28,6 Ah; motor com pico registrado de 1.500 W; assento baixo e estrutura robusta."
-      }
+      },
+      "effective_image_type": "atemporal",
+      "effective_banner_type": "atemporal",
+      "active_banner": "",
+      "display_image": ""
     }
   ]
 }

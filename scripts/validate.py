@@ -58,6 +58,7 @@ def check_dependency_parity() -> bool:
         "jinja2": "flask",
         "itsdangerous": "flask",
         "click": "flask",
+        "PIL": "pillow",
     }
 
     # Módulos padrão do Python detectados do interpretador

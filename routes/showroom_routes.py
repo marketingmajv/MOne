@@ -6,7 +6,7 @@ endpoint de ativação/inativação de modelos e a rota do mostruário /modelos.
 
 import time
 import logging
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, send_file
 from routes.helpers import current_user, login_required, roles_required
 from services.maj_models_sync_service import (
     sync_models_from_sheets,
@@ -23,6 +23,13 @@ from services.maj_models_sync_service import (
 from services.showroom_promo_service import (
     load_promo_banner_settings,
     save_promo_banner_settings,
+)
+from services.showroom_crud_service import (
+    get_model_full_for_edit,
+    save_showroom_model,
+    export_models_to_xlsx_bytes,
+    get_global_image_mode,
+    set_global_image_mode,
 )
 
 logger = logging.getLogger(__name__)
@@ -158,6 +165,77 @@ def api_toggle_promo_banner():
     }), 200
 
 
+@showroom_bp.route("/api/models/<slug>/full", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def api_get_model_full(slug):
+    """Retorna dados completos para preenchimento do modal de edição."""
+    data = get_model_full_for_edit(slug)
+    if not data:
+        return jsonify({"error": "Modelo não encontrado", "slug": slug}), 404
+    return jsonify(data), 200
+
+
+@showroom_bp.route("/api/models/save", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_save_model():
+    """Cria ou edita um modelo com dados técnicos e upload de banners de topo (atemporal e promocional)."""
+    try:
+        banner_atemp = request.files.get("banner_atemporal") or request.files.get("photo_atemporal") or request.files.get("photo")
+        banner_promo = request.files.get("banner_promocional") or request.files.get("photo_promocional") or request.files.get("photo_promo")
+        if request.form:
+            data = request.form.to_dict()
+        elif request.is_json:
+            data = request.get_json(silent=True) or {}
+        else:
+            data = request.form.to_dict() or request.get_json(silent=True) or {}
+
+        result = save_showroom_model(data, banner_atemporal=banner_atemp, banner_promocional=banner_promo)
+        return jsonify(result), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        logger.error(f"Erro ao salvar modelo do showroom: {e}", exc_info=True)
+        return jsonify({"error": f"Falha ao salvar modelo: {str(e)}"}), 500
+
+
+@showroom_bp.route("/api/models/global-image-mode", methods=["GET"])
+def api_get_global_image_mode():
+    """Retorna o modo global de imagem ativo no mostruário."""
+    return jsonify({"mode": get_global_image_mode()}), 200
+
+
+@showroom_bp.route("/api/models/global-image-mode", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_set_global_image_mode():
+    """Altera a chave mestra do modo de imagens do showroom ('atemporal' vs 'promocional')."""
+    body = request.get_json(silent=True) or {}
+    mode = body.get("mode", "atemporal")
+    updated = set_global_image_mode(mode)
+    return jsonify({
+        "status": "success",
+        "mode": updated,
+        "message": f"Modo de imagens do mostruário atualizado para '{updated}'.",
+    }), 200
+
+
+@showroom_bp.route("/admin/models/export-xlsx", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def admin_models_export_xlsx():
+    """Gera e faz download da planilha consolidada XLSX de modelos do Showroom."""
+    models = get_all_models(include_inactive=True)
+    buf = export_models_to_xlsx_bytes(models)
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name="catalogo_modelos_maj.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 @showroom_bp.route("/admin/models", methods=["GET"])
 @showroom_bp.route("/admin/modelos", methods=["GET"])
 @login_required
@@ -169,6 +247,7 @@ def admin_models_page():
     kiosk_settings = load_kiosk_settings()
     menu_config = load_menu_config()
     promo_banner = load_promo_banner_settings()
+    global_image_mode = get_global_image_mode()
     return render_template(
         "showroom/admin_models.html",
         me=me,
@@ -176,6 +255,7 @@ def admin_models_page():
         kiosk_settings=kiosk_settings,
         menu_config=menu_config,
         promo_banner=promo_banner,
+        global_image_mode=global_image_mode,
     )
 
 
@@ -196,6 +276,7 @@ def showroom_models_page(slug=None):
         active_model = models[0]
     kiosk_settings = load_kiosk_settings()
     promo_banner = load_promo_banner_settings()
+    global_image_mode = get_global_image_mode()
     return render_template(
         "showroom/models.html",
         models=models,
@@ -204,4 +285,5 @@ def showroom_models_page(slug=None):
         kiosk_settings=kiosk_settings,
         cache_id=cache_id,
         promo_banner=promo_banner,
+        global_image_mode=global_image_mode,
     )

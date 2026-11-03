@@ -1,0 +1,70 @@
+{
+  "max-12": {
+    "categoria": "Scooter",
+    "modelo": "MAX 12 MAJ",
+    "slug": "max-12",
+    "is_active": true,
+    "banner_image": "/public/images/models/banners/max-12-banner.webp",
+    "promo_banner_image": "/public/images/models/banners/max-12-banner-promo.webp",
+    "active_banner_type": "atemporal",
+    "active_image_type": "atemporal",
+    "hero_image": "/public/images/models/banners/max-12-banner.webp",
+    "display_image": "/public/images/models/banners/max-12-banner.webp",
+    "cutout_image": "/public/images/models/banners/max-12-banner.webp",
+    "images": [
+      "/public/images/models/banners/max-12-banner.webp"
+    ],
+    "metrics": {
+      "potencia_nominal_w": "1000",
+      "velocidade_max_kmh": "32",
+      "autonomia_conservadora_km": "35km",
+      "autonomia_maxima_km": "50",
+      "voltagem_v": "60v",
+      "capacidade_ah": "20ah",
+      "capacidade_wh": "1200WH",
+      "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
+      "carga_maxima_kg": "180",
+      "peso_kg": "75kg",
+      "freios": "Diant: Hidráulico / Tras: Hidraulico",
+      "diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
+      "pontos_fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano.",
+      "descricao_livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos"
+    },
+    "sections": {
+      "Identificação": {
+        "Marca": "Smarda",
+        "Versão / ano": "2026",
+        "Código interno": "MSKU0446",
+        "Status": "Ativo"
+      },
+      "Desempenho": {
+        "Potência nominal (W)": "1000",
+        "Velocidade máxima (km/h)": "32",
+        "Modos de condução": "3 niveis",
+        "Possui ré?": "Sim"
+      },
+      "Bateria e autonomia": {
+        "Química / tipo": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
+        "Voltagem (V)": "60v",
+        "Capacidade (Ah)": "20ah",
+        "Capacidade (Wh)": "1200WH",
+        "Autonomia conservadora (km)": "35km",
+        "Autonomia máxima estimada (km)": "50"
+      },
+      "Estrutura e conforto": {
+        "Carga máxima suportada (kg)": "180",
+        "Peso do veículo (kg)": "75kg",
+        "Tipo de freios": "Diant: Hidráulico / Tras: Hidraulico",
+        "Suspensão": "Dupla dianteira e traseira",
+        "Aro / Pneu": "Aro 12"
+      },
+      "Uso e comercial": {
+        "Diferencial": "Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos, formando um conjunto forte e completo para o uso urbano.",
+        "Pontos fortes": "Motor de 1.000 W com pico registrado de 2.400 W; três modos de condução; marcha a ré; freios hidráulicos; bateria removível de 60 V; chassi robusto; boa acomodação para dois ocupantes; porta-objetos e ótimo desempenho urbano."
+      },
+      "Texto livre": {
+        "Descrição livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios hidráulicos"
+      }
+    }
+  }
+}

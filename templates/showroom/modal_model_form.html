@@ -1,0 +1,387 @@
+{#
+  Modal Completo de Cadastro e Edição de Modelos MAJ (templates/showroom/modal_model_form.html)
+  Suporta cadastro e edição 100% autônomos com foco nos BANNERS PANORÂMICOS WIDESCREEN (16:9).
+  Conformidade rigorosa de UX/UI: x-teleport body, SVG geométrico close, Dark Cockpit.
+#}
+
+<div x-data="showroomModelModal()" x-cloak>
+  <template x-teleport="body">
+    <div class="modal show"
+         x-show="isOpen"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;"
+         @keydown.escape.window="close()">
+
+      <div class="modal-card"
+           style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: 100%; max-width: 960px; max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); overflow: hidden;"
+           @click.away="close()">
+
+        <!-- Cabeçalho do Modal -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155); background: var(--panel, #0f172a);">
+          <div>
+            <h2 style="font-size: 17.5px; font-weight: 700; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span x-text="isEditing ? '✏️' : '➕'"></span>
+              <span x-text="isEditing ? 'Editar Modelo: ' + (form.modelo || form.slug) : 'Cadastrar Novo Modelo no Showroom'"></span>
+            </h2>
+            <p style="font-size: 12px; color: var(--muted, #94a3b8); margin: 4px 0 0 0;">
+              Banners widescreen de estúdio (16:9), ficha técnica canônica e vitrine comercial.
+            </p>
+          </div>
+          <button type="button"
+                  class="modal-close-btn"
+                  @click="close()"
+                  aria-label="Fechar Modal"
+                  style="padding: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line, #334155); background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Abas de Navegação -->
+        <div style="display: flex; gap: 6px; padding: 10px 24px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); overflow-x: auto;">
+          <button type="button"
+                  @click="activeTab = 'identificacao'"
+                  :style="activeTab === 'identificacao' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                  style="border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+            🏷️ 1. Identificação & Banners (16:9)
+          </button>
+          <button type="button"
+                  @click="activeTab = 'motor'"
+                  :style="activeTab === 'motor' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                  style="border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+            ⚡ 2. Motor & Bateria
+          </button>
+          <button type="button"
+                  @click="activeTab = 'estrutura'"
+                  :style="activeTab === 'estrutura' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                  style="border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+            🛡️ 3. Estrutura & Freios
+          </button>
+          <button type="button"
+                  @click="activeTab = 'comercial'"
+                  :style="activeTab === 'comercial' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                  style="border: none; border-radius: 8px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+            🌟 4. Vitrine & Destaques
+          </button>
+        </div>
+
+        <!-- Formulário com Rolagem Interna Limpa -->
+        <form @submit.prevent="submitForm()" style="overflow-y: auto; padding: 22px 24px; flex: 1; display: flex; flex-direction: column; gap: 18px;">
+
+          <!-- ABA 1: IDENTIFICAÇÃO E BANNERS DE TOPO (16:9) -->
+          <div x-show="activeTab === 'identificacao'" style="display: flex; flex-direction: column; gap: 18px;">
+            
+            <!-- Linha 1: Dados Básicos de Identificação -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; border: 1px solid var(--line, #334155);">
+              <div style="grid-column: span 2;">
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Nome do Modelo *</label>
+                <input type="text" class="form-input" x-model="form.modelo" @input="onNameInput()" placeholder="Ex: MAX 12 MAJ" required
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Categoria *</label>
+                <select class="form-input" x-model="form.categoria"
+                        style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+                  <option value="Scooter">Scooter</option>
+                  <option value="Bike">Bike</option>
+                  <option value="Triciclo">Triciclo</option>
+                  <option value="Patinete">Patinete</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Slug (ID único)</label>
+                <input type="text" class="form-input" x-model="form.slug" placeholder="max-12" :disabled="isEditing"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box; font-family: monospace;">
+              </div>
+
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Marca / Fabricante</label>
+                <input type="text" class="form-input" x-model="form.marca" placeholder="MAJ"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Versão / Ano</label>
+                <input type="text" class="form-input" x-model="form.versao_ano" placeholder="2026"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Código Interno / SKU</label>
+                <input type="text" class="form-input" x-model="form.codigo_interno" placeholder="MSKU0446"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+
+              <div style="display: flex; align-items: center; padding-top: 18px;">
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 600;">
+                  <input type="checkbox" x-model="form.is_active" style="width: 16px; height: 16px; cursor: pointer;">
+                  <span>Ativo no Mostruário</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Linha 2: BANNERS WIDESCREEN 16:9 DE TOPO (ATEMPORAL VS PROMOCIONAL) -->
+            <div style="border: 1px solid var(--line, #334155); border-radius: 12px; padding: 18px; background: rgba(15,23,42,0.4);">
+              
+              <!-- Seletor Ativo de Banner no Topo -->
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--line, #334155); padding-bottom: 12px;">
+                <div>
+                  <h3 style="font-size: 13.5px; font-weight: 700; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 6px;">
+                    🖼️ Banners Panorâmicos de Topo (16:9 de Estúdio)
+                  </h3>
+                  <p style="font-size: 11.5px; color: var(--muted, #94a3b8); margin: 3px 0 0 0;">
+                    A foto oficial de estúdio que coroa a apresentação de cada veículo no Mostruário.
+                  </p>
+                </div>
+
+                <div style="display: inline-flex; gap: 6px; background: var(--panel2, #1e293b); padding: 4px; border-radius: 8px; border: 1px solid var(--line, #334155);">
+                  <button type="button"
+                          @click="form.active_banner_type = 'atemporal'"
+                          :style="form.active_banner_type === 'atemporal' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                          style="border: none; border-radius: 6px; padding: 5px 12px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+                    🟢 Ativar Banner Atemporal
+                  </button>
+                  <button type="button"
+                          @click="form.active_banner_type = 'promocional'"
+                          :style="form.active_banner_type === 'promocional' ? 'background: #ffb703; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
+                          style="border: none; border-radius: 6px; padding: 5px 12px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+                    ⚡ Ativar Banner Promocional
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grade de 2 Banners Panorâmicos 16:9 Lado a Lado -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                
+                <!-- QUADRO 1: BANNER ATEMPORAL (TOPO OFICIAL 16:9) -->
+                <div :style="form.active_banner_type === 'atemporal' ? 'border-color: #00e599; box-shadow: 0 0 16px rgba(0,229,153,0.15);' : 'border-color: var(--line, #334155);'"
+                     style="display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line, #334155); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                      🏛️ Banner Atemporal (Topo 16:9)
+                    </span>
+                    <span x-show="form.active_banner_type === 'atemporal'"
+                          style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(0,229,153,0.2); color: #00e599; border: 1px solid rgba(0,229,153,0.4);">
+                      ✓ ATIVO NO MOSTRUÁRIO
+                    </span>
+                  </div>
+
+                  <!-- Container 16:9 de Alta Fidelidade -->
+                  <div style="aspect-ratio: 16/9; width: 100%; border-radius: 8px; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border: 1px solid var(--line, #334155);">
+                    <template x-if="previewBannerAtemporal || form.banner_image">
+                      <img :src="previewBannerAtemporal || form.banner_image" alt="Banner Atemporal" style="width: 100%; height: 100%; object-fit: cover;">
+                    </template>
+                    <template x-if="!previewBannerAtemporal && !form.banner_image">
+                      <div style="color: var(--muted, #94a3b8); font-size: 11px; text-align: center;">
+                        <span style="font-size: 26px; display: block; margin-bottom: 2px;">🖼️</span>
+                        Nenhum banner atemporal
+                      </div>
+                    </template>
+                  </div>
+
+                  <div>
+                    <input type="file" id="bannerAtemporalInput" @change="onBannerAtemporalSelected($event)" accept="image/png,image/webp,image/jpeg,image/jpg" style="display: none;">
+                    <button type="button" class="btn secondary" @click="document.getElementById('bannerAtemporalInput').click()" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px;">
+                      📁 Trocar Banner Atemporal (16:9)
+                    </button>
+                    <p style="font-size: 10px; color: var(--muted, #94a3b8); margin: 4px 0 0 0; text-align: center;">
+                      Banner panorâmico de estúdio oficial que coroa o topo da página do produto.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- QUADRO 2: BANNER PROMOCIONAL (CAMPANHA 16:9) -->
+                <div :style="form.active_banner_type === 'promocional' ? 'border-color: #ffb703; box-shadow: 0 0 16px rgba(255,183,3,0.18);' : 'border-color: var(--line, #334155);'"
+                     style="display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line, #334155); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                      ⚡ Banner Promocional (Campanha 16:9)
+                    </span>
+                    <span x-show="form.active_banner_type === 'promocional'"
+                          style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(255,183,3,0.2); color: #ffb703; border: 1px solid rgba(255,183,3,0.4);">
+                      ✓ ATIVO NO MOSTRUÁRIO
+                    </span>
+                  </div>
+
+                  <!-- Container 16:9 de Alta Fidelidade -->
+                  <div style="aspect-ratio: 16/9; width: 100%; border-radius: 8px; background: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border: 1px solid var(--line, #334155);">
+                    <template x-if="previewBannerPromo || form.promo_banner_image">
+                      <img :src="previewBannerPromo || form.promo_banner_image" alt="Banner Promocional" style="width: 100%; height: 100%; object-fit: cover;">
+                    </template>
+                    <template x-if="!previewBannerPromo && !form.promo_banner_image">
+                      <div style="color: var(--muted, #94a3b8); font-size: 11px; text-align: center;">
+                        <span style="font-size: 26px; display: block; margin-bottom: 2px;">⚡</span>
+                        Nenhum banner promocional cadastrado
+                      </div>
+                    </template>
+                  </div>
+
+                  <div>
+                    <input type="file" id="bannerPromoInput" @change="onBannerPromoSelected($event)" accept="image/png,image/webp,image/jpeg,image/jpg" style="display: none;">
+                    <button type="button" class="btn secondary" @click="document.getElementById('bannerPromoInput').click()" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px;">
+                      📁 Trocar Banner Promo (16:9)
+                    </button>
+                    <p style="font-size: 10px; color: var(--muted, #94a3b8); margin: 4px 0 0 0; text-align: center;">
+                      Versão com selo de Black November, descontos ou arte sazonal.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ABA 2: MOTOR & BATERIA -->
+          <div x-show="activeTab === 'motor'" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Potência Nominal (W)</label>
+                <input type="text" class="form-input" x-model="form.potencia_nominal_w" placeholder="Ex: 1000"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Velocidade Máxima (km/h)</label>
+                <input type="text" class="form-input" x-model="form.velocidade_max_kmh" placeholder="Ex: 32"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Modos de Condução</label>
+                <input type="text" class="form-input" x-model="form.modos_conducao" placeholder="Ex: 3 níveis"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Autonomia Conservadora (km)</label>
+                <input type="text" class="form-input" x-model="form.autonomia_conservadora_km" placeholder="Ex: 35km"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Autonomia Máxima Estimada (km)</label>
+                <input type="text" class="form-input" x-model="form.autonomia_maxima_km" placeholder="Ex: 50"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Possui Marcha a Ré?</label>
+                <select class="form-input" x-model="form.possui_re"
+                        style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+                  <option value="Sim">Sim</option>
+                  <option value="Não">Não</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Voltagem (V)</label>
+                <input type="text" class="form-input" x-model="form.voltagem_v" @input="calcWh()" placeholder="Ex: 60v"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Capacidade (Ah)</label>
+                <input type="text" class="form-input" x-model="form.capacidade_ah" @input="calcWh()" placeholder="Ex: 20ah"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Capacidade (Wh)</label>
+                <input type="text" class="form-input" x-model="form.capacidade_wh" placeholder="Ex: 1200Wh"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <div>
+              <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Química / Tipo de Bateria</label>
+              <input type="text" class="form-input" x-model="form.quimica_bateria" placeholder="Ex: Bateria LiFePO₄ (LFP) com alta estabilidade térmica"
+                     style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <!-- ABA 3: ESTRUTURA & FREIOS -->
+          <div x-show="activeTab === 'estrutura'" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Carga Máxima Suportada (kg)</label>
+                <input type="text" class="form-input" x-model="form.carga_maxima_kg" placeholder="Ex: 180"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Peso do Veículo Montado (kg)</label>
+                <input type="text" class="form-input" x-model="form.peso_kg" placeholder="Ex: 75kg"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+            </div>
+
+            <div>
+              <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Especificação dos Freios</label>
+              <input type="text" class="form-input" x-model="form.freios" placeholder="Ex: Diant: Hidráulico / Tras: Hidráulico"
+                     style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Suspensão / Amortecimento</label>
+                <input type="text" class="form-input" x-model="form.suspensao" placeholder="Ex: Dupla dianteira e traseira"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+              <div>
+                <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Aro / Pneus</label>
+                <input type="text" class="form-input" x-model="form.aro_pneu" placeholder="Ex: Aro 12 tubeless"
+                       style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box;">
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 4: VITRINE & DESTAQUES COMERCIAIS -->
+          <div x-show="activeTab === 'comercial'" style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Principal Diferencial Competitivo (1 frase de topo)</label>
+              <textarea class="form-input" x-model="form.diferencial" rows="2" placeholder="Ex: Combinação de motor de alto desempenho, três modos de condução, marcha a ré e freios hidráulicos."
+                        style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+
+            <div>
+              <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Pontos Fortes (Argumentos de Venda)</label>
+              <textarea class="form-input" x-model="form.pontos_fortes" rows="3" placeholder="Ex: Motor robusto de 1000W; bateria removível LiFePO₄; chassi reforçado; conforto para 2 ocupantes."
+                        style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+            </div>
+
+            <div>
+              <label style="color: var(--text, #f8fafc); font-size: 12px; font-weight: 600; margin-bottom: 4px; display: block;">Descrição Livre para os Cards do Mostruário (Bullets)</label>
+              <textarea class="form-input" x-model="form.descricao_livre" rows="4" placeholder="• Motor 1000W&#10;• Até 32 km/h&#10;• Autonomia até 50 km*&#10;• Suporta até 180 kg&#10;• Freios hidráulicos"
+                        style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 12px; width: 100%; box-sizing: border-box; font-family: monospace; resize: vertical;"></textarea>
+            </div>
+          </div>
+
+          <!-- Rodapé de Ações -->
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line, #334155);">
+            <button type="button" class="btn secondary" @click="close()" :disabled="saving" style="padding: 9px 18px;">
+              Cancelar
+            </button>
+            <button type="submit" class="btn primary" :disabled="saving" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 24px; font-weight: 700; background: #00e599; color: #000;">
+              <span x-show="!saving" x-text="isEditing ? '💾 Atualizar Modelo' : '➕ Salvar Novo Modelo'"></span>
+              <span x-show="saving" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span class="spinner" style="width: 14px; height: 14px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                Salvando Modelo...
+              </span>
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </template>
+</div>
