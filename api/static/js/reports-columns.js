@@ -26,8 +26,7 @@
   ];
 
   const ACTION_BUTTONS = [
-    { key: 'ver_respostas', label: 'Ver Respostas', icon: '👁️', defaultVisible: true, fixed: false },
-    { key: 'afericao_ia', label: 'Aferição IA', icon: '🎯', defaultVisible: true, fixed: false },
+    { key: 'respostas', label: 'Respostas (IA)', icon: '📝', defaultVisible: true, fixed: true },
     { key: 'sync_doc', label: 'Sincronizar Google Doc', icon: '⚡', defaultVisible: false, fixed: false },
     { key: 'subir_arquivo', label: 'Subir Arquivo (PDF/DOCX)', icon: '📤', defaultVisible: false, fixed: false },
     { key: 'baixar_arquivo', label: 'Baixar Arquivo Entregue', icon: '📥', defaultVisible: false, fixed: false },
@@ -73,6 +72,8 @@
           let visibleButtons = Array.isArray(parsed.visibleButtons)
             ? parsed.visibleButtons
             : [...DEFAULT_VISIBLE_BUTTONS];
+          visibleButtons = visibleButtons.filter(b => b !== 'ver_respostas' && b !== 'afericao_ia');
+          if (!visibleButtons.includes('respostas')) visibleButtons.unshift('respostas');
           if (!visibleButtons.includes('menu_mais')) visibleButtons.push('menu_mais');
 
           return { order, hidden, widths, visibleButtons };

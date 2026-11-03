@@ -33,11 +33,15 @@
     <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--accent, #e5a93b);">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
         <div>
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;">
             <span style="font-size: 1.5rem;">📋</span>
-            <h2 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
+            <h1 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em;">
               Gestão Interna & Governança MAJ
-            </h2>
+            </h1>
+            <span style="font-size: 0.78rem; padding: 4px 12px; border-radius: 8px; font-weight: 800; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.18)); color: #fbbf24; border: 1.5px solid #f59e0b; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 14px rgba(245, 158, 11, 0.3); text-transform: uppercase; letter-spacing: 0.04em;" title="Ciclo Semanal Ativo">
+              <span>📅</span>
+              <span>{{ cycle.title }} ({{ cycle.cycle_code }})</span>
+            </span>
             <span class="badge comex-value-amber" style="background: rgba(217, 119, 6, 0.12); border: 1px solid rgba(217, 119, 6, 0.35); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em;">
               PAINEL DA DIRETORIA
             </span>

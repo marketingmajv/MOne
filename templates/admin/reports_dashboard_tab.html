@@ -78,7 +78,7 @@
                 style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
                 @click="analyzeAllAI()"
                 title="Confronta respostas e gera aferição de IA para todos os {{ summary.employees|length }} colaboradores">
-          <span>⚡ Aferir Todos com IA</span>
+          <span>⚡ Aferir Respostas com IA (Todos)</span>
         </button>
 
         <button type="button" 
@@ -255,26 +255,15 @@
                    @click.outside="menuOpen = false"
                    @keydown.escape.window="menuOpen = false">
 
-                <!-- Botão 1: Ver Respostas -->
+                <!-- Botão Principal Unificado: Respostas (Abre modal completo com IA) -->
                 <button type="button" 
-                        data-action-btn="ver_respostas"
-                        class="btn sm" 
-                        style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer; transition: all 0.15s ease;"
-                        title="Visualizar respostas e histórico do colaborador"
-                        @click.stop="openReport('{{ emp.key }}')">
-                  <span>👁️</span>
-                  <span>Ver Respostas</span>
-                </button>
-
-                <!-- Botão 2: Aferição IA (Destaque Principal) -->
-                <button type="button" 
-                        data-action-btn="afericao_ia"
+                        data-action-btn="respostas"
                         class="btn primary sm" 
-                        style="background: #e5a93b; color: #000; font-size: 0.76rem; font-weight: 800; padding: 6px 12px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; border: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(229, 169, 59, 0.25); cursor: pointer; transition: all 0.15s ease;"
-                        title="Confrontar respostas fornecidas vs desejadas e gerar pontuação da IA"
+                        style="background: #0284c7; color: #ffffff; font-size: 0.78rem; font-weight: 800; padding: 6px 14px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(56, 189, 248, 0.4); white-space: nowrap; box-shadow: 0 2px 10px rgba(2, 132, 199, 0.3); cursor: pointer; transition: all 0.15s ease;"
+                        title="Visualizar respostas completas, análise de IA e deliberações da Diretoria"
                         @click.stop="openEvaluation('{{ emp.key }}')">
-                  <span>🎯</span>
-                  <span>Aferição IA</span>
+                  <span>📝</span>
+                  <span>Respostas</span>
                 </button>
 
                 <!-- Botão 3: Sincronizar Google Doc (opcional na linha) -->

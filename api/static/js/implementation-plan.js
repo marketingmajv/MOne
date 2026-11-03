@@ -9,31 +9,16 @@ function implementationPlanApp() {
     activeTab: window.__ACTIVE_TAB__ || 'dashboard',
     searchMember: '',
     showDeadlineModal: false,
-    showReportModal: false,
     showDocLinksModal: false,
     showMismatchModal: false,
     mismatchData: {},
     isSyncingDoc: false,
     syncingStatusTitle: 'Sincronizando com IA...',
     syncingStatusDesc: 'Lendo o Google Doc e extraindo as respostas...',
-    selectedEmployee: 'marisa',
-    selectedHistoryCycleId: null,
     employeesData: window.__EMPLOYEES_DATA__ || [],
     docLinksData: window.__DOC_LINKS__ || {},
     currentCycleId: window.__CYCLE_ID__ || 0,
     governanceStatus: window.__GOVERNANCE_STATUS__ || {},
-
-    get currentEmployee() {
-      return (this.employeesData || []).find(e => e.key === this.selectedEmployee) || null;
-    },
-
-    get activeReportData() {
-      if (!this.currentEmployee) return null;
-      const hist = this.currentEmployee.history || [];
-      if (!hist.length) return this.currentEmployee;
-      if (!this.selectedHistoryCycleId) return hist[0];
-      return hist.find(h => h.cycle_id === this.selectedHistoryCycleId) || hist[0];
-    },
 
     init() {
       if (!this.activeTab) {
@@ -42,10 +27,8 @@ function implementationPlanApp() {
     },
 
     openReport(key) {
-      if (!key) return;
-      this.selectedEmployee = key;
-      this.selectedHistoryCycleId = null;
-      this.showReportModal = true;
+      // Redireciona para o fluxo unificado de respostas e aferição IA
+      this.openEvaluation(key);
     },
 
     openEvaluation(key) {
