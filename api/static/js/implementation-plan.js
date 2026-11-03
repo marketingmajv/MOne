@@ -21,6 +21,7 @@ function implementationPlanApp() {
     employeesData: window.__EMPLOYEES_DATA__ || [],
     docLinksData: window.__DOC_LINKS__ || {},
     currentCycleId: window.__CYCLE_ID__ || 0,
+    governanceStatus: window.__GOVERNANCE_STATUS__ || {},
 
     get currentEmployee() {
       return (this.employeesData || []).find(e => e.key === this.selectedEmployee) || null;
@@ -354,6 +355,19 @@ function implementationPlanApp() {
         this.isSyncingDoc = false;
         alert('Erro de conexão na aferição em lote: ' + (err.message || err));
       }
+    },
+
+    toggleCycleFeedback(release) {
+      return window.ImplementationPlanGovernance.toggleCycleFeedback(this.currentCycleId, release);
+    },
+    toggleCycleEdit(unlock) {
+      return window.ImplementationPlanGovernance.toggleCycleEdit(this.currentCycleId, unlock);
+    },
+    toggleEmployeeEdit(key, unlock) {
+      return window.ImplementationPlanGovernance.toggleEmployeeEdit(this.currentCycleId, key, unlock);
+    },
+    decideEditRequest(key, decision) {
+      return window.ImplementationPlanGovernance.decideEditRequest(this.currentCycleId, key, decision);
     }
   };
 }

@@ -284,5 +284,6 @@ def get_cycle_governance_status(cycle_id: int) -> Dict[str, Any]:
             "edit_unlocked_all": e_all,
             "pending_requests": pending_requests,
             "pending_requests_count": len(pending_requests),
+            "pending_edit_requests_count": len(pending_requests),
         }
 

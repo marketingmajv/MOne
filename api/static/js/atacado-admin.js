@@ -179,3 +179,4 @@ function compressAtacadoImage(file, maxWidth, quality, callback) {
   };
   reader.readAsDataURL(file);
 }
+

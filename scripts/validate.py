@@ -213,10 +213,44 @@ def check_flask_commercial_routes() -> bool:
                 return False
             print("  ✓ Painel Administrativo /admin/atacado: HTTP 200 OK")
 
+            # 6. Painel Executivo de Gestão Interna & Governança (Admin)
+            res_gestao = client.get("/admin/internal/plan")
+            if res_gestao.status_code != 200:
+                print(f"  ✗ Falha crítica no painel /admin/internal/plan: HTTP {res_gestao.status_code}")
+                return False
+            print("  ✓ Painel Gestão Interna /admin/internal/plan: HTTP 200 OK")
+
+            # 7. Portal do Colaborador (Meu Relatório)
+            res_meu_rel = client.get("/meu-relatorio")
+            if res_meu_rel.status_code != 200:
+                print(f"  ✗ Falha crítica no portal /meu-relatorio: HTTP {res_meu_rel.status_code}")
+                return False
+            print("  ✓ Portal do Colaborador /meu-relatorio: HTTP 200 OK")
+
         return True
     except Exception as e:
         print(f"  ✗ ERRO na inicialização da aplicação ou rotas: {e}")
         return False
+
+
+def check_and_sync_static_assets() -> bool:
+    """Garante paridade estrita entre static/ e api/static/ para Vercel Serverless."""
+    print("📁 [5/8] Auditoria e sincronização de ativos estáticos (static/ vs api/static/)...")
+    api_static = BASE_DIR / "api" / "static"
+    root_static = BASE_DIR / "static"
+    if api_static.exists() and root_static.exists():
+        import shutil
+        synced_count = 0
+        for root_item in root_static.rglob("*"):
+            if root_item.is_file():
+                rel = root_item.relative_to(root_static)
+                target = api_static / rel
+                if not target.exists() or root_item.stat().st_mtime > target.stat().st_mtime:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(root_item), str(target))
+                    synced_count += 1
+        print(f"  ✓ {synced_count} ativo(s) sincronizado(s) com api/static/ para execução serverless.")
+    return True
 
 
 def check_ux_ui_integrity() -> bool:
@@ -271,6 +305,7 @@ def validate_all() -> bool:
         check_python_syntax,
         check_templates,
         check_ux_ui_integrity,
+        check_and_sync_static_assets,
         check_flask_commercial_routes,
         check_database_config,
         check_permissions_coverage,
@@ -280,7 +315,7 @@ def validate_all() -> bool:
             print("\n❌ FALHA NA VALIDAÇÃO PRÉ-DEPLOY! Publicação interrompida por segurança.\n")
             return False
 
-    print("\n✅ TODAS AS 7 ETAPAS PREDITIVAS (INCLUINDO UX/UI) FORAM APROVADAS! Código 100% blindado para deploy.\n")
+    print("\n✅ TODAS AS 8 ETAPAS PREDITIVAS (ROTAS CRÍTICAS, UX/UI E ATIVOS) FORAM APROVADAS! Código 100% blindado para deploy.\n")
     return True
 
 

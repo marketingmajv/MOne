@@ -92,13 +92,13 @@
   </div>
 
   <!-- Alerta de Solicitações de Edição Pendentes -->
-  {% if governance_status and governance_status.pending_edit_requests_count > 0 %}
+  {% if governance_status and governance_status.get('pending_requests') and (governance_status.pending_requests|length) > 0 %}
   <div class="panel" style="margin-bottom: 20px; padding: 14px 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
     <div style="display: flex; align-items: center; gap: 10px;">
       <span style="font-size: 1.4rem;">🔔</span>
       <div>
         <strong style="color: #fbbf24; font-size: 0.95rem;">
-          {{ governance_status.pending_edit_requests_count }} Solicitação(ões) de Edição Pendente(s)
+          {{ governance_status.pending_requests|length }} Solicitação(ões) de Edição Pendente(s)
         </strong>
         <span class="muted" style="font-size: 0.8rem; display: block;">
           Colaboradores solicitaram autorização para ajustar respostas deste ciclo.
