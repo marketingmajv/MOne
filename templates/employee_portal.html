@@ -2,6 +2,10 @@
 
 {% block title %}Meu Relatório Semanal | M-One{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/employee-portal.css', v='20261103_01') }}">
+{% endblock %}
+
 {% block content %}
 <script>
   window.__PORTAL_CONFIG__ = {
@@ -10,6 +14,10 @@
     deadlineIso: "{{ deadline_iso }}",
     isEditable: {{ 'true' if is_editable else 'false' }},
     isFauzer: {{ 'true' if is_fauzer else 'false' }},
+    isPreviousCycle: {{ 'true' if is_previous_cycle else 'false' }},
+    isEditUnlocked: {{ 'true' if is_edit_unlocked else 'false' }},
+    editRequestStatus: "{{ edit_request_status or '' }}",
+    editRequestReason: {{ (edit_request_reason or '')|tojson|safe }},
     csrfToken: "{{ csrf_token() }}",
     answers: {{ report.answers|tojson|safe if (report and report.answers) else '{}' }},
     reportStatus: "{{ report.status if report else 'draft' }}",
@@ -25,11 +33,26 @@
   <div class="panel mb-4" style="background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(30, 41, 59, 0.85)); border: 1px solid var(--line); border-radius: 16px; padding: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
       <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
           <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-weight: 700; padding: 4px 10px; border-radius: 8px;">
             {{ meta.badge or 'COLABORADOR' }}
           </span>
-          <span style="color: var(--muted); font-size: 13px;">{{ cycle.title }} ({{ cycle.cycle_code }})</span>
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px;">
+            <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Ciclo:</span>
+            <select style="background: transparent; border: none; font-size: 12.5px; font-weight: 700; color: #38bdf8; cursor: pointer; outline: none; padding: 2px 4px;"
+                    onchange="window.location.href='/meu-relatorio?cycle_id=' + this.value">
+              {% for c in all_cycles %}
+              <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
+                {{ c.title }} ({{ c.cycle_code }}) {% if latest_cycle and c.id == latest_cycle.id %}★ Atual{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if is_previous_cycle %}
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); font-size: 11px; font-weight: 700;">
+            📜 Histórico Anterior
+          </span>
+          {% endif %}
         </div>
         <h1 style="font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.5px;">
           Olá, {{ meta.name }}! 👋
@@ -85,7 +108,7 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <span style="font-size: 24px;">🎯</span>
         <div>
-          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #fff;">
+          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text);">
             Feedback Oficial & Alinhamento da Diretoria
           </h3>
           <p style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--muted);">
@@ -144,7 +167,7 @@
         {% set d_comment = director_comments.get(q.id) or '' %}
         {% set des = feedback_desired.get(q.id) or '' %}
         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px 14px;">
-          <strong style="font-size: 12.5px; color: #fff; display: block; margin-bottom: 8px;">{{ q.label }}</strong>
+          <strong style="font-size: 12.5px; color: var(--text); display: block; margin-bottom: 8px;">{{ q.label }}</strong>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 12px;">
             <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; padding: 10px;">
               <span style="font-size: 10.5px; color: #38bdf8; font-weight: 700; display: block; margin-bottom: 4px;">Sua Resposta:</span>
@@ -172,26 +195,26 @@
   <!-- Gamificação: Placar Pessoal, Streak e Linha do Tempo -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
     <!-- Card Nível & Pontos -->
-    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+    <div class="panel portal-metric-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sua Pontuação Total</span>
         <span style="font-size: 18px;" x-text="profile.badge_info ? profile.badge_info.badge.split(' ')[0] : '🥉'">🥉</span>
       </div>
       <div style="display: flex; align-items: baseline; gap: 8px;">
-        <span style="font-size: 28px; font-weight: 900; color: #e5a93b;" x-text="(profile.total_points || 0) + ' pts'">0 pts</span>
-        <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.3); font-size: 11px; font-weight: 700;" x-text="profile.badge_info ? profile.badge_info.tier : 'Bronze MAJ'">Bronze MAJ</span>
+        <span class="portal-score-num" x-text="(profile.total_points || 0) + ' pts'">0 pts</span>
+        <span class="badge badge-tier-gold" x-text="profile.badge_info ? profile.badge_info.tier : 'Bronze MAJ'">Bronze MAJ</span>
       </div>
       <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;" x-text="'+100 pts por cada relatório enviado rigorosamente no prazo.'"></p>
     </div>
 
     <!-- Card Sequência Ativa (Streak) -->
-    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+    <div class="panel portal-metric-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sequência Pontual (Streak)</span>
         <span style="font-size: 18px;">🔥</span>
       </div>
       <div style="display: flex; align-items: baseline; gap: 8px;">
-        <span style="font-size: 28px; font-weight: 900; color: #f97316;" x-text="(profile.current_streak || 0) + ' semanas'">0 semanas</span>
+        <span class="portal-streak-num" x-text="(profile.current_streak || 0) + ' semanas'">0 semanas</span>
       </div>
       <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">
         <span x-show="profile.current_streak > 0">Consistência impecável! Continue pontual para multiplicar seus pontos.</span>
@@ -200,34 +223,34 @@
     </div>
 
     <!-- Card Status do Relatório Atual -->
-    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px;">
+    <div class="panel portal-metric-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Relatório Desta Semana</span>
         <span style="font-size: 14px;" :title="currentReportStatus">
           <template x-if="reportStatus === 'submitted_on_time'">
-            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">✓ Protocolado</span>
+            <span class="badge badge-status-on-time">✓ Protocolado</span>
           </template>
           <template x-if="reportStatus === 'submitted_late'">
-            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">Atrasado</span>
+            <span class="badge badge-status-late">Atrasado</span>
           </template>
           <template x-if="reportStatus === 'draft' || !reportStatus">
-            <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">Rascunho</span>
+            <span class="badge badge-status-draft">Rascunho</span>
           </template>
         </span>
       </div>
       <div style="font-size: 13px; color: var(--text); line-height: 1.4;">
         <template x-if="reviewedAt">
-          <div style="color: #38bdf8; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+          <div style="color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 6px;">
             <span>👁️ Recebido & Analisado pela Diretoria</span>
           </div>
         </template>
         <template x-if="!reviewedAt && (reportStatus === 'submitted_on_time' || reportStatus === 'submitted_late')">
-          <div style="color: #10b981; font-weight: 600;">
+          <div style="color: #059669; font-weight: 600;">
             <span>📬 Protocolado! Aguardando reunião da diretoria.</span>
           </div>
         </template>
         <template x-if="reportStatus === 'draft' || !reportStatus">
-          <div style="color: var(--muted);">
+          <div style="color: var(--text); font-weight: 500;">
             <span>📝 Preencha abaixo e clique em 'Enviar Relatório Oficial'.</span>
           </div>
         </template>
@@ -238,10 +261,10 @@
 
   <!-- Abas: Preenchimento do Relatório vs Histórico Pessoal -->
   <div style="display: flex; gap: 12px; border-bottom: 1px solid var(--line); margin-bottom: 24px;">
-    <button @click="currentTab = 'form'" class="btn" :style="currentTab === 'form' ? 'background: var(--panel2); color: #fff; border-bottom: 2px solid #38bdf8; font-weight: 700;' : 'background: transparent; color: var(--muted); border: none; font-weight: 500;'" style="padding: 10px 18px; border-radius: 8px 8px 0 0;">
+    <button @click="currentTab = 'form'" class="btn portal-tab" :class="{ 'active': currentTab === 'form' }">
       ✍️ Preenchimento da Semana
     </button>
-    <button @click="currentTab = 'history'" class="btn" :style="currentTab === 'history' ? 'background: var(--panel2); color: #fff; border-bottom: 2px solid #38bdf8; font-weight: 700;' : 'background: transparent; color: var(--muted); border: none; font-weight: 500;'" style="padding: 10px 18px; border-radius: 8px 8px 0 0;">
+    <button @click="currentTab = 'history'" class="btn portal-tab" :class="{ 'active': currentTab === 'history' }">
       📊 Meu Histórico & Linha do Tempo (<span x-text="profile.submitted_count || 0"></span>)
     </button>
   </div>
@@ -251,14 +274,14 @@
     <!-- Ações Superiores: Subir Arquivo e Auto-save -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 14px; font-weight: 700; color: #fff;">Critérios do seu cargo:</span>
+        <span style="font-size: 14px; font-weight: 700; color: var(--text);">Critérios do seu cargo:</span>
         <span style="font-size: 12px; color: var(--muted);">({{ meta.questions|length }} perguntas obrigatórias)</span>
       </div>
 
       <div style="display: flex; align-items: center; gap: 10px;">
         <!-- Input de arquivo invisível -->
         <input type="file" id="portal-file-input" accept=".docx,.pdf,.txt" style="display: none;" @change="handleFileUpload($event)">
-        <button type="button" class="btn" @click="document.getElementById('portal-file-input').click()" :disabled="!isEditable || isUploading" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.08); font-size: 12px; display: flex; align-items: center; gap: 6px;">
+        <button type="button" class="btn" @click="document.getElementById('portal-file-input').click()" :disabled="!isEditable || isUploading" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #0284c7; background: rgba(56, 189, 248, 0.08); font-size: 12px; display: flex; align-items: center; gap: 6px;">
           <span>📎 Subir Relatório via Arquivo (.docx / .pdf / .txt)</span>
         </button>
 
@@ -267,7 +290,7 @@
         </button>
 
         <button type="button" class="btn primary" @click="submitOfficial()" :disabled="!isEditable || isSaving" style="font-size: 12px; font-weight: 700;">
-          <span>🚀 Enviar Relatório Oficial</span>
+          <span>{{ '🚀 Reenviar Relatório Atualizado' if is_edit_unlocked else '🚀 Enviar Relatório Oficial' }}</span>
         </button>
       </div>
     </div>
@@ -278,22 +301,62 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <span style="font-size: 18px;">🔓</span>
         <div>
-          <span style="font-weight: 700; color: #38bdf8; font-size: 13px;">Acesso Especial Diretoria (Fauzer):</span>
+          <span style="font-weight: 700; color: #0284c7; font-size: 13px;">Acesso Especial Diretoria (Fauzer):</span>
           <span style="font-size: 12px; color: var(--muted); margin-left: 6px;">Trava pós-prazo desativada. Formulário 100% liberado para edição contínua e salvamento a qualquer momento.</span>
         </div>
       </div>
-      <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 11px; font-weight: 700;">Edição Livre</span>
+      <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 11px; font-weight: 700;">Edição Livre</span>
     </div>
-    {% endif %}
-
-    <!-- Banner se o relatório já estiver travado para edição -->
-    <div x-show="!isEditable" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-      <span style="font-size: 20px;">🔒</span>
+    {% elif is_edit_unlocked %}
+    <!-- Banner de Edição Liberada pela Gerência -->
+    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 22px;">🔓</span>
+        <div>
+          <div style="font-weight: 800; color: #10b981; font-size: 13.5px;">Edição Liberada pela Gerência!</div>
+          <div style="font-size: 12px; color: var(--text); opacity: 0.9;">Você pode atualizar suas respostas deste ciclo abaixo. Ao clicar em <strong>"Reenviar Relatório Atualizado"</strong>, o relatório será protocolado novamente e a trava reativada.</div>
+        </div>
+      </div>
+      <span class="badge" style="background: #10b981; color: #000; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 6px;">Edição Habilitada</span>
+    </div>
+    {% elif not is_editable %}
+    <!-- Banner se o relatório estiver bloqueado para edição -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 20px;">🔒</span>
+        <div>
+          <div style="font-weight: 700; color: var(--text); font-size: 13px;">
+            {% if is_previous_cycle %}
+            Modo Leitura — {{ cycle.title }}
+            {% else %}
+            Relatório congelado para edição
+            {% endif %}
+          </div>
+          <div style="font-size: 12px; color: var(--muted);">
+            {% if is_previous_cycle %}
+            Este ciclo já foi encerrado e suas respostas arquivadas. Se precisar corrigir dados, solicite autorização à gerência.
+            {% else %}
+            Este relatório já foi protocolado oficialmente ou o prazo encerrou. Para ajustes pontuais, solicite liberação à gerência.
+            {% endif %}
+          </div>
+        </div>
+      </div>
       <div>
-        <div style="font-weight: 700; color: #fff; font-size: 13px;">Relatório congelado para edição</div>
-        <div style="font-size: 12px; color: var(--muted);">Este relatório já foi protocolado oficialmente ou analisado pela Diretoria. Para qualquer ajuste pontual de urgência, contate a Gerência.</div>
+        {% if edit_request_status == 'pending' %}
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 12px; font-weight: 700; padding: 6px 12px;">
+          ⏳ Pedido de Edição em Análise
+        </span>
+        {% else %}
+        <button type="button" 
+                class="btn" 
+                @click="openEditRequestModal()"
+                style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🔔 Solicitar Edição à Gerência</span>
+        </button>
+        {% endif %}
       </div>
     </div>
+    {% endif %}
 
     <!-- Lista de Perguntas Dinâmicas da Cartilha -->
     <form @submit.prevent="submitOfficial()" style="display: flex; flex-direction: column; gap: 20px;">
@@ -334,130 +397,67 @@
           <span x-text="isSaving ? 'Salvando...' : '💾 Salvar Rascunho'"></span>
         </button>
         <button type="submit" class="btn primary" :disabled="!isEditable || isSaving" style="font-size: 14px; font-weight: 700; padding: 10px 24px;">
-          <span>🚀 Enviar Relatório Oficial (+100 pts)</span>
+          <span>{{ '🚀 Reenviar Relatório Atualizado' if is_edit_unlocked else '🚀 Enviar Relatório Oficial (+100 pts)' }}</span>
         </button>
       </div>
     </form>
   </div>
 
-  <!-- ABA 2: MEU HISTÓRICO & LINHA DO TEMPO DE RECEBIMENTO -->
-  <div x-show="currentTab === 'history'" x-transition>
-    <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-          <h2 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 4px 0;">
-            Linha do Tempo de Entregas & Confirmação da Diretoria
-          </h2>
-          <p style="font-size: 12px; color: var(--muted); margin: 0;">
-            Acompanhe a chegada e confirmação dos seus relatórios pelos moderadores (Jam, Geysa e Diretoria).
-          </p>
+  {% include "employee_portal_history_tab.html" %}
+
+  <!-- Modal Solicitar Edição à Gerência -->
+  <template x-teleport="body">
+    <div class="modal" :class="{ 'show': showEditRequestModal }" style="display: flex; align-items: center; justify-content: center; z-index: 9999;" x-show="showEditRequestModal" x-cloak>
+      <div class="modal-card" style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; max-width: 480px; width: 92%; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🔔</span>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">Solicitar Edição de Relatório</h3>
+          </div>
+          <button type="button" class="modal-close-btn" @click="showEditRequestModal = false" title="Fechar">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-        <div style="text-align: right;">
-          <span style="font-size: 12px; color: var(--muted);">Taxa de Pontualidade:</span>
-          <span style="font-size: 16px; font-weight: 800; color: #10b981; margin-left: 6px;" x-text="(profile.on_time_pct || 0) + '%'">100%</span>
+        <p style="font-size: 12.5px; color: var(--muted); margin: 0 0 14px 0; line-height: 1.45;">
+          Informe à Gerência e Diretoria o motivo pelo qual você precisa reabrir este relatório para ajuste ou complementação de respostas.
+        </p>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-transform: uppercase;">Motivo da Solicitação:</label>
+          <textarea class="form-input" 
+                    rows="3" 
+                    x-model="editRequestReasonInput"
+                    placeholder="Ex: Preciso atualizar as métricas que foram recalculadas após a reunião..."
+                    style="width: 100%; font-size: 13px; line-height: 1.4; resize: vertical; border-radius: 8px;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn" @click="showEditRequestModal = false" style="font-size: 12px;">Cancelar</button>
+          <button type="button" class="btn primary" @click="sendEditRequest()" :disabled="isSubmittingRequest" style="font-size: 12px; font-weight: 700;">
+            <span x-text="isSubmittingRequest ? 'Enviando...' : 'Enviar Solicitação'"></span>
+          </button>
         </div>
       </div>
-
-      <!-- Lista de Ciclos com Linha do Tempo em 3 Estágios -->
-      <template x-if="profile.timeline && profile.timeline.length > 0">
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-          <template x-for="item in profile.timeline" :key="item.cycle_id">
-            <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 18px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-                <div>
-                  <span style="font-size: 15px; font-weight: 800; color: #fff;" x-text="item.cycle_title"></span>
-                  <span style="font-size: 12px; color: var(--muted); margin-left: 8px;" x-text="'(' + item.cycle_code + ')'"></span>
-                  <template x-if="item.docx_filename">
-                    <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 11px; margin-left: 8px;">
-                      📎 Arquivo Vinculado
-                    </span>
-                  </template>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-weight: 700; font-size: 12px;" x-text="'+' + item.points + ' pts'"></span>
-                  <span class="badge" :style="item.status === 'submitted_on_time' ? 'background: rgba(16, 185, 129, 0.2); color: #10b981;' : (item.status === 'submitted_late' ? 'background: rgba(245, 158, 11, 0.2); color: #f59e0b;' : 'background: rgba(148, 163, 184, 0.2); color: #94a3b8;')">
-                    <span x-text="item.status === 'submitted_on_time' ? '✓ No Prazo' : (item.status === 'submitted_late' ? 'Atrasado' : 'Rascunho')"></span>
-                  </span>
-                </div>
-              </div>
-
-              <!-- Linha do Tempo Visual de 3 Estágios -->
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px;">
-                <!-- Estágio 1 -->
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
-                       :style="item.stage >= 1 ? 'background: #38bdf8; color: #000;' : 'background: #334155; color: #94a3b8;'">
-                    1
-                  </div>
-                  <div>
-                    <div style="font-size: 12px; font-weight: 700; color: #fff;">1. Rascunho Salvo</div>
-                    <div style="font-size: 10px; color: var(--muted);">Respostas registradas</div>
-                  </div>
-                </div>
-
-                <!-- Estágio 2 -->
-                <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
-                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
-                       :style="item.stage >= 2 ? 'background: #10b981; color: #000;' : 'background: #334155; color: #94a3b8;'">
-                    2
-                  </div>
-                  <div>
-                    <div style="font-size: 12px; font-weight: 700;" :style="item.stage >= 2 ? 'color: #10b981;' : 'color: var(--muted);'">2. Protocolado</div>
-                    <div style="font-size: 10px; color: var(--muted);" x-text="item.submitted_at_fmt ? item.submitted_at_fmt : 'Aguardando envio'"></div>
-                  </div>
-                </div>
-
-                <!-- Estágio 3 -->
-                <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
-                  <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;"
-                       :style="item.stage >= 3 ? 'background: #8b5cf6; color: #fff;' : 'background: #334155; color: #94a3b8;'">
-                    3
-                  </div>
-                  <div>
-                    <div style="font-size: 12px; font-weight: 700;" :style="item.stage >= 3 ? 'color: #c084fc;' : 'color: var(--muted);'">3. Recebido pela Diretoria</div>
-                    <div style="font-size: 10px; color: var(--muted);" x-text="item.reviewed_at_fmt ? item.reviewed_at_fmt + ' (' + item.reviewed_by + ')' : 'Em fila de análise'"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </template>
-
-      <template x-if="!profile.timeline || profile.timeline.length === 0">
-        <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
-          <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
-          <div style="font-size: 14px; font-weight: 600; color: var(--text);">Nenhum histórico anterior registrado ainda</div>
-          <div style="font-size: 12px;">Ao enviar seu relatório desta semana, seu protocolo oficial e linha do tempo ficarão registrados aqui.</div>
-        </div>
-      </template>
     </div>
-  </div>
+  </template>
 
   <!-- Modal de Feedback de Upload com IA -->
   <template x-teleport="body">
     <div class="modal" :class="{ 'show': isUploading }" style="display: flex; align-items: center; justify-content: center; z-index: 9999;" x-show="isUploading">
       <div class="modal-card" style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; max-width: 440px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.7);">
         <div style="font-size: 36px; margin-bottom: 12px;">⚡</div>
-        <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">Auditoria com IA em Andamento</h3>
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--text); margin: 0 0 8px 0;">Auditoria com IA em Andamento</h3>
         <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
           Lendo o arquivo, extraindo respostas e populando as perguntas do seu cargo...
         </p>
         <div style="height: 4px; background: rgba(56, 189, 248, 0.2); border-radius: 4px; overflow: hidden; position: relative;">
-          <div style="height: 100%; width: 50%; background: #38bdf8; position: absolute; animation: indeterminate 1.5s infinite linear;"></div>
+          <div style="height: 100%; width: 50%; background: #0284c7; position: absolute; animation: indeterminate 1.5s infinite linear;"></div>
         </div>
       </div>
     </div>
   </template>
 </div>
-
-<style>
-  @keyframes indeterminate {
-    0% { left: -50%; width: 50%; }
-    50% { left: 25%; width: 75%; }
-    100% { left: 100%; width: 50%; }
-  }
-</style>
 
 <script src="{{ url_for('static', filename='js/employee-portal.js') }}"></script>
 {% endblock %}

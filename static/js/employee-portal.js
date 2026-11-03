@@ -13,7 +13,14 @@ function employeePortal() {
     employeeKey: cfg.employeeKey,
     deadlineIso: cfg.deadlineIso,
     isFauzer: isFauzer,
+    isPreviousCycle: Boolean(cfg.isPreviousCycle),
+    isEditUnlocked: Boolean(cfg.isEditUnlocked),
+    editRequestStatus: cfg.editRequestStatus || '',
+    editRequestReason: cfg.editRequestReason || '',
     isEditable: isFauzer ? true : Boolean(cfg.isEditable),
+    showEditRequestModal: false,
+    editRequestReasonInput: '',
+    isSubmittingRequest: false,
     csrfToken: cfg.csrfToken || '',
     answers: cfg.answers || {},
     reportStatus: cfg.reportStatus || 'draft',
@@ -106,8 +113,53 @@ function employeePortal() {
       }
     },
 
+    openEditRequestModal() {
+      this.editRequestReasonInput = '';
+      this.showEditRequestModal = true;
+    },
+
+    async sendEditRequest() {
+      const reason = (this.editRequestReasonInput || '').trim();
+      if (!reason) {
+        alert('Por favor, informe uma breve justificativa para a solicitação de edição.');
+        return;
+      }
+      this.isSubmittingRequest = true;
+      try {
+        const res = await fetch('/api/meu-relatorio/solicitar-edicao', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-Token': this.csrfToken
+          },
+          body: JSON.stringify({
+            cycle_id: this.cycleId,
+            reason: reason,
+            csrf_token: this.csrfToken
+          })
+        });
+        const data = await res.json();
+        this.isSubmittingRequest = false;
+        if (data.status === 'success') {
+          this.showEditRequestModal = false;
+          this.editRequestStatus = 'pending';
+          alert('✅ Solicitação enviada à Gerência e Diretoria com sucesso! Aguarde a liberação.');
+          window.location.reload();
+        } else {
+          alert('❌ Erro: ' + (data.message || 'Falha ao enviar solicitação.'));
+        }
+      } catch (err) {
+        this.isSubmittingRequest = false;
+        alert('Erro de conexão ao enviar solicitação.');
+      }
+    },
+
     async submitOfficial() {
-      if (!confirm('Deseja enviar seu relatório oficial agora?\n\nEle será protocolado e submetido para a Reunião da Diretoria.')) return;
+      const confirmMsg = this.isEditUnlocked
+        ? 'Deseja reenviar seu relatório atualizado agora?\n\nAs novas respostas serão gravadas, o protocolo atualizado e a trava reativada.'
+        : 'Deseja enviar seu relatório oficial agora?\n\nEle será protocolado e submetido para a Reunião da Diretoria.';
+      if (!confirm(confirmMsg)) return;
       this.isSaving = true;
       this.autoSaveMessage = 'Protocolando relatório oficial...';
 

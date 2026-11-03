@@ -280,18 +280,21 @@ def save_or_submit_report(
             else:
                 final_status = status if not is_draft else ("draft" if not existing.get("submitted_at") else "submitted_on_time")
 
+            re_lock = (not is_draft and not is_fauzer)
             up_sql = f"""
                 UPDATE maj_employee_reports
                 SET user_id = {placeholder},
                     answers_json = {placeholder},
                     status = {placeholder},
                     submitted_at = {placeholder},
+                    is_edit_unlocked = CASE WHEN {placeholder} THEN FALSE ELSE is_edit_unlocked END,
+                    edit_request_status = CASE WHEN {placeholder} THEN NULL ELSE edit_request_status END,
                     updated_at = {placeholder}
                 WHERE id = {placeholder}
             """
             conn.execute(
                 up_sql,
-                (user_id, answers_str, final_status, final_submitted_at, now, existing["id"])
+                (user_id, answers_str, final_status, final_submitted_at, re_lock, re_lock, now, existing["id"])
             )
         else:
             ins_sql = f"""
@@ -418,6 +421,10 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "google_doc_url": (rep.get("google_doc_url") if rep else None) or doc_links_map.get(key, {}).get("google_doc_url", ""),
             "docx_filename": (rep.get("docx_filename") if rep else None) or "",
             "uses_google_doc": (key != "fauzer"),
+            "is_edit_unlocked": bool(rep.get("is_edit_unlocked")) if rep else False,
+            "edit_request_status": rep.get("edit_request_status") if rep else None,
+            "edit_request_reason": rep.get("edit_request_reason") if rep else "",
+            "is_feedback_released": bool(rep.get("is_feedback_released")) if rep else False,
         })
 
     total_submitted = counts["submitted_on_time"] + counts["submitted_late"]

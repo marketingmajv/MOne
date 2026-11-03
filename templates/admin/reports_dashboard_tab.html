@@ -2,77 +2,7 @@
 <div x-show="activeTab === 'dashboard'" {% if active_tab != 'dashboard' %}x-cloak style="display: none;"{% endif %}>
 
   <!-- Métricas Rápidas das Entregas -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
-    <!-- Card Total Concluído -->
-    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #10b981; border-radius: 12px;">
-      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
-        Conclusão do Ciclo
-      </small>
-      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
-        <span style="font-size: 1.7rem; font-weight: 800; color: #10b981;">
-          {{ summary.completion_percent }}%
-        </span>
-        <span class="muted" style="font-size: 0.8rem;">
-          ({{ summary.total_submitted }}/{{ summary.counts.total }} entregues)
-        </span>
-      </div>
-      <div style="background: var(--panel2); border-radius: 6px; height: 6px; width: 100%; margin-top: 8px; overflow: hidden;">
-        <div style="background: #10b981; height: 100%; width: {{ summary.completion_percent }}%;"></div>
-      </div>
-    </div>
-
-    <!-- Card No Prazo -->
-    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #059669; border-radius: 12px;">
-      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
-        Enviados no Prazo
-      </small>
-      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
-        <span style="font-size: 1.7rem; font-weight: 800; color: var(--text);">
-          {{ summary.counts.submitted_on_time }}
-        </span>
-        <span class="badge" style="background: rgba(5, 150, 105, 0.12); color: #059669; font-size: 0.72rem; font-weight: 800;">
-          {{ summary.on_time_percent }}% pontualidade
-        </span>
-      </div>
-      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
-        Antes do prazo oficial
-      </small>
-    </div>
-
-    <!-- Card Pendentes -->
-    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #ef4444; border-radius: 12px;">
-      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
-        Pendentes de Envio
-      </small>
-      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
-        <span style="font-size: 1.7rem; font-weight: 800; color: #ef4444;">
-          {{ summary.counts.pending }}
-        </span>
-        <span class="muted" style="font-size: 0.8rem;">colaboradores</span>
-      </div>
-      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
-        Lembrete via WhatsApp disponível
-      </small>
-    </div>
-
-    <!-- Card Atrasados ou Rascunhos -->
-    <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #f59e0b; border-radius: 12px;">
-      <small class="muted" style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
-        Atrasados / Rascunhos
-      </small>
-      <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
-        <span style="font-size: 1.7rem; font-weight: 800; color: #f59e0b;">
-          {{ summary.counts.submitted_late + summary.counts.draft }}
-        </span>
-        <span class="muted" style="font-size: 0.8rem;">
-          ({{ summary.counts.submitted_late }} atraso / {{ summary.counts.draft }} rascunho)
-        </span>
-      </div>
-      <small style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-top: 6px;">
-        Acompanhamento gerencial
-      </small>
-    </div>
-  </div>
+  {% include "admin/reports_dashboard_kpis.html" %}
 
   <!-- Barra de Controle de Prazos e Prazo Oficial -->
   <div class="panel" style="margin-bottom: 20px; padding: 16px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
@@ -91,6 +21,44 @@
 
       <!-- Ações da Diretoria: Prazos, Links e Sincronização em Lote -->
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <!-- Governança: Liberação de Deliberações do Ciclo -->
+        {% if governance_status and governance_status.feedback_released_all %}
+        <button type="button" 
+                class="btn" 
+                style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+                @click="toggleCycleFeedback(false)"
+                title="Deliberações visíveis aos colaboradores. Clique para ocultar.">
+          <span>📢 Deliberações Liberadas</span>
+        </button>
+        {% else %}
+        <button type="button" 
+                class="btn" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text-dim); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+                @click="toggleCycleFeedback(true)"
+                title="Clique para liberar visualização das deliberações aos colaboradores.">
+          <span>🔒 Deliberações Ocultas</span>
+        </button>
+        {% endif %}
+
+        <!-- Governança: Liberação de Edição do Ciclo em Lote -->
+        {% if governance_status and governance_status.edit_unlocked_all %}
+        <button type="button" 
+                class="btn" 
+                style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+                @click="toggleCycleEdit(false)"
+                title="Edição em lote aberta. Clique para bloquear.">
+          <span>🔓 Edição em Lote Aberta</span>
+        </button>
+        {% else %}
+        <button type="button" 
+                class="btn" 
+                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text-dim); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+                @click="toggleCycleEdit(true)"
+                title="Clique para liberar edição de respostas em lote para todos os colaboradores.">
+          <span>🔒 Edição Bloqueada</span>
+        </button>
+        {% endif %}
+
         <button type="button" 
                 class="btn" 
                 style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;"
@@ -123,6 +91,33 @@
     </div>
   </div>
 
+  <!-- Alerta de Solicitações de Edição Pendentes -->
+  {% if governance_status and governance_status.pending_edit_requests_count > 0 %}
+  <div class="panel" style="margin-bottom: 20px; padding: 14px 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.4rem;">🔔</span>
+      <div>
+        <strong style="color: #fbbf24; font-size: 0.95rem;">
+          {{ governance_status.pending_edit_requests_count }} Solicitação(ões) de Edição Pendente(s)
+        </strong>
+        <span class="muted" style="font-size: 0.8rem; display: block;">
+          Colaboradores solicitaram autorização para ajustar respostas deste ciclo.
+        </span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      {% for req in governance_status.pending_requests %}
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-weight: 700; color: var(--text); font-size: 0.78rem;">@{{ req.employee_key }}</span>
+        <span class="muted" style="font-size: 0.74rem;">"{{ req.edit_request_reason or 'Sem motivo' }}"</span>
+        <button type="button" class="btn sm" style="background: #10b981; color: #fff; padding: 2px 7px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer;" @click.stop="decideEditRequest('{{ req.employee_key }}', 'approved')">✓ Aprovar</button>
+        <button type="button" class="btn sm" style="background: #ef4444; color: #fff; padding: 2px 7px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer;" @click.stop="decideEditRequest('{{ req.employee_key }}', 'rejected')">✕ Recusar</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Tabela de Monitoramento das Entregas -->
   <div class="panel" style="margin-bottom: 24px; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px;">
     <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -147,52 +142,7 @@
         </button>
 
         <!-- Popover Suspenso de Colunas e Ações -->
-        <div x-show="openCols" 
-             x-cloak 
-             class="columns-popover" 
-             x-transition:enter="transition ease-out duration-150" 
-             x-transition:enter-start="opacity-0 transform scale-95" 
-             x-transition:enter-end="opacity-100 transform scale-100" 
-             x-transition:leave="transition ease-in duration-100" 
-             x-transition:leave-start="opacity-100 transform scale-100" 
-             x-transition:leave-end="opacity-0 transform scale-95">
-          <div class="columns-popover-head">
-            <div class="columns-popover-title">
-              <span>⚙️</span>
-              <strong>Personalizar Tabela</strong>
-            </div>
-            <button type="button" class="columns-close-btn" @click="openCols = false" title="Fechar">✕</button>
-          </div>
-
-          <!-- Abas de Navegação do Popover -->
-          <div class="cols-popover-tabs">
-            <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'cols' }" @click="popoverTab = 'cols'">📊 Colunas</button>
-            <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'btns' }" @click="popoverTab = 'btns'">⚡ Botões Rápidos</button>
-          </div>
-
-          <!-- Painel 1: Colunas da Tabela -->
-          <div x-show="popoverTab === 'cols'">
-            <div class="columns-popover-hint">
-              <span>Arraste os títulos (<strong>Drag & Drop</strong>), ajuste larguras na borda ou selecione para exibir:</span>
-            </div>
-            <div id="reports-columns-list" class="columns-popover-list"></div>
-          </div>
-
-          <!-- Painel 2: Botões de Ação na Linha -->
-          <div x-show="popoverTab === 'btns'" style="display: none;">
-            <div class="columns-popover-hint">
-              <span>Escolha quais botões fixar diretamente na <strong>linha rápida</strong> da tabela:</span>
-            </div>
-            <div id="reports-buttons-list" class="columns-popover-list"></div>
-          </div>
-
-          <div class="columns-popover-footer">
-            <button type="button" id="btn-reset-reports-columns" class="btn sm btn-reset-cols">
-              <span>↺</span>
-              <span>Voltar ao Original</span>
-            </button>
-          </div>
-        </div>
+        {% include "admin/reports_columns_popover.html" %}
       </div>
     </div>
 
@@ -239,6 +189,20 @@
                     </a>
                     {% endif %}
                   </div>
+                  {% if emp.edit_request_status == 'pending' %}
+                  <div style="margin-top: 6px; padding: 5px 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; font-size: 0.72rem;">
+                    <div style="color: #fbbf24; font-weight: 700; line-height: 1.2;">🔔 Pedido de Edição:</div>
+                    <div style="color: var(--text); font-style: italic; margin: 2px 0 4px 0; max-width: 220px; white-space: normal; line-height: 1.25;">"{{ emp.edit_request_reason or 'Sem motivo informado' }}"</div>
+                    <div style="display: flex; gap: 6px;">
+                      <button type="button" class="btn sm" style="background: #10b981; color: #fff; padding: 2px 7px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer;" @click.stop="decideEditRequest('{{ emp.key }}', 'approved')">✓ Aprovar</button>
+                      <button type="button" class="btn sm" style="background: #ef4444; color: #fff; padding: 2px 7px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: none; cursor: pointer;" @click.stop="decideEditRequest('{{ emp.key }}', 'rejected')">✕ Recusar</button>
+                    </div>
+                  </div>
+                  {% elif emp.is_edit_unlocked %}
+                  <div style="margin-top: 4px;">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.68rem; padding: 2px 6px; border: 1px solid rgba(16, 185, 129, 0.3);">🔓 Edição Liberada</span>
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </td>
@@ -440,6 +404,19 @@
                       </div>
                     </a>
                     {% endif %}
+
+                    <!-- Item: Liberar / Bloquear Edição Individual -->
+                    <button type="button" 
+                            style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; color: {{ '#ef4444' if emp.is_edit_unlocked else '#10b981' }}; font-size: 0.78rem; font-weight: 600; text-align: left; cursor: pointer; transition: background 0.15s ease;"
+                            onmouseover="this.style.background='var(--panel2)'"
+                            onmouseout="this.style.background='transparent'"
+                            @click.stop="menuOpen = false; toggleEmployeeEdit('{{ emp.key }}', {{ 'false' if emp.is_edit_unlocked else 'true' }})">
+                      <span style="font-size: 1rem;">{{ '🔒' if emp.is_edit_unlocked else '🔓' }}</span>
+                      <div>
+                        <div style="line-height: 1.2;">{{ 'Bloquear Edição' if emp.is_edit_unlocked else 'Liberar Edição' }}</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Acesso ao formulário</div>
+                      </div>
+                    </button>
 
                     <!-- Item: Cobrança WhatsApp -->
                     {% if emp.status in ['pending', 'draft', 'submitted_late'] %}

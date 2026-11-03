@@ -29,6 +29,7 @@ from services.internal_analysis_service import (
     generate_ai_internal_analysis, seed_demo_simulation_cycle,
 )
 from services.employee_docx_importer_service import find_docx_file, process_docx_upload
+from services.employee_governance_service import get_cycle_governance_status
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ def index():
     team = get_team_members_data()
     departments = get_departments_data()
     internal_analysis = get_internal_analysis(cycle["id"])
+    governance_status = get_cycle_governance_status(cycle["id"])
 
     # Se for o Fauzer, ele também possui formulário próprio para enviar
     fauzer_meta = get_reporting_employee_meta("fauzer")
@@ -82,20 +84,11 @@ def index():
 
     return render_template(
         "admin/implementation_plan.html",
-        me=me,
-        is_admin_viewer=True,
-        is_curator=is_curator,
-        active_tab=active_tab,
-        cycle=cycle,
-        all_cycles=all_cycles,
-        summary=summary,
-        consolidation=consolidation,
-        internal_analysis=internal_analysis,
-        team=team,
-        departments=departments,
-        fauzer_meta=fauzer_meta,
-        fauzer_report=fauzer_report,
-        doc_links=doc_links,
+        me=me, is_admin_viewer=True, is_curator=is_curator, active_tab=active_tab,
+        cycle=cycle, all_cycles=all_cycles, summary=summary, consolidation=consolidation,
+        internal_analysis=internal_analysis, governance_status=governance_status,
+        team=team, departments=departments, fauzer_meta=fauzer_meta,
+        fauzer_report=fauzer_report, doc_links=doc_links,
     )
 
 

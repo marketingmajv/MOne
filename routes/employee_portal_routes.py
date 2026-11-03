@@ -20,6 +20,7 @@ from services.employee_gamification_service import (
 )
 from services.employee_reports_data import REPORTING_EMPLOYEES, get_reporting_employee_meta
 from services.employee_reports_service import (
+    get_all_cycles,
     get_employee_report,
     get_or_create_current_cycle,
     save_or_submit_report,
@@ -59,11 +60,26 @@ def meu_relatorio():
         emp_key = "fauzer"
         meta = get_reporting_employee_meta(emp_key)
 
-    current_cycle = get_or_create_current_cycle()
+    all_cycles = get_all_cycles()
+    latest_cycle = get_or_create_current_cycle()
+    selected_cycle_id = request.args.get("cycle_id", type=int)
+    current_cycle = None
+    if selected_cycle_id:
+        current_cycle = next((c for c in all_cycles if c["id"] == selected_cycle_id), None)
+    if not current_cycle:
+        current_cycle = latest_cycle
+
+    is_previous_cycle = bool(current_cycle["id"] != latest_cycle["id"])
+
     report = get_employee_report(current_cycle["id"], emp_key)
     profile = get_employee_gamification_profile(emp_key)
 
-    # Calcula se o prazo está aberto para edição
+    # Permissões de edição e governança
+    is_fauzer = (emp_key == "fauzer") or ((me.get("username") or "").strip().lower() == "fauzer")
+    is_edit_unlocked = bool(report.get("is_edit_unlocked")) or bool(current_cycle.get("edit_unlocked_all"))
+    edit_request_status = report.get("edit_request_status")
+    edit_request_reason = report.get("edit_request_reason") or ""
+
     deadline_val = current_cycle.get("deadline")
     deadline_dt = deadline_val
     if isinstance(deadline_val, str):
@@ -72,18 +88,24 @@ def meu_relatorio():
         except Exception:
             deadline_dt = datetime.now()
 
-    # O usuário Fauzer possui permissão de edição contínua sem travas de prazo ou protocolo
-    is_fauzer = (emp_key == "fauzer") or ((me.get("username") or "").strip().lower() == "fauzer")
-
-    is_editable = True
     now = datetime.now()
-    if not is_fauzer:
+    is_editable = True
+    if is_fauzer:
+        is_editable = True
+    elif is_edit_unlocked:
+        # Gerência liberou expressamente a edição para o colaborador
+        is_editable = True
+    elif is_previous_cycle:
+        # Ciclo anterior: congelado para edição
+        is_editable = False
+    else:
+        # Ciclo corrente: editável se dentro do prazo e ainda não revisado
         if now > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
             is_editable = False
         if report.get("reviewed_at"):
             is_editable = False
 
-    is_feedback_released = bool(report.get("is_feedback_released"))
+    is_feedback_released = bool(report.get("is_feedback_released")) or bool(current_cycle.get("feedback_released_all"))
     feedback_eval = {}
     feedback_desired = {}
     director_comments = {}
@@ -109,6 +131,12 @@ def meu_relatorio():
         me=me,
         meta=meta,
         cycle=current_cycle,
+        latest_cycle=latest_cycle,
+        all_cycles=all_cycles,
+        is_previous_cycle=is_previous_cycle,
+        is_edit_unlocked=is_edit_unlocked,
+        edit_request_status=edit_request_status,
+        edit_request_reason=edit_request_reason,
         report=report,
         profile=profile,
         is_editable=is_editable,
@@ -262,3 +290,23 @@ def api_meu_relatorio_historico():
         "employee_key": emp_key,
         "profile": profile,
     })
+
+
+@employee_portal_bp.route("/api/meu-relatorio/solicitar-edicao", methods=["POST"])
+@login_required
+def api_solicitar_edicao():
+    """Recebe a solicitação de liberação de edição do colaborador para determinado ciclo."""
+    from services.employee_governance_service import request_report_edit
+    me = current_user()
+    emp_key = resolve_employee_key_for_user(me)
+    payload = request.get_json(silent=True) or {}
+    try:
+        cycle_id = int(payload.get("cycle_id") or 0)
+    except (ValueError, TypeError):
+        cycle_id = 0
+    if cycle_id <= 0:
+        return jsonify({"success": False, "error": "ID do ciclo inválido."}), 400
+
+    reason = payload.get("reason", "")
+    res = request_report_edit(cycle_id, emp_key, reason, user_id=me.get("id"))
+    return jsonify(res)

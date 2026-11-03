@@ -1,0 +1,48 @@
+<!-- templates/admin/reports_columns_popover.html -->
+<div x-show="openCols" 
+     x-cloak 
+     class="columns-popover" 
+     x-transition:enter="transition ease-out duration-150" 
+     x-transition:enter-start="opacity-0 transform scale-95" 
+     x-transition:enter-end="opacity-100 transform scale-100" 
+     x-transition:leave="transition ease-in duration-100" 
+     x-transition:leave-start="opacity-100 transform scale-100" 
+     x-transition:leave-end="opacity-0 transform scale-95">
+  <div class="columns-popover-head">
+    <div class="columns-popover-title">
+      <span>⚙️</span>
+      <strong>Personalizar Tabela</strong>
+    </div>
+    <button type="button" class="columns-close-btn" @click="openCols = false" title="Fechar">✕</button>
+  </div>
+
+  <!-- Abas de Navegação do Popover -->
+  <div class="cols-popover-tabs">
+    <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'cols' }" @click="popoverTab = 'cols'">📊 Colunas</button>
+    <button type="button" class="cols-tab-btn" :class="{ 'active': popoverTab === 'btns' }" @click="popoverTab = 'btns'">⚡ Botões Rápidos</button>
+  </div>
+
+  <!-- Painel 1: Colunas da Tabela -->
+  <div x-show="popoverTab === 'cols'">
+    <div class="columns-popover-hint">
+      <span>Arraste os títulos (<strong>Drag & Drop</strong>), ajuste larguras na borda ou selecione para exibir:</span>
+    </div>
+    <div id="reports-columns-list" class="columns-popover-list"></div>
+  </div>
+
+  <!-- Painel 2: Botões de Ação na Linha -->
+  <div x-show="popoverTab === 'btns'" style="display: none;">
+    <div class="columns-popover-hint">
+      <span>Escolha quais botões fixar diretamente na <strong>linha rápida</strong> da tabela:</span>
+    </div>
+    <div id="reports-buttons-list" class="columns-popover-list"></div>
+  </div>
+
+  <div class="columns-popover-footer">
+    <button type="button" id="btn-reset-reports-columns" class="btn sm btn-reset-cols">
+      <span>↺</span>
+      <span>Voltar ao Original</span>
+    </button>
+  </div>
+</div>
+

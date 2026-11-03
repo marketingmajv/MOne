@@ -319,3 +319,121 @@ def api_suggest_manager_status_ai():
         logger.error(f"Erro ao gerar sugestão de status com IA ({employee_key}, ciclo {cycle_id}): {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+@employee_alignment_bp.route("/api/gestao-interna/decidir-solicitacao-edicao", methods=["POST"])
+@login_required
+def api_decide_edit_request():
+    """Aprova ou recusa solicitação de edição de relatório na Gestão Interna."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+    approved = bool(payload.get("approved"))
+
+    if not cycle_id or not employee_key:
+        return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
+
+    try:
+        from services.employee_governance_service import decide_report_edit_request
+        me = current_user() or {}
+        res = decide_report_edit_request(int(cycle_id), employee_key, approved, me.get("username", "gerencia"))
+        return jsonify(res)
+    except Exception as e:
+        logger.error(f"Erro ao decidir solicitação de edição: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/toggle-edicao-colaborador", methods=["POST"])
+@login_required
+def api_toggle_edit_unlocked():
+    """Ativa ou desativa a liberação de edição para um colaborador específico no ciclo."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+    is_unlocked = bool(payload.get("is_unlocked"))
+
+    if not cycle_id or not employee_key:
+        return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
+
+    try:
+        from services.employee_governance_service import toggle_report_edit_unlock
+        res_val = toggle_report_edit_unlock(int(cycle_id), employee_key, is_unlocked)
+        action_msg = "liberado para edição" if res_val else "bloqueado contra edições"
+        return jsonify({
+            "success": True,
+            "message": f"Relatório de {employee_key.capitalize()} agora está {action_msg}.",
+            "is_edit_unlocked": res_val,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao alterar trava de edição: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/toggle-feedback-ciclo", methods=["POST"])
+@login_required
+def api_toggle_cycle_feedback():
+    """Libera ou bloqueia as deliberações e feedbacks para todos os colaboradores do ciclo."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    is_released = bool(payload.get("is_released"))
+
+    if not cycle_id:
+        return jsonify({"success": False, "error": "cycle_id é obrigatório."}), 400
+
+    try:
+        from services.employee_governance_service import toggle_cycle_feedback_release_all
+        res_val = toggle_cycle_feedback_release_all(int(cycle_id), is_released)
+        msg = "Deliberações e feedbacks liberados para toda a equipe no ciclo!" if res_val else "Deliberações bloqueadas (modo confidencial) para todo o ciclo."
+        return jsonify({"success": True, "message": msg, "feedback_released_all": res_val})
+    except Exception as e:
+        logger.error(f"Erro ao alterar liberação de feedback em lote: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/toggle-edicao-ciclo", methods=["POST"])
+@login_required
+def api_toggle_cycle_edit():
+    """Libera ou bloqueia a edição para todos os colaboradores do ciclo em lote."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    is_unlocked = bool(payload.get("is_unlocked"))
+
+    if not cycle_id:
+        return jsonify({"success": False, "error": "cycle_id é obrigatório."}), 400
+
+    try:
+        from services.employee_governance_service import toggle_cycle_edit_unlock_all
+        res_val = toggle_cycle_edit_unlock_all(int(cycle_id), is_unlocked)
+        msg = "Edição liberada para todos os colaboradores no ciclo!" if res_val else "Edição bloqueada para todos os colaboradores no ciclo."
+        return jsonify({"success": True, "message": msg, "edit_unlocked_all": res_val})
+    except Exception as e:
+        logger.error(f"Erro ao alterar trava de edição em lote: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/governance-status/<int:cycle_id>", methods=["GET"])
+@login_required
+def api_get_governance_status(cycle_id: int):
+    """Retorna o estado das travas e pendências de solicitação de edição para o ciclo."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+    try:
+        from services.employee_governance_service import get_cycle_governance_status
+        data = get_cycle_governance_status(cycle_id)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Erro ao buscar status de governança ({cycle_id}): {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
