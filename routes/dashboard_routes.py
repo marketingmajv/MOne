@@ -14,7 +14,6 @@ from database import db
 from routes.helpers import UPLOAD_DIR, current_user, login_required, roles_required, user_has_permission
 
 from services.dashboard_service import get_dashboard_operational_data
-from services.showroom_promo_service import load_promo_banner_settings
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -26,11 +25,9 @@ dashboard_bp = Blueprint("dashboard", __name__)
 def dashboard():
     me = current_user()
     data = get_dashboard_operational_data(me)
-    promo_banner = load_promo_banner_settings()
     return render_template(
         "dashboard.html",
         me=me,
-        promo_banner=promo_banner,
         **data
     )
 
