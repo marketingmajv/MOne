@@ -35,8 +35,7 @@
 
 <div x-data="supportTicketApp({
   isStaff: true,
-  currentUserId: {{ me.id }},
-  availableModules: {{ available_modules|tojson|safe }}
+  currentUserId: {{ me.id }}
 })" @open-internal-correction.window="openInternalCorrectionModal()" class="support-admin-container" style="display:flex;flex-direction:column;gap:24px;">
 
   <!-- Alerta de Chamado Urgente se houver -->
@@ -116,7 +115,7 @@
           </thead>
           <tbody>
             {% for t in tickets %}
-            <tr x-show="!isTicketHidden({{ t.id }})" x-transition style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
+            <tr x-show="!isTicketHidden({{ t.id }})" style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
               <td style="padding:12px;font-family:monospace;font-weight:700;color:#00e599;">{{ t.ticket_code }}</td>
               <td style="padding:12px;">
                 {% if t.username == 'fauzer' %}
