@@ -57,12 +57,14 @@ def support_admin_page():
     status_filter = request.args.get("status", "todos")
     tickets = list_all_tickets_for_admin(status_filter=status_filter)
     badges = get_support_badges(me)
+    available_modules = get_available_modules_for_user(me)
     return render_template(
         "support/admin_tickets.html",
         me=me,
         tickets=tickets,
         current_status=status_filter,
         badges=badges,
+        available_modules=available_modules,
     )
 
 
@@ -113,6 +115,7 @@ def api_create_ticket():
     description = body.get("description", "").strip()
     urgency = body.get("urgency", "urgente").strip()
     attachments = body.get("attachments", [])
+    notify_whatsapp = bool(body.get("notify_whatsapp", True))
 
     if not title or not description or not module_key:
         return jsonify({"success": False, "error": "Preencha a área, o título e o relato detalhado do problema."}), 400
@@ -125,6 +128,7 @@ def api_create_ticket():
         description=description,
         urgency=urgency,
         attachments=attachments,
+        notify_whatsapp=notify_whatsapp,
     )
     return jsonify(res), 201
 

@@ -5,6 +5,9 @@
 {% block page_subtitle %}Triagem, atendimento e registro de alterações solicitadas pela equipe da MAJ Mobilidade.{% endblock %}
 
 {% block top_actions %}
+  <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-internal-correction'))" class="btn primary" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;">
+    ➕ Nova Correção
+  </button>
   <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;">
     <a href="/admin/suporte?status=todos" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'todos' or not current_status %}background:#0070F3;color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
       Todos
@@ -25,16 +28,20 @@
 {% endblock %}
 
 {% block content %}
-<script src="{{ url_for('static', filename='js/support-ticket.js') }}"></script>
+<script id="supportModulesData" type="application/json">
+{{ available_modules|tojson|safe }}
+</script>
+<script src="{{ url_for('static', filename='js/support-ticket.js') }}?v=20261104_04"></script>
 
 <div x-data="supportTicketApp({
   isStaff: true,
-  currentUserId: {{ me.id }}
-})" class="support-admin-container" style="display:flex;flex-direction:column;gap:24px;">
+  currentUserId: {{ me.id }},
+  availableModules: {{ available_modules|tojson|safe }}
+})" @open-internal-correction.window="openInternalCorrectionModal()" class="support-admin-container" style="display:flex;flex-direction:column;gap:24px;">
 
   <!-- Alerta de Chamado Urgente se houver -->
   {% if badges.has_urgent_pending and badges.latest_urgent %}
-  <div style="background:linear-gradient(90deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.15) 100%);border:1px solid #ef4444;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:pulseUrgent 2s infinite;">
+  <div x-show="!isUrgentBannerDismissed" x-transition style="background:linear-gradient(90deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.15) 100%);border:1px solid #ef4444;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:pulseUrgent 2s infinite;">
     <div style="display:flex;align-items:center;gap:12px;">
       <span style="font-size:24px;">🚨</span>
       <div>
@@ -46,9 +53,14 @@
         </div>
       </div>
     </div>
-    <a href="/admin/suporte?status=pendente" style="background:#ef4444;color:#fff;font-weight:700;padding:6px 16px;border:none;border-radius:6px;font-size:0.85rem;text-decoration:none;">
-      Atender Agora ⚡
-    </a>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button type="button" @click="dismissUrgentBanner()" class="btn" style="background:rgba(0,0,0,0.3);color:#fca5a5;border:1px solid rgba(239,68,68,0.5);font-size:0.82rem;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Ocultar esta tarja temporariamente (reaparece no próximo acesso)">
+        👁️ Ocultar Tarja
+      </button>
+      <a href="/admin/suporte?status=pendente" style="background:#ef4444;color:#fff;font-weight:700;padding:6px 16px;border:none;border-radius:6px;font-size:0.85rem;text-decoration:none;">
+        Atender Agora ⚡
+      </a>
+    </div>
   </div>
   <style>
     @keyframes pulseUrgent {
@@ -66,9 +78,19 @@
         <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--text);">Fila de Atendimento & Alterações</h3>
         <p style="margin:2px 0 0;font-size:0.85rem;color:var(--muted);">Clique em qualquer chamado para ver o print em alta resolução e responder.</p>
       </div>
-      <span class="badge" style="background:var(--card);border:1px solid var(--line);color:var(--text);padding:4px 10px;border-radius:6px;font-size:0.8rem;">
-        {{ tickets|length }} chamado(s) exibidos
-      </span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button type="button" @click="openInternalCorrectionModal()" class="btn primary" style="display:inline-flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:700;padding:6px 12px;border-radius:8px;">
+          ➕ Nova Correção
+        </button>
+        <template x-if="hiddenTicketIds.length > 0">
+          <button type="button" @click="unhideAllTickets()" class="btn" style="padding:4px 10px;font-size:0.78rem;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;border-radius:6px;cursor:pointer;">
+            Restaurar <span x-text="hiddenTicketIds.length"></span> ocultado(s) ↩️
+          </button>
+        </template>
+        <span class="badge" style="background:var(--card);border:1px solid var(--line);color:var(--text);padding:4px 10px;border-radius:6px;font-size:0.8rem;">
+          <span x-text="getVisibleCount({{ tickets|length }})"></span> de {{ tickets|length }} exibido(s)
+        </span>
+      </div>
     </div>
 
     {% if tickets|length == 0 %}
@@ -94,16 +116,23 @@
           </thead>
           <tbody>
             {% for t in tickets %}
-            <tr style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
+            <tr x-show="!isTicketHidden({{ t.id }})" x-transition style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
               <td style="padding:12px;font-family:monospace;font-weight:700;color:#00e599;">{{ t.ticket_code }}</td>
               <td style="padding:12px;">
-                <div style="font-weight:600;color:var(--text);">{{ t.user_name }}</div>
-                <div style="font-size:0.75rem;color:var(--muted);display:flex;align-items:center;gap:6px;">
-                  <span>@{{ t.username }}</span>
-                  {% if t.user_phone %}
-                    <a href="https://wa.me/55{{ t.user_phone }}" target="_blank" @click.stop style="color:#00e599;text-decoration:none;" title="Chamar no WhatsApp">📱</a>
-                  {% endif %}
-                </div>
+                {% if t.username == 'fauzer' %}
+                  <div style="font-weight:700;color:#00e599;display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:0.8rem;background:rgba(0,229,153,0.15);border:1px solid #00e599;padding:2px 6px;border-radius:4px;">🛠️ Correção Interna</span>
+                  </div>
+                  <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Fauzer (Auto-atribuído)</div>
+                {% else %}
+                  <div style="font-weight:600;color:var(--text);">{{ t.user_name }}</div>
+                  <div style="font-size:0.75rem;color:var(--muted);display:flex;align-items:center;gap:6px;">
+                    <span>@{{ t.username }}</span>
+                    {% if t.user_phone %}
+                      <a href="https://wa.me/55{{ t.user_phone }}" target="_blank" @click.stop style="color:#00e599;text-decoration:none;" title="Chamar no WhatsApp">📱</a>
+                    {% endif %}
+                  </div>
+                {% endif %}
               </td>
               <td style="padding:12px;">
                 <span style="font-size:0.82rem;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);">
@@ -141,8 +170,11 @@
               <td style="padding:12px;font-size:0.8rem;color:var(--muted);">
                 {{ t.created_at.strftime('%d/%m %H:%M') if t.created_at else '' }}
               </td>
-              <td style="padding:12px;text-align:right;">
-                <button type="button" class="btn secondary" style="padding:5px 12px;font-size:0.82rem;font-weight:700;">
+              <td style="padding:12px;text-align:right;white-space:nowrap;">
+                <button type="button" @click.stop="hideTicket({{ t.id }})" class="btn" style="padding:5px 9px;font-size:0.78rem;margin-right:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:6px;" title="Ocultar chamado temporariamente da visão (reaparece ao recarregar)">
+                  👁️ Ocultar
+                </button>
+                <button type="button" class="btn secondary" style="padding:5px 12px;font-size:0.82rem;font-weight:700;border-radius:6px;">
                   Atender 🛠️
                 </button>
               </td>
@@ -269,6 +301,123 @@
   <template x-teleport="body">
     <div x-show="lightboxImage" x-cloak @click="closeLightbox()" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;">
       <img :src="lightboxImage" style="max-width:95vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);" alt="Visualização em alta resolução" />
+    </div>
+  </template>
+
+  <!-- Modal Executivo: Cadastro de Correção Interna (Teleportado para body) -->
+  <template x-teleport="body">
+    <div x-show="isInternalModalOpen" x-cloak class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
+      <div class="modal-card" @click.away="closeInternalCorrectionModal()" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
+        
+        <!-- Cabeçalho -->
+        <div class="modal-head" style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.3rem;">🛠️</span>
+            <div>
+              <div style="font-weight:700;font-size:1.05rem;color:var(--text);">Cadastrar Correção Interna</div>
+              <div style="font-size:0.78rem;color:var(--muted);">Organize tarefas e ajustes técnicos que você precisa realizar no M-One.</div>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" @click="closeInternalCorrectionModal()" style="width:32px;height:32px;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Formulário -->
+        <form @submit.prevent="submitInternalCorrection" style="padding:20px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;">
+          <!-- Mensagens de Alerta -->
+          <div x-show="errorMessage" x-cloak style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:0.85rem;">
+            <span x-text="errorMessage"></span>
+          </div>
+          <div x-show="successMessage" x-cloak style="background:rgba(16,185,129,0.15);border:1px solid #10b981;color:#6ee7b7;padding:10px 14px;border-radius:8px;font-size:0.85rem;">
+            <span x-text="successMessage"></span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <!-- Área / Módulo -->
+            <div>
+              <label class="form-label" style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+                Área / Módulo Afetado <span style="color:#ef4444;">*</span>
+              </label>
+              <select x-model="selectedModuleKey" class="form-input" style="width:100%;height:40px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:0.85rem;" required>
+                <option value="" disabled selected>Selecione o módulo...</option>
+                {% for mod in available_modules %}
+                  <option value="{{ mod.key }}">{{ mod.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Nível de Prioridade -->
+            <div>
+              <label class="form-label" style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+                Prioridade
+              </label>
+              <select x-model="ticketUrgency" class="form-input" style="width:100%;height:40px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:0.85rem;">
+                <option value="urgente" selected>🚨 Urgente (Impacta operação)</option>
+                <option value="alta">⚡ Alta (Ajuste rápido)</option>
+                <option value="media">📅 Média (Melhoria pontual)</option>
+                <option value="baixa">☕ Baixa (Ideia futura)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Título da Correção -->
+          <div>
+            <label class="form-label" style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+              Título da Correção <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" x-model="ticketTitle" class="form-input" placeholder="Ex: Ajustar cálculo de MVA interestadual em PE / Cadastrar fotos scooter" style="width:100%;height:40px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.88rem;" required />
+          </div>
+
+          <!-- Relato Técnico -->
+          <div>
+            <label class="form-label" style="display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+              O que precisa ser corrigido / implementado? <span style="color:#ef4444;">*</span>
+            </label>
+            <textarea x-model="ticketDescription" rows="4" class="form-input" placeholder="Descreva os pontos técnicos, arquivos a alterar ou regras a aplicar..." style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:0.88rem;resize:vertical;" required></textarea>
+          </div>
+
+          <!-- Prints / Evidências (Ctrl+V) -->
+          <div>
+            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+              <span>📸 Prints / Evidências</span>
+              <span style="font-size:0.75rem;color:#00e599;font-weight:700;">Cole com Ctrl+V</span>
+            </label>
+            <div @dragover.prevent @drop="handleDrop($event, false)"
+                 style="border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;background:rgba(255,255,255,0.015);cursor:pointer;"
+                 onclick="document.getElementById('internalTicketFileInput').click()">
+              <input type="file" id="internalTicketFileInput" accept="image/*" multiple style="display:none;" @change="handleFileInput($event, false)" />
+              <div style="font-size:20px;margin-bottom:4px;">📋</div>
+              <div style="font-size:0.85rem;color:var(--text);">Clique ou cole o print da tela aqui</div>
+            </div>
+
+            <!-- Miniaturas -->
+            <div x-show="uploadedAttachments.length > 0" x-cloak style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+              <template x-for="(att, idx) in uploadedAttachments" :key="idx">
+                <div style="position:relative;width:70px;height:70px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
+                  <img :src="att" style="width:100%;height:100%;object-fit:cover;" alt="Print Anexo" />
+                  <button type="button" @click.stop="removeAttachment(idx, false)" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.8);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;">✕</button>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Ação Salvar -->
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;border-top:1px solid var(--line);padding-top:16px;">
+            <button type="button" class="btn" @click="closeInternalCorrectionModal()" style="padding:8px 16px;">
+              Cancelar
+            </button>
+            <button type="submit" class="btn primary" :disabled="isSubmitting" style="min-width:200px;min-height:40px;font-weight:700;padding:8px 20px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+              <span x-show="!isSubmitting">Cadastrar Correção 🚀</span>
+              <span x-show="isSubmitting" x-cloak style="display:none;">Salvando...</span>
+            </button>
+          </div>
+        </form>
+
+      </div>
     </div>
   </template>
 

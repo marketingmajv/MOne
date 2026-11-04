@@ -215,6 +215,7 @@ def create_ticket(
     description: str,
     urgency: str = "urgente",
     attachments: Optional[List[str]] = None,
+    notify_whatsapp: bool = True,
 ) -> Dict[str, Any]:
     """Abre um novo chamado de suporte e envia alerta no WhatsApp."""
     ensure_support_schema()
@@ -253,7 +254,8 @@ def create_ticket(
         conn.execute(ins_m, (ticket_id, user_id, description.strip(), att_json))
         conn.commit()
 
-    _notify_fauzer_whatsapp(ticket_code, user_name, module_label, title, urgency)
+    if notify_whatsapp and not is_fauzer_user(user):
+        _notify_fauzer_whatsapp(ticket_code, user_name, module_label, title, urgency)
     return {"success": True, "ticket_id": ticket_id, "ticket_code": ticket_code}
 
 

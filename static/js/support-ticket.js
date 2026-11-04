@@ -44,7 +44,21 @@ window.supportTicketApp = function(initialConfig = {}) {
     // Lightbox de Imagens
     lightboxImage: null,
 
+    // Gestão de Ocultação Temporária de Chamados (na sessão atual)
+    hiddenTicketIds: [],
+    isUrgentBannerDismissed: false,
+
+    // Modal de Cadastro de Correções Internas (exclusivo Fauzer)
+    isInternalModalOpen: false,
+
+    getCsrfToken() {
+      return document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || '';
+    },
+
     init() {
+      try {
+        this.isUrgentBannerDismissed = (sessionStorage.getItem('m_one_urgent_banner_dismissed') === 'true');
+      } catch (e) {}
       this.setupGlobalPasteListener();
       this.initBadgesPolling();
     },
@@ -101,8 +115,8 @@ window.supportTicketApp = function(initialConfig = {}) {
       try {
         const res = await fetch('/api/suporte/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image_base64: base64Data })
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
+          body: JSON.stringify({ image_base64: base64Data, csrf_token: this.getCsrfToken() })
         });
         const data = await res.json();
         if (data.success && data.url) {
@@ -124,8 +138,10 @@ window.supportTicketApp = function(initialConfig = {}) {
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('csrf_token', this.getCsrfToken());
         const res = await fetch('/api/suporte/upload', {
           method: 'POST',
+          headers: { 'X-CSRF-Token': this.getCsrfToken() },
           body: formData
         });
         const data = await res.json();
@@ -184,14 +200,15 @@ window.supportTicketApp = function(initialConfig = {}) {
       try {
         const res = await fetch('/api/suporte/tickets', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
           body: JSON.stringify({
             module_key: this.selectedModuleKey,
             module_label: moduleLabel,
             title: this.ticketTitle.trim(),
             description: this.ticketDescription.trim(),
             urgency: this.ticketUrgency,
-            attachments: this.uploadedAttachments
+            attachments: this.uploadedAttachments,
+            csrf_token: this.getCsrfToken()
           })
         });
         const data = await res.json();
@@ -260,12 +277,13 @@ window.supportTicketApp = function(initialConfig = {}) {
           attachments: this.replyAttachments,
           new_status: this.isStaff ? this.replyStatus : (this.reopenTicket ? 'pendente' : null),
           resolution_notes: this.isStaff ? this.resolutionNotes.trim() : null,
-          reopen: this.reopenTicket
+          reopen: this.reopenTicket,
+          csrf_token: this.getCsrfToken()
         };
 
         const res = await fetch(`/api/suporte/tickets/${this.activeTicket.id}/reply`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -282,6 +300,92 @@ window.supportTicketApp = function(initialConfig = {}) {
         alert('Erro de comunicação: ' + err.message);
       } finally {
         this.isSendingReply = false;
+      }
+    },
+
+    // Ocultar / Restaurar Chamados e Alertas da Visão
+    dismissUrgentBanner() {
+      this.isUrgentBannerDismissed = true;
+      try {
+        sessionStorage.setItem('m_one_urgent_banner_dismissed', 'true');
+      } catch (e) {}
+    },
+
+    hideTicket(id) {
+      if (!this.hiddenTicketIds.includes(id)) {
+        this.hiddenTicketIds.push(id);
+      }
+    },
+
+    unhideAllTickets() {
+      this.hiddenTicketIds = [];
+      this.isUrgentBannerDismissed = false;
+      try {
+        sessionStorage.removeItem('m_one_urgent_banner_dismissed');
+      } catch (e) {}
+    },
+
+    isTicketHidden(id) {
+      return this.hiddenTicketIds.includes(id);
+    },
+
+    getVisibleCount(total) {
+      return Math.max(0, total - this.hiddenTicketIds.length);
+    },
+
+    // Modal de Cadastro de Correções Internas
+    openInternalCorrectionModal() {
+      this.selectedModuleKey = '';
+      this.ticketTitle = '';
+      this.ticketDescription = '';
+      this.ticketUrgency = 'urgente';
+      this.uploadedAttachments = [];
+      this.errorMessage = '';
+      this.successMessage = '';
+      this.isInternalModalOpen = true;
+    },
+
+    closeInternalCorrectionModal() {
+      this.isInternalModalOpen = false;
+    },
+
+    async submitInternalCorrection() {
+      if (!this.selectedModuleKey || !this.ticketTitle.trim() || !this.ticketDescription.trim()) {
+        this.errorMessage = 'Preencha a área, o título e a descrição da correção.';
+        return;
+      }
+      this.isSubmitting = true;
+      this.errorMessage = '';
+      try {
+        const mod = this.availableModules.find(m => m.key === this.selectedModuleKey);
+        const payload = {
+          module_key: this.selectedModuleKey,
+          module_label: mod ? mod.label : this.selectedModuleKey,
+          title: this.ticketTitle.trim(),
+          description: this.ticketDescription.trim(),
+          urgency: this.ticketUrgency,
+          attachments: this.uploadedAttachments,
+          notify_whatsapp: false,
+          csrf_token: this.getCsrfToken()
+        };
+        const res = await fetch('/api/suporte/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.successMessage = 'Correção interna cadastrada com sucesso!';
+          setTimeout(() => {
+            window.location.reload();
+          }, 600);
+        } else {
+          this.errorMessage = data.error || 'Erro ao cadastrar correção.';
+        }
+      } catch (err) {
+        this.errorMessage = 'Erro de comunicação: ' + err.message;
+      } finally {
+        this.isSubmitting = false;
       }
     },
 

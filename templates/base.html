@@ -86,15 +86,20 @@
         </div>
       </header>
 
-      {% if me and (me.username or '')|lower == 'fauzer' %}
+      {% if me and (me.username or '')|lower == 'fauzer' and 'admin/suporte' not in request.path %}
       <div id="fauzerUrgentSupportBanner" style="display:none;background:linear-gradient(90deg, #991b1b, #b91c1c);color:#ffffff;padding:8px 18px;border-radius:10px;margin:12px 24px 0;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(220,38,38,0.3);border:1px solid #f87171;animation:bannerPulse 2s infinite;">
         <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;font-weight:700;">
           <span style="font-size:1.15rem;">🚨</span>
           <span>CHAMADO URGENTE PENDENTE: <span id="urgentTicketTitle" style="color:#fef08a;font-weight:800;">Carregando...</span></span>
         </div>
-        <a href="{{ url_for('support.support_admin_page') }}?status=pendente" style="background:#ffffff;color:#991b1b;padding:4px 12px;border-radius:6px;font-weight:800;font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-          Atender Agora ⚡
-        </a>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <a href="{{ url_for('support.support_admin_page') }}?status=pendente" style="background:#ffffff;color:#991b1b;padding:4px 12px;border-radius:6px;font-weight:800;font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+            Atender Agora ⚡
+          </a>
+          <button type="button" onclick="document.getElementById('fauzerUrgentSupportBanner').style.display='none'" style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:6px;padding:4px 8px;font-size:0.75rem;cursor:pointer;font-weight:600;" title="Ocultar alerta">
+            ✕ Ocultar
+          </button>
+        </div>
       </div>
       <style>
         @keyframes bannerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
