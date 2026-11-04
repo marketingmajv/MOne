@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
 from routes.helpers import current_user, login_required, roles_required
+from services.support_items_service import toggle_ticket_item
 from services.support_service import (
     SUPPORT_UPLOAD_DIR,
     add_ticket_reply,
@@ -105,20 +106,42 @@ def api_support_upload():
 @support_bp.route("/api/suporte/tickets", methods=["POST"])
 @login_required
 def api_create_ticket():
-    """Cria um novo chamado com anexos e aciona notificação no WhatsApp."""
+    """Cria um novo chamado com múltiplos setores, checklist de alterações e anexos."""
     me = current_user()
     body = request.get_json(silent=True) or {}
 
+    modules = body.get("modules", [])
     module_key = body.get("module_key", "").strip()
     module_label = body.get("module_label", "").strip() or module_key
+
+    # Se modules veio preenchido como lista
+    if modules and isinstance(modules, list):
+        if not module_key and len(modules) > 0:
+            module_key = modules[0].get("key", "geral")
+        if not module_label and len(modules) > 0:
+            module_label = ", ".join(m.get("label", "") for m in modules)
+
+    items = body.get("items", [])
+    if isinstance(items, list):
+        items = [str(it).strip() for it in items if str(it).strip()]
+    else:
+        items = []
+
     title = body.get("title", "").strip()
     description = body.get("description", "").strip()
+    if not description and items:
+        description = "Checklist de alterações solicitadas."
+
     urgency = body.get("urgency", "urgente").strip()
     attachments = body.get("attachments", [])
     notify_whatsapp = bool(body.get("notify_whatsapp", True))
 
-    if not title or not description or not module_key:
-        return jsonify({"success": False, "error": "Preencha a área, o título e o relato detalhado do problema."}), 400
+    if not title:
+        return jsonify({"success": False, "error": "Informe o título da demanda."}), 400
+    if not module_key and not modules:
+        return jsonify({"success": False, "error": "Selecione ao menos uma área/setor a corrigir."}), 400
+    if not description and not items:
+        return jsonify({"success": False, "error": "Informe o relato do problema ou adicione ao menos uma alteração."}), 400
 
     res = create_ticket(
         user=me,
@@ -129,8 +152,29 @@ def api_create_ticket():
         urgency=urgency,
         attachments=attachments,
         notify_whatsapp=notify_whatsapp,
+        modules=modules,
+        items=items,
     )
     return jsonify(res), 201
+
+
+@support_bp.route("/api/suporte/tickets/<int:ticket_id>/items/<int:item_id>/toggle", methods=["POST"])
+@login_required
+def api_toggle_ticket_item(ticket_id: int, item_id: int):
+    """Marca ou desmarca uma alteração específica como concluída (checklist interativo)."""
+    me = current_user()
+    is_staff = is_fauzer_user(me)
+    if not is_staff:
+        # Apenas Fauzer ou criador do chamado pode marcar
+        ticket = get_ticket_details(ticket_id=ticket_id, current_user_id=me["id"], is_admin=False)
+        if not ticket:
+            return jsonify({"success": False, "error": "Acesso não autorizado."}), 403
+
+    body = request.get_json(silent=True) or {}
+    completed = body.get("completed")
+    res = toggle_ticket_item(ticket_id=ticket_id, item_id=item_id, completed=completed)
+    status_code = 200 if res.get("success") else 400
+    return jsonify(res), status_code
 
 
 @support_bp.route("/api/suporte/tickets/<int:ticket_id>", methods=["GET"])

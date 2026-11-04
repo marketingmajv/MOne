@@ -48,21 +48,37 @@
 
     <form @submit.prevent="submitTicket" style="display:flex;flex-direction:column;gap:16px;">
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
-        <!-- Módulo / Área -->
-        <div>
-          <label class="form-label" style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
-            Área / Módulo a Corrigir <span style="color:#ef4444;">*</span>
+        <!-- Módulos / Setores Afetados (Multi-Seleção com Pills Clicáveis) -->
+        <div style="grid-column: 1 / -1;">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:8px;">
+            <span>🏢 Áreas / Setores a Corrigir <span style="color:#ef4444;">*</span> <span style="font-weight:400;color:var(--muted);">(Clique para marcar um ou mais setores)</span></span>
+            <span style="font-size:0.75rem;color:#00e599;font-weight:600;" x-text="selectedModuleKeys.length + ' setor(es) selecionado(s)'"></span>
           </label>
-          <select x-model="selectedModuleKey" class="form-input" style="width:100%;height:42px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.9rem;" required>
-            <option value="" disabled selected>Selecione a área do M-One...</option>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
             {% for mod in available_modules %}
-              <option value="{{ mod.key }}">{{ mod.label }}</option>
+            <button type="button"
+                    @click="toggleModuleKey('{{ mod.key }}')"
+                    :style="isModuleSelected('{{ mod.key }}') 
+                      ? 'background:rgba(0,229,153,0.18);border:1px solid #00e599;color:#00e599;font-weight:700;' 
+                      : 'background:var(--panel2);border:1px solid var(--line);color:var(--muted);'"
+                    style="padding:7px 14px;border-radius:20px;font-size:0.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s ease;">
+              <span x-show="isModuleSelected('{{ mod.key }}')">✓</span>
+              <span>{{ mod.label }}</span>
+            </button>
             {% endfor %}
-          </select>
+          </div>
+        </div>
+
+        <!-- Título Resumido -->
+        <div style="grid-column: 1 / -1;">
+          <label class="form-label" style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
+            Título do Chamado <span style="color:#ef4444;">*</span>
+          </label>
+          <input type="text" x-model="ticketTitle" class="form-input" placeholder="Ex: Alteração de fotos dos produtos / Ajuste cadastral em lote" style="width:100%;height:42px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.9rem;" required />
         </div>
 
         <!-- Grau de Urgência -->
-        <div>
+        <div style="grid-column: 1 / -1;">
           <label class="form-label" style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
             Nível de Urgência
           </label>
@@ -75,20 +91,47 @@
         </div>
       </div>
 
-      <!-- Título Resumido -->
-      <div>
-        <label class="form-label" style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
-          Título do Chamado <span style="color:#ef4444;">*</span>
-        </label>
-        <input type="text" x-model="ticketTitle" class="form-input" placeholder="Ex: Alterar preço da scooter MAX 12 no Showroom / Ajustar telefone do cliente no pedido" style="width:100%;height:42px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.9rem;" required />
+      <!-- Alterações a Realizar (Campos Separados: Alteração 1, 2, 3...) -->
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <label class="form-label" style="display:block;font-size:0.85rem;font-weight:700;color:var(--text);margin:0;">
+              📋 Alterações a Realizar (Checklist de Demandas)
+            </label>
+            <span style="font-size:0.75rem;color:var(--muted);">Separe cada modelo ou alteração em um campo para acompanhamento individual.</span>
+          </div>
+          <button type="button" @click="addTicketItem()" class="btn" style="background:rgba(0,229,153,0.15);border:1px solid #00e599;color:#00e599;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:6px;cursor:pointer;">
+            ➕ Adicionar Mais uma Alteração
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <template x-for="(item, idx) in ticketItems" :key="idx">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="min-width:95px;font-size:0.82rem;font-weight:700;color:#00e599;font-family:monospace;" x-text="'Alteração ' + (idx + 1) + ':'"></span>
+              <input type="text"
+                     x-model="ticketItems[idx]"
+                     class="form-input"
+                     :placeholder="'Ex: ' + (idx === 0 ? 'Atualizar foto do modelo V20' : (idx === 1 ? 'Atualizar foto do modelo V80' : 'Ajustar modelo Sport 701SH'))"
+                     style="flex:1;height:40px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.88rem;" />
+              <button type="button"
+                      x-show="ticketItems.length > 1"
+                      @click="removeTicketItem(idx)"
+                      style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;"
+                      title="Remover esta alteração">
+                ✕
+              </button>
+            </div>
+          </template>
+        </div>
       </div>
 
-      <!-- Relato Detalhado -->
+      <!-- Observações Gerais / Contexto Opcional -->
       <div>
         <label class="form-label" style="display:block;font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
-          O que precisa ser feito ou corrigido? <span style="color:#ef4444;">*</span>
+          Observações Adicionais / Contexto Geral (Opcional)
         </label>
-        <textarea x-model="ticketDescription" rows="4" class="form-input" placeholder="Descreva aqui o erro, o dado que precisa ser alterado e como deve ficar..." style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:0.9rem;resize:vertical;" required></textarea>
+        <textarea x-model="ticketDescription" rows="3" class="form-input" placeholder="Detalhes adicionais ou instruções que se aplicam a todo o chamado..." style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:0.9rem;resize:vertical;"></textarea>
       </div>
 
       <!-- Área de Anexo de Prints (Ctrl+V) -->
@@ -175,9 +218,13 @@
             <tr style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
               <td style="padding:12px;font-family:monospace;font-weight:700;color:var(--accent);">{{ t.ticket_code }}</td>
               <td style="padding:12px;">
-                <span style="font-size:0.82rem;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);">
-                  {{ t.module_label }}
-                </span>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                  {% for m in t.modules %}
+                  <span style="font-size:0.75rem;padding:2px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap;">
+                    {{ m.label }}
+                  </span>
+                  {% endfor %}
+                </div>
               </td>
               <td style="padding:12px;font-weight:600;">
                 {{ t.title }}
@@ -230,9 +277,11 @@
         
         <!-- Cabeçalho do Modal -->
         <div class="modal-head" style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
-          <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div style="font-family:monospace;font-size:1.1rem;font-weight:800;color:#00e599;" x-text="activeTicket?.ticket_code"></div>
-            <span style="font-size:0.85rem;padding:3px 8px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);" x-text="activeTicket?.module_label"></span>
+            <template x-for="m in activeTicket?.modules" :key="m.key">
+              <span style="font-size:0.75rem;padding:2px 8px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);" x-text="m.label"></span>
+            </template>
           </div>
           <button type="button" class="modal-close-btn" @click="closeTicketDetails()" style="width:32px;height:32px;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
@@ -250,6 +299,24 @@
             <div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
               Aberto em <span x-text="activeTicket?.created_at"></span> • Solicitante: <strong x-text="activeTicket?.user_name"></strong>
             </div>
+
+            <!-- Checklist de Alterações Solicitadas -->
+            <template x-if="activeTicket?.items && activeTicket?.items.length > 0">
+              <div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px;">
+                <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">
+                  📋 Alterações Solicitadas:
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <template x-for="it in activeTicket?.items" :key="it.id">
+                    <div style="display:flex;align-items:center;gap:8px;font-size:0.88rem;">
+                      <span :style="it.completed ? 'color:#10b981;' : 'color:var(--muted);'" x-text="it.completed ? '✅' : '⏳'"></span>
+                      <span :style="it.completed ? 'text-decoration:line-through;color:var(--muted);' : 'color:var(--text);'" x-text="it.title"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
             <!-- Banner de Resolução com Nota de Entrega do Fauzer -->
             <template x-if="activeTicket?.status === 'resolvido'">
               <div style="background:rgba(16,185,129,0.15);border:1px solid #10b981;border-radius:8px;padding:12px;margin-top:12px;">

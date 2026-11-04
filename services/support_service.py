@@ -18,6 +18,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from database import db
+from services.support_items_service import (
+    ensure_support_items_schema,
+    get_available_modules_for_user,
+    get_ticket_items,
+    parse_ticket_modules,
+    save_ticket_items,
+)
 from services.user_permission_service import ALL_PERMISSIONS, user_has_permission_check
 
 logger = logging.getLogger(__name__)
@@ -96,47 +103,7 @@ def ensure_support_schema() -> None:
 
         conn.commit()
         _support_schema_ensured = True
-
-
-def get_available_modules_for_user(user: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Retorna os módulos operacionais elegíveis para o usuário abrir chamados."""
-    public_modules = [
-        {"key": "showroom", "label": "🛵 Modelos & Showroom (/show-room)"},
-        {"key": "atacado", "label": "🏢 MAJ Atacado CNPJ (/atacado)"},
-        {"key": "outlet", "label": "🏷️ Outlet MAJ (/outlet)"},
-        {"key": "custom_catalog", "label": "📋 Catálogos Personalizados (/c/<slug>)"},
-    ]
-
-    operational_catalog = [
-        ("vendas", "💼 Vendas & Pedidos"),
-        ("stock", "📦 Estoque & Pátio de Chassis"),
-        ("freight", "🚚 Fretes & Expedição"),
-        ("imports", "🚢 Importações & Faturas China"),
-        ("finance", "💰 Financeiro & Contas"),
-        ("fiscal_pricing", "⚖️ Fiscal & Precificação"),
-        ("mpay", "💳 M-Pay Cobranças"),
-        ("copilot", "⚡ Copilot IA Assistente"),
-        ("prospector", "🎯 Prospecção Contínua"),
-        ("radar", "📡 Radar de Mercado"),
-        ("users", "👥 Usuários & Permissões"),
-        ("employee_portal", "📝 Meu Relatório Semanal"),
-    ]
-
-    result: List[Dict[str, str]] = list(public_modules)
-    role = str(user.get("role") or "").lower()
-
-    for key, label in operational_catalog:
-        if role in ("admin", "support") or user_has_permission_check(user, key):
-            result.append({"key": key, "label": label})
-
-    general_modules = [
-        {"key": "geral_login", "label": "🔑 Acesso, Login e Senha"},
-        {"key": "geral_visual", "label": "🎨 Interface, Visual e Telas"},
-        {"key": "sugestao", "label": "💡 Sugestão de Novo Recurso / Melhoria"},
-        {"key": "outro", "label": "❓ Outro Assunto"},
-    ]
-    result.extend(general_modules)
-    return result
+    ensure_support_items_schema()
 
 
 def _generate_ticket_code(conn) -> str:
@@ -216,32 +183,51 @@ def create_ticket(
     urgency: str = "urgente",
     attachments: Optional[List[str]] = None,
     notify_whatsapp: bool = True,
+    modules: Optional[List[Dict[str, str]]] = None,
+    items: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Abre um novo chamado de suporte e envia alerta no WhatsApp."""
+    """Abre um novo chamado com múltiplos setores e checklist de alterações."""
     ensure_support_schema()
     attachments = attachments or []
+    items = items or []
     user_id = user["id"]
     user_name = user.get("name") or user.get("username") or "Colaborador"
+
+    if modules:
+        modules_json = json.dumps(modules, ensure_ascii=False)
+        if not module_key and len(modules) > 0:
+            module_key = modules[0].get("key", "geral")
+        if not module_label and len(modules) > 0:
+            module_label = ", ".join(m.get("label", "") for m in modules)
+    else:
+        modules_json = json.dumps([{"key": module_key, "label": module_label}], ensure_ascii=False)
 
     with db() as conn:
         pg = _is_pg(conn)
         ticket_code = _generate_ticket_code(conn)
 
         ins_t = """
-        INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, modules_json, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id;
         """ if pg else """
-        INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+        INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, modules_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
         """
-        params = (ticket_code, user_id, module_key, module_label, title.strip(), description.strip(), urgency)
+        params = (ticket_code, user_id, module_key, module_label, title.strip(), description.strip(), urgency, modules_json)
         res = conn.execute(ins_t, params)
         if pg:
             ret_row = res.fetchone()
             ticket_id = ret_row["id"] if (isinstance(ret_row, dict) or hasattr(ret_row, "keys")) else ret_row[0]
         else:
             ticket_id = res.lastrowid
+
+        save_ticket_items(conn, ticket_id, items)
+
+        msg_text = description.strip()
+        if items:
+            items_str = "\n".join([f"• Alteração {idx+1}: {it}" for idx, it in enumerate(items) if it.strip()])
+            msg_text = f"{msg_text}\n\n📋 Alterações:\n{items_str}" if msg_text else f"📋 Alterações Solicitadas:\n{items_str}"
 
         att_json = json.dumps(attachments, ensure_ascii=False)
         ins_m = """
@@ -251,7 +237,7 @@ def create_ticket(
         INSERT INTO support_ticket_messages (ticket_id, sender_id, is_staff, message_text, attachments, created_at, read_by_user, read_by_staff)
         VALUES (?, ?, 0, ?, ?, CURRENT_TIMESTAMP, 1, 0);
         """
-        conn.execute(ins_m, (ticket_id, user_id, description.strip(), att_json))
+        conn.execute(ins_m, (ticket_id, user_id, msg_text, att_json))
         conn.commit()
 
     if notify_whatsapp and not is_fauzer_user(user):
@@ -280,7 +266,12 @@ def list_tickets_for_user(user_id: int) -> List[Dict[str, Any]]:
         ORDER BY t.updated_at DESC;
         """
         rows = conn.execute(sql, (user_id,)).fetchall()
-        return [dict(r) for r in rows]
+        tickets = []
+        for r in rows:
+            d = dict(r)
+            d["modules"] = parse_ticket_modules(d)
+            tickets.append(d)
+        return tickets
 
 
 def list_all_tickets_for_admin(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -310,7 +301,12 @@ def list_all_tickets_for_admin(status_filter: Optional[str] = None) -> List[Dict
             t.updated_at DESC;
         """
         rows = conn.execute(sql, tuple(params)).fetchall()
-        return [dict(r) for r in rows]
+        tickets = []
+        for r in rows:
+            d = dict(r)
+            d["modules"] = parse_ticket_modules(d)
+            tickets.append(d)
+        return tickets
 
 
 def get_ticket_details(ticket_id: int, current_user_id: int, is_admin: bool = False) -> Optional[Dict[str, Any]]:
@@ -373,6 +369,8 @@ def get_ticket_details(ticket_id: int, current_user_id: int, is_admin: bool = Fa
             messages.append(d)
 
         ticket["messages"] = messages
+        ticket["modules"] = parse_ticket_modules(ticket)
+        ticket["items"] = get_ticket_items(ticket_id)
         return ticket
 
 

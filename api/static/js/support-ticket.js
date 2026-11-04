@@ -22,6 +22,8 @@ window.supportTicketApp = function(initialConfig = {}) {
     currentUserId: initialConfig.currentUserId || null,
     availableModules: modules,
     selectedModuleKey: '',
+    selectedModuleKeys: ['atacado'],
+    ticketItems: [''],
     ticketTitle: '',
     ticketDescription: '',
     ticketUrgency: 'urgente',
@@ -61,6 +63,44 @@ window.supportTicketApp = function(initialConfig = {}) {
       } catch (e) {}
       this.setupGlobalPasteListener();
       this.initBadgesPolling();
+    },
+
+    toggleModuleKey(key) {
+      const idx = this.selectedModuleKeys.indexOf(key);
+      if (idx > -1 && this.selectedModuleKeys.length > 1) {
+        this.selectedModuleKeys.splice(idx, 1);
+      } else if (idx === -1) {
+        this.selectedModuleKeys.push(key);
+      }
+      this.selectedModuleKey = this.selectedModuleKeys[0] || '';
+    },
+    isModuleSelected(key) { return this.selectedModuleKeys.includes(key); },
+    addTicketItem() { this.ticketItems.push(''); },
+    removeTicketItem(idx) { if (this.ticketItems.length > 1) this.ticketItems.splice(idx, 1); },
+
+    async toggleItemCompletion(item) {
+      if (!this.activeTicket || !item) return;
+      try {
+        const res = await fetch(`/api/suporte/tickets/${this.activeTicket.id}/items/${item.id}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
+          body: JSON.stringify({ completed: !item.completed, csrf_token: this.getCsrfToken() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          item.completed = data.completed;
+          if (data.all_completed && this.activeTicket.status !== 'resolvido') {
+            const wantResolve = confirm('🎉 Todas as alterações deste chamado foram marcadas como concluídas!\n\nDeseja alterar o status do chamado para "Resolvido" agora?');
+            if (wantResolve) {
+              this.replyStatus = 'resolvido';
+              this.resolutionNotes = 'Todas as alterações foram concluídas.';
+              await this.sendReply();
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao alternar item:', err);
+      }
     },
 
     setupGlobalPasteListener() {
@@ -180,21 +220,26 @@ window.supportTicketApp = function(initialConfig = {}) {
       this.errorMessage = '';
       this.successMessage = '';
 
-      if (!this.selectedModuleKey) {
-        this.errorMessage = 'Por favor, selecione a área ou módulo correspondente.';
+      if (this.selectedModuleKeys.length === 0 && this.selectedModuleKey) {
+        this.selectedModuleKeys = [this.selectedModuleKey];
+      }
+      if (this.selectedModuleKeys.length === 0) {
+        this.errorMessage = 'Selecione ao menos um setor/área afetada.';
         return;
       }
       if (!this.ticketTitle.trim()) {
         this.errorMessage = 'Informe um título resumido para o chamado.';
         return;
       }
-      if (!this.ticketDescription.trim()) {
-        this.errorMessage = 'Descreva detalhadamente o problema ou alteração desejada.';
+      const validItems = this.ticketItems.map(t => t.trim()).filter(Boolean);
+      if (!this.ticketDescription.trim() && validItems.length === 0) {
+        this.errorMessage = 'Descreva a solicitação ou adicione ao menos uma alteração.';
         return;
       }
 
-      const modObj = this.availableModules.find(m => m.key === this.selectedModuleKey);
-      const moduleLabel = modObj ? modObj.label : this.selectedModuleKey;
+      const selectedMods = this.availableModules
+        .filter(m => this.selectedModuleKeys.includes(m.key))
+        .map(m => ({ key: m.key, label: m.label }));
 
       this.isSubmitting = true;
       try {
@@ -202,8 +247,10 @@ window.supportTicketApp = function(initialConfig = {}) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.getCsrfToken() },
           body: JSON.stringify({
-            module_key: this.selectedModuleKey,
-            module_label: moduleLabel,
+            modules: selectedMods,
+            module_key: selectedMods[0]?.key || '',
+            module_label: selectedMods.map(m => m.label).join(', '),
+            items: validItems,
             title: this.ticketTitle.trim(),
             description: this.ticketDescription.trim(),
             urgency: this.ticketUrgency,
@@ -213,11 +260,12 @@ window.supportTicketApp = function(initialConfig = {}) {
         });
         const data = await res.json();
         if (data.success) {
-          this.successMessage = `✅ Chamado ${data.ticket_code} aberto com sucesso! Fauzer foi notificado com prioridade.`;
+          this.successMessage = `✅ Chamado ${data.ticket_code} aberto com sucesso!`;
           this.ticketTitle = '';
           this.ticketDescription = '';
+          this.ticketItems = [''];
           this.uploadedAttachments = [];
-          setTimeout(() => { window.location.reload(); }, 1500);
+          setTimeout(() => { window.location.reload(); }, 1200);
         } else {
           this.errorMessage = data.error || 'Falha ao abrir chamado.';
         }
@@ -335,7 +383,8 @@ window.supportTicketApp = function(initialConfig = {}) {
 
     // Modal de Cadastro de Correções Internas
     openInternalCorrectionModal() {
-      this.selectedModuleKey = '';
+      this.selectedModuleKeys = ['atacado'];
+      this.ticketItems = [''];
       this.ticketTitle = '';
       this.ticketDescription = '';
       this.ticketUrgency = 'urgente';
@@ -350,17 +399,25 @@ window.supportTicketApp = function(initialConfig = {}) {
     },
 
     async submitInternalCorrection() {
-      if (!this.selectedModuleKey || !this.ticketTitle.trim() || !this.ticketDescription.trim()) {
-        this.errorMessage = 'Preencha a área, o título e a descrição da correção.';
+      const validItems = this.ticketItems.map(t => t.trim()).filter(Boolean);
+      if (this.selectedModuleKeys.length === 0 && this.selectedModuleKey) {
+        this.selectedModuleKeys = [this.selectedModuleKey];
+      }
+      if (this.selectedModuleKeys.length === 0 || !this.ticketTitle.trim() || (!this.ticketDescription.trim() && validItems.length === 0)) {
+        this.errorMessage = 'Preencha os setores, o título e a descrição ou alterações.';
         return;
       }
       this.isSubmitting = true;
       this.errorMessage = '';
       try {
-        const mod = this.availableModules.find(m => m.key === this.selectedModuleKey);
+        const selectedMods = this.availableModules
+          .filter(m => this.selectedModuleKeys.includes(m.key))
+          .map(m => ({ key: m.key, label: m.label }));
         const payload = {
-          module_key: this.selectedModuleKey,
-          module_label: mod ? mod.label : this.selectedModuleKey,
+          modules: selectedMods,
+          module_key: selectedMods[0]?.key || '',
+          module_label: selectedMods.map(m => m.label).join(', '),
+          items: validItems,
           title: this.ticketTitle.trim(),
           description: this.ticketDescription.trim(),
           urgency: this.ticketUrgency,
