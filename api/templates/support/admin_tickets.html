@@ -6,7 +6,7 @@
 
 {% block top_actions %}
   <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;">
-    <a href="/admin/suporte?status=todos" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'todos' or not current_status %}background:#00e599;color:#000;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+    <a href="/admin/suporte?status=todos" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'todos' or not current_status %}background:#0070F3;color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
       Todos
     </a>
     <a href="/admin/suporte?status=pendente" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'pendente' %}background:#ef4444;color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
@@ -253,8 +253,9 @@
                 📎 Anexar Print
                 <input type="file" id="adminTicketReplyFileInput" accept="image/*" multiple style="display:none;" @change="handleFileInput($event, true)" />
               </button>
-              <button type="submit" class="btn green" :disabled="isSendingReply" style="font-weight:800;padding:8px 20px;">
-                <span x-text="isSendingReply ? 'Salvando...' : 'Salvar Alteração & Responder 🚀'">Salvar Alteração & Responder 🚀</span>
+              <button type="submit" class="btn primary" :disabled="isSendingReply" style="min-width:240px;min-height:40px;font-weight:700;padding:8px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+                <span x-show="!isSendingReply">Salvar Alteração & Responder 🚀</span>
+                <span x-show="isSendingReply" x-cloak style="display:none;">Salvando...</span>
               </button>
             </div>
           </form>

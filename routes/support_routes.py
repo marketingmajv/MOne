@@ -8,7 +8,7 @@ Anti-monólito: < 500 linhas.
 from __future__ import annotations
 
 import logging
-from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
 from routes.helpers import current_user, login_required, roles_required
 from services.support_service import (
     SUPPORT_UPLOAD_DIR,
