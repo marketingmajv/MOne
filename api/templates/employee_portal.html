@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Relatório Semanal | M-One{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/employee-portal.css', v='20261103_01') }}">
+{% endblock %}
+
+{% block content %}
+<script>
+  window.__PORTAL_CONFIG__ = {
+    cycleId: {{ cycle.id if cycle else 0 }},
+    employeeKey: "{{ meta.key }}",
+    deadlineIso: "{{ deadline_iso }}",
+    isEditable: {{ 'true' if is_editable else 'false' }},
+    isFauzer: {{ 'true' if is_fauzer else 'false' }},
+    isPreviousCycle: {{ 'true' if is_previous_cycle else 'false' }},
+    isEditUnlocked: {{ 'true' if is_edit_unlocked else 'false' }},
+    editRequestStatus: "{{ edit_request_status or '' }}",
+    editRequestReason: {{ (edit_request_reason or '')|tojson|safe }},
+    csrfToken: "{{ csrf_token() }}",
+    answers: {{ report.answers|tojson|safe if (report and report.answers) else '{}' }},
+    reportStatus: "{{ report.status if report else 'draft' }}",
+    pointsAwarded: {{ report.points_awarded if (report and report.points_awarded) else 0 }},
+    reviewedAt: "{{ report.reviewed_at if (report and report.reviewed_at) else '' }}",
+    reviewedBy: "{{ report.reviewed_by if (report and report.reviewed_by) else '' }}",
+    profile: {{ profile|tojson|safe if profile else '{}' }}
+  };
+</script>
+
+<div class="content-body" x-data="employeePortal()" x-init="initPortal()">
+  <!-- Top Hero: Boas-vindas, Cargo e Cronômetro Vivo -->
+  <div class="panel mb-4" style="background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(30, 41, 59, 0.85)); border: 1px solid var(--line); border-radius: 16px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+          <span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-weight: 700; padding: 4px 10px; border-radius: 8px;">
+            {{ meta.badge or 'COLABORADOR' }}
+          </span>
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px;">
+            <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Ciclo:</span>
+            <select style="background: transparent; border: none; font-size: 12.5px; font-weight: 700; color: #38bdf8; cursor: pointer; outline: none; padding: 2px 4px;"
+                    onchange="window.location.href='/meu-relatorio?cycle_id=' + this.value">
+              {% for c in all_cycles %}
+              <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
+                {{ c.title }} ({{ c.cycle_code }}) {% if latest_cycle and c.id == latest_cycle.id %}★ Atual{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if is_previous_cycle %}
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); font-size: 11px; font-weight: 700;">
+            📜 Histórico Anterior
+          </span>
+          {% endif %}
+        </div>
+        <h1 style="font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.5px;">
+          Olá, {{ meta.name }}! 👋
+        </h1>
+        <p style="color: var(--muted); font-size: 14px; margin: 0; max-width: 650px; line-height: 1.5;">
+          {{ meta.role_title }} • {{ meta.area }}.<br>
+          <span style="color: #94a3b8; font-size: 13px;">{{ meta.instructions }}</span>
+        </p>
+      </div>
+
+      <!-- Card do Prazo & Contagem Regressiva Viva -->
+      <div style="min-width: 280px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;" :style="timeRemaining.isExpired ? (isFauzer ? 'color: #38bdf8;' : 'color: #f43f5e;') : (timeRemaining.isWarning ? 'color: #f59e0b;' : 'color: #10b981;')">
+            <template x-if="isFauzer && timeRemaining.isExpired">
+              <span>🔓 Pós-Prazo Liberado</span>
+            </template>
+            <template x-if="!isFauzer || !timeRemaining.isExpired">
+              <span x-text="timeRemaining.isExpired ? '🔴 Prazo Encerrado' : (timeRemaining.isWarning ? '🟡 Reta Final' : '🟢 Prazo de Entrega')"></span>
+            </template>
+          </span>
+          <span style="font-size: 12px; color: var(--muted);">Sexta 18:00</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: baseline;">
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.days">0</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">dias</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.hours">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">hrs</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #fff;" x-text="timeRemaining.minutes">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">min</span>
+          </div>
+          <span style="color: var(--muted); font-weight: 800;">:</span>
+          <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px 10px; min-width: 45px;">
+            <span style="font-size: 20px; font-weight: 800; color: #38bdf8;" x-text="timeRemaining.seconds">00</span>
+            <span style="display: block; font-size: 9px; color: var(--muted); text-transform: uppercase;">seg</span>
+          </div>
+        </div>
+      </div>
+  </div>
+
+  {% if is_feedback_released %}
+  <!-- Seção Oficial de Feedback & Alinhamento Deliberado pela Diretoria -->
+  <div class="panel mb-4" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 78, 59, 0.15)); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 16px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">🎯</span>
+        <div>
+          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text);">
+            Feedback Oficial & Alinhamento da Diretoria
+          </h3>
+          <p style="margin: 2px 0 0 0; font-size: 12.5px; color: var(--muted);">
+            Orientações, elogios e combinados deliberados por Jam Penitenti, Geysa e Fauzer.
+          </p>
+        </div>
+      </div>
+      {% if feedback_eval and feedback_eval.score_total %}
+      <div>
+        <span class="badge" style="font-size: 13px; font-weight: 800; padding: 6px 14px; border-radius: 8px; {% if feedback_eval.score_badge == 'green' %}background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);{% elif feedback_eval.score_badge == 'yellow' %}background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);{% else %}background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);{% endif %}">
+          ⭐ Score de Alinhamento: {{ feedback_eval.score_total or 0 }}/100
+        </span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if feedback_eval and feedback_eval.summary %}
+    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; color: var(--text); line-height: 1.5;">
+      <strong>Síntese da Gestão:</strong> {{ feedback_eval.summary }}
+    </div>
+    {% endif %}
+
+    <!-- Acordos & Metas Estabelecidos para a Próxima Semana -->
+    {% if agreements_jam_geysa or agreements_fauzer %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px;">
+      {% if agreements_jam_geysa %}
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span>📌</span>
+          <strong style="color: #fbbf24; font-size: 13px;">Acordos & Metas — Jam & Geysa</strong>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; white-space: pre-wrap;">{{ agreements_jam_geysa }}</p>
+      </div>
+      {% endif %}
+
+      {% if agreements_fauzer %}
+      <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span>⚡</span>
+          <strong style="color: #c084fc; font-size: 13px;">Acordos & Metas — Fauzer</strong>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; white-space: pre-wrap;">{{ agreements_fauzer }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Comparativo de Perguntas com Comentários de Alinhamento -->
+    <details open style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 14px;">
+      <summary style="font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; user-select: none;">
+        📖 Ver Pareceres por Pergunta e Orientações da Diretoria
+      </summary>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+        {% for q in meta.questions %}
+        {% set ans = report.answers.get(q.id) if (report and report.answers) else '' %}
+        {% set d_comment = director_comments.get(q.id) or '' %}
+        {% set des = feedback_desired.get(q.id) or '' %}
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px 14px;">
+          <strong style="font-size: 12.5px; color: var(--text); display: block; margin-bottom: 8px;">{{ q.label }}</strong>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 12px;">
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #38bdf8; font-weight: 700; display: block; margin-bottom: 4px;">Sua Resposta:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ ans if ans else 'Não preenchido' }}</span>
+            </div>
+            {% if d_comment %}
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #fbbf24; font-weight: 700; display: block; margin-bottom: 4px;">💬 Parecer da Diretoria:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ d_comment }}</span>
+            </div>
+            {% elif des %}
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 6px; padding: 10px;">
+              <span style="font-size: 10.5px; color: #f59e0b; font-weight: 700; display: block; margin-bottom: 4px;">Expectativa da Diretoria:</span>
+              <span style="color: var(--text); line-height: 1.4;">{{ des }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+  </div>
+  {% endif %}
+
+  <!-- Gamificação: Placar Pessoal, Streak e Linha do Tempo -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Card Nível & Pontos -->
+    <div class="panel portal-metric-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sua Pontuação Total</span>
+        <span style="font-size: 18px;" x-text="profile.badge_info ? profile.badge_info.badge.split(' ')[0] : '🥉'">🥉</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span class="portal-score-num" x-text="(profile.total_points || 0) + ' pts'">0 pts</span>
+        <span class="badge badge-tier-gold" x-text="profile.badge_info ? profile.badge_info.tier : 'Bronze MAJ'">Bronze MAJ</span>
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;" x-text="'+100 pts por cada relatório enviado rigorosamente no prazo.'"></p>
+    </div>
+
+    <!-- Card Sequência Ativa (Streak) -->
+    <div class="panel portal-metric-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Sequência Pontual (Streak)</span>
+        <span style="font-size: 18px;">🔥</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <span class="portal-streak-num" x-text="(profile.current_streak || 0) + ' semanas'">0 semanas</span>
+      </div>
+      <p style="font-size: 11px; color: var(--muted); margin: 6px 0 0 0;">
+        <span x-show="profile.current_streak > 0">Consistência impecável! Continue pontual para multiplicar seus pontos.</span>
+        <span x-show="!profile.current_streak || profile.current_streak === 0">Envie esta semana no prazo para iniciar sua chama de pontualidade.</span>
+      </p>
+    </div>
+
+    <!-- Card Status do Relatório Atual -->
+    <div class="panel portal-metric-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Relatório Desta Semana</span>
+        <span style="font-size: 14px;" :title="currentReportStatus">
+          <template x-if="reportStatus === 'submitted_on_time'">
+            <span class="badge badge-status-on-time">✓ Protocolado</span>
+          </template>
+          <template x-if="reportStatus === 'submitted_late'">
+            <span class="badge badge-status-late">Atrasado</span>
+          </template>
+          <template x-if="reportStatus === 'draft' || !reportStatus">
+            <span class="badge badge-status-draft">Rascunho</span>
+          </template>
+        </span>
+      </div>
+      <div style="font-size: 13px; color: var(--text); line-height: 1.4;">
+        <template x-if="reviewedAt">
+          <div style="color: #0284c7; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>👁️ Recebido & Analisado pela Diretoria</span>
+          </div>
+        </template>
+        <template x-if="!reviewedAt && (reportStatus === 'submitted_on_time' || reportStatus === 'submitted_late')">
+          <div style="color: #059669; font-weight: 600;">
+            <span>📬 Protocolado! Aguardando reunião da diretoria.</span>
+          </div>
+        </template>
+        <template x-if="reportStatus === 'draft' || !reportStatus">
+          <div style="color: var(--text); font-weight: 500;">
+            <span>📝 Preencha abaixo e clique em 'Enviar Relatório Oficial'.</span>
+          </div>
+        </template>
+      </div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 6px;" x-text="autoSaveMessage"></div>
+    </div>
+  </div>
+
+  <!-- Abas: Preenchimento do Relatório vs Histórico Pessoal -->
+  <div style="display: flex; gap: 12px; border-bottom: 1px solid var(--line); margin-bottom: 24px;">
+    <button @click="currentTab = 'form'" class="btn portal-tab" :class="{ 'active': currentTab === 'form' }">
+      ✍️ Preenchimento da Semana
+    </button>
+    <button @click="currentTab = 'history'" class="btn portal-tab" :class="{ 'active': currentTab === 'history' }">
+      📊 Meu Histórico & Linha do Tempo (<span x-text="profile.submitted_count || 0"></span>)
+    </button>
+  </div>
+
+  <!-- ABA 1: FORMULÁRIO DE PREENCHIMENTO -->
+  <div x-show="currentTab === 'form'" x-transition>
+    <!-- Ações Superiores: Subir Arquivo e Auto-save -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 700; color: var(--text);">Critérios do seu cargo:</span>
+        <span style="font-size: 12px; color: var(--muted);">({{ meta.questions|length }} perguntas obrigatórias)</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Input de arquivo invisível -->
+        <input type="file" id="portal-file-input" accept=".docx,.pdf,.txt" style="display: none;" @change="handleFileUpload($event)">
+        <button type="button" class="btn" @click="document.getElementById('portal-file-input').click()" :disabled="!isEditable || isUploading" style="border: 1px solid rgba(56, 189, 248, 0.4); color: #0284c7; background: rgba(56, 189, 248, 0.08); font-size: 12px; display: flex; align-items: center; gap: 6px;">
+          <span>📎 Subir Relatório via Arquivo (.docx / .pdf / .txt)</span>
+        </button>
+
+        <button type="button" class="btn" @click="saveDraft(false)" :disabled="isSaving" style="font-size: 12px;">
+          <span x-text="isSaving ? 'Salvando...' : '💾 Salvar Rascunho'"></span>
+        </button>
+
+        <button type="button" class="btn primary" @click="submitOfficial()" :disabled="!isEditable || isSaving" style="font-size: 12px; font-weight: 700;">
+          <span>{{ '🚀 Reenviar Relatório Atualizado' if is_edit_unlocked else '🚀 Enviar Relatório Oficial' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Banner informativo exclusivo para Fauzer (Diretoria / Curadoria) -->
+    {% if is_fauzer %}
+    <div style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 18px;">🔓</span>
+        <div>
+          <span style="font-weight: 700; color: #0284c7; font-size: 13px;">Acesso Especial Diretoria (Fauzer):</span>
+          <span style="font-size: 12px; color: var(--muted); margin-left: 6px;">Trava pós-prazo desativada. Formulário 100% liberado para edição contínua e salvamento a qualquer momento.</span>
+        </div>
+      </div>
+      <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #0284c7; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 11px; font-weight: 700;">Edição Livre</span>
+    </div>
+    {% elif is_edit_unlocked %}
+    <!-- Banner de Edição Liberada pela Gerência -->
+    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 22px;">🔓</span>
+        <div>
+          <div style="font-weight: 800; color: #10b981; font-size: 13.5px;">Edição Liberada pela Gerência!</div>
+          <div style="font-size: 12px; color: var(--text); opacity: 0.9;">Você pode atualizar suas respostas deste ciclo abaixo. Ao clicar em <strong>"Reenviar Relatório Atualizado"</strong>, o relatório será protocolado novamente e a trava reativada.</div>
+        </div>
+      </div>
+      <span class="badge" style="background: #10b981; color: #000; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 6px;">Edição Habilitada</span>
+    </div>
+    {% elif not is_editable %}
+    <!-- Banner se o relatório estiver bloqueado para edição -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 20px;">🔒</span>
+        <div>
+          <div style="font-weight: 700; color: var(--text); font-size: 13px;">
+            {% if is_previous_cycle %}
+            Modo Leitura — {{ cycle.title }}
+            {% else %}
+            Relatório congelado para edição
+            {% endif %}
+          </div>
+          <div style="font-size: 12px; color: var(--muted);">
+            {% if is_previous_cycle %}
+            Este ciclo já foi encerrado e suas respostas arquivadas. Se precisar corrigir dados, solicite autorização à gerência.
+            {% else %}
+            Este relatório já foi protocolado oficialmente ou o prazo encerrou. Para ajustes pontuais, solicite liberação à gerência.
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div>
+        {% if edit_request_status == 'pending' %}
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 12px; font-weight: 700; padding: 6px 12px;">
+          ⏳ Pedido de Edição em Análise
+        </span>
+        {% else %}
+        <button type="button" 
+                class="btn" 
+                @click="openEditRequestModal()"
+                style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🔔 Solicitar Edição à Gerência</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Perguntas Dinâmicas da Cartilha -->
+    <form @submit.prevent="submitOfficial()" style="display: flex; flex-direction: column; gap: 20px;">
+      {% for q in meta.questions %}
+      <div class="panel" style="background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <label for="q_{{ q.id }}" style="font-size: 15px; font-weight: 700; color: var(--text); display: block;">
+            {{ q.label }}
+          </label>
+          <span style="font-size: 11px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+            Item {{ loop.index }} de {{ loop.length }}
+          </span>
+        </div>
+
+        {% if q.help %}
+        <p style="font-size: 12px; color: var(--muted); margin: 0 0 12px 0;">
+          💡 {{ q.help }}
+        </p>
+        {% endif %}
+
+        <textarea
+          id="q_{{ q.id }}"
+          class="form-input"
+          rows="4"
+          placeholder="{{ q.placeholder }}"
+          x-model="answers['{{ q.id }}']"
+          @input="debounceAutoSave()"
+          :disabled="!isEditable"
+          style="width: 100%; font-size: 13px; line-height: 1.5; resize: vertical; border-radius: 10px;"
+        ></textarea>
+      </div>
+      {% endfor %}
+
+      <!-- Botões de Ação Inferiores -->
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 10px; padding-bottom: 40px;">
+        <span style="font-size: 12px; color: var(--muted);" x-text="autoSaveMessage"></span>
+        <button type="button" class="btn" @click="saveDraft(false)" :disabled="isSaving">
+          <span x-text="isSaving ? 'Salvando...' : '💾 Salvar Rascunho'"></span>
+        </button>
+        <button type="submit" class="btn primary" :disabled="!isEditable || isSaving" style="font-size: 14px; font-weight: 700; padding: 10px 24px;">
+          <span>{{ '🚀 Reenviar Relatório Atualizado' if is_edit_unlocked else '🚀 Enviar Relatório Oficial (+100 pts)' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% include "employee_portal_history_tab.html" %}
+
+  <!-- Modal Solicitar Edição à Gerência -->
+  <template x-teleport="body">
+    <div class="modal" :class="{ 'show': showEditRequestModal }" style="display: flex; align-items: center; justify-content: center; z-index: 9999;" x-show="showEditRequestModal" x-cloak>
+      <div class="modal-card" style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; max-width: 480px; width: 92%; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🔔</span>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">Solicitar Edição de Relatório</h3>
+          </div>
+          <button type="button" class="modal-close-btn" @click="showEditRequestModal = false" title="Fechar">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <p style="font-size: 12.5px; color: var(--muted); margin: 0 0 14px 0; line-height: 1.45;">
+          Informe à Gerência e Diretoria o motivo pelo qual você precisa reabrir este relatório para ajuste ou complementação de respostas.
+        </p>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-transform: uppercase;">Motivo da Solicitação:</label>
+          <textarea class="form-input" 
+                    rows="3" 
+                    x-model="editRequestReasonInput"
+                    placeholder="Ex: Preciso atualizar as métricas que foram recalculadas após a reunião..."
+                    style="width: 100%; font-size: 13px; line-height: 1.4; resize: vertical; border-radius: 8px;"></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn" @click="showEditRequestModal = false" style="font-size: 12px;">Cancelar</button>
+          <button type="button" class="btn primary" @click="sendEditRequest()" :disabled="isSubmittingRequest" style="font-size: 12px; font-weight: 700;">
+            <span x-text="isSubmittingRequest ? 'Enviando...' : 'Enviar Solicitação'"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Modal de Feedback de Upload com IA -->
+  <template x-teleport="body">
+    <div class="modal" :class="{ 'show': isUploading }" style="display: flex; align-items: center; justify-content: center; z-index: 9999;" x-show="isUploading">
+      <div class="modal-card" style="background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; max-width: 440px; width: 90%; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.7);">
+        <div style="font-size: 36px; margin-bottom: 12px;">⚡</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--text); margin: 0 0 8px 0;">Auditoria com IA em Andamento</h3>
+        <p style="font-size: 13px; color: var(--muted); margin: 0 0 20px 0; line-height: 1.4;">
+          Lendo o arquivo, extraindo respostas e populando as perguntas do seu cargo...
+        </p>
+        <div style="height: 4px; background: rgba(56, 189, 248, 0.2); border-radius: 4px; overflow: hidden; position: relative;">
+          <div style="height: 100%; width: 50%; background: #0284c7; position: absolute; animation: indeterminate 1.5s infinite linear;"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<script src="{{ url_for('static', filename='js/employee-portal.js') }}"></script>
+{% endblock %}

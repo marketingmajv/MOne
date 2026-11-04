@@ -17,6 +17,7 @@
           "static/*.png",
           "static/*.ico",
           "api/static/**",
+          "api/templates/**",
           "public/**",
           "uploads/outlet/**"
         ]

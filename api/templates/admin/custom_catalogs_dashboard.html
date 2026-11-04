@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}M-One • Gestão de Catálogos Personalizados{% endblock %}
+{% block page_title %}Gestão de Catálogos Personalizados{% endblock %}
+{% block page_subtitle %}Distribuição de catálogos clonados com precificação sob medida, White-label e links exclusivos de WhatsApp{% endblock %}
+
+
+
+{% block top_actions %}
+  <button type="button" class="btn primary" onclick="if(window.customCatalogApp){window.customCatalogApp.openModal();}else{window.dispatchEvent(new CustomEvent('open-custom-catalog-modal'));}" style="display: inline-flex; align-items: center; gap: 8px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <span>Novo Catálogo</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<script id="custom-catalogs-data" type="application/json">
+  {{ catalogs|tojson }}
+</script>
+<script id="custom-catalogs-requests-data" type="application/json">
+  {{ requests|tojson }}
+</script>
+<script id="custom-catalogs-invite-code" type="application/json">
+  {{ invite_code|tojson }}
+</script>
+<script id="custom-catalogs-consultant-whatsapp" type="application/json">
+  {{ consultant_whatsapp|tojson }}
+</script>
+
+<div x-data="customCatalogsDashboard()" x-init="init()" @open-custom-catalog-modal.window="openModal()" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+
+  <!-- Métricas Rápidas -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="panel" style="margin-bottom: 0; padding: 18px 20px;">
+      <small class="muted" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Catálogos Ativos</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #00cc88;">{{ active_count }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-muted, #888);">/ {{ catalogs|length }} total</span></div>
+      <small style="color: #00cc88; font-weight: 600; font-size: 0.75rem;">Links operantes</small>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0; padding: 18px 20px;">
+      <small class="muted" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Visualizações Totais</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent, #6366f1);">{{ total_views }}</div>
+      <small class="muted" style="font-size: 0.75rem;">Acessos aos links /c/</small>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0; padding: 18px 20px;">
+      <small class="muted" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Cliques no WhatsApp</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">{{ total_clicks }}</div>
+      <small class="muted" style="font-size: 0.75rem;">Leads direcionados</small>
+    </div>
+
+    <div class="panel" style="margin-bottom: 0; padding: 18px 20px;">
+      <small class="muted" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Matrizes Conectadas</small>
+      <div style="font-size: 1.25rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-size: 0.75rem;">Outlet: {{ outlet_count }}</span>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem;">Atacado: {{ atacado_count }}</span>
+      </div>
+      <small class="muted" style="font-size: 0.75rem;">Sincronização contínua</small>
+    </div>
+  </div>
+
+  <!-- Navegação por Abas: Catálogos Ativos vs Solicitações de Vendedores -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); padding-bottom: 12px; flex-wrap: wrap;">
+    <button type="button" class="btn" :class="{ 'primary': activeTab === 'catalogs' }" @click="activeTab = 'catalogs'" style="padding: 9px 18px; font-weight: 700; font-size: 0.9rem; cursor: pointer;">
+      📋 Catálogos Ativos ({{ catalogs|length }})
+    </button>
+    <button type="button" class="btn" :class="{ 'primary': activeTab === 'requests' }" @click="activeTab = 'requests'" style="padding: 9px 18px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+      <span>📥 Solicitações de Vendedores ({{ requests|length }})</span>
+      {% if pending_requests_count > 0 %}
+      <span style="background: #e5a93b; color: #000; font-weight: 800; font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px;">
+        {{ pending_requests_count }} pendentes
+      </span>
+      {% endif %}
+    </button>
+  </div>
+
+  <!-- Aba Modular de Catálogos Ativos -->
+  {% include "admin/custom_catalogs_active_tab.html" %}
+
+  <!-- Aba Modular de Solicitações de Vendedores -->
+  {% include "admin/custom_catalogs_requests_tab.html" %}
+
+  <!-- Modal Modular de Criação / Edição / Homologação (Teleportado para o body) -->
+  {% include "admin/custom_catalogs_form_modal.html" %}
+
+</div>
+
+<script>
+function customCatalogsDashboard() {
+  let initialCatalogs = [];
+  let initialRequests = [];
+  let initialInviteCode = 'MAJ-PARCEIRO-2026';
+
+  try {
+    const el = document.getElementById('custom-catalogs-data');
+    if (el) initialCatalogs = JSON.parse(el.textContent || '[]');
+  } catch (e) {
+    console.error('[CustomCatalog] Erro ao carregar catálogos:', e);
+  }
+
+  try {
+    const reqEl = document.getElementById('custom-catalogs-requests-data');
+    if (reqEl) initialRequests = JSON.parse(reqEl.textContent || '[]');
+  } catch (e) {
+    console.error('[CustomCatalog] Erro ao carregar solicitações:', e);
+  }
+
+  try {
+    const codeEl = document.getElementById('custom-catalogs-invite-code');
+    if (codeEl) initialInviteCode = JSON.parse(codeEl.textContent || '"MAJ-PARCEIRO-2026"');
+  } catch (e) {
+    console.error('[CustomCatalog] Erro ao carregar código de convite:', e);
+  }
+
+  let initialConsultantWhatsApp = '27996051538';
+  try {
+    const waEl = document.getElementById('custom-catalogs-consultant-whatsapp');
+    if (waEl) initialConsultantWhatsApp = JSON.parse(waEl.textContent || '"27996051538"');
+  } catch (e) {
+    console.error('[CustomCatalog] Erro ao carregar WhatsApp do consultor:', e);
+  }
+
+  const csrfToken = '{{ csrf_token() }}';
+
+  return {
+    activeTab: 'catalogs',
+    catalogs: initialCatalogs,
+    requests: initialRequests,
+    inviteCode: initialInviteCode,
+    consultantWhatsApp: initialConsultantWhatsApp,
+    search: '',
+    searchRequest: '',
+    filterRequestStatus: 'all',
+    showModal: false,
+    form: {
+      id: null,
+      request_id: null,
+      title: '',
+      client_name: '',
+      slug: '',
+      source_matrix: 'atacado',
+      pricing_mode: 'fixed_matrix',
+      percentage_markup: 0.0,
+      whatsapp_number: '',
+      logo_url: '',
+      whatsapp_message_template: '',
+      sync_stock: true,
+      is_white_label: true,
+    },
+    init() {
+      window.customCatalogApp = this;
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'requests') {
+        this.activeTab = 'requests';
+      }
+    },
+    matchesSearch(id) {
+      if (!this.search || !this.search.trim()) return true;
+      const q = this.search.toLowerCase().trim();
+      const c = this.catalogs.find(item => item.id === id);
+      if (!c) return true;
+      const title = (c.title || '').toLowerCase();
+      const client = (c.client_name || '').toLowerCase();
+      const slug = (c.slug || '').toLowerCase();
+      return title.includes(q) || client.includes(q) || slug.includes(q);
+    },
+    filteredRequests() {
+      let list = this.requests || [];
+      if (this.filterRequestStatus !== 'all') {
+        list = list.filter(r => r.status === this.filterRequestStatus);
+      }
+      if (this.searchRequest && this.searchRequest.trim()) {
+        const q = this.searchRequest.toLowerCase().trim();
+        list = list.filter(r => {
+          const name = (r.applicant_name || '').toLowerCase();
+          const store = (r.store_name || '').toLowerCase();
+          const slug = (r.suggested_slug || '').toLowerCase();
+          const phone = (r.whatsapp_number || '').toLowerCase();
+          return name.includes(q) || store.includes(q) || slug.includes(q) || phone.includes(q);
+        });
+      }
+      return list;
+    },
+    openModal() {
+      this.form = {
+        id: null,
+        request_id: null,
+        title: '',
+        client_name: '',
+        slug: '',
+        source_matrix: 'atacado',
+        pricing_mode: 'fixed_matrix',
+        percentage_markup: 0.0,
+        whatsapp_number: '',
+        logo_url: '',
+        whatsapp_message_template: '',
+        sync_stock: true,
+        is_white_label: true,
+      };
+      this.showModal = true;
+    },
+    editCatalogById(id) {
+      const c = this.catalogs.find(item => item.id === id);
+      if (!c) return;
+      this.form = {
+        id: c.id,
+        request_id: null,
+        title: c.title || '',
+        client_name: c.client_name || '',
+        slug: c.slug || '',
+        source_matrix: c.source_matrix || 'outlet',
+        pricing_mode: c.pricing_mode || 'fixed_matrix',
+        percentage_markup: parseFloat(c.percentage_markup || 0),
+        whatsapp_number: c.whatsapp_number || '',
+        logo_url: c.logo_url || '',
+        whatsapp_message_template: c.whatsapp_message_template || '',
+        sync_stock: c.sync_stock !== false,
+        is_white_label: c.is_white_label !== false,
+      };
+      this.showModal = true;
+    },
+    approveRequest(req) {
+      const displayTitle = (req.store_name || req.applicant_name || '').toUpperCase();
+      this.form = {
+        id: null,
+        request_id: req.id,
+        title: `CATÁLOGO ${displayTitle}`,
+        client_name: displayTitle,
+        slug: (req.suggested_slug || '').toLowerCase(),
+        source_matrix: 'atacado',
+        pricing_mode: 'fixed_matrix',
+        percentage_markup: 0.0,
+        whatsapp_number: req.whatsapp_number || '',
+        logo_url: '',
+        whatsapp_message_template: '',
+        sync_stock: true,
+        is_white_label: true,
+      };
+      this.showModal = true;
+    },
+    async rejectRequest(id) {
+      if (!confirm('Deseja realmente recusar esta solicitação de catálogo?')) return;
+      try {
+        const resp = await fetch(`/admin/catalogos/requests/${id}/status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ status: 'recusada' })
+        });
+        const data = await resp.json();
+        if (data.ok || data.success) {
+          const req = this.requests.find(r => r.id === id);
+          if (req) req.status = 'recusada';
+          alert('Solicitação marcada como recusada.');
+        } else {
+          alert('Erro ao atualizar: ' + (data.error || 'Falha na requisição'));
+        }
+      } catch (err) {
+        alert('Erro ao conectar com o servidor: ' + err.message);
+      }
+    },
+    async deleteRequest(id) {
+      if (!confirm('Tem certeza que deseja excluir esta solicitação permanentemente?')) return;
+      try {
+        const resp = await fetch(`/admin/catalogos/requests/${id}/delete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+          }
+        });
+        const data = await resp.json();
+        if (data.ok || data.success) {
+          this.requests = this.requests.filter(r => r.id !== id);
+        } else {
+          alert('Erro ao excluir: ' + (data.error || 'Falha na requisição'));
+        }
+      } catch (err) {
+        alert('Erro ao conectar com o servidor: ' + err.message);
+      }
+    },
+    sendWhatsAppApproved(req) {
+      const slug = req.created_catalog_slug || req.suggested_slug;
+      const cleanPhone = (req.whatsapp_number || '').replace(/\D/g, '');
+      const storeName = req.store_name || req.applicant_name || 'Parceiro';
+      const catalogUrl = `${window.location.origin}/c/${slug}`;
+      const msg = `Olá ${req.applicant_name}! 👋\n\nBoas notícias: seu catálogo exclusivo da MAJ Mobilidade (${storeName}) foi homologado e já está no ar!\n\n🔗 Link de acesso exclusivo:\n${catalogUrl}\n\nTodos os veículos estão sincronizados com estoque e preços de pronta entrega. Boas vendas! 🚀`;
+      const url = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    },
+    formatWhatsAppDisplay(phone) {
+      const p = (phone || '').replace(/\D/g, '');
+      if (p.length === 11) return `(${p.slice(0, 2)}) ${p.slice(2, 7)}-${p.slice(7)}`;
+      if (p.length === 10) return `(${p.slice(0, 2)}) ${p.slice(2, 6)}-${p.slice(6)}`;
+      return phone || 'Não configurado';
+    },
+    async editConsultantWhatsApp() {
+      const current = this.consultantWhatsApp || '27996051538';
+      const novo = prompt('Defina o WhatsApp do Consultor Oficial (com DDD):\nEx: (27) 99605-1538', current);
+      if (!novo || novo.trim() === '') return;
+      const clean = novo.replace(/\D/g, '');
+      if (clean.length < 10) {
+        alert('Número inválido! Digite com DDD (mínimo 10 dígitos).');
+        return;
+      }
+      try {
+        const resp = await fetch('/admin/catalogos/settings/consultant-whatsapp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ consultant_whatsapp: clean })
+        });
+        const data = await resp.json();
+        if (data.ok || data.success) {
+          this.consultantWhatsApp = data.consultant_whatsapp;
+          alert(`WhatsApp do consultor atualizado para: ${this.formatWhatsAppDisplay(this.consultantWhatsApp)}`);
+        } else {
+          alert('Erro ao salvar: ' + (data.error || 'Falha na requisição'));
+        }
+      } catch (err) {
+        alert('Erro ao atualizar: ' + err.message);
+      }
+    },
+    async generateOneTimeLink() {
+      try {
+        const resp = await fetch('/admin/catalogos/generate-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+          }
+        });
+        const data = await resp.json();
+        if (data.success && data.token) {
+          const url = `${window.location.origin}/solicitar-catalogo?token=${data.token}`;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+              alert(`Link com token descartável copiado!\n\n${url}\n\nEste token expirará automaticamente assim que o vendedor preencher.`);
+            }).catch(() => {
+              prompt('Copie o link com token único abaixo:', url);
+            });
+          } else {
+            prompt('Copie o link com token único abaixo:', url);
+          }
+        } else {
+          alert('Erro ao gerar token único.');
+        }
+      } catch (err) {
+        alert('Erro ao conectar ao servidor: ' + err.message);
+      }
+    },
+    closeModal() {
+      this.showModal = false;
+    },
+    autoSlug() {
+      if (!this.form.id && this.form.title) {
+        this.form.slug = this.form.title.toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+    },
+    copyCatalogLink(slug) {
+      const url = `${window.location.origin}/c/${slug}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert(`Link copiado com sucesso:\n${url}`);
+        }).catch(() => {
+          prompt('Copie o link abaixo:', url);
+        });
+      } else {
+        prompt('Copie o link abaixo:', url);
+      }
+    }
+  };
+}
+</script>
+{% endblock %}

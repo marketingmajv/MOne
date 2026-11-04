@@ -1,0 +1,200 @@
+<!-- ABA 3: HISTÓRICO DE COTAÇÕES & STATUS DE ENVIO (templates/freight_quotes_tab.html) -->
+<div class="space-y-5">
+  
+  <!-- KPI CARDS RÁPIDOS DE STATUS -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs">
+      <span class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">Total Cotações</span>
+      <div class="flex items-baseline gap-2 mt-1">
+        <strong class="text-xl font-black text-[var(--text-primary)]">{{ archived_quotes|length }}</strong>
+        <span class="text-[10px] text-[var(--text-muted)]">registradas</span>
+      </div>
+    </div>
+
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs">
+      <span class="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Em Aberto (Cotadas)</span>
+      <div class="flex items-baseline gap-2 mt-1">
+        <strong class="text-xl font-black text-amber-400">{{ archived_quotes|selectattr('status', 'equalto', 'cotado')|list|length }}</strong>
+        <span class="text-[10px] text-[var(--text-muted)]">aguardando cliente</span>
+      </div>
+    </div>
+
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs">
+      <span class="text-[11px] font-bold text-[var(--brand-emerald)] uppercase tracking-wider block">Aprovadas para Envio</span>
+      <div class="flex items-baseline gap-2 mt-1">
+        <strong class="text-xl font-black text-[var(--brand-emerald)]">{{ archived_quotes|selectattr('status', 'equalto', 'aprovado')|list|length }}</strong>
+        <span class="text-[10px] text-[var(--text-muted)]">prontas p/ despacho</span>
+      </div>
+    </div>
+
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl p-4 shadow-xs">
+      <span class="text-[11px] font-bold text-[var(--brand-blue)] uppercase tracking-wider block">Cargas Enviadas</span>
+      <div class="flex items-baseline gap-2 mt-1">
+        <strong class="text-xl font-black text-[var(--brand-blue)]">{{ archived_quotes|selectattr('status', 'equalto', 'enviado')|list|length }}</strong>
+        <span class="text-[10px] text-[var(--text-muted)]">em trânsito/entregues</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER PRINCIPAL COM FILTROS E TABELA -->
+  <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm space-y-4">
+    
+    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-[var(--border-subtle)] pb-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 flex items-center justify-center font-bold text-xs">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </span>
+          <h2 class="text-sm font-bold text-[var(--text-primary)]">Histórico de Cotações & Status de Envio</h2>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)] mt-0.5">Rastreamento de cotações emitidas aos clientes, aprovação comercial e emissão de espelho PDF</p>
+      </div>
+
+      <!-- FILTROS POR STATUS -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <button type="button" onclick="filterQuotesByStatus('all', this)" class="quote-status-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[var(--surface-subtle)] text-[var(--text-primary)] border border-[var(--border-subtle)] active">
+          Todos ({{ archived_quotes|length }})
+        </button>
+        <button type="button" onclick="filterQuotesByStatus('cotado', this)" class="quote-status-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[var(--surface-card)] text-amber-400 hover:bg-[var(--surface-subtle)] border border-[var(--border-subtle)]">
+          Cotados
+        </button>
+        <button type="button" onclick="filterQuotesByStatus('aprovado', this)" class="quote-status-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[var(--surface-card)] text-[var(--brand-emerald)] hover:bg-[var(--surface-subtle)] border border-[var(--border-subtle)]">
+          Aprovados
+        </button>
+        <button type="button" onclick="filterQuotesByStatus('enviado', this)" class="quote-status-filter-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-[var(--surface-card)] text-[var(--brand-blue)] hover:bg-[var(--surface-subtle)] border border-[var(--border-subtle)]">
+          Enviados
+        </button>
+      </div>
+    </div>
+
+    <!-- BARRA DE BUSCA EM TEMPO REAL -->
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input type="text" id="quoteSearchInput" oninput="filterQuotesSearch(this.value)" placeholder="Buscar por cliente, empresa, cotação # ou transportadora..." class="form-input w-full text-xs rounded-xl" style="padding-left: 36px !important;">
+    </div>
+
+    {% if archived_quotes %}
+    <div class="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b border-[var(--border-subtle)] text-[var(--text-muted)] bg-[var(--surface-subtle)]">
+            <th class="py-3 px-3">Cotação #</th>
+            <th class="py-3 px-3">Data/Hora</th>
+            <th class="py-3 px-3">Cliente / Empresa</th>
+            <th class="py-3 px-3">Destino & Endereço</th>
+            <th class="py-3 px-3">Melhor Opção</th>
+            <th class="py-3 px-3">Valor</th>
+            <th class="py-3 px-3 text-center">Status</th>
+            <th class="py-3 px-3 text-right" style="min-width: 170px;">Ação Comercial</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--border-subtle)] text-[var(--text-secondary)]" id="quotesTableBody">
+          {% for q in archived_quotes %}
+          <tr class="quote-row-item hover:bg-[var(--surface-subtle)]/70 transition-colors" data-status="{{ q.status or 'cotado' }}" data-search="{{ (q.quote_number or '')|lower }} {{ (q.customer_name or '')|lower }} {{ (q.company_name or '')|lower }} {{ (q.selected_carrier or '')|lower }} {{ (q.cep_dest or '')|lower }}">
+            <td class="py-3 px-3 font-mono font-bold text-[var(--brand-blue)]">{{ q.quote_number }}</td>
+            <td class="py-3 px-3 text-[var(--text-muted)] font-mono text-[11px]">{{ q.created_at }}</td>
+            <td class="py-3 px-3">
+              <strong class="text-[var(--text-primary)] block">{{ q.customer_name or 'Não informado' }}</strong>
+              {% if q.company_name %}<small class="text-[var(--text-muted)] block text-[10px]">{{ q.company_name }}</small>{% endif %}
+              {% if q.cpf_cnpj %}<small class="text-[var(--text-muted)] block text-[10px] font-mono">{{ q.cpf_cnpj }}</small>{% endif %}
+            </td>
+            <td class="py-3 px-3">
+              <span class="text-[var(--text-secondary)] block text-[11px]">{{ q.full_address or (q.cep_dest or '—') }}</span>
+              {% if q.contact_person %}<small class="text-[var(--text-muted)] block text-[10px]">Resp: {{ q.contact_person }} ({{ q.contact_phone or '—' }})</small>{% endif %}
+            </td>
+            <td class="py-3 px-3">
+              <span class="font-semibold text-[var(--text-primary)]">{{ q.selected_carrier or '—' }}</span>
+            </td>
+            <td class="py-3 px-3 font-bold text-[var(--text-primary)]">R$ {{ "%.2f"|format(q.selected_price or 0) }}</td>
+            <td class="py-3 px-3 text-center">
+              {% if q.status == 'aprovado' %}
+                <span class="bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">APROVADO</span>
+              {% elif q.status == 'enviado' %}
+                <span class="bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">ENVIADO</span>
+              {% elif q.status == 'cancelado' %}
+                <span class="bg-red-500/10 text-red-400 border border-red-500/25 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">CANCELADO</span>
+              {% else %}
+                <span class="bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">COTADO</span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-3 text-right" style="vertical-align: middle;">
+              <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                <form method="post" action="{{ url_for('freight_quote_status', qid=q.id) }}" style="margin: 0; display: inline-flex;">
+                  {% if q.status == 'cotado' %}
+                    <input type="hidden" name="status" value="aprovado">
+                    <button type="submit" class="btn sm accent" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 700; gap: 4px; box-shadow: none;" title="Aprovar cotação com cliente">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span>Aprovar</span>
+                    </button>
+                  {% elif q.status == 'aprovado' %}
+                    <input type="hidden" name="status" value="enviado">
+                    <button type="submit" class="btn sm primary" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 700; gap: 4px; box-shadow: none;" title="Confirmar envio físico da mercadoria">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      <span>Despachar</span>
+                    </button>
+                  {% else %}
+                    <span class="pill sm" style="font-size: 0.68rem; color: var(--muted); padding: 2px 8px; border-radius: 6px;">✓ Finalizado</span>
+                  {% endif %}
+                </form>
+                <button type="button" onclick="exportArchivedQuotePDF('{{ q.quote_number }}', '{{ q.customer_name or '' }}', '{{ q.cep_dest or '' }}', '{{ q.full_address or '' }}', '{{ q.selected_carrier or '' }}', {{ q.selected_price or 0 }}, '{{ q.created_at }}', {{ (q.items_summary or '')|tojson }})" class="btn sm secondary" style="min-height: 28px; height: 28px; padding: 0 10px; font-size: 0.72rem; border-radius: 6px; font-weight: 600; gap: 4px;" title="Exportar PDF desta cotação arquivada">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  <span>PDF</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-12 text-center text-[var(--text-muted)] border border-dashed border-[var(--border-subtle)] rounded-xl">
+      <p class="text-xs">Nenhuma cotação arquivada ainda. Faça uma simulação na aba "Simulador de Frete" para gerar o primeiro registro.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+let activeQuoteStatusFilter = "all";
+
+function filterQuotesByStatus(status, btn) {
+  activeQuoteStatusFilter = status;
+  document.querySelectorAll(".quote-status-filter-btn").forEach(b => {
+    b.classList.remove("active", "bg-[var(--surface-subtle)]");
+    b.classList.add("bg-[var(--surface-card)]");
+  });
+  if (btn) {
+    btn.classList.add("active", "bg-[var(--surface-subtle)]");
+    btn.classList.remove("bg-[var(--surface-card)]");
+  }
+  applyQuoteFilters();
+}
+
+function filterQuotesSearch(val) {
+  applyQuoteFilters();
+}
+
+function applyQuoteFilters() {
+  const q = (document.getElementById("quoteSearchInput")?.value || "").toLowerCase().trim();
+  const rows = document.querySelectorAll(".quote-row-item");
+  
+  rows.forEach(r => {
+    const status = r.getAttribute("data-status") || "";
+    const searchData = r.getAttribute("data-search") || "";
+    
+    const matchesStatus = (activeQuoteStatusFilter === "all") || (status === activeQuoteStatusFilter);
+    const matchesSearch = !q || searchData.includes(q);
+    
+    if (matchesStatus && matchesSearch) {
+      r.style.display = "";
+    } else {
+      r.style.display = "none";
+    }
+  });
+}
+</script>

@@ -1,0 +1,1229 @@
+<!-- Modal: Wizard de Nova Importação (3 Passos) (templates/imports/modal_new_import.html) -->
+{% if me.role in ['admin', 'support'] %}
+<div class="modal" id="newImport" style="display: none;" onclick="if(event.target===this)closeModal('newImport')">
+  <div class="modal-card large" style="max-width: 980px;">
+    
+    <!-- Cabeçalho & Stepper do Wizard -->
+    <div class="modal-head" style="margin-bottom: 12px; border-bottom: none; padding-bottom: 0;">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">Nova Importação / Compra da China</h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+          Processamento documental assistido por Inteligência Artificial com conferência em tempo real.
+        </p>
+      </div>
+      <button type="button" onclick="closeModal('newImport')">×</button>
+    </div>
+
+    <!-- Stepper Visual de 3 Passos (Navegação Livre) -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+      <div id="step-tab-1" class="wizard-step active" onclick="goToStep(1)" style="padding: 10px; border-radius: 8px; background: rgba(3, 105, 161, 0.1); border: 1px solid #0284C7; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: #0284C7; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800;">1</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: #0284C7;">Arquivos & Estágio</strong>
+          <small style="color: var(--muted); font-size: 10px;">Upload em lote</small>
+        </div>
+      </div>
+      <div id="step-tab-2" class="wizard-step" onclick="goToStep(2)" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">2</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: var(--muted);">Checklist da IA</strong>
+          <small style="color: var(--muted); font-size: 10px;">Trava e validação</small>
+        </div>
+      </div>
+      <div id="step-tab-3" class="wizard-step" onclick="goToStep(3)" style="padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s ease;">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800;">3</span>
+        <div>
+          <strong style="display: block; font-size: 12px; color: var(--muted);">Revisão & Criar</strong>
+          <small style="color: var(--muted); font-size: 10px;">Dados e chassis</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário Global da Criação -->
+    <form method="post" action="{{ url_for('imports.create_import') }}" enctype="multipart/form-data" id="wizardImportForm">
+      <input type="hidden" name="documents_meta" id="hiddenDocsMeta" value="[]">
+      <input type="hidden" name="initial_debits_json" id="hiddenInitialDebitsJson" value="[]">
+      <input type="hidden" name="initial_debit_description" id="inp_debit_desc" value="">
+      <input type="hidden" name="initial_debit_amount_usd" id="inp_debit_usd" value="">
+      <input type="hidden" name="initial_debit_amount_brl" id="inp_debit_brl" value="">
+      <input type="hidden" name="initial_debit_exchange_rate" id="inp_debit_rate" value="">
+
+      <!-- ===================================================================
+           PASSO 1: UPLOAD EM LOTE & ESTÁGIO
+           =================================================================== -->
+      <div id="wizard-pane-1" class="wizard-pane">
+        <!-- Seleção do Estágio Operacional -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">
+            Qual o estágio operacional atual desta importação?
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label id="lbl-stage-water" style="padding: 14px; border-radius: 10px; border: 2px solid #0284C7; background: rgba(2, 132, 199, 0.08); cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+              <input type="radio" name="import_stage" value="water" checked onchange="onStageChanged('water')" style="margin-top: 2px;">
+              <div>
+                <strong style="display: block; font-size: 13px; color: var(--text);">🚢 Embarcado / Em Trânsito Aduaneiro</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">
+                  Contêiner em trânsito marítimo ou no porto. Exige: PI, CI, BL, Packing List e VIN CHASSI.
+                </small>
+              </div>
+            </label>
+
+            <label id="lbl-stage-cleared" style="padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+              <input type="radio" name="import_stage" value="cleared" onchange="onStageChanged('cleared')" style="margin-top: 2px;">
+              <div>
+                <strong style="display: block; font-size: 13px; color: var(--text);">🏁 Desembaraçado / Concluído</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block; margin-top: 2px;">
+                  Processo finalizado no Brasil. Exige também: DUIMP/DI, NF de Entrada e Guias/Numerário.
+                </small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Área de Drag & Drop (Dropzone) -->
+        <div id="dropzoneArea" 
+             style="border: 2px dashed rgba(109, 40, 217, 0.4); background: rgba(109, 40, 217, 0.03); border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 16px;"
+             onclick="document.getElementById('batchFilesInput').click()"
+             ondragover="event.preventDefault(); this.style.borderColor='#6D28D9'; this.style.background='rgba(109, 40, 217, 0.08)';"
+             ondragleave="this.style.borderColor='rgba(109, 40, 217, 0.4)'; this.style.background='rgba(109, 40, 217, 0.03)';"
+             ondrop="handleFileDrop(event)">
+          <input type="file" id="batchFilesInput" name="documents" multiple accept=".pdf,image/*,.xlsx,.xls,.csv" style="display: none;" onchange="handleFileSelect(this.files)">
+          <div style="font-size: 36px; margin-bottom: 8px;">📂</div>
+          <h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 700; color: var(--text);">
+            Arraste todos os documentos da importação aqui ou clique para selecionar
+          </h4>
+          <p style="margin: 0; font-size: 12px; color: var(--muted);">
+            Compatível com <strong>PDF, PNG, JPG e Planilhas Excel / CSV</strong> (Commercial Invoice, BL, Packing List, VIN CHASSI, DI, NF Entrada, etc.)
+          </p>
+        </div>
+
+        <!-- Lista de Arquivos Selecionados -->
+        <div id="selectedFilesBox" style="display: none; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text);" id="filesCountBadge">0 arquivos selecionados</span>
+            <button type="button" class="btn sm" onclick="clearSelectedFiles()" style="font-size: 11px; color: #EF4444; background: none; border: none; cursor: pointer;">
+              🗑️ Limpar Todos
+            </button>
+          </div>
+          <div id="filesListContainer" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; padding: 4px;">
+            <!-- Itens de arquivos -->
+          </div>
+        </div>
+
+        <!-- Campo: Considerações e Correções de Documentos antes da análise -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px;">
+            📝 Considerações e Correções de Doc <span style="font-size: 11px; font-weight: normal; color: var(--muted);">(opcional — orientações prioritárias para a IA antes da análise)</span>
+          </label>
+          <textarea id="inputDocumentNotes" name="document_notes" rows="2" placeholder="Ex: O invoice veio em 2 páginas; o BL correto é o Master; atentar para comprovante de ICMS separado..." style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 12px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+
+        <!-- Bloco no Passo 1: Outros Lançamentos (Digitação Direta / Valores Pagos por Fora) -->
+        <div style="margin-bottom: 16px; padding: 14px; border-radius: 10px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">💳</span>
+              <strong style="font-size: 13.5px; color: var(--text);">Outros Lançamentos (Opcional)</strong>
+            </div>
+            <span class="badge" style="font-size: 10.5px; font-weight: 700; background: rgba(245, 158, 11, 0.18); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.3);">
+              Rateio & Digitação Manual (Sem Comprovante)
+            </span>
+          </div>
+          <p style="margin: 0 0 12px 0; font-size: 12px; color: var(--muted); line-height: 1.45;">
+            Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, <strong>digite os valores abaixo</strong>. Use o botão <strong>(+)</strong> para adicionar quantos lances precisar.
+          </p>
+          <div id="debit_rows_container_p1">
+            <!-- Linhas de lançamentos geradas dinamicamente via JS -->
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed rgba(245, 158, 11, 0.3);">
+            <button type="button" class="btn sm" onclick="addNewDebitRow()" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; font-size: 12px; cursor: pointer;">
+              ➕ Adicionar Outro Lançamento
+            </button>
+            <div id="debit_totals_summary_p1" style="font-size: 12px; font-weight: 700; color: var(--text);">
+              <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">Total: US$ 0.00 (R$ 0,00)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rodapé do Passo 1 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px; flex-wrap: wrap; gap: 10px;">
+          <button type="button" class="btn outline" onclick="closeModal('newImport')">Cancelar</button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn secondary" onclick="goToStep(3)" style="font-weight: 700; padding: 10px 18px; border: 1px solid var(--line);">
+              ✏️ Preencher Manualmente / Pular Upload ➡️
+            </button>
+            <button type="button" class="btn primary" id="btnAnalyzeBatch" onclick="startAIAnalysis()" style="font-weight: 700; padding: 10px 20px;">
+              ⚡ Analisar Arquivos com IA
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           PASSO 2: CHECKLIST DA IA & TRAVA DE VALIDAÇÃO
+           =================================================================== -->
+      <div id="wizard-pane-2" class="wizard-pane" style="display: none;">
+        <!-- Barra de Carregamento da IA -->
+        <div id="aiLoadingBox" style="display: none; padding: 24px; text-align: center;">
+          <!-- Ícone Animado Gemini IA -->
+          <div style="width: 72px; height: 72px; margin: 0 auto 16px auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(56, 189, 248, 0.2), rgba(124, 58, 237, 0.22) 55%, rgba(236, 72, 153, 0.16)); border: 1.5px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; position: relative; animation: aiOrbGlow 2.8s ease-in-out infinite;">
+            <svg width="60" height="60" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+              <defs>
+                <linearGradient id="aiGrad1" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#38BDF8" />
+                  <stop offset="48%" stop-color="#818CF8" />
+                  <stop offset="100%" stop-color="#EC4899" />
+                </linearGradient>
+                <linearGradient id="aiRingGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.85" />
+                  <stop offset="50%" stop-color="#A855F7" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="#EC4899" stop-opacity="0.85" />
+                </linearGradient>
+                <filter id="aiStarGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.2" result="glow" />
+                  <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                </filter>
+              </defs>
+
+              <!-- Anel Orbital Externo Rotativo -->
+              <circle cx="32" cy="32" r="28" stroke="url(#aiRingGrad)" stroke-width="1.5" stroke-dasharray="5 4" fill="none" style="animation: aiRingSpin 10s linear infinite; transform-origin: center;" />
+
+              <!-- Estrela Principal Gemini IA com Pulso e Rotação Suave -->
+              <g style="animation: aiStarRotate 7s ease-in-out infinite; transform-origin: 32px 32px;">
+                <path d="M32 10 C32 20 20 32 10 32 C20 32 32 44 32 54 C32 44 44 32 54 32 C44 32 32 20 32 10 Z" fill="url(#aiGrad1)" filter="url(#aiStarGlow)" />
+                <circle cx="32" cy="32" r="2.5" fill="#FFFFFF" opacity="0.95" />
+              </g>
+
+              <!-- Micro-Brilho Satélite 1 (Superior Direito) -->
+              <g style="animation: aiSparkleTwinkle 2s ease-in-out infinite; transform-origin: 47px 17px;">
+                <path d="M47 11 C47 14.5 44 17 41 17 C44 17 47 19.5 47 23 C47 19.5 50 17 53 17 C50 17 47 14.5 47 11 Z" fill="#38BDF8" opacity="0.9" />
+              </g>
+
+              <!-- Micro-Brilho Satélite 2 (Inferior Esquerdo) -->
+              <g style="animation: aiSparkleTwinkle 2.5s ease-in-out infinite 0.7s; transform-origin: 17px 47px;">
+                <path d="M17 42 C17 44.5 15 47 13 47 C15 47 17 49 17 52 C17 49 19 47 21 47 C19 47 17 44.5 17 42 Z" fill="#EC4899" opacity="0.9" />
+              </g>
+            </svg>
+          </div>
+          <h4 style="margin: 0; font-size: 16.5px; font-weight: 800; color: var(--text);" id="aiLoadingTitle">
+            A IA Gemini está analisando seus documentos...
+          </h4>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0 16px 0; font-size: 12px; color: var(--muted); flex-wrap: wrap;">
+            <span id="aiLoadingSubtitle">Classificando tipos, extraindo valores e cruzando chassis...</span>
+            <span class="badge" id="aiLoadingTimerBadge" style="font-family: var(--font-mono); font-size: 11px; background: var(--panel2); border: 1px solid var(--line);">⏱️ 0s</span>
+          </div>
+
+          <!-- Barra de Progresso com Porcentagem e Status -->
+          <div style="max-width: 520px; margin: 0 auto 16px auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11.5px; font-weight: 700;">
+              <span id="aiProgressStatusText" style="color: var(--text);">Preparando documentos...</span>
+              <span id="aiProgressPercent" style="color: #7C3AED; font-family: var(--font-mono);">15%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;">
+              <div id="aiProgressBarFill" style="width: 15%; height: 100%; background: linear-gradient(90deg, #0284C7, #7C3AED, #EC4899); border-radius: 6px; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Linha do Tempo de 4 Etapas Vivas -->
+          <div id="aiStepsTimeline" style="max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; text-align: left;">
+            
+            <!-- Etapa 1 -->
+            <div id="ai-step-row-1" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-1" style="font-size: 16px;">⏳</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">1. Envio & Recepção dos Arquivos</strong>
+                  <small id="ai-step-detail-1" style="font-size: 11px; color: var(--muted);">Validando integridade e formatos...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-1" class="badge" style="font-size: 10px; font-weight: 700;">EM ANDAMENTO</span>
+            </div>
+
+            <!-- Etapa 2 -->
+            <div id="ai-step-row-2" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-2" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">2. Leitura & Classificação Multimodal (Gemini 2.5)</strong>
+                  <small id="ai-step-detail-2" style="font-size: 11px; color: var(--muted);">Identificando se é Commercial Invoice, BL, Packing List ou Câmbio...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-2" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
+            <!-- Etapa 3 -->
+            <div id="ai-step-row-3" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-3" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">3. Extração de Dados Financeiros & Operacionais</strong>
+                  <small id="ai-step-detail-3" style="font-size: 11px; color: var(--muted);">Capturando valores em USD, número de BL, fornecedor e datas...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-3" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
+            <!-- Etapa 4 -->
+            <div id="ai-step-row-4" style="padding: 10px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.3s ease; opacity: 0.65;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="ai-step-icon-4" style="font-size: 16px;">⚪</span>
+                <div>
+                  <strong style="font-size: 12.5px; display: block; color: var(--text);">4. Rastreio de Chassis & Auditoria Anti-Duplicidade</strong>
+                  <small id="ai-step-detail-4" style="font-size: 11px; color: var(--muted);">Extraindo VINs e conferindo histórico de chassis já cadastrados...</small>
+                </div>
+              </div>
+              <span id="ai-step-badge-4" class="badge" style="font-size: 10px; font-weight: 700;">AGUARDANDO</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Checklist de Conferência em Tempo Real -->
+        <div id="checklistContent" style="display: none;">
+          <!-- Status Geral da Trava -->
+          <div id="gateAlertBox" style="margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="gateIcon" style="font-size: 20px;">🔒</span>
+              <div>
+                <strong id="gateTitle" style="font-size: 13px; display: block;">Verificando documentos...</strong>
+                <small id="gateSubtitle" style="font-size: 11px; color: var(--muted);">O avanço depende dos documentos obrigatórios.</small>
+              </div>
+            </div>
+            <span id="gateBadge" class="badge" style="font-size: 11px; font-weight: 700;">—</span>
+          </div>
+
+          <!-- Grid: Checklist de Documentos Obrigatórios do Estágio -->
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text);">Checklist de Documentos Exigidos:</span>
+              <span style="font-size: 11px; color: var(--muted);" id="stageRulesLabel">Estágio: Embarcado</span>
+            </div>
+            <div id="rulesChecklistGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+              <!-- Cards de conferência gerados via JS -->
+            </div>
+          </div>
+
+          <!-- Relação de Arquivos Detectados com Possibilidade de Ajuste Manual -->
+          <div style="margin-bottom: 16px;">
+            <span style="display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px;">
+              Classificação dos Arquivos (Ajuste manual se a IA tiver dúvida):
+            </span>
+            <div id="detectedFilesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel2);">
+              <!-- Lista com selects manuais -->
+            </div>
+          </div>
+
+          <!-- Aviso de Pagamentos Anexáveis Posteriormente -->
+          <div style="padding: 10px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); font-size: 12px; color: var(--text); margin-bottom: 16px;">
+            ℹ️ <strong>Comprovantes Financeiros:</strong> Comprovantes de câmbio e remessas bancárias ao fornecedor podem ser anexados a qualquer momento após a criação, sem travar esta etapa.
+          </div>
+
+          <!-- Rodapé do Passo 2 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px;">
+            <button type="button" class="btn outline" onclick="goToStep(1)">⬅️ Voltar aos Arquivos</button>
+            <button type="button" class="btn primary" id="btnGoToStep3" onclick="goToStep(3)" disabled style="font-weight: 700;">
+              Avançar para Revisão (Passo 3) ➡️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================
+           PASSO 3: REVISÃO ESTRUTURADA DOS DADOS & CRIAÇÃO
+           =================================================================== -->
+      <div id="wizard-pane-3" class="wizard-pane" style="display: none;">
+        <!-- Banner de Sucesso da Validação -->
+        <div style="padding: 12px 16px; border-radius: 8px; background: rgba(4, 120, 87, 0.1); border: 1px solid rgba(4, 120, 87, 0.3); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">✅</span>
+            <div>
+              <strong style="color: #047857; font-size: 13px; display: block;">Documentos validados e aprovados!</strong>
+              <small style="color: var(--muted); font-size: 11px;">Confira e edite os dados extraídos antes de consolidar o lote.</small>
+            </div>
+          </div>
+          <span class="badge" style="background: rgba(4, 120, 87, 0.2); color: #047857; font-weight: 700; font-size: 11px;">100% CONFORME</span>
+        </div>
+
+        <!-- Box de Resumo dos Chassis Extraídos -->
+        <div id="chassisReviewBox" style="padding: 14px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">🛵</span>
+              <div>
+                <strong style="font-size: 13px; color: var(--text);" id="chassisReviewTitle">0 Chassis Identificados</strong>
+                <small style="color: var(--muted); font-size: 11px; display: block;" id="chassisReviewSubtitle">Serão vinculados ao estoque deste lote.</small>
+              </div>
+            </div>
+            <div id="chassisDuplicateAlert" style="display: none;">
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; font-weight: 700;">
+                ⚠️ Chassis duplicados detectados
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade de Campos Pré-Preenchidos -->
+        <div class="form-grid">
+          <label>Identificador / Ref. Lote
+            <input name="reference" id="inp_reference" required placeholder="Ex.: IMP-2026-001">
+          </label>
+          <label>Empresa Importadora
+            <input name="importer_company" id="inp_importer" value="MAJ Mobilidade" required>
+          </label>
+          <label>Fornecedor (China)
+            <input name="supplier_name" id="inp_supplier" placeholder="Ex.: Zhejiang Leike, Ouxi...">
+          </label>
+          <label>Contato / Vendedor Comercial
+            <input name="supplier_contact" id="inp_contact" placeholder="Ex.: Chen, Jack, Linda...">
+          </label>
+
+          <label>Moeda da Compra
+            <select name="currency" id="inp_currency">
+              <option value="USD" selected>USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="CNY">CNY (¥)</option>
+            </select>
+          </label>
+          <label>Incoterm
+            <select name="incoterm" id="inp_incoterm">
+              <option value="FOB" selected>FOB (Free on Board)</option>
+              <option value="CIF">CIF (Cost, Insurance & Freight)</option>
+              <option value="CFR">CFR (Cost and Freight)</option>
+              <option value="EXW">EXW (Ex Works)</option>
+            </select>
+          </label>
+
+          <label>Agente de Cargas (Forwarder)
+            <input name="freight_forwarder" id="inp_forwarder" placeholder="Ex.: DSV, Kuehne+Nagel...">
+          </label>
+          <label>Despachante Aduaneiro
+            <input name="customs_broker" id="inp_broker" placeholder="Ex.: Despachante Santos/Itajaí...">
+          </label>
+
+          <label>Teto Proforma Invoice (PI) USD
+            <input type="number" step="0.01" name="pi_amount_usd" id="inp_pi_amount" placeholder="0.00">
+          </label>
+          <label>Commercial Invoice (CI) USD
+            <input type="number" step="0.01" name="ci_amount_usd" id="inp_ci_amount" placeholder="0.00">
+          </label>
+
+          <label>Número BL (Bill of Lading)
+            <input name="bl_no" id="inp_bl_no" placeholder="Ex.: COSU123456789">
+          </label>
+          <label>Número Commercial Invoice
+            <input name="invoice_no" id="inp_invoice_no" placeholder="Ex.: INV-2026-889">
+          </label>
+
+          <label>Previsão de Embarque
+            <input type="date" name="departure_date_estimated" id="inp_dep_date">
+          </label>
+          <label>Previsão de Chegada
+            <input type="date" name="arrival_date_estimated" id="inp_arr_date">
+          </label>
+
+          <div class="span-2" style="background: var(--panel2); border: 1px dashed var(--line); border-radius: 8px; padding: 12px; display: flex; gap: 16px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="freight_included_in_ci" id="inp_freight_ci" value="1">
+              <span>Frete internacional incluído na Commercial Invoice</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="freight_included_in_pi" id="inp_freight_pi" value="1">
+              <span>Frete incluído na Proforma (PI)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; color: var(--text);">
+              <input type="checkbox" name="insurance_included" id="inp_insurance" value="1">
+              <span>Seguro de carga incluído</span>
+            </label>
+          </div>
+
+          <!-- Bloco: Outros Lançamentos (Opcional) -->
+          <div class="span-2" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 14px; margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">💳</span>
+                <strong style="font-size: 13px; color: var(--text);">Outros Lançamentos (Opcional)</strong>
+              </div>
+              <span class="badge" style="font-size: 10px; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #B45309;">Rateio & Digitação Manual</span>
+            </div>
+            <p style="margin: 0 0 12px 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">
+              Caso este contêiner tenha pagamentos realizados em conjunto com outros lotes ou valores pagos fora da CI oficial, informe os valores abaixo. Use o botão <strong>(+)</strong> para adicionar múltiplos lançamentos.
+            </p>
+            <div id="debit_rows_container_p3">
+              <!-- Linhas sincronizadas com o Passo 1 -->
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px; padding-top: 8px; border-top: 1px dashed rgba(245, 158, 11, 0.3);">
+              <button type="button" class="btn sm" onclick="addNewDebitRow()" style="background: rgba(245, 158, 11, 0.15); color: #B45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 700; font-size: 12px; cursor: pointer;">
+                ➕ Adicionar Outro Lançamento
+              </button>
+              <div id="debit_totals_summary_p3" style="font-size: 12px; font-weight: 700; color: var(--text);">
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">Total: US$ 0.00 (R$ 0,00)</span>
+              </div>
+            </div>
+          </div>
+
+          <label class="span-2">Observações Gerais
+            <textarea name="notes" id="inp_notes" placeholder="Detalhes adicionais, contêineres, orientações..." rows="2"></textarea>
+          </label>
+        </div>
+
+        <!-- Rodapé do Passo 3 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 20px;">
+          <button type="button" class="btn outline" onclick="goToStep(2)">⬅️ Voltar ao Checklist</button>
+          <button type="submit" class="btn primary" id="btnSubmitImport" style="font-weight: 700; padding: 12px 24px;">
+            🚀 Criar Importação & Abrir Painel
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+let selectedFilesList = [];
+let activeImportStage = 'water';
+let activeRules = [];
+let aiAnalysisResult = null;
+
+let wizardDebitsList = [
+  { id: 1, desc: '', usd: '', brl: '', rate: '' }
+];
+let nextDebitId = 2;
+
+function renderWizardDebits() {
+  const containerP1 = document.getElementById('debit_rows_container_p1');
+  const containerP3 = document.getElementById('debit_rows_container_p3');
+
+  const buildHtml = (prefix) => {
+    return wizardDebitsList.map((item, index) => {
+      const isMultiple = wizardDebitsList.length > 1;
+      return `
+        <div style="background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;" id="${prefix}_row_${item.id}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 11px; font-weight: 700; color: #B45309;">Lançamento #${index + 1}</span>
+            ${isMultiple ? `
+              <button type="button" onclick="removeWizardDebitRow(${item.id})" style="background: none; border: none; color: #EF4444; font-size: 12px; cursor: pointer; padding: 2px 6px; font-weight: 700;" title="Remover este lançamento">
+                ✕ Remover
+              </button>
+            ` : ''}
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+            <div style="grid-column: span 2;">
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Descrição do Lançamento</label>
+              <input type="text" placeholder="Ex: Sinal rateado, seguro por fora, SWIFT..." value="${item.desc || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'desc', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Valor (USD)</label>
+              <input type="number" step="0.01" placeholder="0.00" value="${item.usd || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'usd', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Valor Debitado (R$)</label>
+              <input type="number" step="0.01" placeholder="0.00" value="${item.brl || ''}" style="font-size: 12px;" oninput="updateWizardDebit(${item.id}, 'brl', this.value)">
+            </div>
+            <div>
+              <label style="font-size: 10.5px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 3px;">Câmbio Efetivo (R$)</label>
+              <input type="number" step="0.0001" placeholder="Auto" value="${item.rate || ''}" style="font-size: 12px; background: var(--panel2);" oninput="updateWizardDebit(${item.id}, 'rate', this.value)">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  if (containerP1) containerP1.innerHTML = buildHtml('p1');
+  if (containerP3) containerP3.innerHTML = buildHtml('p3');
+
+  updateWizardDebitTotals();
+}
+
+function addNewDebitRow() {
+  wizardDebitsList.push({ id: nextDebitId++, desc: '', usd: '', brl: '', rate: '' });
+  renderWizardDebits();
+}
+
+function removeWizardDebitRow(id) {
+  if (wizardDebitsList.length <= 1) return;
+  wizardDebitsList = wizardDebitsList.filter(it => it.id !== id);
+  renderWizardDebits();
+}
+
+function updateWizardDebit(id, field, val) {
+  const item = wizardDebitsList.find(it => it.id === id);
+  if (!item) return;
+  item[field] = val;
+
+  if (field === 'usd' || field === 'brl') {
+    const u = parseFloat(item.usd || 0);
+    const b = parseFloat(item.brl || 0);
+    if (u > 0 && b > 0) {
+      item.rate = (b / u).toFixed(4);
+    }
+  }
+
+  // Sincronizar os inputs no outro passo para manter os passos alinhados sem perder o foco
+  ['p1', 'p3'].forEach(p => {
+    const row = document.getElementById(`${p}_row_${id}`);
+    if (row) {
+      const inputs = row.querySelectorAll('input');
+      if (inputs.length >= 4) {
+        if (field === 'desc' && document.activeElement !== inputs[0]) inputs[0].value = item.desc || '';
+        if (field === 'usd' && document.activeElement !== inputs[1]) inputs[1].value = item.usd || '';
+        if (field === 'brl' && document.activeElement !== inputs[2]) inputs[2].value = item.brl || '';
+        if ((field === 'rate' || field === 'usd' || field === 'brl') && document.activeElement !== inputs[3]) {
+          inputs[3].value = item.rate || '';
+        }
+      }
+    }
+  });
+
+  updateWizardDebitTotals();
+}
+
+function updateWizardDebitTotals() {
+  let totUsd = 0;
+  let totBrl = 0;
+  wizardDebitsList.forEach(it => {
+    totUsd += parseFloat(it.usd || 0);
+    totBrl += parseFloat(it.brl || 0);
+  });
+
+  const formattedStr = `Total: US$ ${totUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (R$ ${totBrl.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+
+  const badgeP1 = document.getElementById('debit_totals_summary_p1');
+  const badgeP3 = document.getElementById('debit_totals_summary_p3');
+  if (badgeP1) badgeP1.innerHTML = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">${formattedStr}</span>`;
+  if (badgeP3) badgeP3.innerHTML = `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #B45309; font-weight: 700; font-family: var(--font-mono);">${formattedStr}</span>`;
+
+  // Atualizar campo JSON oculto que vai no POST
+  const validDebits = wizardDebitsList.filter(it => (parseFloat(it.usd || 0) > 0 || parseFloat(it.brl || 0) > 0 || (it.desc || '').trim().length > 0));
+  const hiddenJson = document.getElementById('hiddenInitialDebitsJson');
+  if (hiddenJson) {
+    hiddenJson.value = JSON.stringify(validDebits.map(it => ({
+      description: it.desc || 'Outros Lançamentos',
+      amount_usd: parseFloat(it.usd || 0),
+      amount_brl: parseFloat(it.brl || 0),
+      exchange_rate: it.rate || (parseFloat(it.usd || 0) > 0 && parseFloat(it.brl || 0) > 0 ? (parseFloat(it.brl)/parseFloat(it.usd)).toFixed(4) : null)
+    })));
+  }
+
+  // Preencher também os campos retrocompatíveis do primeiro item
+  const first = validDebits[0] || {};
+  const inDesc = document.getElementById('inp_debit_desc');
+  const inUsd = document.getElementById('inp_debit_usd');
+  const inBrl = document.getElementById('inp_debit_brl');
+  const inRate = document.getElementById('inp_debit_rate');
+  if (inDesc) inDesc.value = first.desc || '';
+  if (inUsd) inUsd.value = first.usd || '';
+  if (inBrl) inBrl.value = first.brl || '';
+  if (inRate) inRate.value = first.rate || '';
+}
+
+// Inicializar linhas do wizard ao carregar
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderWizardDebits);
+} else {
+  renderWizardDebits();
+}
+
+let DOC_OPTIONS = [
+  { code: 'PI', label: 'Proforma Invoice (PI)' },
+  { code: 'CI', label: 'Commercial Invoice (CI)' },
+  { code: 'BL', label: 'Bill of Lading (BL)' },
+  { code: 'PL', label: 'Packing List (PL)' },
+  { code: 'CHASSIS_LIST', label: 'VIN CHASSI (Relação de Chassis)' },
+  { code: 'DUIMP_DI', label: 'DUIMP / DI' },
+  { code: 'ENTRY_NF', label: 'Nota Fiscal de Entrada' },
+  { code: 'ICMS_GUIDE', label: 'Guias de ICMS / comprovante de icms' },
+  { code: 'NF_FRETE_CARRETA', label: 'Nota Fiscal FRETE, CARRETA' },
+  { code: 'AGENTE_CARGA_BR', label: 'AGENTE DE CARGA BRASIL' },
+  { code: 'FECHAMENTO_DESPACHANTE', label: 'Fechamento Despachante' },
+  { code: 'AJUDANTES_PAGTO', label: 'AJUDANTES (comprovante de pagamento)' },
+  { code: 'EXCHANGE_CONTRACT', label: 'Comprovantes de Câmbio' },
+  { code: 'SUPPLIER_PAYMENT', label: 'Comprovantes Fornecedor' }
+];
+
+function onStageChanged(stage) {
+  activeImportStage = stage;
+  const lblWater = document.getElementById('lbl-stage-water');
+  const lblCleared = document.getElementById('lbl-stage-cleared');
+  if (stage === 'water') {
+    lblWater.style.borderColor = '#0284C7';
+    lblWater.style.background = 'rgba(2, 132, 199, 0.08)';
+    lblCleared.style.borderColor = 'var(--line)';
+    lblCleared.style.background = 'var(--panel2)';
+  } else {
+    lblCleared.style.borderColor = '#047857';
+    lblCleared.style.background = 'rgba(4, 120, 87, 0.08)';
+    lblWater.style.borderColor = 'var(--line)';
+    lblWater.style.background = 'var(--panel2)';
+  }
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  const dropzone = document.getElementById('dropzoneArea');
+  dropzone.style.borderColor = 'rgba(109, 40, 217, 0.4)';
+  dropzone.style.background = 'rgba(109, 40, 217, 0.03)';
+  if (e.dataTransfer && e.dataTransfer.files) {
+    handleFileSelect(e.dataTransfer.files);
+  }
+}
+
+function handleFileSelect(files) {
+  if (!files || !files.length) return;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    if (!selectedFilesList.some(existing => existing.name === f.name && existing.size === f.size)) {
+      selectedFilesList.push(f);
+    }
+  }
+  updateSelectedFilesUI();
+}
+
+function removeFile(index) {
+  selectedFilesList.splice(index, 1);
+  updateSelectedFilesUI();
+}
+
+function clearSelectedFiles() {
+  selectedFilesList = [];
+  updateSelectedFilesUI();
+}
+
+function updateSelectedFilesUI() {
+  const box = document.getElementById('selectedFilesBox');
+  const container = document.getElementById('filesListContainer');
+  const badge = document.getElementById('filesCountBadge');
+  const input = document.getElementById('batchFilesInput');
+
+  if (selectedFilesList.length === 0) {
+    box.style.display = 'none';
+    if (input) input.value = '';
+    return;
+  }
+
+  box.style.display = 'block';
+  badge.textContent = `${selectedFilesList.length} arquivo${selectedFilesList.length > 1 ? 's' : ''} selecionado${selectedFilesList.length > 1 ? 's' : ''}`;
+  container.innerHTML = '';
+
+  selectedFilesList.forEach((f, idx) => {
+    const sizeKb = (f.size / 1024).toFixed(0);
+    const item = document.createElement('div');
+    item.style.padding = '6px 10px';
+    item.style.borderRadius = '6px';
+    item.style.background = 'var(--panel)';
+    item.style.border = '1px solid var(--line)';
+    item.style.fontSize = '11px';
+    item.style.display = 'inline-flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.innerHTML = `
+      <span style="font-weight: 600; color: var(--text); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${f.name}</span>
+      <span style="color: var(--muted); font-size: 10px;">${sizeKb} KB</span>
+      <button type="button" onclick="removeFile(${idx})" style="border: none; background: none; color: #EF4444; cursor: pointer; font-size: 13px; padding: 0 2px;">✕</button>
+    `;
+    container.appendChild(item);
+  });
+
+  // Atualizar o FileList do input
+  try {
+    const dt = new DataTransfer();
+    selectedFilesList.forEach(f => dt.items.add(f));
+    input.files = dt.files;
+  } catch (e) {
+    // Fallback para navegadores legados
+  }
+}
+
+function goToStep(stepNum) {
+  [1, 2, 3].forEach(num => {
+    const pane = document.getElementById(`wizard-pane-${num}`);
+    const tab = document.getElementById(`step-tab-${num}`);
+    if (pane) pane.style.display = (num === stepNum) ? 'block' : 'none';
+    if (tab) {
+      if (num === stepNum) {
+        tab.style.background = 'rgba(3, 105, 161, 0.1)';
+        tab.style.borderColor = '#0284C7';
+        tab.querySelector('strong').style.color = '#0284C7';
+        tab.querySelector('span').style.background = '#0284C7';
+        tab.querySelector('span').style.color = '#fff';
+      } else if (num < stepNum) {
+        tab.style.background = 'rgba(4, 120, 87, 0.08)';
+        tab.style.borderColor = 'rgba(4, 120, 87, 0.3)';
+        tab.querySelector('strong').style.color = '#047857';
+        tab.querySelector('span').style.background = '#047857';
+        tab.querySelector('span').style.color = '#fff';
+        tab.querySelector('span').textContent = '✓';
+      } else {
+        tab.style.background = 'var(--panel2)';
+        tab.style.borderColor = 'var(--line)';
+        tab.querySelector('strong').style.color = 'var(--muted)';
+        tab.querySelector('span').style.background = 'var(--panel)';
+        tab.querySelector('span').style.color = 'var(--muted)';
+        tab.querySelector('span').textContent = num;
+      }
+    }
+  });
+}
+
+let aiProgressTimer = null;
+let aiProgressSeconds = 0;
+let aiTimelineTimeouts = [];
+
+function setPreloaderStepState(stepNum, state, detailText) {
+  const row = document.getElementById(`ai-step-row-${stepNum}`);
+  const icon = document.getElementById(`ai-step-icon-${stepNum}`);
+  const badge = document.getElementById(`ai-step-badge-${stepNum}`);
+  const detail = document.getElementById(`ai-step-detail-${stepNum}`);
+  if (!row || !icon || !badge) return;
+
+  if (detailText && detail) {
+    detail.textContent = detailText;
+  }
+
+  if (state === 'active') {
+    row.style.opacity = '1';
+    row.style.background = 'rgba(124, 58, 237, 0.08)';
+    row.style.border = '1px solid rgba(124, 58, 237, 0.35)';
+    row.style.boxShadow = '0 0 14px rgba(124, 58, 237, 0.12)';
+    icon.textContent = '⚡';
+    badge.textContent = 'PROCESSANDO';
+    badge.style.background = 'rgba(124, 58, 237, 0.18)';
+    badge.style.color = '#7C3AED';
+    badge.style.borderColor = 'rgba(124, 58, 237, 0.3)';
+  } else if (state === 'done') {
+    row.style.opacity = '1';
+    row.style.background = 'rgba(4, 120, 87, 0.06)';
+    row.style.border = '1px solid rgba(4, 120, 87, 0.3)';
+    row.style.boxShadow = 'none';
+    icon.textContent = '✅';
+    badge.textContent = 'CONCLUÍDO';
+    badge.style.background = 'rgba(4, 120, 87, 0.15)';
+    badge.style.color = '#047857';
+    badge.style.borderColor = 'rgba(4, 120, 87, 0.3)';
+  } else {
+    row.style.opacity = '0.65';
+    row.style.background = 'var(--panel2)';
+    row.style.border = '1px solid var(--line)';
+    row.style.boxShadow = 'none';
+    icon.textContent = '⚪';
+    badge.textContent = 'AGUARDANDO';
+    badge.style.background = 'var(--panel)';
+    badge.style.color = 'var(--muted)';
+    badge.style.borderColor = 'var(--line)';
+  }
+}
+
+function updatePreloaderProgress(percent, statusMsg) {
+  const bar = document.getElementById('aiProgressBarFill');
+  const txt = document.getElementById('aiProgressPercent');
+  const status = document.getElementById('aiProgressStatusText');
+  if (bar) bar.style.width = `${percent}%`;
+  if (txt) txt.textContent = `${percent}%`;
+  if (status && statusMsg) status.textContent = statusMsg;
+}
+
+function startPreloaderTimeline(filesList) {
+  clearInterval(aiProgressTimer);
+  aiTimelineTimeouts.forEach(t => clearTimeout(t));
+  aiTimelineTimeouts = [];
+
+  aiProgressSeconds = 0;
+  const timerBadge = document.getElementById('aiLoadingTimerBadge');
+  if (timerBadge) timerBadge.textContent = '⏱️ 0s';
+
+  aiProgressTimer = setInterval(() => {
+    aiProgressSeconds++;
+    if (timerBadge) timerBadge.textContent = `⏱️ ${aiProgressSeconds}s`;
+  }, 1000);
+
+  const fileCount = filesList.length;
+  const fileNamesStr = filesList.map(f => f.name).slice(0, 3).join(', ') + (fileCount > 3 ? ` (+${fileCount - 3})` : '');
+
+  setPreloaderStepState(1, 'active', `${fileCount} arquivo${fileCount > 1 ? 's' : ''}: ${fileNamesStr}`);
+  setPreloaderStepState(2, 'waiting');
+  setPreloaderStepState(3, 'waiting');
+  setPreloaderStepState(4, 'waiting');
+  updatePreloaderProgress(20, `Enviando ${fileCount} arquivo${fileCount > 1 ? 's' : ''} para o servidor...`);
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(1, 'done');
+    setPreloaderStepState(2, 'active', 'IA analisando layout e classificando tipos documentais...');
+    updatePreloaderProgress(45, 'Leitura multimodal e classificação com Gemini 2.5...');
+  }, 800));
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(2, 'done');
+    setPreloaderStepState(3, 'active', 'Extraindo moeda, valores da fatura, número de BL e fornecedor...');
+    updatePreloaderProgress(70, 'Extraindo campos estruturados e faturas...');
+  }, 2400));
+
+  aiTimelineTimeouts.push(setTimeout(() => {
+    setPreloaderStepState(3, 'done');
+    setPreloaderStepState(4, 'active', 'Conferindo relação de chassis e checando duplicidades no estoque...');
+    updatePreloaderProgress(88, 'Validando unicidade de chassis e estoque...');
+  }, 4200));
+}
+
+function completePreloaderTimeline() {
+  clearInterval(aiProgressTimer);
+  aiTimelineTimeouts.forEach(t => clearTimeout(t));
+  aiTimelineTimeouts = [];
+
+  setPreloaderStepState(1, 'done');
+  setPreloaderStepState(2, 'done');
+  setPreloaderStepState(3, 'done');
+  setPreloaderStepState(4, 'done');
+  updatePreloaderProgress(100, '✨ Análise concluída com sucesso!');
+}
+
+async function startAIAnalysis() {
+  if (selectedFilesList.length === 0) {
+    alert('Por favor, selecione ou arraste pelo menos um documento para iniciar a análise.');
+    return;
+  }
+
+  // Validação preventiva de tamanho de lote (limite 4.2 MB para compatibilidade total com Vercel)
+  const totalSizeBytes = selectedFilesList.reduce((acc, f) => acc + (f.size || 0), 0);
+  if (totalSizeBytes > 4.2 * 1024 * 1024) {
+    const sizeMb = (totalSizeBytes / (1024 * 1024)).toFixed(1);
+    alert(`Atenção: Os arquivos selecionados somam ${sizeMb} MB. O limite da plataforma para análise em lote é de 4.2 MB por envio.\n\nDica: Envie os documentos principais (Commercial Invoice, BL, etc.) em arquivos menores ou preencha manualmente.`);
+    return;
+  }
+
+  goToStep(2);
+  const loadingBox = document.getElementById('aiLoadingBox');
+  const checklistContent = document.getElementById('checklistContent');
+  loadingBox.style.display = 'block';
+  checklistContent.style.display = 'none';
+
+  // Iniciar preloader detalhado com linha do tempo viva e cronômetro
+  startPreloaderTimeline(selectedFilesList);
+
+  const fd = new FormData();
+  selectedFilesList.forEach(f => fd.append('documents', f));
+  const notes = (document.getElementById('inputDocumentNotes')?.value || '').trim();
+  if (notes) {
+    fd.append('document_notes', notes);
+  }
+
+  try {
+    const res = await fetch('/api/imports/analyze-docs', { method: 'POST', body: fd });
+
+    let result;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      result = await res.json();
+    } else {
+      const rawErr = await res.text();
+      if (res.status === 413) {
+        throw new Error('O volume total dos arquivos ultrapassou o limite do servidor em nuvem (4.5 MB). Tente selecionar menos arquivos por vez.');
+      }
+      if (res.status === 504 || res.status === 408) {
+        throw new Error('Tempo limite de análise esgotado (Timeout). Experimente enviar os documentos em etapas ou preencha manualmente.');
+      }
+      throw new Error(`Falha no servidor (${res.status}): ${rawErr.slice(0, 150)}...`);
+    }
+
+    completePreloaderTimeline();
+    // Breve pausa para o usuário contemplar os 100% concluídos
+    await new Promise(r => setTimeout(r, 450));
+
+    loadingBox.style.display = 'none';
+    checklistContent.style.display = 'block';
+
+    if (!result.success) {
+      alert('Aviso da análise: ' + (result.message || 'Não foi possível analisar os documentos.') + '\n\nVocê pode avançar e preencher manualmente os dados na Revisão.');
+      return;
+    }
+
+    aiAnalysisResult = result;
+    activeRules = result.rules || [];
+
+    // Mesclar dinamicamente categorias customizadas adicionadas pelo usuário
+    if (activeRules.length > 0) {
+      activeRules.forEach(r => {
+        if (!DOC_OPTIONS.some(opt => opt.code === r.doc_type)) {
+          DOC_OPTIONS.push({ code: r.doc_type, label: r.label });
+        }
+      });
+    }
+
+    renderStep2Checklist(result);
+    populateStep3Fields(result);
+
+  } catch (err) {
+    completePreloaderTimeline();
+    loadingBox.style.display = 'none';
+    checklistContent.style.display = 'block';
+    alert('Aviso ao analisar com a IA:\n' + err.message + '\n\nVocê pode prosseguir preenchendo os dados diretamente na aba "Revisão & Criar" no topo.');
+  }
+}
+
+function renderStep2Checklist(result) {
+  const files = result.files || [];
+  const rules = activeRules;
+  const isClearedStage = (activeImportStage === 'cleared');
+  document.getElementById('stageRulesLabel').textContent = `Estágio: ${isClearedStage ? 'Desembaraçado / Concluído' : 'Embarcado / Em Trânsito'}`;
+
+  // 1. Renderizar lista de arquivos detectados com seletor manual e botão de confirmação
+  const filesList = document.getElementById('detectedFilesList');
+  filesList.innerHTML = '';
+  
+  files.forEach((f, idx) => {
+    const ext = (f.filename || '').split('.').pop().toLowerCase();
+    const fileIcon = ['xlsx', 'xls', 'csv'].includes(ext) ? '📊' : (['pdf'].includes(ext) ? '📄' : '🖼️');
+
+    const item = document.createElement('div');
+    item.id = `file_classification_row_${idx}`;
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.style.padding = '8px 10px';
+    item.style.background = 'var(--panel)';
+    item.style.border = '1px solid var(--line)';
+    item.style.borderRadius = '6px';
+    item.style.fontSize = '12px';
+
+    let optionsHtml = DOC_OPTIONS.map(opt => 
+      `<option value="${opt.code}" ${opt.code === f.doc_type ? 'selected' : ''}>${opt.label}</option>`
+    ).join('');
+
+    item.innerHTML = `
+      <div style="flex: 1; min-width: 170px;">
+        <strong style="color: var(--text); display: block;">${fileIcon} ${f.filename}</strong>
+        <small style="color: var(--muted); font-size: 11px;">${f.summary || (f.total_amount ? ('Valor: ' + (f.currency || 'USD') + ' ' + f.total_amount) : '')}</small>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+        <span style="font-size: 11px; color: var(--muted);">Classificar como:</span>
+        <select id="select_doctype_${idx}" style="padding: 5px 8px; border-radius: 6px; font-size: 11px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);">
+          ${optionsHtml}
+        </select>
+        <button type="button" id="btn_confirm_doctype_${idx}" class="btn sm" onclick="confirmFileClassification(${idx})" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; font-weight: 700; font-size: 11px; padding: 5px 11px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25); transition: all 0.2s ease;">
+          <span>✓</span> <span>Confirmar</span>
+        </button>
+      </div>
+    `;
+    filesList.appendChild(item);
+  });
+
+  updateChecklistGate();
+}
+
+function confirmFileClassification(fileIdx) {
+  if (!aiAnalysisResult || !aiAnalysisResult.files || !aiAnalysisResult.files[fileIdx]) return;
+  const selectElem = document.getElementById(`select_doctype_${fileIdx}`);
+  const newType = selectElem ? selectElem.value : aiAnalysisResult.files[fileIdx].doc_type;
+
+  aiAnalysisResult.files[fileIdx].doc_type = newType;
+
+  // Feedback visual no botão de confirmar
+  const btn = document.getElementById(`btn_confirm_doctype_${fileIdx}`);
+  if (btn) {
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<span>✅</span> <span>Confirmado!</span>';
+    btn.style.background = '#047857';
+    setTimeout(() => {
+      if (btn) {
+        btn.innerHTML = origHtml;
+        btn.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+      }
+    }, 1500);
+  }
+
+  // Atualizar a grade de conferência de documentos e a trava do lote
+  updateChecklistGate();
+
+  // Rolar suavemente e destacar a seção detectada correspondente
+  setTimeout(() => {
+    let targetCard = document.getElementById(`rule_card_${newType}`);
+    if (!targetCard) {
+      targetCard = document.getElementById('rule_card_OTHER');
+    }
+    if (targetCard) {
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      targetCard.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+      targetCard.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.6), 0 8px 18px rgba(16, 185, 129, 0.25)';
+      targetCard.style.borderColor = '#10B981';
+      targetCard.style.transform = 'translateY(-2px) scale(1.02)';
+      setTimeout(() => {
+        if (targetCard) {
+          targetCard.style.boxShadow = '';
+          targetCard.style.borderColor = '';
+          targetCard.style.transform = '';
+        }
+      }, 1600);
+    }
+  }, 100);
+}
+
+function onManualDocTypeChange(fileIdx, newType) {
+  confirmFileClassification(fileIdx);
+}
+
+function updateChecklistGate() {
+  if (!aiAnalysisResult) return;
+  const files = aiAnalysisResult.files || [];
+  const rules = activeRules;
+  const isClearedStage = (activeImportStage === 'cleared');
+
+  // Mapear tipos atualmente presentes
+  const presentDocTypes = new Set(files.map(f => f.doc_type));
+
+  const checklistGrid = document.getElementById('rulesChecklistGrid');
+  checklistGrid.innerHTML = '';
+
+  let missingRequiredCount = 0;
+
+  rules.forEach(rule => {
+    const isRequired = isClearedStage ? rule.required_cleared : rule.required_on_water;
+    const isPresent = presentDocTypes.has(rule.doc_type);
+    const matchedFiles = files.filter(f => f.doc_type === rule.doc_type);
+
+    if (isRequired && !isPresent) {
+      missingRequiredCount++;
+    }
+
+    const card = document.createElement('div');
+    card.id = `rule_card_${rule.doc_type}`;
+    card.style.padding = '10px 12px';
+    card.style.borderRadius = '8px';
+    card.style.border = '1px solid ' + (isPresent ? 'rgba(4, 120, 87, 0.35)' : (isRequired ? 'rgba(239, 68, 68, 0.3)' : 'var(--line)'));
+    card.style.background = isPresent ? 'rgba(4, 120, 87, 0.06)' : (isRequired ? 'rgba(239, 68, 68, 0.05)' : 'var(--panel2)');
+    card.style.display = 'flex';
+    card.style.justifyContent = 'space-between';
+    card.style.alignItems = 'flex-start';
+
+    card.innerHTML = `
+      <div style="flex: 1; min-width: 0;">
+        <strong style="display: block; font-size: 12px; color: var(--text);">${rule.label}</strong>
+        <small style="font-size: 10px; color: var(--muted);">
+          ${isRequired ? '<span style="color: #EF4444; font-weight: 700;">Exigido neste estágio</span>' : (rule.allow_post_attach ? 'Anexável depois' : 'Opcional')}
+        </small>
+        ${matchedFiles.length > 0 ? `
+          <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+            ${matchedFiles.map(mf => {
+              const ext = (mf.filename || '').split('.').pop().toLowerCase();
+              const icon = ['xlsx', 'xls', 'csv'].includes(ext) ? '📊' : '📄';
+              return `<span style="font-size: 10.5px; color: #047857; background: rgba(4, 120, 87, 0.12); border: 1px solid rgba(4, 120, 87, 0.25); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${mf.filename}">
+                ${icon} ${mf.filename}
+              </span>`;
+            }).join('')}
+          </div>
+        ` : ''}
+      </div>
+      <div style="margin-left: 8px; flex-shrink: 0;">
+        ${isPresent ? '<span class="badge" style="background: rgba(4, 120, 87, 0.15); color: #047857; font-weight: 700; font-size: 10px;">✅ Detectado</span>' : 
+          (isRequired ? '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-weight: 700; font-size: 10px;">⚠️ Faltando</span>' : 
+           '<span class="badge" style="background: var(--panel); color: var(--muted); font-size: 10px;">—</span>')}
+      </div>
+    `;
+    checklistGrid.appendChild(card);
+  });
+
+  // Card para outros documentos classificados fora do checklist padrão
+  const ruleCodes = new Set(rules.map(r => r.doc_type));
+  const extraDocs = files.filter(f => !ruleCodes.has(f.doc_type));
+  if (extraDocs.length > 0) {
+    const otherCard = document.createElement('div');
+    otherCard.id = 'rule_card_OTHER';
+    otherCard.style.padding = '10px 12px';
+    otherCard.style.borderRadius = '8px';
+    otherCard.style.border = '1px solid var(--line)';
+    otherCard.style.background = 'var(--panel2)';
+    otherCard.style.display = 'flex';
+    otherCard.style.justifyContent = 'space-between';
+    otherCard.style.alignItems = 'flex-start';
+    otherCard.innerHTML = `
+      <div style="flex: 1; min-width: 0;">
+        <strong style="display: block; font-size: 12px; color: var(--text);">Outros Lançamentos & Anexos Livres</strong>
+        <small style="font-size: 10px; color: var(--muted);">Documentos adicionais vinculados ao lote</small>
+        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px;">
+          ${extraDocs.map(mf => `
+            <span style="font-size: 10.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              📎 ${mf.filename} (${DOC_OPTIONS.find(o => o.code === mf.doc_type)?.label || mf.doc_type})
+            </span>
+          `).join('')}
+        </div>
+      </div>
+      <div style="margin-left: 8px; flex-shrink: 0;">
+        <span class="badge" style="background: var(--panel); color: var(--text); font-size: 10px;">${extraDocs.length} anexo${extraDocs.length > 1 ? 's' : ''}</span>
+      </div>
+    `;
+    checklistGrid.appendChild(otherCard);
+  }
+
+  // Atualizar Banner e Botão de Avanço (Trava de Validação)
+  const gateAlertBox = document.getElementById('gateAlertBox');
+  const gateIcon = document.getElementById('gateIcon');
+  const gateTitle = document.getElementById('gateTitle');
+  const gateSubtitle = document.getElementById('gateSubtitle');
+  const gateBadge = document.getElementById('gateBadge');
+  const btnGoStep3 = document.getElementById('btnGoToStep3');
+
+  if (missingRequiredCount === 0) {
+    // Libera a trava
+    gateAlertBox.style.background = 'rgba(4, 120, 87, 0.1)';
+    gateAlertBox.style.border = '1px solid rgba(4, 120, 87, 0.3)';
+    gateIcon.textContent = '🔓';
+    gateTitle.textContent = 'Checklist Completo: Todos os documentos obrigatórios foram reconhecidos!';
+    gateTitle.style.color = '#047857';
+    gateSubtitle.textContent = 'Você pode avançar com segurança para a revisão final dos dados.';
+    gateBadge.textContent = 'TRAVA LIBERADA';
+    gateBadge.style.background = 'rgba(4, 120, 87, 0.2)';
+    gateBadge.style.color = '#047857';
+    btnGoStep3.disabled = false;
+  } else {
+    // Bloqueia a trava
+    gateAlertBox.style.background = 'rgba(239, 68, 68, 0.08)';
+    gateAlertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+    gateIcon.textContent = '🔒';
+    gateTitle.textContent = `Atenção: Constam ${missingRequiredCount} documento${missingRequiredCount > 1 ? 's' : ''} obrigatório${missingRequiredCount > 1 ? 's' : ''} pendente${missingRequiredCount > 1 ? 's' : ''}!`;
+    gateTitle.style.color = '#EF4444';
+    gateSubtitle.textContent = 'Anexe os arquivos faltantes ou reclassifique os existentes acima para liberar o avanço.';
+    gateBadge.textContent = 'BLOQUEADO';
+    gateBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+    gateBadge.style.color = '#EF4444';
+    btnGoStep3.disabled = true;
+  }
+
+  // Atualizar o JSON oculto de documentos para salvar junto ao formulário
+  document.getElementById('hiddenDocsMeta').value = JSON.stringify(files.map(f => ({ filename: f.filename, doc_type: f.doc_type })));
+}
+
+function populateStep3Fields(result) {
+  const data = result.extracted_data || {};
+  const chassis = result.chassis_info || {};
+
+  if (data.reference) document.getElementById('inp_reference').value = data.reference;
+  if (data.supplier_name) document.getElementById('inp_supplier').value = data.supplier_name;
+  if (data.supplier_contact) document.getElementById('inp_contact').value = data.supplier_contact;
+  if (data.currency) document.getElementById('inp_currency').value = data.currency;
+  if (data.incoterm) document.getElementById('inp_incoterm').value = data.incoterm;
+  if (data.pi_amount_usd) document.getElementById('inp_pi_amount').value = data.pi_amount_usd;
+  if (data.ci_amount_usd) document.getElementById('inp_ci_amount').value = data.ci_amount_usd;
+  if (data.bl_no) document.getElementById('inp_bl_no').value = data.bl_no;
+  if (data.invoice_no) document.getElementById('inp_invoice_no').value = data.invoice_no;
+  if (data.departure_date_estimated) document.getElementById('inp_dep_date').value = data.departure_date_estimated;
+  if (data.arrival_date_estimated) document.getElementById('inp_arr_date').value = data.arrival_date_estimated;
+  if (data.notes) document.getElementById('inp_notes').value = data.notes;
+
+  // Atualizar resumo de chassis
+  const count = chassis.total_count || 0;
+  const dupes = chassis.duplicates || [];
+  document.getElementById('chassisReviewTitle').textContent = `${count} Chassis Identificados`;
+  document.getElementById('chassisReviewSubtitle').textContent = count > 0 
+    ? `Prontos para inclusão imediata no estoque do lote (${chassis.unique_count} VINs únicos).` 
+    : 'Nenhum chassi encontrado na planilha/documentos.';
+
+  const dupeAlert = document.getElementById('chassisDuplicateAlert');
+  if (dupes.length > 0) {
+    dupeAlert.style.display = 'block';
+    dupeAlert.querySelector('span').textContent = `⚠️ ${dupes.length} chassi${dupes.length > 1 ? 's' : ''} já cadastrado${dupes.length > 1 ? 's' : ''} anteriormente!`;
+  } else {
+    dupeAlert.style.display = 'none';
+  }
+}
+</script>
+{% endif %}

@@ -1,0 +1,96 @@
+{#
+  M-One Radar Export Modal (templates/admin/radar_export_modal.html)
+  Modal Teleport de Seleção de Cidades para Exportação de Leads em Excel Multi-Abas (.xlsx).
+  Segregação modular estrita (< 500 linhas).
+#}
+
+<template x-teleport="body">
+  <div x-show="modalExportAberto" x-cloak class="modal show" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);">
+    <div class="modal-card" @click.outside="modalExportAberto = false" style="max-width: 640px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; background: var(--panel, #1e293b); border: 1px solid var(--line, #334155); border-radius: 16px; padding: 22px; box-shadow: 0 24px 48px rgba(0,0,0,0.6);">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="modal-head" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line, #334155);">
+        <div>
+          <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--text, #f8fafc); display: flex; align-items: center; gap: 8px;">
+            <span>📊</span>
+            <span>Exportar Leads (Excel Multi-Abas)</span>
+          </h3>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted, #94a3b8);">
+            Cada cidade selecionada será uma aba individual no arquivo .xlsx, com 1ª aba de resumo geral.
+          </p>
+        </div>
+        <button type="button" class="modal-close-btn" @click="modalExportAberto = false" style="background: transparent; border: none; color: var(--muted, #94a3b8); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;" title="Fechar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- Barra de Ações Rápidas de Seleção -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text, #f8fafc); text-transform: uppercase; letter-spacing: 0.04em;">
+          Cidades Rastreadas (<span x-text="cidadesSelecionadasExport.length"></span> selecionadas):
+        </span>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn sm" @click="marcarTodasCidades({{ cidades_rastreadas|tojson }})" style="font-size: 11px; padding: 3px 8px;">✓ Marcar Todas</button>
+          <button type="button" class="btn sm" @click="desmarcarTodasCidades()" style="font-size: 11px; padding: 3px 8px;">✕ Desmarcar</button>
+        </div>
+      </div>
+
+      <!-- Lista de Cidades com Rolagem -->
+      <div style="flex: 1 1 auto; overflow-y: auto; max-height: 250px; border: 1px solid var(--line, #334155); border-radius: 12px; padding: 8px; margin-bottom: 16px; background: var(--panel2, rgba(255,255,255,0.02)); display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px;">
+        {% for cr in cidades_rastreadas %}
+        <label style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line, #334155); background: var(--panel, #1e293b); cursor: pointer; transition: all 0.15s ease;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" 
+                   :checked="isCidadeSelecionada('{{ cr.cidade }}')"
+                   @change="toggleCidadeExport('{{ cr.cidade }}')"
+                   style="width: 15px; height: 15px; accent-color: #0070F3; cursor: pointer;">
+            <span style="font-size: 12.5px; font-weight: 700; color: var(--text, #f8fafc);">
+              📍 {{ cr.cidade }}{% if cr.uf and cr.uf not in cr.cidade %} - {{ cr.uf }}{% endif %}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <span style="font-size: 11px; color: var(--muted, #94a3b8); font-weight: 600;" title="Total de lojas">
+              {{ cr.total_leads }} lojas
+            </span>
+            {% if cr.total_wa %}
+            <span style="font-size: 10px; font-weight: 700; background: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.35); padding: 1px 5px; border-radius: 6px;" title="Lojas com WhatsApp">
+              🟢 {{ cr.total_wa }} WA
+            </span>
+            {% endif %}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <!-- Filtros de Refinamento Opcionais -->
+      <div style="background: var(--panel2, rgba(255,255,255,0.04)); border: 1px solid var(--line, #334155); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text, #f8fafc);">
+          <input type="checkbox" x-model="exportApenasWa" style="width: 15px; height: 15px; accent-color: #0070F3; cursor: pointer;">
+          <span>Apenas leads com WhatsApp verificado</span>
+        </label>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 11.5px; font-weight: 700; color: var(--muted, #94a3b8); text-transform: uppercase;">Status:</label>
+          <select x-model="exportStatusFiltro" class="form-input" style="font-size: 12px; padding: 4px 8px; height: 32px; border-radius: 8px; width: 140px;">
+            <option value="all">Todos os Status</option>
+            <option value="novo">Apenas Novos</option>
+            <option value="prospectado">Apenas Prospectados</option>
+            <option value="em_negociacao">Em Negociação</option>
+            <option value="convertido">Convertidos</option>
+            <option value="descartado">Descartados</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Ações do Rodapé -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--line, #334155);">
+        <button type="button" class="btn" @click="modalExportAberto = false" :disabled="exportandoExcel">Cancelar</button>
+        <button type="button" class="btn primary" @click="baixarPlanilhaExcel()" :disabled="exportandoExcel || cidadesSelecionadasExport.length === 0" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; padding: 8px 18px;">
+          <span x-show="!exportandoExcel">⚡ Baixar Excel (<span x-text="cidadesSelecionadasExport.length"></span> abas)</span>
+          <span x-show="exportandoExcel">⏳ Gerando Arquivo Multi-Abas...</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</template>

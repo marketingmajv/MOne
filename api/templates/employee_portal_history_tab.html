@@ -1,0 +1,97 @@
+<!-- ABA 2: MEU HISTÓRICO & LINHA DO TEMPO DE RECEBIMENTO -->
+<div x-show="currentTab === 'history'" x-transition>
+  <div class="panel portal-history-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h2 style="font-size: 18px; font-weight: 800; color: var(--text); margin: 0 0 4px 0;">
+          Linha do Tempo de Entregas & Confirmação da Diretoria
+        </h2>
+        <p style="font-size: 12.5px; color: var(--muted); margin: 0;">
+          Acompanhe a chegada e confirmação dos seus relatórios pelos moderadores (Jam, Geysa e Diretoria).
+        </p>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 12px; color: var(--muted); font-weight: 600;">Taxa de Pontualidade:</span>
+        <span style="font-size: 16px; font-weight: 800; color: #10b981; margin-left: 6px;" x-text="(profile.on_time_pct || 0) + '%'">100%</span>
+      </div>
+    </div>
+
+    <!-- Lista de Ciclos com Linha do Tempo em 3 Estágios -->
+    <template x-if="profile.timeline && profile.timeline.length > 0">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <template x-for="item in profile.timeline" :key="item.cycle_id">
+          <div class="portal-cycle-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+              <div>
+                <span class="portal-cycle-title" x-text="item.cycle_title"></span>
+                <span style="font-size: 12px; color: var(--muted); margin-left: 8px;" x-text="'(' + item.cycle_code + ')'"></span>
+                <template x-if="item.docx_filename">
+                  <span class="badge badge-file-linked" style="margin-left: 8px;">
+                    📎 Arquivo Vinculado
+                  </span>
+                </template>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span class="badge badge-tier-gold" style="font-size: 12px;" x-text="'+' + item.points + ' pts'"></span>
+                <span class="badge" :class="item.status === 'submitted_on_time' ? 'badge-status-on-time' : (item.status === 'submitted_late' ? 'badge-status-late' : 'badge-status-draft')">
+                  <span x-text="item.status === 'submitted_on_time' ? '✓ No Prazo' : (item.status === 'submitted_late' ? 'Atrasado' : 'Rascunho')"></span>
+                </span>
+                <a :href="'/meu-relatorio?cycle_id=' + item.cycle_id" 
+                   class="btn sm" 
+                   style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
+                   title="Abrir este ciclo para consulta e deliberações">
+                  <span>👁️ Ver Relatório</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Linha do Tempo Visual de 3 Estágios -->
+            <div class="portal-timeline-track">
+              <!-- Estágio 1 -->
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="portal-circle" :class="item.stage >= 1 ? 'step-1' : 'inactive'">
+                  1
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--text);">1. Rascunho Salvo</div>
+                  <div style="font-size: 10px; color: var(--muted);">Respostas registradas</div>
+                </div>
+              </div>
+
+              <!-- Estágio 2 -->
+              <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
+                <div class="portal-circle" :class="item.stage >= 2 ? 'step-2' : 'inactive'">
+                  2
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 700;" :class="item.stage >= 2 ? 'portal-step-label-2' : ''" :style="item.stage < 2 ? 'color: var(--muted);' : ''">2. Protocolado</div>
+                  <div style="font-size: 10px; color: var(--muted);" x-text="item.submitted_at_fmt ? item.submitted_at_fmt : 'Aguardando envio'"></div>
+                </div>
+              </div>
+
+              <!-- Estágio 3 -->
+              <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid var(--line); padding-left: 10px;">
+                <div class="portal-circle" :class="item.stage >= 3 ? 'step-3' : 'inactive'">
+                  3
+                </div>
+                <div>
+                  <div style="font-size: 12px; font-weight: 700;" :class="item.stage >= 3 ? 'portal-step-label-3' : ''" :style="item.stage < 3 ? 'color: var(--muted);' : ''">3. Recebido pela Diretoria</div>
+                  <div style="font-size: 10px; color: var(--muted);" x-text="item.reviewed_at_fmt ? item.reviewed_at_fmt + ' (' + item.reviewed_by + ')' : 'Em fila de análise'"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template x-if="!profile.timeline || profile.timeline.length === 0">
+      <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+        <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
+        <div style="font-size: 14px; font-weight: 600; color: var(--text);">Nenhum histórico anterior registrado ainda</div>
+        <div style="font-size: 12px;">Ao enviar seu relatório desta semana, seu protocolo oficial e linha do tempo ficarão registrados aqui.</div>
+      </div>
+    </template>
+  </div>
+</div>
+

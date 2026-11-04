@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% block title %}Painel Atacado CNPJ | M-One{% endblock %}
+
+{% block content %}
+<div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+  
+  <!-- Header do Painel -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="color: #00cc88;">🏢 MAJ ATACADO</span>
+        <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-size: 0.75rem; padding: 4px 10px;">VENDA EXCLUSIVA CNPJ</span>
+      </h1>
+      <p style="color: var(--muted); font-size: 0.9rem; margin: 4px 0 0;">Gestão do Catálogo de Atacado, Sincronização de Estoques (MAJ + COLVIX) e Tabela de Preços CNPJ.</p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="https://docs.google.com/spreadsheets/d/1tFwiOFjfVPp2ll-SLB79bG2c6wcIJHc3yHgQxK6PDxo" target="_blank" rel="noopener noreferrer" class="btn" style="background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--line);">
+        📊 Ver Planilha (Google Sheets)
+      </a>
+      <form action="{{ url_for('atacado.admin_atacado_sync') }}" method="POST" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; font-weight: 700; border: none;">
+          ⚡ Sincronizar Estoques & Preços (COLVIX + MAJ)
+        </button>
+      </form>
+      <a href="{{ url_for('atacado.catalog') }}" target="_blank" class="btn" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;">
+        🌐 Ver Catálogo Oficial (V3) ↗
+      </a>
+      <a href="{{ url_for('atacado.catalog_v1') }}" target="_blank" class="btn" style="background: rgba(255, 255, 255, 0.05); color: var(--muted); border: 1px solid var(--line); font-size: 0.82rem;" title="Abrir versão anterior arquivada (V1)">
+        📜 Versão Guardada V1 ↗
+      </a>
+      <button type="button" class="btn primary" onclick="openAtacadoModal()" style="font-weight: 700;">
+        + Novo Produto Atacado
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards de Indicadores do Atacado -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Modelos Cadastrados</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #00cc88;">{{ items|length }}</div>
+      <small style="color: #00cc88; font-weight: 600; font-size: 0.75rem;">Ativos para CNPJ</small>
+    </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Estoque Total Unificado</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8;">{{ total_qty }}</div>
+      <small style="color: var(--muted); font-size: 0.75rem;">Veículos disponíveis à pronta entrega</small>
+    </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">Potencial de Venda (Atacado)</small>
+      <div style="font-size: 1.8rem; font-weight: 800; color: #e5a93b;">R$ {{ "{:,.2f}".format(total_revenue).replace(",", "X").replace(".", ",").replace("X", ".") }}</div>
+      <small style="color: var(--muted); font-size: 0.75rem;">Faturamento total projetado no atacado</small>
+    </div>
+    <div class="card" style="padding: 16px;">
+      <small style="color: var(--muted); font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">WhatsApp de Atendimento (CNPJ)</small>
+      <div style="font-size: 1.4rem; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ settings.whatsapp_number | format_phone }}</div>
+      <small style="color: #00cc88; font-size: 0.75rem; font-weight: 600;">Canal oficial de cotações CNPJ</small>
+    </div>
+  </div>
+
+  <!-- Configurações do WhatsApp & Campanha de Atacado -->
+  <div class="panel" style="margin-bottom: 24px; padding: 20px; border-left: 4px solid #00cc88;">
+    <div class="panel-head" style="margin-bottom: 14px;">
+      <div>
+        <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.1rem; font-weight: 800; color: #00cc88;">
+          <span>📱 Configurações do WhatsApp de Atendimento (CNPJ)</span>
+        </h3>
+        <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 0.85rem;">Defina o número comercial receptor e os templates de mensagem automática quando o cliente solicitar cotação no atacado.</p>
+      </div>
+    </div>
+
+    <form action="{{ url_for('atacado.admin_atacado_settings') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Número do WhatsApp Comercial (DDI + DDD)</label>
+          <input type="text" name="whatsapp_number" id="whatsapp_number_input" value="{{ settings.whatsapp_number | format_phone }}" placeholder="+55 (27) 99605-1538" oninput="this.value = maskPhoneInput(this.value)" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem dos Produtos (variáveis: <code>{model}</code> e <code>{price}</code>)</label>
+          <input type="text" name="whatsapp_message" value="{{ settings.whatsapp_message }}" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Mensagem Global do Botão Flutuante (Atendimento Geral CNPJ)</label>
+        <input type="text" name="whatsapp_floating_message" value="{{ settings.whatsapp_floating_message }}" required style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Título do Catálogo</label>
+          <input type="text" name="atacado_title" value="{{ settings.atacado_title }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Subtítulo do Catálogo</label>
+          <input type="text" name="atacado_subtitle" value="{{ settings.atacado_subtitle }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Fita de Urgência (Topo do Catálogo)</label>
+          <input type="text" name="atacado_urgency_text" value="{{ settings.atacado_urgency_text }}" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">🏷️ Sticker / Regra de Lote Mínimo (Ex: Valor a partir de 3 unidades)</label>
+          <input type="text" name="atacado_min_qty_text" value="{{ settings.atacado_min_qty_text or 'Valor a partir de 3 unidades' }}" placeholder="Valor a partir de 3 unidades" style="width: 100%; padding: 8px; font-size: 0.85rem; border: 1px solid rgba(0, 204, 136, 0.4);">
+        </div>
+      </div>
+
+      <div style="text-align: right; margin-top: 10px;">
+        <button type="submit" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar Configurações do Atacado</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabela de Produtos do Atacado -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 16px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div style="font-weight: 800; font-size: 1rem; color: var(--text);">
+        📦 Modelos e Estoques de Atacado (CNPJ)
+      </div>
+
+      <form method="GET" action="{{ url_for('atacado.admin_atacado') }}" style="display: flex; gap: 8px; margin: 0;">
+        <input type="text" name="q" value="{{ search }}" placeholder="Buscar por modelo ou cor..." style="padding: 6px 12px; font-size: 0.85rem;">
+        <button type="submit" class="btn sm">Buscar</button>
+      </form>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+        <thead>
+          <tr style="background: rgba(255,255,255,0.03); color: var(--muted); border-bottom: 1px solid var(--line);">
+            <th style="padding: 12px 16px;">Imagem</th>
+            <th style="padding: 12px 16px;">Modelo / Categoria</th>
+            <th style="padding: 12px 16px;">Preço Atacado À Vista</th>
+            <th style="padding: 12px 16px;">Preço Atacado Plus</th>
+            <th style="padding: 12px 16px;">Estoque Real</th>
+            <th style="padding: 12px 16px;">Se Zerado</th>
+            <th style="padding: 12px 16px;">Mais Vendido</th>
+            <th style="padding: 12px 16px;">Status</th>
+            <th style="padding: 12px 16px; text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom: 1px solid var(--line); transition: background 0.2s;">
+            <td style="padding: 10px 16px;">
+              <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" alt="{{ item.name }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);">
+            </td>
+            <td style="padding: 10px 16px;">
+              <strong style="color: var(--text); font-size: 0.95rem; display: block;">{{ item.name }}</strong>
+              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-size: 0.70rem; margin-top: 2px; display: inline-block;">
+                {{ item.differentiator or item.badge or 'Sem sticker' }}
+              </span>
+              <small style="color: var(--muted); display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;">
+                {{ item.color or 'Cores diversas' }}
+              </small>
+            </td>
+            <td style="padding: 10px 16px;">
+              <strong style="color: #00cc88; font-size: 0.95rem;">
+                {% if item.price_outlet > 0 %}
+                  R$ {{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}
+                {% else %}
+                  Sob consulta
+                {% endif %}
+              </strong>
+            </td>
+            <td style="padding: 10px 16px;">
+              {% if item.price_atacado_plus > 0 %}
+                <span style="color: #e2e8f0; font-weight: 600;">R$ {{ "{:,.2f}".format(item.price_atacado_plus).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+              {% else %}
+                <span style="color: var(--muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 10px 16px;">
+              {% if item.installment_12 > 0 %}
+                <span style="color: var(--muted);">12x R$ {{ "{:,.2f}".format(item.installment_12).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+              {% else %}
+                <span style="color: var(--muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 10px 16px;">
+              <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-weight: 700;">
+                {{ item.stock_qty }} un
+              </span>
+            </td>
+            <td style="padding: 10px 16px;">
+              <button type="button" 
+                      class="btn sm" 
+                      style="{{ 'background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 700;' if item.show_on_demand else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      onclick="toggleAtacadoOnDemand({{ item.id }}, this)"
+                      title="Alternar entre Ocultar ou Exibir Sob Encomenda quando estoque for 0">
+                {{ '📦 Sob Encomenda' if item.show_on_demand else '🚫 Ocultar' }}
+              </button>
+            </td>
+            <td style="padding: 10px 16px;">
+              <button type="button" 
+                      class="btn sm" 
+                      style="{{ 'background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;' if item.is_best_seller else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      onclick="toggleAtacadoBestSeller({{ item.id }}, this)"
+                      title="Clique para marcar/desmarcar como Mais Vendido">
+                {{ '⭐ Mais Vendido' if item.is_best_seller else '☆ Padrão' }}
+              </button>
+            </td>
+            <td style="padding: 10px 16px;">
+              <form action="{{ url_for('atacado.admin_atacado_status', item_id=item.id) }}" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if item.status == 'active' %}
+                  <button type="submit" class="btn sm" style="background: rgba(0, 204, 136, 0.12); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.3); font-weight: 700;">Ativo</button>
+                {% else %}
+                  <button type="submit" class="btn sm" style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">Inativo</button>
+                {% endif %}
+              </form>
+            </td>
+            <td style="padding: 10px 16px; text-align: right;">
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button type="button" class="btn sm" onclick="editAtacadoItem({{ item.id }})">Editar</button>
+                <form action="{{ url_for('atacado.admin_atacado_delete', item_id=item.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name }} do Atacado?');" style="margin: 0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn sm" style="color: #ef4444;">✕</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição / Criação Produto Atacado (Modular Anti-Monólito) -->
+{% include 'atacado/admin_form_modal.html' %}
+
+<script>
+  const ATACADO_ITEMS_LIST = {{ items|tojson }};
+  let ATACADO_CURRENT_GALLERY = [];
+  let ATACADO_CURRENT_IMAGE_MAIN = '';
+
+  function openAtacadoModal() {
+    document.getElementById('atacado_form_item_id').value = '';
+    document.getElementById('atacado_form_name').value = '';
+    document.getElementById('atacado_form_price_outlet').value = '';
+    document.getElementById('atacado_form_price_atacado_plus').value = '';
+    document.getElementById('atacado_form_stock_qty').value = '1';
+    document.getElementById('atacado_form_show_on_demand').checked = false;
+    document.getElementById('atacado_form_is_best_seller').checked = false;
+    document.getElementById('atacado_form_color').value = '';
+    document.getElementById('atacado_form_badge').value = '';
+    document.getElementById('atacado_form_description').value = '';
+    ATACADO_CURRENT_GALLERY = [];
+    ATACADO_CURRENT_IMAGE_MAIN = '';
+    renderAtacadoGalleryPreview();
+    document.getElementById('atacadoModalTitle').textContent = '+ Novo Produto Atacado';
+    document.getElementById('atacadoFormModal').style.display = 'flex';
+  }
+
+  function closeAtacadoModal() {
+    document.getElementById('atacadoFormModal').style.display = 'none';
+  }
+
+  function editAtacadoItem(itemOrId) {
+    let item = itemOrId;
+    if (typeof itemOrId === 'number' || typeof itemOrId === 'string') {
+      item = (ATACADO_ITEMS_LIST || []).find(i => String(i.id) === String(itemOrId)) || {};
+    }
+    document.getElementById('atacado_form_item_id').value = item.id || '';
+    document.getElementById('atacado_form_name').value = item.name || '';
+    document.getElementById('atacado_form_price_outlet').value = item.price_outlet || '';
+    document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
+    document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
+    document.getElementById('atacado_form_show_on_demand').checked = !!item.show_on_demand;
+    document.getElementById('atacado_form_is_best_seller').checked = !!item.is_best_seller;
+    document.getElementById('atacado_form_color').value = item.color || '';
+    document.getElementById('atacado_form_badge').value = item.differentiator || item.badge || '';
+    document.getElementById('atacado_form_description').value = item.description || '';
+
+    ATACADO_CURRENT_IMAGE_MAIN = item.image_main || '';
+    let gal = item.images_gallery || [];
+    if (typeof gal === 'string') {
+      try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+    }
+    ATACADO_CURRENT_GALLERY = Array.isArray(gal) ? [...gal] : [];
+    if (ATACADO_CURRENT_IMAGE_MAIN && !ATACADO_CURRENT_GALLERY.includes(ATACADO_CURRENT_IMAGE_MAIN)) {
+      ATACADO_CURRENT_GALLERY.unshift(ATACADO_CURRENT_IMAGE_MAIN);
+    }
+    renderAtacadoGalleryPreview();
+
+    document.getElementById('atacadoModalTitle').textContent = 'Editar Produto: ' + (item.name || '');
+    document.getElementById('atacadoFormModal').style.display = 'flex';
+  }
+</script>
+<script src="{{ url_for('static', filename='js/atacado-admin.js') }}"></script>
+<script>
+  async function toggleAtacadoOnDemand(itemId, btn) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const res = await fetch(`/admin/atacado/toggle-on-demand/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.show_on_demand) {
+          btn.textContent = '📦 Sob Encomenda';
+          btn.style.background = 'rgba(229, 169, 59, 0.15)';
+          btn.style.color = '#e5a93b';
+          btn.style.borderColor = 'rgba(229, 169, 59, 0.35)';
+        } else {
+          btn.textContent = '🚫 Ocultar';
+          btn.style.background = 'rgba(148, 163, 184, 0.1)';
+          btn.style.color = 'var(--muted)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao alternar disponibilidade sob encomenda no atacado:', err);
+    }
+  }
+  window.toggleAtacadoOnDemand = toggleAtacadoOnDemand;
+
+  async function toggleAtacadoBestSeller(itemId, btn) {
+    try {
+      const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const res = await fetch(`/admin/atacado/toggle-best-seller/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.is_best_seller) {
+          btn.textContent = '⭐ Mais Vendido';
+          btn.style.background = 'rgba(0, 204, 136, 0.15)';
+          btn.style.color = '#00cc88';
+          btn.style.borderColor = 'rgba(0, 204, 136, 0.35)';
+        } else {
+          btn.textContent = '☆ Padrão';
+          btn.style.background = 'rgba(148, 163, 184, 0.1)';
+          btn.style.color = 'var(--muted)';
+          btn.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao alternar mais vendido no atacado:', err);
+    }
+  }
+  window.toggleAtacadoBestSeller = toggleAtacadoBestSeller;
+</script>
+{% endblock %}

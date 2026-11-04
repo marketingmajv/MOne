@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo Temporariamente Indisponível | {{ catalog.title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background: #0a0d14;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #121722;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 48px 32px;
+      max-width: 480px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+    .icon {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 12px;
+      font-weight: 800;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0 0 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      background: #25d366;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⏳</div>
+    <h1>{{ catalog.title }}</h1>
+    <div class="badge">Catálogo Pausado para Atualização</div>
+    <p>Este catálogo de produtos está temporariamente em revisão ou com condições sendo atualizadas. Entre em contato diretamente pelo WhatsApp para receber a tabela vigente.</p>
+    {% if catalog.whatsapp_number %}
+    <a href="https://wa.me/{{ catalog.whatsapp_number }}?text=Ol%C3%A1!%20Acessei%20o%20cat%C3%A1logo%20{{ catalog.title }}%20e%20gostaria%20de%20consultar%20os%20ve%C3%ADculos%20dispon%C3%ADveis." class="btn" target="_blank">Falar no WhatsApp</a>
+    {% endif %}
+  </div>
+</body>
+</html>

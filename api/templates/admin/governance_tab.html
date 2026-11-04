@@ -1,0 +1,100 @@
+<!-- templates/admin/governance_tab.html -->
+<div x-show="activeTab === 'governance'" {% if active_tab != 'governance' %}x-cloak style="display: none;"{% endif %}>
+  <!-- Caixa de Destaque: Regras de Alçadas e Governança (Alto Contraste) -->
+  <div class="panel" style="margin-bottom: 24px; background: var(--panel); border: 1px solid var(--line); border-left: 5px solid #d97706; border-radius: 14px; padding: 22px 24px; box-shadow: var(--shadow-sm);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.35rem;">🛡️</span>
+        <h3 style="margin: 0; font-size: 1.18rem; font-weight: 800; color: var(--text);">
+          Política Oficial de Alçadas e Governança Financeira
+        </h3>
+      </div>
+      <span class="badge comex-value-amber" style="background: rgba(217,119,6,0.12); border: 1px solid rgba(217,119,6,0.35); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em;">
+        GOVERNANÇA ATIVA
+      </span>
+    </div>
+    
+    <p style="font-size: 0.88rem; color: var(--text-dim); margin-top: 4px; margin-bottom: 18px; line-height: 1.55; font-weight: 500;">
+      Definição clara dos limites de aprovação para dar velocidade operacional ao negócio sem perder o controle do fluxo de caixa e das compras estratégicas.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      <!-- Card 1: Geysa -->
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-top: 3px solid #0284c7; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <strong class="comex-value-blue" style="font-size: 0.98rem; font-weight: 800;">Despesas até R$ 5.000</strong>
+          <span class="badge comex-value-blue" style="background: rgba(2,132,199,0.14); border: 1px solid rgba(2,132,199,0.35); font-weight: 800; font-size: 0.72rem;">GEYSA</span>
+        </div>
+        <p style="margin: 0; font-size: 0.82rem; color: var(--text-dim); line-height: 1.48; font-weight: 500;">
+          Despesas operacionais rotineiras (materiais de consumo, pequenos reparos, logística emergencial). Geysa autoriza diretamente e cobra o registro financeiro imediato por Marisa.
+        </p>
+      </div>
+
+      <!-- Card 2: Jam -->
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-top: 3px solid #d97706; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <strong class="comex-value-amber" style="font-size: 0.98rem; font-weight: 800;">Despesas acima de R$ 5.000</strong>
+          <span class="badge comex-value-amber" style="background: rgba(217,119,6,0.14); border: 1px solid rgba(217,119,6,0.35); font-weight: 800; font-size: 0.72rem;">JAM</span>
+        </div>
+        <p style="margin: 0; font-size: 0.82rem; color: var(--text-dim); line-height: 1.48; font-weight: 500;">
+          Investimentos, contratação de novos serviços recorrentes ou compras operacionais vultosas exigem aprovação formal da Direção Geral (Jam).
+        </p>
+      </div>
+
+      <!-- Card 3: Jam Exclusivo -->
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-top: 3px solid #059669; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <strong class="comex-value-emerald" style="font-size: 0.98rem; font-weight: 800;">Compras de Revenda (China/BR)</strong>
+          <span class="badge comex-value-emerald" style="background: rgba(5,150,105,0.14); border: 1px solid rgba(5,150,105,0.35); font-weight: 800; font-size: 0.72rem;">JAM EXCLUSIVO</span>
+        </div>
+        <p style="margin: 0; font-size: 0.82rem; color: var(--text-dim); line-height: 1.48; font-weight: 500;">
+          Toda negociação de contêineres, faturas Proforma (PI) e faturas comerciais (CI) de veículos e peças para revenda é de alçada estrita da Direção.
+        </p>
+      </div>
+    </div>
+
+    <!-- Princípio Anti-Retrabalho (Alto Contraste) -->
+    <div style="margin-top: 18px; background: rgba(5,150,105,0.08); border: 1.5px solid rgba(5,150,105,0.35); border-left: 5px solid #059669; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 1.35rem; flex-shrink: 0;">💡</span>
+      <div style="font-size: 0.85rem; color: var(--text); line-height: 1.5;">
+        <strong class="comex-value-emerald" style="font-weight: 800;">Regra de Ouro Anti-Retrabalho:</strong>
+        <span style="color: var(--text-dim); font-weight: 500;"> Cada informação é lançada <strong style="color: var(--text); font-weight: 700;">uma única vez</strong> no sistema canônico (Bling ou M-One). É terminantemente proibido manter planilhas paralelas que dupliquem lançamentos já efetuados.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Matriz de Diagnóstico por Departamento -->
+  <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 14px;">
+    Diagnóstico & Diretrizes por Departamento
+  </h3>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px;">
+    {% for dept in departments %}
+    <div class="panel" style="margin-bottom: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h4 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text);">{{ dept.name }}</h4>
+        <span class="badge" style="background: var(--panel2); color: var(--text-dim); border: 1px solid var(--line); font-size: 0.7rem; font-weight: 700;">
+          Complexidade: {{ dept.complexity }}
+        </span>
+      </div>
+
+      <small style="display: block; font-size: 0.78rem; color: var(--text-dim); margin-bottom: 10px;">
+        Liderança: <strong style="color: var(--text); font-weight: 700;">{{ dept.lead }}</strong>
+      </small>
+
+      <p style="font-size: 0.82rem; line-height: 1.45; margin-bottom: 12px; background: var(--panel2); padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); color: var(--text-dim); font-weight: 500;">
+        📌 <em>{{ dept.diagnosis }}</em>
+      </p>
+
+      <small class="comex-value-amber" style="display: block; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">
+        Regras Operacionais Inegociáveis:
+      </small>
+      <ul style="margin: 0; padding-left: 16px; font-size: 0.8rem; color: var(--text); line-height: 1.45;">
+        {% for r in dept.rules %}
+        <li style="margin-bottom: 4px; font-weight: 500;">{{ r }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</div>

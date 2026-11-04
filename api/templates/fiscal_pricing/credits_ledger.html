@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Conta-Corrente de Créditos Fiscais • M-One{% endblock %}
+
+{% block content %}
+<div class="page-container" style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+  
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 10px;">
+        💳 Conta-Corrente de Créditos Fiscais
+      </h1>
+      <p style="color: var(--text-muted, #94a3b8); font-size: 0.88rem; margin: 4px 0 0 0;">
+        Acompanhamento de saldos iniciais vs remanescentes de PIS (1,65%), COFINS (7,6%), ICMS e IPI por lote da COLVIX.
+      </p>
+    </div>
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="btn secondary sm" style="border-radius: 8px; text-decoration: none;">
+      ← Voltar aos Lotes
+    </a>
+  </div>
+
+  <!-- NAVEGAÇÃO DE ABAS DO MÓDULO -->
+  <div class="fiscal-tabs-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)); padding-bottom: 12px; margin-bottom: 24px;">
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      📊 Visão Geral & Lotes
+    </a>
+    <a href="{{ url_for('fiscal_pricing.cost_entry') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      📥 Entrada & Rateio COLVIX
+    </a>
+    <a href="{{ url_for('fiscal_pricing.simulation_dual') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      ⚖️ Simulador M-ONE vs PJ
+    </a>
+    <a href="{{ url_for('fiscal_pricing.credits_ledger') }}" class="fiscal-tab-item active" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; color: #00E599; background: rgba(0, 229, 153, 0.1); border: 1px solid rgba(0, 229, 153, 0.3); text-decoration: none;">
+      💳 Conta-Corrente de Créditos
+    </a>
+  </div>
+
+  <!-- TABELA DE CONTA-CORRENTE -->
+  <div style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px;">
+    <h3 style="font-size: 1rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0 0 18px 0;">
+      📑 Saldos Fiscais por Lote de Importação
+    </h3>
+
+    {% if not batches %}
+    <p style="color: var(--text-muted, #94a3b8); font-size: 0.88rem;">Nenhum lote cadastrado para apuração de créditos.</p>
+    {% else %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); color: var(--text-muted, #94a3b8); text-transform: uppercase; font-size: 0.72rem;">
+            <th style="padding: 12px;">Código Lote</th>
+            <th style="padding: 12px;">PIS Inicial</th>
+            <th style="padding: 12px;">PIS Saldo</th>
+            <th style="padding: 12px;">COFINS Inicial</th>
+            <th style="padding: 12px;">COFINS Saldo</th>
+            <th style="padding: 12px;">ICMS Entrada</th>
+            <th style="padding: 12px;">IPI Entrada</th>
+            <th style="padding: 12px;">Status Lote</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in batches %}
+          <tr style="border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.05)); color: var(--text, #f8fafc);">
+            <td style="padding: 14px 12px; font-weight: 700; color: #38bdf8;">{{ b.batch_code }}</td>
+            <td style="padding: 14px 12px;">R$ {{ "%.2f"|format(b.pis_credit_initial or 0) }}</td>
+            <td style="padding: 14px 12px; font-weight: 700; color: #00E599;">R$ {{ "%.2f"|format(b.pis_credit_balance or 0) }}</td>
+            <td style="padding: 14px 12px;">R$ {{ "%.2f"|format(b.cofins_credit_initial or 0) }}</td>
+            <td style="padding: 14px 12px; font-weight: 700; color: #38bdf8;">R$ {{ "%.2f"|format(b.cofins_credit_balance or 0) }}</td>
+            <td style="padding: 14px 12px;">R$ {{ "%.2f"|format(b.icms_credit_initial or 0) }}</td>
+            <td style="padding: 14px 12px;">R$ {{ "%.2f"|format(b.ipi_credit_initial or 0) }}</td>
+            <td style="padding: 14px 12px;">
+              {% if b.status == 'efetivado' %}
+              <span style="background: rgba(0,229,153,0.15); color: #00E599; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;">EFETIVADO</span>
+              {% else %}
+              <span style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;">SIMULAÇÃO</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

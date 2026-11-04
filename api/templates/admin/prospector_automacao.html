@@ -1,0 +1,230 @@
+<!-- Central de Automação & Rotação 24/7 do Prospector (templates/admin/prospector_automacao.html) -->
+<div class="panel automation-panel">
+  <!-- Top Header com Switch Liga/Desliga -->
+  <div class="automation-header">
+    <div class="automation-title-wrap">
+      <div class="automation-badge-pill">
+        <span class="pulse-icon">⚡</span>
+        <span>Piloto Automático 24/7</span>
+      </div>
+      <h3 class="panel-title" style="margin: 6px 0 2px 0;">Central de Automação & Carrossel Regional</h3>
+      <p class="panel-desc" style="margin: 0;">Varredura contínua de leads com rotação inteligente de praças e qualificação automática por IA.</p>
+    </div>
+
+    <!-- Switch Liga/Desliga -->
+    <div class="automation-toggle-box">
+      <label class="switch-toggle-label">
+        <span class="switch-status-text" :class="automacao.ativo ? 'status-active' : 'status-paused'">
+          <span class="status-dot"></span>
+          <span x-text="automacao.ativo ? 'Piloto Ativo' : 'Pausado'"></span>
+        </span>
+        <div class="switch-wrapper">
+          <input type="checkbox" x-model="automacao.ativo" @change="salvarAutomacao(false)">
+          <span class="switch-slider"></span>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- Seletor dos 4 Modos de Frequência -->
+  <div class="automation-section">
+    <div class="section-subhead">
+      <label class="form-label-bold">Ritmo de Varredura (Selecione um Modo):</label>
+      <span class="section-help-tip">Alterne a qualquer momento conforme a capacidade de atendimento da equipe.</span>
+    </div>
+
+    <div class="mode-selector-grid">
+      <!-- MODO 1: Turnos Comerciais -->
+      <div class="mode-card" :class="{ 'selected': automacao.modo === 'turnos' }" @click="selecionarModo('turnos')">
+        <div class="mode-card-top">
+          <span class="mode-badge-tag tag-recommended">⭐ Recomendado</span>
+          <div class="mode-check-indicator" x-show="automacao.modo === 'turnos'">✓</div>
+        </div>
+        <div class="mode-icon-title">
+          <span class="mode-icon">⏰</span>
+          <strong>Turnos Comerciais</strong>
+        </div>
+        <div class="mode-time-pills">
+          <span class="time-pill">08:15</span>
+          <span class="time-pill">13:15</span>
+          <span class="time-pill">17:45</span>
+        </div>
+        <p class="mode-desc">3 disparos ao dia antes dos picos comerciais para municiar os vendedores nos horários de maior conversão.</p>
+        <div class="mode-foot">
+          <span class="mode-foot-label">Volume sugerido:</span>
+          <strong>~25 leads / ciclo</strong>
+        </div>
+      </div>
+
+      <!-- MODO 2: Rotação Horária -->
+      <div class="mode-card" :class="{ 'selected': automacao.modo === 'rotacao' }" @click="selecionarModo('rotacao')">
+        <div class="mode-card-top">
+          <span class="mode-badge-tag tag-frequent">A cada 2h</span>
+          <div class="mode-check-indicator" x-show="automacao.modo === 'rotacao'">✓</div>
+        </div>
+        <div class="mode-icon-title">
+          <span class="mode-icon">🔄</span>
+          <strong>Rotação Horária Regional</strong>
+        </div>
+        <div class="mode-time-pills">
+          <span class="time-pill">08:00</span>
+          <span class="time-pill">10:00</span>
+          <span class="time-pill">12:00</span>
+          <span class="time-pill">14:00</span>
+          <span class="time-pill">16:00</span>
+          <span class="time-pill">18:00</span>
+        </div>
+        <p class="mode-desc">Varreduras frequentes e leves, alternando as cidades cadastradas em carrossel sem sobrecarregar a esteira.</p>
+        <div class="mode-foot">
+          <span class="mode-foot-label">Volume sugerido:</span>
+          <strong>~15 leads / ciclo</strong>
+        </div>
+      </div>
+
+      <!-- MODO 3: Lote Noturno -->
+      <div class="mode-card" :class="{ 'selected': automacao.modo === 'noturno' }" @click="selecionarModo('noturno')">
+        <div class="mode-card-top">
+          <span class="mode-badge-tag tag-batch">1x ao dia</span>
+          <div class="mode-check-indicator" x-show="automacao.modo === 'noturno'">✓</div>
+        </div>
+        <div class="mode-icon-title">
+          <span class="mode-icon">🌙</span>
+          <strong>Lote Noturno (Madrugada)</strong>
+        </div>
+        <div class="mode-time-pills">
+          <span class="time-pill">06:00 da manhã</span>
+        </div>
+        <p class="mode-desc">Varredura profunda na madrugada. A equipe comercial acorda com a esteira abastecida de novos leads.</p>
+        <div class="mode-foot">
+          <span class="mode-foot-label">Volume sugerido:</span>
+          <strong>~60 leads / ciclo</strong>
+        </div>
+      </div>
+
+      <!-- MODO 4: Personalizado -->
+      <div class="mode-card" :class="{ 'selected': automacao.modo === 'custom' }" @click="selecionarModo('custom')">
+        <div class="mode-card-top">
+          <span class="mode-badge-tag tag-custom">Sob Demanda</span>
+          <div class="mode-check-indicator" x-show="automacao.modo === 'custom'">✓</div>
+        </div>
+        <div class="mode-icon-title">
+          <span class="mode-icon">⚙️</span>
+          <strong>Personalizado</strong>
+        </div>
+        <div class="mode-time-pills">
+          <span class="time-pill" x-text="`A cada ${automacao.intervalo_min || 120} min`"></span>
+        </div>
+        <p class="mode-desc">Você define o intervalo em minutos e a quantidade exata de leads por ciclo conforme a sua estratégia.</p>
+        <div class="mode-foot">
+          <span class="mode-foot-label">Volume sugerido:</span>
+          <strong>Customizável</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parâmetros Operacionais (Volume, Intervalo Custom, Nicho) -->
+  <div class="automation-section">
+    <div class="automation-params-grid">
+      <!-- Volume de Leads por Ciclo -->
+      <div class="param-box">
+        <label class="form-label-bold">Volume por Ciclo:</label>
+        <div class="volume-quick-buttons">
+          <button type="button" class="vol-btn" :class="{ 'active': automacao.limite === 10 }" @click="automacao.limite = 10">10</button>
+          <button type="button" class="vol-btn" :class="{ 'active': automacao.limite === 15 }" @click="automacao.limite = 15">15</button>
+          <button type="button" class="vol-btn" :class="{ 'active': automacao.limite === 25 }" @click="automacao.limite = 25">25</button>
+          <button type="button" class="vol-btn" :class="{ 'active': automacao.limite === 50 }" @click="automacao.limite = 50">50</button>
+          <button type="button" class="vol-btn" :class="{ 'active': automacao.limite === 60 }" @click="automacao.limite = 60">60</button>
+          <input type="number" min="5" max="100" class="form-input vol-custom-input" x-model.number="automacao.limite" title="Limite numérico customizado">
+        </div>
+        <small class="param-tip">Quantidade de novos estabelecimentos capturados a cada disparo.</small>
+      </div>
+
+      <!-- Intervalo em Minutos (Exclusivo para modo custom) -->
+      <div class="param-box" x-show="automacao.modo === 'custom'" x-cloak>
+        <label class="form-label-bold">Intervalo entre Ciclos (Minutos):</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="number" min="15" max="1440" step="15" class="form-input" style="width: 120px;" x-model.number="automacao.intervalo_min">
+          <span style="font-size: 13px; color: var(--muted, #64748b);">minutos (ex: 60 = 1h, 120 = 2h)</span>
+        </div>
+        <small class="param-tip">Mínimo de 15 minutos para respeitar cotas de segurança.</small>
+      </div>
+
+      <!-- Nicho Padrão da Automação -->
+      <div class="param-box">
+        <label class="form-label-bold">Nicho Padrão:</label>
+        <select class="form-input" x-model="automacao.nicho_slug">
+          {% for n in nichos %}
+          <option value="{{ n.slug }}">{{ n.rotulo }}</option>
+          {% endfor %}
+        </select>
+        <small class="param-tip">Segmento consultado pelo robô no Google Places e Receita Federal.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carrossel de Praças / Cidades -->
+  <div class="automation-section">
+    <div class="section-subhead">
+      <label class="form-label-bold">Carrossel Cíclico de Praças (Cidades em Rotação):</label>
+      <span class="section-help-tip">O robô varre uma cidade por vez em sequência cíclica a cada ciclo.</span>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 12px;">
+      <input type="text" class="form-input" x-model="automacao.pracas_str" placeholder="Vitória ES, Vila Velha ES, Serra ES, Cariacica ES, Belo Horizonte MG, Campinas SP">
+      <small style="font-size: 11.5px; color: var(--muted, #64748b); margin-top: 4px; display: block;">Separe as cidades por vírgula. A rotação avança automaticamente após cada execução.</small>
+    </div>
+
+    <!-- Pills com Status de Rotação -->
+    <div class="carrossel-preview-wrap">
+      <span class="carrossel-label">Ordem da Fila:</span>
+      <div class="carrossel-pills-list">
+        <template x-for="(praca, idx) in (automacao.pracas_str || '').split(',').map(p => p.trim()).filter(Boolean)" :key="idx">
+          <div class="carrossel-city-pill" :class="{ 'is-next': praca.toLowerCase() === (automacao.proxima_praca || '').toLowerCase(), 'is-last': praca.toLowerCase() === (automacao.ultima_praca || '').toLowerCase() }">
+            <span class="pill-order" x-text="`#${idx + 1}`"></span>
+            <span class="pill-name" x-text="praca"></span>
+            <span class="pill-tag is-next-tag" x-show="praca.toLowerCase() === (automacao.proxima_praca || '').toLowerCase()">👉 Próxima</span>
+            <span class="pill-tag is-last-tag" x-show="praca.toLowerCase() === (automacao.ultima_praca || '').toLowerCase() && praca.toLowerCase() !== (automacao.proxima_praca || '').toLowerCase()">✓ Última</span>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telemetria e Monitor de Execução -->
+  <div class="automation-telemetry-bar">
+    <div class="telemetry-item">
+      <span class="telemetry-label">🕒 Último Ciclo:</span>
+      <strong class="telemetry-val" x-text="automacao.ultimo_ciclo ? formatarDataIso(automacao.ultimo_ciclo) : 'Nenhum registro ainda'"></strong>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">📍 Última Praça Varrida:</span>
+      <strong class="telemetry-val" x-text="automacao.ultima_praca || '—'"></strong>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">👉 Próxima da Fila:</span>
+      <strong class="telemetry-val highlight-next" x-text="automacao.proxima_praca || '—'"></strong>
+    </div>
+    <div class="telemetry-item">
+      <span class="telemetry-label">📊 Total Histórico Capturado:</span>
+      <strong class="telemetry-val" x-text="`${automacao.total_auto || 0} leads`"></strong>
+    </div>
+  </div>
+
+  <!-- Barra de Ações (Salvar e Disparo Imediato) -->
+  <div class="automation-actions-bar">
+    <div class="left-actions">
+      <button type="button" class="btn primary" :disabled="automacaoSalvando" @click="salvarAutomacao(true)">
+        <span x-show="!automacaoSalvando">💾 Salvar Preferências de Automação</span>
+        <span x-show="automacaoSalvando">Gravando...</span>
+      </button>
+      <button type="button" class="btn btn-execute-now" :disabled="automacaoExecutando || jobStatus.running" @click="executarAutomacaoAgora()">
+        <span x-show="!automacaoExecutando && !jobStatus.running">⚡ Executar Ciclo Agora (Teste Manual)</span>
+        <span x-show="automacaoExecutando || jobStatus.running">🛰️ Ciclo em Andamento...</span>
+      </button>
+    </div>
+    <div class="cron-info-badge">
+      <small>Rota Cron Webhook: <code>/cron/prospector-sync</code></small>
+    </div>
+  </div>
+</div>

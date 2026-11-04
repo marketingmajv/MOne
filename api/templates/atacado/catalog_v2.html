@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v2.css') }}?v=20261029_1630">
+  
+  <!-- Atacado v2 Data & Logic -->
+  <script>
+    window.V2_ITEMS_DATA = {{ items|tojson }};
+    window.V2_WA_NUMBER = "{{ whatsapp_number }}";
+    window.V2_MIN_QTY_TEXT = "{{ min_qty_text }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/atacado-v2.js') }}?v=20261028_8"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+</head>
+<body class="atacado-v2-body" x-data="atacadoV2App()">
+
+  <!-- 1. Top Urgency Ribbon -->
+  <div class="v2-top-ribbon">
+    <div class="v2-ribbon-track">
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÕES M-ONE & COLVIX</span>
+      <span>•</span>
+      <span>MARGENS ESTIMADAS DE ATÉ 48% PARA SUA LOJA</span>
+      <span>•</span>
+      <span>BAÚ ORIGINAL INCLUSO DE FÁBRICA</span>
+      <span>•</span>
+      <span>ESTOQUE DE PEÇAS NO BRASIL COM GARANTIA OFICIAL</span>
+      <span>•</span>
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÕES M-ONE & COLVIX</span>
+      <span>•</span>
+      <span>MARGENS ESTIMADAS DE ATÉ 48% PARA SUA LOJA</span>
+    </div>
+  </div>
+
+  <!-- 2. Header Executivo B2B -->
+  <header class="v2-header">
+    <div class="v2-container v2-header-inner">
+      <a href="/atacado/v2" class="v2-brand-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="v2-brand-logo">
+        <div class="v2-brand-text">
+          <span class="v2-brand-title">MAJ MOBILIDADE</span>
+          <span class="v2-brand-badge">ATACADO & REVENDA CNPJ</span>
+        </div>
+      </a>
+
+      <div class="v2-header-actions">
+        <!-- Gatilho do Lote Misto -->
+        <button type="button" class="v2-btn-cart-trigger" x-show="hasLotItems()" @click="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" title="Ver Meu Lote de Atacado">
+          <span class="v2-cart-lbl-desktop">📦 Meu Lote:</span>
+          <span class="v2-cart-lbl-mobile">📦</span>
+          <span class="v2-cart-badge" x-text="getTotalVehicles() + ' un'"></span>
+          <strong class="v2-cart-price-desktop" style="color: #fff;">R$ <span x-text="formatPrice(getTotalCost())"></span></strong>
+        </button>
+
+        <a :href="'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá! Sou lojista e gostaria de falar com um Consultor de Expansão CNPJ da MAJ Mobilidade.')" 
+           target="_blank" 
+           class="v2-btn-header-wa" 
+           title="Falar com Consultor CNPJ no WhatsApp">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span class="v2-wa-text-full">Consultor CNPJ</span>
+          <span class="v2-wa-text-short">CNPJ</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3. Hero B2B: Valor & Decisão Comercial -->
+  <section class="v2-hero">
+    <div class="v2-container">
+      <div class="v2-hero-pill">
+        <span>⚡ CATÁLOGO OFICIAL DE DECISÃO COMERCIAL</span>
+      </div>
+      <h1 class="v2-hero-title">
+        <span class="v2-hero-line-1">Mais segurança para você.</span>
+        <span class="v2-hero-line-2 hl-emerald">Mais margem pra sua loja.</span>
+      </h1>
+      <p class="v2-hero-subtitle">
+        Scooters e bikes elétricas para revenda, com peças e suporte técnico no Brasil.<br/>
+        Comece com apenas 3 unidades mistas direto da importadora e conte com a estrutura da MAJ.
+      </p>
+
+      <div class="v2-hero-proof-pills">
+        <span class="v2-proof-pill">📦 Pedido Inicial a partir de 3 un</span>
+        <span class="v2-proof-pill">🛠️ Peças à Pronta Entrega no Brasil</span>
+        <span class="v2-proof-pill">👨‍🏫 Treinamento & Suporte Direto</span>
+      </div>
+
+      <!-- Trilhas de Decisão do Lojista (Seção 8 do Estudo) -->
+      <div class="v2-buyer-paths">
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'iniciante' }" 
+                @click="selectBuyerPath('iniciante')">
+          <div class="v2-path-icon">🔰</div>
+          <div class="v2-path-info">
+            <strong>Estou Começando a Revender</strong>
+            <small>Trio inicial: menor tíquete e alto giro comercial</small>
+          </div>
+        </button>
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'mix' }" 
+                @click="selectBuyerPath('mix')">
+          <div class="v2-path-icon">🚀</div>
+          <div class="v2-path-info">
+            <strong>Quero Ampliar o Mix da Loja</strong>
+            <small>Veículos de alta potência, autonomia e margem superior</small>
+          </div>
+        </button>
+        <button type="button" 
+                class="v2-buyer-path-card" 
+                :class="{ 'is-selected': currentBuyerPath === 'reposicao' }" 
+                @click="selectBuyerPath('reposicao')">
+          <div class="v2-path-icon">📦</div>
+          <div class="v2-path-info">
+            <strong>Reposição com Maior Estoque</strong>
+            <small>Modelos com maior volume imediato em Vitória/ES</small>
+          </div>
+        </button>
+      </div>
+
+      <div class="v2-hero-filters-bar" style="display: flex !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: center !important;">
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'all' && !currentBuyerPath }" 
+                @click="setFilter('all'); currentBuyerPath = null;">
+          📋 TODOS OS MODELOS (<span x-text="items.length"></span>)
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'mais_vendidos' }" 
+                @click="setFilter('mais_vendidos')">
+          ⭐ MAIS VENDIDOS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'mais_baratos' }" 
+                @click="setFilter('mais_baratos')">
+          💰 MAIS BARATOS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'scooters' }" 
+                @click="setFilter('scooters')">
+          🛵 SCOOTERS
+        </button>
+        <button type="button" 
+                class="v2-hero-filter-btn" 
+                style="white-space: nowrap !important; flex-shrink: 0 !important;"
+                :class="{ 'is-active': currentFilter === 'bikes' }" 
+                @click="setFilter('bikes')">
+          🚲 BIKES
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Catálogo de Veículos (Grid Unificado Filtrável) -->
+  <section class="v2-track-section" id="catalogo">
+    <div class="v2-container">
+      <div class="v2-track-header">
+        <div class="v2-track-eyebrow">
+          <span x-text="getTrackEyebrow()"></span>
+        </div>
+        <h2 class="v2-track-title" x-text="getTrackTitle()"></h2>
+        <p class="v2-track-desc">
+          Selecione a quantidade de cada modelo para montar seu lote misto a partir de 3 unidades com desconto escalonado automático.
+        </p>
+      </div>
+
+      <div class="v2-cards-grid">
+        <template x-for="item in getDisplayItems()" :key="item.id">
+          <div class="v2-card" :class="{ 'card-featured': item.is_best_seller }">
+            
+            <div class="v2-card-media" @click="openModal(item.id)">
+              <img :src="item.image_main || '/static/logo.png'" :alt="item.name" class="v2-card-img" loading="lazy" decoding="async">
+              <span class="v2-card-stock-tag in-stock" x-text="'📦 ' + (window.V2_MIN_QTY_TEXT || 'Valor a partir de 3 unidades')"></span>
+            </div>
+
+            <div class="v2-card-body">
+              <div class="v2-card-header">
+                <span class="v2-card-cat" x-text="item.category || (item.vehicle_type === 'bike' ? 'Bike Elétrica' : 'Scooter Elétrica')"></span>
+                <h3 class="v2-card-name" x-text="item.name"></h3>
+              </div>
+
+              <!-- Diferenciais MAJ -->
+              <div class="v2-card-differentiators">
+                <template x-if="item.differentiator">
+                  <span class="v2-diff-chip" :class="{ 'chip-trunk': item.has_trunk }" x-text="item.differentiator"></span>
+                </template>
+                <span class="v2-diff-chip chip-wh">🔋 <span x-text="item.battery_wh"></span> Wh</span>
+                <span class="v2-diff-chip">🇧🇷 Peças no Brasil</span>
+              </div>
+
+              <!-- Preço & Margem com Desconto Escalonado Clicável -->
+              <div class="v2-card-pricing-block">
+                <!-- Régua de 3 preços: menor preço na frente, intermediário no meio, maior preço por último -->
+                <div class="v2-tier-scale" title="Clique no preço para selecionar a faixa de quantidade correspondente">
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 3 }" @click.stop="selectTierDirect(item, 3)">
+                    <span>21+ un</span><strong>R$ <span x-text="formatPrice(item.price_tier_3)"></span></strong><small class="gold">-R$ 200</small>
+                  </div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 2 }" @click.stop="selectTierDirect(item, 2)">
+                    <span>11-20 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_2)"></span></strong><small>-R$ 100</small>
+                  </div>
+                  <div class="v2-tier-col" :class="{ 'is-active': getItemTier(item) === 1 }" @click.stop="selectTierDirect(item, 1)">
+                    <span>Até 10 un</span><strong>R$ <span x-text="formatPrice(item.price_tier_1)"></span></strong>
+                  </div>
+                </div>
+
+                <div class="v2-price-retail-row">
+                  <span class="v2-price-label">Sugerido Varejo (12x):</span>
+                  <span class="v2-price-retail-val">R$ <span x-text="formatPrice(item.price_retail_suggested || item.price_original)"></span></span>
+                </div>
+                <div class="v2-profit-badge">
+                  <span class="v2-profit-label">Margem Bruta Estimada:</span>
+                  <div>
+                    <span class="v2-profit-amount">+R$ <span x-text="formatPrice(getItemDisplayMarginReais(item))"></span></span>
+                    <span class="v2-profit-pct" x-text="getItemDisplayMarginPct(item) + '% margem'"></span>
+                  </div>
+                </div>
+                <div class="v2-margin-disclaimer">
+                  *Margem bruta estimada antes de frete e despesas da revenda. Varejo de referência.
+                </div>
+              </div>
+
+              <!-- Ações & Seletor de Quantidade -->
+              <div class="v2-card-actions">
+                <div class="v2-qty-selector">
+                  <button type="button" class="v2-qty-btn" @click="decrementQty(item)">−</button>
+                  <span class="v2-qty-display" x-text="getQty(item.id)"></span>
+                  <button type="button" class="v2-qty-btn" @click="incrementQty(item)">+</button>
+                </div>
+                <button type="button" class="v2-btn-add-lot" @click="addDirect(item)">
+                  <span x-text="getQty(item.id) > 0 ? '✓ No Lote (' + getQty(item.id) + ')' : '+ Adicionar ao Lote'"></span>
+                </button>
+                <button type="button" class="v2-btn-details-link" @click="openModal(item.id)">
+                  Ficha
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Seção de Vantagens: Porque comprar na MAJ é mais vantagem? -->
+  <section class="v2-comparison-section" id="vantagens">
+    <div class="v2-container">
+      <div class="v2-comp-header">
+        <span class="v2-track-eyebrow" style="background: rgba(0,204,136,0.15); color: var(--emerald); border: 1px solid rgba(0,204,136,0.3);">
+          ⭐ PARCERIA DIRETA B2B
+        </span>
+        <h2 class="v2-comp-title">
+          Porque comprar na MAJ é mais vantagem?
+        </h2>
+      </div>
+
+      <div class="v2-advantages-grid">
+        <!-- 01 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🛠️</div>
+          <h3 class="v2-advantage-title">Pós-venda direto com nossa equipe técnica</h3>
+          <p class="v2-advantage-desc">Conte com um canal direto para tirar dúvidas e receber suporte técnico.</p>
+        </div>
+
+        <!-- 02 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">👨‍🏫</div>
+          <h3 class="v2-advantage-title">Treinamento para o técnico da sua loja</h3>
+          <p class="v2-advantage-desc">Preparamos sua equipe para realizar montagens e atender melhor seus clientes.</p>
+        </div>
+
+        <!-- 03 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">⚡</div>
+          <h3 class="v2-advantage-title">Experiência em mobilidade elétrica desde 2018</h3>
+          <p class="v2-advantage-desc">São anos de atuação no segmento para apoiar sua loja com conhecimento e experiência.</p>
+        </div>
+
+        <!-- 04 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">📦</div>
+          <h3 class="v2-advantage-title">Peças de reposição à pronta entrega</h3>
+          <p class="v2-advantage-desc">Tenha acesso a peças para agilizar a manutenção e o atendimento aos seus clientes.</p>
+        </div>
+
+        <!-- 05 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🏭</div>
+          <h3 class="v2-advantage-title">Produtos direto da fábrica, sem intermediários</h3>
+          <p class="v2-advantage-desc">Negocie diretamente com a MAJ e tenha mais proximidade com quem fabrica e fornece os produtos.</p>
+        </div>
+
+        <!-- 06 -->
+        <div class="v2-advantage-card">
+          <div class="v2-advantage-icon">🚚</div>
+          <h3 class="v2-advantage-title">Facilidade no envio dos pedidos</h3>
+          <p class="v2-advantage-desc">Mais praticidade para receber os produtos e abastecer sua loja.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Seção de Dúvidas Frequentes do Revendedor (FAQ B2B Modular) -->
+  {% include 'atacado/faq_section.html' %}
+
+  <!-- 7. Seções Fase 2 (Fotos de Estoque & Depoimentos - Ocultos até captação de mídia) -->
+  {% include 'atacado/phase2_hidden_blocks.html' %}
+
+  <!-- 8. Modal de Detalhes e Fotos (Componente Modular Teleportado) -->
+  {% include 'atacado/catalog_modal_v2.html' %}
+
+  <!-- 9. Montador de Pedido / Lote Misto Flutuante (Drawer Inferior) -->
+  <div class="v2-lot-drawer" :class="{ 'is-active': hasLotItems() }">
+    <template x-if="getNextTierIncentive()">
+      <div class="v2-lot-tier-banner" x-text="getNextTierIncentive()"></div>
+    </template>
+    <div class="v2-container v2-lot-drawer-inner">
+      <div class="v2-lot-summary-group">
+        <div class="v2-lot-badge-count">
+          <span>📦 Lote:</span>
+          <strong x-text="getTotalVehicles() + ' un'"></strong>
+          <template x-if="getActiveTier() > 1">
+            <span class="v2-lot-tier-badge" x-text="getActiveTier() === 3 ? 'FAIXA OURO (-R$ 200/un)' : 'FAIXA PRATA (-R$ 100/un)'"></span>
+          </template>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label">Investimento:</span>
+          <span class="v2-lot-fig-val">R$ <span x-text="formatPrice(getTotalCost())"></span></span>
+          <template x-if="getTotalVolumeSavings() > 0">
+            <small style="color: #00cc88; font-size: 0.70rem; display: block; font-weight: 700;">Economia: -R$ <span x-text="formatPrice(getTotalVolumeSavings())"></span></small>
+          </template>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label">Sugerido Varejo:</span>
+          <span class="v2-lot-fig-val" style="color: #cbd5e1;">R$ <span x-text="formatPrice(getTotalTurnover())"></span></span>
+        </div>
+        <div class="v2-lot-figure">
+          <span class="v2-lot-fig-label" style="color: #e5a93b;">💰 Ganho Bruto Estimado:</span>
+          <span class="v2-lot-fig-val v2-lot-fig-profit">+R$ <span x-text="formatPrice(getTotalProfit())"></span></span>
+        </div>
+      </div>
+
+      <div class="v2-lot-actions">
+        <button type="button" class="v2-btn-clear-lot" @click="clearLot()" title="Limpar lote">
+          Limpar Lote
+        </button>
+        <a :href="getLotWhatsAppUrl()" target="_blank" class="v2-btn-submit-lot">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span>Fechar Pedido de Lote no WhatsApp</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

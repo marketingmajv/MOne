@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Usuários{% endblock %}
+{% block page_title %}Usuários e permissões{% endblock %}
+{% block page_subtitle %}Cada pessoa vê só o que precisa.{% endblock %}
+{% block top_actions %}
+  {% if me.role in ['admin', 'support'] %}
+    <button class="btn primary" onclick="openModal('newUser')">+ Criar Usuário</button>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="panel table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Usuário</th>
+        <th>WhatsApp</th>
+        <th>Perfil / Acesso</th>
+        <th>Status</th>
+        {% if me.role in ['admin', 'support'] %}
+          <th>Ações da Diretoria</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td><b>{{ u.name }}</b></td>
+        <td><small class="mono">{{ u.username }}</small></td>
+        <td>
+          {% if u.phone %}
+            <span class="mono" style="color:var(--accent, #00E599); font-weight:600; font-size:12.5px;">{{ u.phone }}</span>
+          {% else %}
+            <span style="color:var(--muted); font-size:11.5px;">Não informado</span>
+          {% endif %}
+        </td>
+        <td><span class="badge">{{ role_labels.get(u.role, u.role) }}</span></td>
+        <td>
+          {% if u.active %}
+            <span class="status available">Ativo</span>
+          {% else %}
+            <span class="status sold">Inativo</span>
+          {% endif %}
+        </td>
+        {% if me.role in ['admin', 'support'] %}
+          <td>
+            <div class="action-row-compact" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <button class="btn small" onclick="openModal('editUser_{{ u.id }}')">Editar</button>
+              {% if me.role == 'admin' %}
+                <button type="button" class="btn small" style="background:rgba(56,189,248,0.15);border:1px solid #38bdf8;color:#38bdf8;" onclick="openModal('userPerms_{{ u.id }}')">🔐 Permissões</button>
+                {% if u.id != me.id %}
+                  <form method="post" action="{{ url_for('user.impersonate_user', uid=u.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn small" style="background:rgba(168,85,247,0.15);border:1px solid #a855f7;color:#c084fc;" title="Navegar no M-One como {{ u.name }}">👁️ Espelhar</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+              <form method="post" action="{{ url_for('toggle_user', uid=u.id) }}" style="display:inline;">
+                <button class="btn small {{ 'warn-btn' if u.active else 'good-btn' }}">
+                  {{ 'Desativar' if u.active else 'Ativar' }}
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('reset_user_password', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Resetar a senha deste usuário para MOne2026!?');">
+                <button class="btn small">Resetar Senha</button>
+              </form>
+              {% if u.id != me.id %}
+                <form method="post" action="{{ url_for('delete_user', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja EXCLUIR permanentemente o usuário {{ u.name }}? Esta ação não pode ser desfeita.');">
+                  <button class="btn small danger-btn">Excluir</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        {% endif %}
+      </tr>
+
+      <!-- Edit User Modal for {{ u.name }} -->
+      {% if me.role == 'admin' %}
+      <div class="modal" id="editUser_{{ u.id }}">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h3>Editar Usuário: {{ u.name }}</h3>
+            <button type="button" class="modal-close-btn" onclick="closeModal('editUser_{{ u.id }}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+          <form method="post" action="{{ url_for('edit_user', uid=u.id) }}" class="form-grid">
+            <label>Nome completo
+              <input name="name" required value="{{ u.name }}" class="form-input">
+            </label>
+            <label>Usuário de acesso
+              <input name="username" required value="{{ u.username }}" class="form-input">
+            </label>
+            <label class="span-2">WhatsApp Comercial
+              <input name="phone" value="{{ u.phone or '' }}" placeholder="Ex.: 27999157162 ou (27) 99915-7162" class="form-input">
+              <small style="color:var(--muted); font-size:0.75rem;">Número utilizado nas abordagens do sistema de prospecção.</small>
+            </label>
+            <label class="span-2">Perfil de acesso
+              <select name="role" class="form-input">
+                <option value="sales" {% if u.role == 'sales' %}selected{% endif %}>Vendas (vendas, estoque, produtos)</option>
+                <option value="stock" {% if u.role == 'stock' %}selected{% endif %}>Estoque (estoque, produtos, importar chassis)</option>
+                <option value="finance" {% if u.role == 'finance' %}selected{% endif %}>Financeiro (vendas, pagamentos, estoque, produtos)</option>
+                <option value="support" {% if u.role == 'support' %}selected{% endif %}>Suporte Técnico (suporte e chamados)</option>
+                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
+              </select>
+            </label>
+            <label class="span-2">Nova Senha (deixe em branco para não alterar)
+              <input type="password" name="password" placeholder="Nova senha (opcional)" class="form-input">
+            </label>
+            <div class="form-actions span-2">
+              <button type="button" class="btn" onclick="closeModal('editUser_{{ u.id }}')">Cancelar</button>
+              <button class="btn primary">Salvar Alterações</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+    {% else %}
+      <tr><td colspan="6" class="empty">Nenhum usuário cadastrado.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- New User Modal -->
+<div class="modal" id="newUser">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Novo colaborador / usuário</h3>
+      <button type="button" class="modal-close-btn" onclick="closeModal('newUser')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <form method="post" class="form-grid">
+      <label>Nome completo
+        <input name="name" required placeholder="Ex.: Maria Silva" class="form-input">
+      </label>
+      <label>Usuário de acesso
+        <input name="username" required placeholder="Ex.: maria" class="form-input">
+      </label>
+      <label class="span-2">WhatsApp Comercial
+        <input name="phone" placeholder="Ex.: 27999157162 ou (27) 99915-7162" class="form-input">
+        <small style="color:var(--muted); font-size:0.75rem;">Número utilizado para acionamento de leads e contato comercial.</small>
+      </label>
+      <label class="span-2">Perfil de acesso
+        <select name="role" class="form-input">
+          <option value="sales">Vendas (vendas, estoque, produtos)</option>
+          <option value="stock">Estoque (estoque, produtos, importar chassis)</option>
+          <option value="finance">Financeiro (vendas, pagamentos, estoque, produtos)</option>
+          <option value="support">Suporte Técnico (suporte e chamados)</option>
+          <option value="admin">Diretoria / Admin (Acesso irrestrito a custos de importação e usuários)</option>
+        </select>
+      </label>
+      <label class="span-2">Senha inicial temporária
+        <input name="password" value="MOne2026!" required class="form-input">
+        <small style="color:var(--muted); font-size:0.75rem;">O colaborador deverá alterar a senha no primeiro uso.</small>
+      </label>
+      <div class="form-actions span-2">
+        <button type="button" class="btn" onclick="closeModal('newUser')">Cancelar</button>
+        <button class="btn primary">Criar usuário</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include 'user_permissions_modal.html' %}
+{% endblock %}

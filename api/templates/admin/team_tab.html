@@ -1,0 +1,74 @@
+<!-- templates/admin/team_tab.html -->
+<div x-show="activeTab === 'team'" {% if active_tab != 'team' %}x-cloak style="display: none;"{% endif %}>
+  <!-- Filtros de Busca de Colaborador -->
+  <div class="panel" style="margin-bottom: 16px; padding: 12px 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px;">
+        <span style="color: var(--muted);">🔍</span>
+        <input type="text" 
+               x-model="searchMember" 
+               placeholder="Buscar por nome do profissional ou cargo..." 
+               style="width: 100%; border: none; background: transparent; color: var(--text); font-size: 0.88rem; outline: none;">
+      </div>
+      <div class="muted" style="font-size: 0.78rem;">
+        Exibindo <strong>11 profissionais</strong> mapeados na estrutura da MAJ
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid dos 11 Profissionais -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px;">
+    {% for m in team %}
+    <div class="panel" 
+         style="margin-bottom: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between;"
+         x-show="!searchMember || '{{ m.name|lower }}'.includes(searchMember.toLowerCase()) || '{{ m.role|lower }}'.includes(searchMember.toLowerCase()) || '{{ m.area|lower }}'.includes(searchMember.toLowerCase())">
+      
+      <div>
+        <!-- Header do Card do Colaborador -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+              {{ m.avatar_icon }}
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text);">{{ m.name }}</h3>
+              <small style="color: var(--muted); font-size: 0.78rem; display: block;">{{ m.role }}</small>
+            </div>
+          </div>
+          <span class="badge comex-value-amber" style="background: rgba(217, 119, 6, 0.14); border: 1px solid rgba(217, 119, 6, 0.35); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em;">
+            {{ m.badge }}
+          </span>
+        </div>
+
+        <!-- Departamento / Unidade -->
+        <div style="margin-bottom: 12px; font-size: 0.78rem; color: var(--text-dim); font-weight: 500;">
+          <span>Área: </span><strong style="color: var(--text); font-weight: 700;">{{ m.area }}</strong>
+        </div>
+
+        <!-- Atribuições Práticas -->
+        <div style="margin-bottom: 12px;">
+          <small class="comex-value-emerald" style="display: block; font-size: 0.74rem; font-weight: 800; text-transform: uppercase; margin-bottom: 6px;">
+            ✓ O que deve fazer (Atribuições Centrais):
+          </small>
+          <ul style="margin: 0; padding-left: 16px; font-size: 0.8rem; color: var(--text); line-height: 1.45;">
+            {% for resp in m.responsibilities %}
+            <li style="margin-bottom: 4px; font-weight: 500;">{{ resp }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Limites / O que NÃO deve fazer -->
+      <div style="background: rgba(239, 68, 68, 0.08); border-left: 3.5px solid #dc2626; border-radius: 8px; padding: 10px 14px; margin-top: 10px;">
+        <small style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #dc2626; margin-bottom: 4px;">
+          ⛔ Limites & O que NÃO deve fazer:
+        </small>
+        <p style="margin: 0; font-size: 0.78rem; color: var(--text); line-height: 1.4; font-weight: 500;">
+          {{ m.limits }}
+        </p>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>

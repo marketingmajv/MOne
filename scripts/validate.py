@@ -235,12 +235,12 @@ def check_flask_commercial_routes() -> bool:
 
 
 def check_and_sync_static_assets() -> bool:
-    """Garante paridade estrita entre static/ e api/static/ para Vercel Serverless."""
-    print("📁 [5/8] Auditoria e sincronização de ativos estáticos (static/ vs api/static/)...")
+    """Garante paridade estrita entre static/ vs api/static/ e templates/ vs api/templates/ para Vercel Serverless."""
+    print("📁 [5/8] Auditoria e sincronização de ativos e templates estáticos (static/ e templates/ vs api/)...")
+    import shutil
     api_static = BASE_DIR / "api" / "static"
     root_static = BASE_DIR / "static"
     if api_static.exists() and root_static.exists():
-        import shutil
         synced_count = 0
         for root_item in root_static.rglob("*"):
             if root_item.is_file():
@@ -251,6 +251,25 @@ def check_and_sync_static_assets() -> bool:
                     shutil.copy2(str(root_item), str(target))
                     synced_count += 1
         print(f"  ✓ {synced_count} ativo(s) sincronizado(s) com api/static/ para execução serverless.")
+
+    api_templates = BASE_DIR / "api" / "templates"
+    root_templates = BASE_DIR / "templates"
+    if api_templates.exists() and root_templates.exists():
+        synced_tpl_count = 0
+        for root_tpl in root_templates.rglob("*"):
+            if root_tpl.is_file():
+                rel_tpl = root_tpl.relative_to(root_templates)
+                target_tpl = api_templates / rel_tpl
+                if not target_tpl.exists() or root_tpl.stat().st_mtime > target_tpl.stat().st_mtime:
+                    target_tpl.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(str(root_tpl), str(target_tpl))
+                    synced_tpl_count += 1
+        for tpl_name in ["admin_models.html", "models.html"]:
+            src_sub = root_templates / "showroom" / tpl_name
+            dst_root = api_templates / tpl_name
+            if src_sub.exists():
+                shutil.copy2(str(src_sub), str(dst_root))
+        print(f"  ✓ {synced_tpl_count} template(s) sincronizado(s) com api/templates/ para execução serverless.")
     return True
 
 

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <!-- Schema.org Product List Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    "name": "{{ title }}",
+    "description": "{{ subtitle }}",
+    "numberOfItems": {{ items|length }}
+  }
+  </script>
+</head>
+<body x-data="outletApp()">
+
+  <!-- Top Urgency Ribbon -->
+  <div class="outlet-ribbon">
+    <div class="ribbon-track">
+      <span>⚡ {{ urgency_text }} ⚡</span>
+      <span class="ribbon-dot">•</span>
+      <span>GARANTIA OFICIAL DE FÁBRICA MAJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>ENVIO PARA TODO O BRASIL</span>
+      <span class="ribbon-dot">•</span>
+      <span>PARCELAMENTO EM ATÉ 18X</span>
+      <span class="ribbon-dot">•</span>
+      <span>⚡ {{ urgency_text }} ⚡</span>
+    </div>
+  </div>
+
+  <!-- Header Institucional -->
+  <header class="outlet-header">
+    <div class="outlet-container header-inner">
+      <div class="logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
+        <div class="logo-text">
+          <span class="brand-title">MAJ MOBILIDADE</span>
+          <span class="brand-badge">CATÁLOGO OFICIAL DE OUTLET</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="#catalogo" class="btn-scroll-catalog">Ver Catálogo</a>
+        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header" aria-label="Falar com Consultor no WhatsApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span class="btn-wa-text-full">Falar com Consultor</span>
+          <span class="btn-wa-text-short">Consultor</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="outlet-hero">
+    <div class="outlet-container hero-inner">
+      <div class="hero-badge">
+        <span class="hero-pulse"></span>
+        <span>QUEIMA DE ESTOQUE OFICIAL MAJ</span>
+      </div>
+      <h1 class="hero-title">{{ title }}</h1>
+      <p class="hero-subtitle">{{ subtitle }}</p>
+
+      <div class="hero-stats-bar">
+        <div class="stat-card">
+          <strong class="stat-number">{{ hero_stats.card_1_number if hero_stats else (items|length ~ '+') }}</strong>
+          <span class="stat-label">{{ hero_stats.card_1_label if hero_stats else 'Modelos Disponíveis' }}</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">{{ hero_stats.card_2_number if hero_stats else '18X' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_2_label if hero_stats else 'Parcelamento Facilitado' }}</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">{{ hero_stats.card_3_number if hero_stats else 'Até 50%' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_3_label if hero_stats else 'Abaixo da Tabela' }}</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">{{ hero_stats.card_4_number if hero_stats else '100%' }}</strong>
+          <span class="stat-label">{{ hero_stats.card_4_label if hero_stats else 'Revisados e com Garantia' }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros, Ordenação e Busca -->
+  <section class="outlet-filters-section" id="catalogo">
+    <div class="outlet-container">
+      <div class="filters-wrapper">
+        <div class="filters-top-bar">
+          <div class="search-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" x-model="searchQuery" placeholder="Buscar por modelo (ex: MAX 12, V20, Ride On)...">
+            <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
+          </div>
+
+          <div class="sort-select-box">
+            <label for="sortBySelect" class="sr-only">Ordenação</label>
+            <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="stock_desc">📦 Pronta Entrega / Destaques</option>
+              <option value="price_asc">💰 Menor Preço</option>
+              <option value="price_desc">💎 Maior Preço</option>
+              <option value="discount_desc">🔥 Maior Desconto %</option>
+              <option value="name_asc">🔤 Nome (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="category-pills-bar" x-show="hasActiveFilters()">
+          <div class="filter-counter-badge">
+            <span x-text="filteredItems().length + ' produtos encontrados'"></span>
+            <button type="button" class="btn-reset-filters" @click="clearFilters()">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid de Produtos -->
+  <main class="outlet-container catalog-grid-section">
+    <!-- Estado Vazio / Sem Resultados -->
+    <div class="empty-results-box" x-show="filteredItems().length === 0" x-cloak>
+      <div class="empty-icon">🔍</div>
+      <h3>Nenhum modelo encontrado com estes filtros</h3>
+      <p>Tente ajustar sua busca ou limpar os filtros para visualizar todas as opções do catálogo.</p>
+      <button type="button" class="btn-reset-filters-hero" @click="clearFilters()">Ver Todos os Veículos</button>
+    </div>
+
+    <!-- Lista Dinâmica de Cards de Produtos -->
+    <div class="products-grid" x-show="filteredItems().length > 0">
+      <template x-for="item in filteredItems()" :key="item.id">
+        <div class="product-card" x-transition:enter="fade-in">
+          
+          <!-- Badges -->
+          <div class="card-badges">
+            <template x-if="getDiscountPercent(item) > 0">
+              <span class="badge-discount" x-text="'-' + getDiscountPercent(item) + '% OFF'"></span>
+            </template>
+            <template x-if="item.badge">
+              <span class="badge-custom" x-text="item.badge"></span>
+            </template>
+            <template x-if="item.stock_qty > 0">
+              <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
+            </template>
+            <template x-if="item.stock_qty <= 0">
+              <span class="badge-stock badge-sob-encomenda">📦 Sob Encomenda</span>
+            </template>
+          </div>
+
+          <!-- Imagem Principal -->
+          <div class="card-image-box" @click="openModal(item.id)">
+            <img :src="item.image_main || '/static/logo.png'" 
+                 :alt="item.name" 
+                 loading="lazy"
+                 decoding="async"
+                 class="card-img"
+                 @error="$event.target.src='/static/logo.png'">
+            <div class="image-overlay-hover">
+              <span>🔍 Ver Fotos e Ficha Técnica</span>
+            </div>
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="card-body">
+            <div class="card-category" x-text="item.category"></div>
+            <h2 class="card-title" x-text="item.name"></h2>
+
+            <!-- Chips de Ficha Técnica Rápida -->
+            <div class="card-specs-mini">
+              <template x-if="item.color">
+                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+              </template>
+              <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+                <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
+                  🏷️ <span x-text="item.specs_json.color_prices.length + ' opções de valor'"></span>
+                </span>
+              </template>
+            </div>
+
+            <!-- Preços e Parcelamento -->
+            <div class="card-pricing">
+              <template x-if="item.price_original && Number(item.price_original) > Number(item.price_outlet)">
+                <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
+              </template>
+
+              <div class="price-to">
+                <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+                  <span class="price-starting-tag">A partir de</span>
+                </template>
+                <span class="currency">R$</span>
+                <span class="amount" x-text="formatPrice(item.price_outlet)"></span>
+                <span class="payment-method">à vista</span>
+              </div>
+              <template x-if="item.installment_12 && Number(item.installment_12) > 0">
+                <div class="price-installments">
+                  ou em <strong x-text="'12x de R$ ' + formatPrice(item.installment_12)"></strong>
+                </div>
+              </template>
+              <template x-if="item.installment_18 && Number(item.installment_18) > 0">
+                <div class="price-installments-sub" x-text="'ou 18x de R$ ' + formatPrice(item.installment_18)"></div>
+              </template>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card-actions">
+              <a :href="getWhatsAppUrl(item.name, formatPrice(item.price_outlet))" 
+                 target="_blank" 
+                 class="btn-buy-whatsapp">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                <span>Quero no WhatsApp</span>
+              </a>
+              <button type="button" class="btn-details" @click="openModal(item.id)">
+                Ver Ficha Completa
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <!-- Seção de Garantias & Diferenciais (Trust Badges) -->
+  <section class="outlet-trust-section">
+    <div class="outlet-container">
+      <h2 class="trust-title">Por Que Garantir Seu Veículo no Outlet MAJ?</h2>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-icon">🛡️</div>
+          <h3>1 Ano de Garantia</h3>
+          <p>Veículos 100% testados e revisados por nossa equipe técnica com garantia oficial de fábrica.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🚚</div>
+          <h3>Envio para Todo o Brasil</h3>
+          <p>Transportadoras parceiras com seguro total de carga e rastreamento em tempo real até sua porta.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">💳</div>
+          <h3>Em até 18x no Cartão</h3>
+          <p>Flexibilidade de pagamento no cartão de crédito, PIX com desconto extra ou financiamento.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-icon">🔧</div>
+          <h3>Peças & Assistência</h3>
+          <p>Estoque completo de peças de reposição originais e rede autorizada de manutenção.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal Interativo de Ficha Técnica e Galeria -->
+  <div class="outlet-modal-backdrop" 
+       x-show="modalOpen" 
+       x-cloak 
+       @click.self="modalOpen = false"
+       @keydown.escape.window="modalOpen = false">
+    
+    <div class="outlet-modal-box">
+      <!-- Botão Fechar Fixo na Rolagem -->
+      <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
+
+      <div class="modal-scroll-body">
+        <template x-if="selectedItem">
+          <div class="modal-content-grid">
+            <!-- Coluna Visual / Galeria -->
+            <div class="modal-gallery-col">
+              <div class="modal-main-image">
+                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
+              </div>
+              <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
+                <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
+                  <div class="thumb-item" 
+                       :class="{'active': activeImage === img}"
+                       @click="activeImage = img">
+                    <img :src="img" alt="Foto" decoding="async" loading="lazy">
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Coluna Detalhes -->
+            <div class="modal-info-col">
+              <div class="modal-header-tag">
+                <span class="modal-category" x-text="selectedItem.category"></span>
+                <template x-if="selectedItem.condition">
+                  <span class="modal-condition-tag" x-text="selectedItem.condition"></span>
+                </template>
+              </div>
+              <h2 class="modal-title">
+                <span x-text="selectedItem.name"></span>
+                <template x-if="getActiveColorBadge()">
+                  <span class="modal-color-sticker" x-text="getActiveColorBadge()"></span>
+                </template>
+              </h2>
+              
+              <!-- Box de Preço e Simulador de Parcelas -->
+              <div class="modal-pricing-box">
+                <!-- Seletor Interativo de Cores quando há variação de preço -->
+                <template x-if="selectedItem.specs_json && selectedItem.specs_json.color_prices && selectedItem.specs_json.color_prices.length > 1">
+                  <div class="modal-color-prices-selector">
+                    <span class="selector-title">🎨 Escolha a Cor para ver o Preço:</span>
+                    <div class="color-options-grid">
+                      <template x-for="cp in selectedItem.specs_json.color_prices" :key="cp.colors">
+                        <button type="button" 
+                                class="color-price-btn" 
+                                :class="{'active': selectedColorObj && selectedColorObj.colors === cp.colors}" 
+                                @click="selectColorObj(cp)">
+                          <span class="btn-color-name" x-text="cp.colors"></span>
+                          <strong class="btn-color-price" x-text="cp.price"></strong>
+                          <small class="btn-color-inst" x-text="'12x ' + cp.p12"></small>
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+
+                <div class="price-to">
+                  <span class="currency">R$</span>
+                  <span class="amount" x-text="formatPrice(getActivePrice())"></span>
+                  <span class="payment-method">à vista no PIX</span>
+                </div>
+                
+                <!-- Seletor de Opções de Pagamento -->
+                <div class="payment-calculator-tabs">
+                  <span class="calc-label">Simular Pagamento:</span>
+                  <div class="calc-options">
+                    <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
+                    <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
+                  </div>
+                </div>
+
+                <div class="modal-installment-result" x-show="selectedInstallment === 12">
+                  12x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment12())"></strong> sem burocracia
+                </div>
+                <div class="modal-installment-result" x-show="selectedInstallment === 18">
+                  18x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment18())"></strong> no cartão
+                </div>
+
+                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'"></div>
+              </div>
+
+              <p class="modal-desc" x-text="selectedItem.description"></p>
+
+              <!-- Tabela de Ficha Técnica -->
+              <div class="modal-specs-section">
+                <h3>Ficha Técnica & Especificações</h3>
+                <div class="specs-table">
+                  <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                    <template x-if="key !== 'color_prices' && typeof val === 'string'">
+                      <div class="spec-row">
+                        <span class="spec-k" x-text="key"></span>
+                        <span class="spec-v" x-text="val"></span>
+                      </div>
+                    </template>
+                  </template>
+                  <div class="spec-row" x-show="selectedItem.color">
+                    <span class="spec-k">Cores disponíveis</span>
+                    <span class="spec-v" x-text="selectedItem.color"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botões de Ação no Modal (UX Refinada e Compacta) -->
+              <div class="modal-cta-box">
+                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(getActivePrice()))" 
+                   target="_blank" 
+                   class="btn-modal-whatsapp"
+                   aria-label="Garantir Oferta no WhatsApp">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                  <span>Garantir Oferta no WhatsApp</span>
+                </a>
+                <div class="modal-secure-note">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <span>Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Flutuante de WhatsApp -->
+  <a :href="getFloatingWhatsAppUrl()" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor no WhatsApp">
+    <div class="widget-pulse"></div>
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+    <span class="widget-tooltip">Consultor Online • Fale Conosco</span>
+  </a>
+
+  <!-- Footer Institucional -->
+  <footer class="outlet-footer">
+    <div class="outlet-container footer-inner">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo" decoding="async" loading="lazy">
+        <p>MAJ Mobilidade Elétrica • O Futuro em Movimento. Todos os direitos reservados.</p>
+      </div>
+      <div class="footer-links">
+        <span>Garantia de 1 ano contra defeitos de fabricação</span>
+        <span>Assistência Técnica e Peças de Reposição Originais MAJ</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Alpine.js para o Catálogo -->
+  <script>
+    const OUTLET_ITEMS_DATA = {{ items|tojson }};
+    const WA_NUMBER = "{{ whatsapp_number }}".replace(/\D/g, "");
+    const WA_PRODUCT_TEMPLATE = {{ whatsapp_message|tojson }};
+    const WA_FLOATING_TEMPLATE = {{ whatsapp_floating_message|tojson }};
+
+    function outletApp() {
+      return {
+        searchQuery: '',
+        activeCategory: 'all',
+        sortBy: 'stock_desc',
+        items: OUTLET_ITEMS_DATA,
+        modalOpen: false,
+        selectedItem: null,
+        activeImage: '',
+        selectedInstallment: 12,
+
+        filteredItems() {
+          let result = this.items.filter(item => {
+            const q = this.searchQuery.toLowerCase().trim();
+            const matchesQuery = !q || 
+              item.name.toLowerCase().includes(q) || 
+              item.category.toLowerCase().includes(q) || 
+              (item.color && item.color.toLowerCase().includes(q));
+            
+            const matchesCat = this.activeCategory === 'all' || 
+              item.category.toLowerCase().includes(this.activeCategory.toLowerCase());
+            
+            return matchesQuery && matchesCat;
+          });
+
+          if (this.sortBy === 'stock_desc') {
+            result.sort((a, b) => {
+              const diffStock = (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0);
+              if (diffStock !== 0) return diffStock;
+              return (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0);
+            });
+          } else if (this.sortBy === 'price_asc') {
+            result.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
+          } else if (this.sortBy === 'price_desc') {
+            result.sort((a, b) => (parseFloat(b.price_outlet) || 0) - (parseFloat(a.price_outlet) || 0));
+          } else if (this.sortBy === 'discount_desc') {
+            result.sort((a, b) => (parseInt(b.discount_percent) || 0) - (parseInt(a.discount_percent) || 0));
+          } else if (this.sortBy === 'name_asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+          }
+
+          return result;
+        },
+
+        clearFilters() {
+          this.searchQuery = '';
+          this.activeCategory = 'all';
+          this.sortBy = 'stock_desc';
+        },
+
+        hasActiveFilters() {
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'stock_desc';
+        },
+
+        selectedColorObj: null,
+
+        openModal(id) {
+          const item = this.items.find(i => i.id === id);
+          if (item) {
+            this.selectedItem = item;
+            this.activeImage = item.image_main;
+            this.selectedInstallment = 12;
+            if (item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 0) {
+              this.selectedColorObj = item.specs_json.color_prices[0];
+            } else {
+              this.selectedColorObj = null;
+            }
+            this.modalOpen = true;
+          }
+        },
+
+        selectColorObj(cp) {
+          this.selectedColorObj = cp;
+        },
+
+        getActiveColorBadge() {
+          if (!this.selectedItem) return '';
+          if (this.selectedColorObj && this.selectedColorObj.colors) {
+            let c = this.selectedColorObj.colors;
+            if (c.toLowerCase().includes('cores padrão') || c.toLowerCase().includes('cores padrao')) {
+              return '🎨 Cores Padrão (Promoção)';
+            }
+            let clean = c.replace(/\s*\([^)]*\)\s*/g, '').trim();
+            return '🎨 ' + (clean || c);
+          }
+          if (this.selectedItem.color) {
+            return '🎨 ' + this.selectedItem.color;
+          }
+          return '';
+        },
+
+        getActivePrice() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.price) {
+            const num = parseFloat(this.selectedColorObj.price.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.price_outlet || 0;
+        },
+
+        getActiveInstallment12() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.p12) {
+            const num = parseFloat(this.selectedColorObj.p12.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.installment_12 || 0;
+        },
+
+        getActiveInstallment18() {
+          if (!this.selectedItem) return 0;
+          if (this.selectedColorObj && this.selectedColorObj.p18) {
+            const num = parseFloat(this.selectedColorObj.p18.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+            if (num > 0) return num;
+          }
+          return this.selectedItem.installment_18 || 0;
+        },
+
+        getItemGallery(item) {
+          if (!item) return [];
+          let gal = item.images_gallery || [];
+          if (typeof gal === 'string') {
+            try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+          }
+          if (!Array.isArray(gal)) gal = [];
+          const all = [item.image_main, ...gal].filter(Boolean);
+          return [...new Set(all)];
+        },
+
+        formatPrice(val) {
+          if (!val) return '0,00';
+          return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        getDiscountPercent(item) {
+          if (!item) return 0;
+          const pOrig = parseFloat(item.price_original) || 0;
+          const pOut = parseFloat(item.price_outlet) || 0;
+          if (pOrig > pOut && pOrig > 0) {
+            return Math.round(((pOrig - pOut) / pOrig) * 100);
+          }
+          return item.discount_percent || 0;
+        },
+
+        getWhatsAppUrl(model, price) {
+          let activeName = model;
+          if (this.modalOpen && this.selectedItem && this.selectedItem.name === model && this.selectedColorObj && this.selectedColorObj.colors) {
+            activeName = `${model} (Cor: ${this.selectedColorObj.colors})`;
+          }
+          const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
+          const msg = template.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        },
+
+        getFloatingWhatsAppUrl() {
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        }
+      };
+    }
+  </script>
+</body>
+</html>

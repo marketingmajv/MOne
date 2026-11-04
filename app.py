@@ -21,6 +21,7 @@ from routes.helpers import (
     format_phone,
 )
 from pathlib import Path
+from jinja2 import ChoiceLoader, FileSystemLoader
 
 BASE_DIR = Path(__file__).resolve().parent
 api_static_dir = BASE_DIR / "api" / "static"
@@ -32,6 +33,13 @@ app = Flask(
     static_folder=str(static_dir),
     static_url_path="/static",
 )
+
+tpl_search_dirs = [str(BASE_DIR / "templates")]
+api_tpl_dir = BASE_DIR / "api" / "templates"
+if api_tpl_dir.exists():
+    tpl_search_dirs.append(str(api_tpl_dir))
+app.jinja_loader = ChoiceLoader([FileSystemLoader(d) for d in tpl_search_dirs])
+
 app.secret_key = (
     os.environ.get("FLASK_SECRET_KEY")
     or os.environ.get("SECRET_KEY")

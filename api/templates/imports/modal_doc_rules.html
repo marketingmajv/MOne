@@ -1,0 +1,295 @@
+<!-- Modal: Configurações de Regras de Documentos (templates/imports/modal_doc_rules.html) -->
+{% if me.role in ['admin', 'support'] %}
+<style>
+.comex-doc-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+.comex-doc-table th,
+.comex-doc-table td {
+  white-space: normal !important;
+  box-sizing: border-box;
+}
+</style>
+
+<div class="modal" id="docRulesModal" style="display: none;" onclick="if(event.target===this)closeModal('docRulesModal')">
+  <div class="modal-card large" style="max-width: 1040px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-head">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--text);">⚙️ Configurações de Regras Documentais (Comex)</h3>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted);">
+          Parametrize a obrigatoriedade por estágio, adicione, edite ou duplique categorias com controle de acesso.
+        </p>
+      </div>
+      <button type="button" onclick="closeModal('docRulesModal')">×</button>
+    </div>
+
+    <!-- Abas de Navegação -->
+    <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--line); margin-bottom: 16px; padding-bottom: 8px;">
+      <button type="button" id="tabBtnDocMatrix" class="btn small" onclick="switchDocRulesTab('matrix')" style="background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-weight: 700;">
+        📋 Matriz de Obrigatoriedade
+      </button>
+      <button type="button" id="tabBtnDocCategories" class="btn small outline" onclick="switchDocRulesTab('categories')" style="color: var(--muted); font-weight: 600;">
+        📑 Categorias Cadastradas & Autonomia de Gestão
+      </button>
+    </div>
+
+    <!-- Aba 1: Matriz de Obrigatoriedade -->
+    <div id="tabContentDocMatrix" style="display: block; overflow-y: auto; flex: 1;">
+      <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.2); font-size: 12px; color: var(--text); line-height: 1.5;">
+        💡 <strong>Trava Operacional:</strong> Documentos definidos como obrigatórios no estágio ativo bloqueiam a finalização do lote no Wizard até que sejam anexados ou reclassificados.
+      </div>
+
+      <form id="docRulesForm" onsubmit="saveDocumentRules(event)">
+        <div style="overflow: hidden; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 20px; width: 100%;">
+          <table class="table comex-doc-table" style="margin: 0; font-size: 12px;">
+            <colgroup>
+              <col style="width: 32%;">
+              <col style="width: 18%;">
+              <col style="width: 17%;">
+              <col style="width: 17%;">
+              <col style="width: 16%;">
+            </colgroup>
+            <thead>
+              <tr style="background: var(--panel2);">
+                <th style="padding: 10px 12px; text-align: left; color: var(--text);">Documento</th>
+                <th style="padding: 10px 12px; text-align: left; color: var(--muted);">Identificador / Tipo</th>
+                <th style="padding: 10px 8px; text-align: center; color: #0369A1;">Exigência: Embarcado</th>
+                <th style="padding: 10px 8px; text-align: center; color: #047857;">Exigência: Desembaraçado</th>
+                <th style="padding: 10px 8px; text-align: center; color: #B45309;">Anexável Depois?</th>
+              </tr>
+            </thead>
+            <tbody id="docRulesTableBody">
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">Carregando regras...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px;">
+          <button type="button" class="btn outline" onclick="resetDocumentRules()" style="color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+            ↺ Restaurar Padrão Oficial
+          </button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn outline" onclick="closeModal('docRulesModal')">Cancelar</button>
+            <button type="submit" class="btn primary" id="btnSaveRules">💾 Salvar Alterações</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Aba 2: Categorias Cadastradas & Autonomia de Gestão -->
+    <div id="tabContentDocCategories" style="display: none; overflow-y: auto; flex: 1;">
+      <!-- Formulário de Adição de Nova Categoria -->
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 800; color: var(--text);">
+          ➕ Cadastrar Nova Categoria de Documento
+        </h4>
+        <form id="newDocCategoryForm" onsubmit="addNewDocumentCategory(event)" style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase;">
+                Nome do Documento / Rótulo *
+              </label>
+              <input type="text" id="newDocLabel" placeholder="Ex: Laudo Técnico INMETRO" required oninput="autoGenerateDocCode(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 13px; box-sizing: border-box;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase;">
+                Identificador Único (Código) *
+              </label>
+              <input type="text" id="newDocType" placeholder="Ex: LAUDO_INMETRO" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; box-sizing: border-box;">
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 4px 0;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocReqWater" style="width: 16px; height: 16px;">
+              Obrigatório: Embarcado
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocReqCleared" style="width: 16px; height: 16px;">
+              Obrigatório: Desembaraçado
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="newDocAllowPost" checked style="width: 16px; height: 16px;">
+              Permitir Anexo Posterior
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn primary small" id="btnAddNewDoc">+ Adicionar Categoria</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabela de Categorias Ativas -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text);">
+            📑 Categorias Ativas no Sistema
+          </h4>
+          <span style="font-size: 11px; color: var(--muted);">
+            🔒 Itens Essenciais exigem confirmação com senha de administrador para edição, duplicação e exclusão.
+          </span>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden; width: 100%;">
+          <table class="table comex-doc-table" style="margin: 0; font-size: 12px;">
+            <colgroup>
+              <col style="width: 36%;">
+              <col style="width: 20%;">
+              <col style="width: 14%;">
+              <col style="width: 30%;">
+            </colgroup>
+            <thead>
+              <tr style="background: var(--panel2);">
+                <th style="padding: 10px 12px; text-align: left; color: var(--text);">Nome do Documento</th>
+                <th style="padding: 10px 10px; text-align: left; color: var(--muted);">Código</th>
+                <th style="padding: 10px 8px; text-align: center; color: var(--muted);">Tipo</th>
+                <th style="padding: 10px 12px; text-align: right; color: var(--muted);">Ações Administrativas</th>
+              </tr>
+            </thead>
+            <tbody id="docCategoriesListBody">
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--muted);">Carregando categorias...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAIS DE GESTÃO (EDIÇÃO, DUPLICAÇÃO E EXCLUSÃO MEDIANTE SENHA)
+     ========================================================================= -->
+
+<!-- Submodal: Editar Categoria -->
+<div class="modal" id="modalEditDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">✏️ Editar Categoria</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalEditDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveEditDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="editDocTypeHidden">
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">CÓDIGO (FIXO)</label>
+        <div id="editDocTypeDisplay" style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #0284C7; padding: 6px 10px; background: var(--panel2); border-radius: 6px;"></div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOME / RÓTULO *</label>
+        <input type="text" id="editDocLabel" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 13px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; padding: 4px 0;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocReqWater" style="width: 16px; height: 16px;">
+          Exigir no estágio: Embarcado
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocReqCleared" style="width: 16px; height: 16px;">
+          Exigir no estágio: Desembaraçado
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text);">
+          <input type="checkbox" id="editDocAllowPost" style="width: 16px; height: 16px;">
+          Permitir anexo posterior
+        </label>
+      </div>
+      <!-- Alerta e campo de senha para Core -->
+      <div id="editDocCoreWarning" style="display: none; padding: 10px 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3);">
+        <div style="font-size: 12px; font-weight: 700; color: #EF4444; margin-bottom: 6px;">
+          🔒 Item Essencial Protegido
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">
+          Confirme sua senha de administrador para autorizar a alteração deste documento essencial.
+        </div>
+        <input type="password" id="editDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalEditDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary small" id="btnSubmitEditDoc">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Submodal: Duplicar Categoria -->
+<div class="modal" id="modalDuplicateDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 520px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text);">📋 Duplicar Categoria</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalDuplicateDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveDuplicateDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="dupDocSourceHidden">
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">DOCUMENTO DE ORIGEM</label>
+        <div id="dupDocSourceDisplay" style="font-size: 12px; font-weight: 700; color: var(--text); padding: 6px 10px; background: var(--panel2); border-radius: 6px;"></div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOME DA NOVA CATEGORIA *</label>
+        <input type="text" id="dupDocNewLabel" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-size: 13px; box-sizing: border-box;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px;">NOVO CÓDIGO IDENTIFICADOR *</label>
+        <input type="text" id="dupDocNewType" required style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; box-sizing: border-box;">
+      </div>
+      <!-- Alerta e campo de senha para Core -->
+      <div id="dupDocCoreWarning" style="display: none; padding: 10px 12px; border-radius: 8px; background: rgba(3, 105, 161, 0.08); border: 1px solid rgba(3, 105, 161, 0.3);">
+        <div style="font-size: 12px; font-weight: 700; color: #0284C7; margin-bottom: 6px;">
+          🔒 Origem Essencial (Core)
+        </div>
+        <div style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">
+          Digite sua senha de administrador para autorizar a clonagem desta categoria essencial.
+        </div>
+        <input type="password" id="dupDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalDuplicateDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn primary small" id="btnSubmitDupDoc">Confirmar Duplicação</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Submodal: Excluir Categoria -->
+<div class="modal" id="modalDeleteDocRule" style="display: none; z-index: 1050; background: rgba(0,0,0,0.6); align-items: center; justify-content: center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card" style="max-width: 480px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #EF4444;">🗑️ Confirmar Exclusão</h3>
+      <button type="button" class="btn small" onclick="document.getElementById('modalDeleteDocRule').style.display='none'" style="background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <form onsubmit="saveDeleteDocRule(event)" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="deleteDocTypeHidden">
+      <div>
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: var(--text);">
+          Tem certeza que deseja excluir permanentemente a categoria:
+        </p>
+        <div id="deleteDocNameDisplay" style="font-weight: 700; font-size: 13px; color: #EF4444; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-radius: 6px;"></div>
+      </div>
+      <div id="deleteDocNormalNotice" style="font-size: 11px; color: var(--muted);">
+        Esta ação removerá a categoria da matriz e dos seletores de documentos de importação.
+      </div>
+      <!-- Alerta e senha para Core -->
+      <div id="deleteDocCoreWarning" style="display: none; padding: 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid #EF4444;">
+        <div style="font-size: 12px; font-weight: 800; color: #EF4444; margin-bottom: 4px;">
+          ⚠️ AVISO DE SEGURANÇA: DOCUMENTO ESSENCIAL
+        </div>
+        <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; line-height: 1.4;">
+          A exclusão de um documento essencial altera fluxos críticos do Comex. Digite sua senha de administrador para autorizar.
+        </div>
+        <input type="password" id="deleteDocAdminPassword" placeholder="Digite sua senha de administrador" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+        <button type="button" class="btn outline small" onclick="document.getElementById('modalDeleteDocRule').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn small" id="btnSubmitDeleteDoc" style="background: #EF4444; color: #fff; border: none; font-weight: 700; padding: 6px 14px;">Confirmar Exclusão</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/import-doc-rules.js') }}"></script>
+{% endif %}

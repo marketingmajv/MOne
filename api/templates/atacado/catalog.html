@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | MAJ Mobilidade Elétrica</title>
+  <meta name="description" content="{{ subtitle }}">
+
+  <!-- OpenGraph & Meta Tags -->
+  <meta property="og:title" content="{{ title }} | MAJ Mobilidade Elétrica">
+  <meta property="og:description" content="{{ subtitle }}">
+  <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}?v=20261026_atacado_v2">
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+  <style>
+    :root {
+      --gold-primary: #00cc88;
+      --gold-glow: rgba(0, 204, 136, 0.25);
+      --border-gold: rgba(0, 204, 136, 0.35);
+    }
+    .badge-cnpj {
+      background: linear-gradient(135deg, #00cc88, #059669);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .atacado-hero-ribbon {
+      background: linear-gradient(90deg, #047857, #059669, #047857);
+    }
+    .sticker-min-qty {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 204, 136, 0.12);
+      color: #00cc88;
+      border: 1px solid rgba(0, 204, 136, 0.45);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px rgba(0, 204, 136, 0.15);
+      margin-bottom: 8px;
+    }
+    .sticker-min-qty svg {
+      flex-shrink: 0;
+    }
+
+    /* Otimização Específica Mobile Header Atacado */
+    @media (max-width: 768px) {
+      .outlet-header {
+        padding: 8px 0;
+      }
+      .header-inner {
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .logo-box {
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .header-logo {
+        height: 32px;
+      }
+      .brand-title {
+        font-size: 0.90rem;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+      }
+      .brand-badge {
+        font-size: 0.52rem;
+        letter-spacing: 0.04em;
+        padding: 2px 6px;
+        display: inline-block;
+        max-width: fit-content;
+      }
+      /* Oculta botão secundário 'Ver Catálogo' no mobile para despoluir o header */
+      .btn-scroll-catalog {
+        display: none !important;
+      }
+      .header-actions {
+        flex-shrink: 0;
+      }
+      .btn-whatsapp-header {
+        padding: 8px 14px;
+        font-size: 0.80rem;
+        border-radius: 9999px;
+        gap: 6px;
+        white-space: nowrap;
+        background: #25D366;
+        color: #000;
+        font-weight: 800;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+      }
+      .btn-wa-text-full {
+        display: none !important;
+      }
+      .btn-wa-text-short {
+        display: inline !important;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .header-logo {
+        height: 28px;
+      }
+      .brand-title {
+        font-size: 0.80rem;
+      }
+      .brand-badge {
+        font-size: 0.46rem;
+      }
+      .btn-whatsapp-header {
+        padding: 7px 10px;
+        font-size: 0.74rem;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+<body x-data="atacadoApp()">
+
+  <!-- Top Urgency Ribbon -->
+  <div class="outlet-ribbon atacado-hero-ribbon">
+    <div class="ribbon-track">
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ • GALPÃO M-ONE & COLVIX 🏢</span>
+      <span class="ribbon-dot">•</span>
+      <span>CONDIÇÕES EXCLUSIVAS PARA REVENDEDORES & CNPJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>ESTOQUE UNIFICADO MAJ & COLVIX</span>
+      <span class="ribbon-dot">•</span>
+      <span>GARANTIA OFICIAL DE FÁBRICA MAJ</span>
+      <span class="ribbon-dot">•</span>
+      <span>🏢 VENDA EXCLUSIVA À VISTA CNPJ 🏢</span>
+    </div>
+  </div>
+
+  <!-- Header Institucional -->
+  <header class="outlet-header">
+    <div class="outlet-container header-inner">
+      <div class="logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
+        <div class="logo-text">
+          <span class="brand-title">MAJ MOBILIDADE</span>
+          <span class="brand-badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">
+            {% if show_prices %}CATÁLOGO OFICIAL DE ATACADO{% else %}MOSTRUÁRIO DE ATACADO • CNPJ{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="#catalogo" class="btn-scroll-catalog" style="background: rgba(0,204,136,0.15); color: #00cc88; border-color: rgba(0,204,136,0.3);">Ver Catálogo CNPJ</a>
+        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header" aria-label="Falar com Consultor CNPJ no WhatsApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <span class="btn-wa-text-full">Falar com Consultor CNPJ</span>
+          <span class="btn-wa-text-short">Consultor CNPJ</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="outlet-hero">
+    <div class="outlet-container hero-inner">
+      <div class="hero-badge" style="background: rgba(0, 204, 136, 0.15); border-color: rgba(0, 204, 136, 0.3);">
+        <span class="hero-pulse" style="background: #00cc88;"></span>
+        <span style="color: #00cc88;">{% if show_prices %}VENDA EXCLUSIVA DE ATACADO • CNPJ{% else %}MOSTRUÁRIO DE ATACADO • CNPJ (SEM PREÇOS){% endif %}</span>
+      </div>
+      <h1 class="hero-title">{{ title }}</h1>
+      <p class="hero-subtitle">{{ subtitle }}</p>
+
+      <div class="hero-stats-bar">
+        <div class="stat-card">
+          <strong class="stat-number" style="color: #00cc88;">{{ items|length }}+</strong>
+          <span class="stat-label">Modelos Disponíveis</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">CNPJ</strong>
+          <span class="stat-label">Venda Direta Atacado</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">2 GALPÕES</strong>
+          <span class="stat-label">Pronta Entrega M-One & COLVIX</span>
+        </div>
+        <div class="stat-card">
+          <strong class="stat-number">100%</strong>
+          <span class="stat-label">Garantia Oficial MAJ</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros, Ordenação e Busca -->
+  <section class="outlet-filters-section" id="catalogo">
+    <div class="outlet-container">
+      <div class="filters-wrapper">
+        <div class="filters-top-bar">
+          <div class="search-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" x-model="searchQuery" placeholder="Buscar por modelo de atacado (ex: X13, GP1000, M2, V20)...">
+            <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
+          </div>
+
+          <div class="sort-select-box">
+            <label for="sortBySelect" class="sr-only">Ordenação</label>
+            <select id="sortBySelect" x-model="sortBy" class="filter-select">
+              <option value="stock_desc">📦 Pronta Entrega / Destaques</option>
+              {% if show_prices %}
+              <option value="price_asc">💰 Menor Preço Atacado</option>
+              <option value="price_desc">💎 Maior Preço Atacado</option>
+              {% endif %}
+              <option value="name_asc">🔤 Nome (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="category-pills-bar" x-show="hasActiveFilters()">
+          <div class="filter-counter-badge">
+            <span x-text="filteredItems().length + ' modelos de atacado encontrados'"></span>
+            <button type="button" class="btn-reset-filters" @click="clearFilters()">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid de Produtos de Atacado -->
+  <main class="outlet-container catalog-grid-section">
+    <!-- Estado Vazio / Sem Resultados -->
+    <div class="empty-results-box" x-show="filteredItems().length === 0" x-cloak>
+      <div class="empty-icon">🔍</div>
+      <h3>Nenhum modelo de atacado encontrado com estes filtros</h3>
+      <p>Tente ajustar sua busca ou limpar os filtros para visualizar todas as opções do catálogo CNPJ.</p>
+      <button type="button" class="btn-reset-filters-hero" @click="clearFilters()">Ver Todos os Veículos</button>
+    </div>
+
+    <!-- Lista Dinâmica de Cards de Produtos -->
+    <div class="products-grid" x-show="filteredItems().length > 0">
+      <template x-for="item in filteredItems()" :key="item.id">
+        <div class="product-card" x-transition:enter="fade-in">
+          
+          <!-- Badges -->
+          <div class="card-badges">
+            <span class="badge-cnpj">CNPJ ATACADO</span>
+            <template x-if="item.stock_qty > 0">
+              <span class="badge-stock badge-pronta-entrega">⚡ Pronta Entrega</span>
+            </template>
+            <template x-if="item.stock_qty <= 0">
+              <span class="badge-stock badge-sob-encomenda">📦 Sob Encomenda</span>
+            </template>
+          </div>
+
+          <!-- Imagem Principal -->
+          <div class="card-image-box" @click="openModal(item.id)">
+            <img :src="item.image_main || '/static/logo.png'" 
+                 :alt="item.name" 
+                 loading="lazy"
+                 decoding="async"
+                 class="card-img"
+                 @error="$event.target.src='/static/logo.png'">
+            <div class="image-overlay-hover">
+              <span>🔍 Ver Fotos, Cores e Ficha CNPJ</span>
+            </div>
+          </div>
+
+          <!-- Conteúdo do Card -->
+          <div class="card-body">
+            <div class="card-first-purchase-tag">🏷️ PRIMEIRA COMPRA ACIMA DE TRÊS UNIDADES</div>
+            <h2 class="card-title" x-text="item.name"></h2>
+
+            <!-- Chips de Ficha Técnica Rápida -->
+            <div class="card-specs-mini">
+              <template x-if="item.color">
+                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+              </template>
+              <template x-if="item.location">
+                <span class="spec-mini">📍 <span x-text="item.location"></span></span>
+              </template>
+            </div>
+
+            {% if show_prices %}
+            <!-- Preço Atacado (Apenas à Vista CNPJ) -->
+            <div class="card-pricing">
+              <div class="sticker-min-qty">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                <span>{{ min_qty_text }}</span>
+              </div>
+              <div class="price-to">
+                <span class="currency">R$</span>
+                <span class="amount" x-text="item.price_outlet > 0 ? formatPrice(item.price_outlet) : 'Sob consulta'"></span>
+                <span class="payment-method">à vista CNPJ (PIX / Transferência)</span>
+              </div>
+            </div>
+            {% else %}
+            <!-- Cotação Sob Consulta (Sem Exibição de Preços) -->
+            <div class="card-pricing" style="border-top: 1px solid rgba(0,204,136,0.15); padding-top: 10px; margin-top: 10px;">
+              <div class="price-to">
+                <span class="amount" style="font-size: 1.15rem; color: #00cc88; font-weight: 800; letter-spacing: -0.02em;">Cotação Sob Consulta</span>
+                <span class="payment-method">Condições Exclusivas para CNPJ & Revenda</span>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Botões de Ação -->
+            <div class="card-actions">
+              <a :href="getWhatsAppUrl(item.name, formatPrice(item.price_outlet))" 
+                 target="_blank" 
+                 class="btn-buy-whatsapp"
+                 style="background: linear-gradient(135deg, #059669, #10b981);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                <span>Cotação Atacado CNPJ</span>
+              </a>
+              <button type="button" class="btn-details" @click="openModal(item.id)">
+                Ficha Técnica & Cores
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </main>
+
+  <!-- Modal Interativo de Ficha Técnica e Galeria (Componente Modular) -->
+  {% include 'atacado/catalog_modal.html' %}
+
+  <!-- Widget Flutuante de WhatsApp -->
+  <a :href="getWhatsAppUrl('Geral - Atendimento Atacado CNPJ', '0')" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor de Atacado">
+    <div class="widget-pulse" style="background: #00cc88;"></div>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+    <span class="widget-tooltip">Consultor CNPJ • Fale Conosco</span>
+  </a>
+
+  <!-- Footer Institucional -->
+  <footer class="outlet-footer">
+    <div class="outlet-container footer-inner">
+      <div class="footer-brand">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo" decoding="async" loading="lazy">
+        <p>MAJ Mobilidade Elétrica • Divisão de Atacado & Revenda CNPJ. Todos os direitos reservados.</p>
+      </div>
+      <div class="footer-links">
+        <span>Garantia de 1 ano contra defeitos de fabricação</span>
+        <span>Peças de reposição originais e rede autorizada MAJ</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Alpine.js para o Catálogo Atacado -->
+  <script>
+    const ATACADO_ITEMS_DATA = {{ items|tojson }};
+    const WA_NUMBER = "{{ whatsapp_number }}".replace(/\D/g, "");
+    const WA_TEMPLATE = {{ whatsapp_message|tojson }};
+    const WA_FLOATING_MSG = {{ whatsapp_floating_message|tojson }};
+    const SHOW_PRICES = {{ 'true' if show_prices else 'false' }};
+
+    function atacadoApp() {
+      return {
+        showPrices: SHOW_PRICES,
+        searchQuery: '',
+        activeCategory: 'all',
+        sortBy: 'stock_desc',
+        items: ATACADO_ITEMS_DATA,
+        modalOpen: false,
+        selectedItem: null,
+        activeImage: '',
+        selectedInstallment: 12,
+
+        filteredItems() {
+          let result = this.items.filter(item => {
+            const q = this.searchQuery.toLowerCase().trim();
+            const matchesQuery = !q || 
+              item.name.toLowerCase().includes(q) || 
+              (item.category && item.category.toLowerCase().includes(q)) || 
+              (item.color && item.color.toLowerCase().includes(q));
+            
+            const matchesCat = this.activeCategory === 'all' || 
+              (item.category && item.category.toLowerCase().includes(this.activeCategory.toLowerCase()));
+            
+            return matchesQuery && matchesCat;
+          });
+
+          if (this.sortBy === 'price_asc') {
+            result.sort((a, b) => (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0));
+          } else if (this.sortBy === 'price_desc') {
+            result.sort((a, b) => (parseFloat(b.price_outlet) || 0) - (parseFloat(a.price_outlet) || 0));
+          } else if (this.sortBy === 'stock_desc') {
+            result.sort((a, b) => (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0));
+          } else if (this.sortBy === 'name_asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+          }
+
+          return result;
+        },
+
+        clearFilters() {
+          this.searchQuery = '';
+          this.activeCategory = 'all';
+          this.sortBy = 'stock_desc';
+        },
+
+        hasActiveFilters() {
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'stock_desc';
+        },
+
+        openModal(id) {
+          const item = this.items.find(i => i.id === id);
+          if (item) {
+            this.selectedItem = item;
+            this.activeImage = item.image_main;
+            this.selectedInstallment = 12;
+            this.modalOpen = true;
+          }
+        },
+
+        getItemGallery(item) {
+          if (!item) return [];
+          let gal = item.images_gallery || [];
+          if (typeof gal === 'string') {
+            try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+          }
+          if (!Array.isArray(gal)) gal = [];
+          return [...new Set([item.image_main, ...gal].filter(Boolean))];
+        },
+
+        formatPrice(val) {
+          if (!val) return '0,00';
+          return Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        getWhatsAppUrl(model, price) {
+          let msg = '';
+          if (this.showPrices && price && price !== '0,00' && price !== 'Sob consulta') {
+            msg = WA_TEMPLATE.replace('{model}', model).replace('{price}', 'R$ ' + price);
+          } else {
+            msg = `Olá! Tenho interesse no modelo ${model} no Catálogo de Atacado MAJ Mobilidade (CNPJ). Gostaria de solicitar uma cotação.`;
+          }
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        },
+        getFloatingWhatsAppUrl() {
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          const msg = WA_FLOATING_MSG || 'Olá! Estou navegando no Catálogo MAJ Atacado (CNPJ) e gostaria de falar com um consultor comercial de vendas no atacado.';
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        }
+      };
+    }
+  </script>
+  <!-- Botão Flutuante do WhatsApp (Atendimento Geral CNPJ) -->
+  <a :href="getFloatingWhatsAppUrl()" target="_blank" class="floating-whatsapp-btn" title="Falar com Consultor CNPJ">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+    </svg>
+  </a>
+</body>
+</html>

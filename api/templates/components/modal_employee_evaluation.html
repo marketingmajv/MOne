@@ -1,0 +1,432 @@
+<!-- MODAL EXECUTIVO DE AFERIÇÃO E CONFRONTO DE RESPOSTAS (CENTRADOS EM PESSOAS) -->
+<!-- Regra Mandatória M-One: Envelopado com template x-teleport="body" e classe modal-close-btn -->
+<div x-data="employeeEvaluationModal()" @open-evaluation-modal.window="openModal($event.detail)">
+  <template x-teleport="body">
+    <div
+      class="modal"
+      :class="{ 'show': isOpen }"
+      x-show="isOpen"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @keydown.escape.window="closeModal()"
+      style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;"
+      :style="isOpen ? 'display: flex;' : 'display: none;'"
+      @click.self="closeModal()"
+    >
+      <div
+        class="modal-card eval-modal-card"
+        style="background: #0f172a !important; color: #f8fafc !important; border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; width: 100%; max-width: 1180px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 30px 70px -15px rgba(0,0,0,0.85); overflow: hidden; padding: 0;"
+      >
+        <!-- Modal Head (#0b111f) -->
+        <div
+          class="eval-modal-header"
+          style="padding: 18px 26px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 14px;"
+        >
+          <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
+            <div
+              style="width: 46px; height: 46px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.35); flex-shrink: 0;"
+              x-text="employeeData.employee_name ? employeeData.employee_name.charAt(0) : '👤'"
+            ></div>
+            <div style="min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #ffffff !important; letter-spacing: -0.02em;" x-text="employeeData.employee_name || 'Aferição do Colaborador'"></h3>
+                
+                <!-- Badge de Ciclo Bem Destacado -->
+                <span
+                  style="font-size: 0.78rem; padding: 3px 11px; border-radius: 8px; font-weight: 800; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.18)); color: #fbbf24; border: 1.5px solid #f59e0b; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); text-transform: uppercase; letter-spacing: 0.03em;"
+                  title="Ciclo Semanal em Aferição"
+                >
+                  <span style="font-size: 0.85rem;">📅</span>
+                  <span x-text="getCycleBadgeLabel()"></span>
+                </span>
+
+                <span
+                  class="badge"
+                  style="font-size: 0.72rem; padding: 3px 9px; border-radius: 6px; font-weight: 800; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); text-transform: uppercase;"
+                  x-text="employeeData.area || 'Operações'"
+                ></span>
+                <template x-if="employeeData.score_total !== null && employeeData.score_total !== undefined">
+                  <span
+                    class="badge"
+                    :style="getScoreBadgeStyle(employeeData.score_badge)"
+                    style="font-size: 0.76rem; padding: 3px 10px; border-radius: 8px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
+                  >
+                    <span x-text="getScoreBadgeIcon(employeeData.score_badge)"></span>
+                    <span x-text="'SCORE: ' + employeeData.score_total + '/100'"></span>
+                  </span>
+                </template>
+              </div>
+              <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: #94a3b8 !important;">
+                Função: <strong style="color: #f1f5f9 !important;" x-text="employeeData.role_title || ''"></strong> • Ciclo: <strong style="color: #fbbf24 !important;" x-text="getCycleBadgeLabel()"></strong> • Status: <span x-text="getStatusLabel(employeeData.status)" style="font-weight: 600; color: #cbd5e1;"></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Ações do Cabeçalho: Pill Modo Confidencial & Fechar -->
+          <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin-left: auto;">
+            <button
+              type="button"
+              class="btn"
+              @click="toggleFeedbackRelease()"
+              :disabled="loading"
+              style="display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 6px 16px !important; border-radius: 9999px !important; font-size: 0.8rem !important; font-weight: 700 !important; cursor: pointer !important; white-space: nowrap !important; border: 1px solid !important; height: 36px !important; transition: all 0.2s !important;"
+              :style="employeeData.is_feedback_released 
+                ? 'background: rgba(0, 229, 153, 0.15) !important; border-color: #00e599 !important; color: #00e599 !important;' 
+                : 'background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.2) !important; color: #cbd5e1 !important;'"
+              title="Alterna se o colaborador poderá visualizar o feedback no portal"
+            >
+              <span x-text="employeeData.is_feedback_released ? '🔓' : '🔒'"></span>
+              <span x-text="employeeData.is_feedback_released ? 'Feedback Liberado ao Colaborador' : 'Modo Confidencial (Diretoria)'"></span>
+            </button>
+
+            <button
+              type="button"
+              class="modal-close-btn"
+              @click="closeModal()"
+              title="Fechar (Esc)"
+              style="width: 36px !important; height: 36px !important; min-width: 36px !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; cursor: pointer !important;"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Subheader Informativo (#0d1527) -->
+        <div style="padding: 10px 26px; background: #0d1527 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.78rem; color: #94a3b8 !important;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>📋</span>
+            <span style="color: #cbd5e1 !important;"><strong style="color: #ffffff !important;">Método Executivo:</strong> Diagramação vertical com direcionamento de demandas para Jam, Geysa e Fauzer.</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="background: rgba(0, 229, 153, 0.12); color: #00e599; border: 1px solid rgba(0, 229, 153, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">✓ Ciente/Registrado</span>
+            <span style="background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">👔 Demanda Jam</span>
+            <span style="background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">💼 Demanda Geysa</span>
+            <span style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 2px 8px; border-radius: 6px; font-weight: 700;">⚡ Demanda Fauzer</span>
+          </div>
+        </div>
+
+        <!-- Corpo com Scroll (#0f172a) -->
+        <div style="flex: 1; overflow-y: auto; padding: 20px 26px; display: flex; flex-direction: column; gap: 20px; background: #0f172a !important; color: #f8fafc !important;">
+          <!-- Loading State -->
+          <template x-if="loadingData">
+            <div style="text-align: center; padding: 60px 20px; color: #94a3b8 !important;">
+              <div style="font-size: 2rem; margin-bottom: 12px; animation: spin 1s linear infinite;">⏳</div>
+              <p style="margin: 0; font-size: 0.95rem;">Carregando respostas e histórico da reunião...</p>
+            </div>
+          </template>
+
+          <template x-if="!loadingData">
+            <div style="display: flex; flex-direction: column; gap: 22px;">
+              <!-- LISTA DE PERGUNTAS (COLUNA ÚNICA VERTICAL) -->
+              <template x-for="(q, idx) in employeeData.triad_questions" :key="q.id">
+                <div style="background: #131c2e !important; border: 1px solid rgba(255,255,255,0.08) !important; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);">
+                  
+                  <!-- Título da Pergunta -->
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                    <div>
+                      <h4 style="margin: 0; font-size: 0.98rem; font-weight: 800; color: #ffffff !important;" x-text="q.label"></h4>
+                      <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: #94a3b8 !important;" x-text="q.help || q.placeholder"></p>
+                    </div>
+                  </div>
+
+                  <!-- Campo 1: Resposta Fornecida pelo Colaborador (Topo) -->
+                  <div style="background: #0c1a2e !important; border: 1px solid rgba(56, 189, 248, 0.28) !important; border-radius: 12px; padding: 14px; display: flex; flex-direction: column;">
+                    <div style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                      <span>📥 Resposta Fornecida (Sexta-feira)</span>
+                      <span x-text="q.provided_answer ? 'Preenchido' : 'Em branco'" style="font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"></span>
+                    </div>
+                    <div
+                      style="font-size: 0.88rem; color: #f1f5f9 !important; line-height: 1.6; white-space: normal;"
+                      :style="!q.provided_answer ? 'color: #94a3b8 !important; font-style: italic;' : ''"
+                      x-html="formatAnswerHtml(q.provided_answer)"
+                    ></div>
+                  </div>
+
+                  <!-- Campo 2: Barra de Chips/Pills Clicáveis (Ações da Diretoria) -->
+                  <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                      <span style="font-size: 0.74rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.03em;">
+                        ⚡ Direcionamento da Diretoria:
+                      </span>
+                      
+                      <!-- 4 Chips / Pills Interativas -->
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <!-- Pill 1: Registrado / Ciente -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'acknowledged')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.acknowledged
+                            ? 'background: rgba(0, 229, 153, 0.18) !important; border-color: #00e599 !important; color: #00e599 !important; box-shadow: 0 0 10px rgba(0, 229, 153, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span x-text="qActions[String(q.id)]?.acknowledged ? '✓' : '○'"></span>
+                          <span>Registrado pela Gerência</span>
+                        </button>
+
+                        <!-- Pill 2: Demanda Jam -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'jam')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_jam
+                            ? 'background: rgba(245, 158, 11, 0.18) !important; border-color: #fbbf24 !important; color: #fbbf24 !important; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>👔</span>
+                          <span>Demanda Jam</span>
+                        </button>
+
+                        <!-- Pill 3: Demanda Geysa -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'geysa')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_geysa
+                            ? 'background: rgba(52, 211, 153, 0.18) !important; border-color: #34d399 !important; color: #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>💼</span>
+                          <span>Demanda Geysa</span>
+                        </button>
+
+                        <!-- Pill 4: Demanda Fauzer -->
+                        <button
+                          type="button"
+                          @click="toggleAction(q.id, 'fauzer')"
+                          style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 9999px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid; transition: all 0.15s;"
+                          :style="qActions[String(q.id)]?.has_fauzer
+                            ? 'background: rgba(168, 85, 247, 0.18) !important; border-color: #c084fc !important; color: #c084fc !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);'
+                            : 'background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); color: #94a3b8;'"
+                        >
+                          <span>⚡</span>
+                          <span>Demanda Fauzer</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- CAIXAS DE TEXTO EXPANSÍVEIS (ATIVADAS PELOS BOTÕES) -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 4px;">
+                      
+                      <!-- Caixa 1: Observação / Feedback ao Colaborador -->
+                      <div x-show="qActions[String(q.id)]?.acknowledged" x-transition style="background: rgba(0, 229, 153, 0.04); border: 1px solid rgba(0, 229, 153, 0.25); border-radius: 10px; padding: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                          <span style="font-size: 0.72rem; font-weight: 800; color: #00e599; text-transform: uppercase;">
+                            💬 Devolutiva ao Colaborador (Opcional — sairá no WhatsApp dele):
+                          </span>
+                          <button
+                            type="button"
+                            @click="suggestIdea(q)"
+                            :disabled="loadingSuggestion === q.id"
+                            style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.35); color: #c084fc; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; cursor: pointer;"
+                          >
+                            <span x-show="loadingSuggestion !== q.id">✨ Sugerir com IA</span>
+                            <span x-show="loadingSuggestion === q.id">Pensando...</span>
+                          </button>
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].employee_feedback"
+                          placeholder="Ex: Registrado! Parabéns pela precisão nas informações... ou orientações de ajuste para o colaborador..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(0, 229, 153, 0.3) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 2: Demanda Jam -->
+                      <div x-show="qActions[String(q.id)]?.has_jam" x-transition style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #fbbf24; text-transform: uppercase; margin-bottom: 6px;">
+                          👔 Ação atribuída ao Jam Penitenti:
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_jam"
+                          placeholder="Descreva exatamente o que o Jam deve executar referente a este ponto..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(245, 158, 11, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 3: Demanda Geysa -->
+                      <div x-show="qActions[String(q.id)]?.has_geysa" x-transition style="background: rgba(52, 211, 153, 0.04); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #34d399; text-transform: uppercase; margin-bottom: 6px;">
+                          💼 Ação atribuída à Geysa (Loja / Financeiro):
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_geysa"
+                          placeholder="Descreva a conferência, cobrança ou ação de rotina da Geysa..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(52, 211, 153, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Caixa 4: Demanda Fauzer -->
+                      <div x-show="qActions[String(q.id)]?.has_fauzer" x-transition style="background: rgba(168, 85, 247, 0.04); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 10px;">
+                        <div style="font-size: 0.72rem; font-weight: 800; color: #c084fc; text-transform: uppercase; margin-bottom: 6px;">
+                          ⚡ Ação atribuída ao Fauzer (Sistemas / M-One / Cartilhas):
+                        </div>
+                        <textarea
+                          class="form-input"
+                          x-model="qActions[String(q.id)].demand_fauzer"
+                          placeholder="Descreva o ajuste de processo, automação no M-One ou treinamento com o Fauzer..."
+                          rows="2"
+                          style="width: 100%; font-size: 0.84rem; line-height: 1.45; border-radius: 8px; background: #090e17 !important; color: #f8fafc !important; border: 1px solid rgba(168, 85, 247, 0.35) !important; padding: 8px 10px; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </template>
+
+              <!-- STATUS GERAL & DIAGNÓSTICO DA LIDERANÇA (JAM, GEYSA E FAUZER) -->
+              {% include "components/card_manager_status_evaluation.html" %}
+
+              <!-- CENTRAL DOS 4 RELATÓRIOS EXECUTIVOS WHATSAPP (ABAS) -->
+              <div style="background: #101726; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <h4 style="margin: 0; font-size: 0.98rem; font-weight: 800; color: #ffffff;">📊 Central dos 4 Relatórios de Alinhamento</h4>
+                    <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: #94a3b8;">Gerados em tempo real prontos para envio individual no WhatsApp:</p>
+                  </div>
+
+                  <!-- Seletor de Abas dos 4 Relatórios -->
+                  <div style="display: flex; gap: 6px; background: rgba(0, 0, 0, 0.3); padding: 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'employee'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'employee' ? 'background: #00e599; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      👤 Colaborador
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'jam'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'jam' ? 'background: #fbbf24; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      👔 Jam
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'geysa'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'geysa' ? 'background: #34d399; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      💼 Geysa
+                    </button>
+                    <button
+                      type="button"
+                      @click="activeReportTab = 'fauzer'"
+                      style="padding: 6px 12px; border-radius: 7px; font-size: 0.76rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;"
+                      :style="activeReportTab === 'fauzer' ? 'background: #c084fc; color: #000;' : 'background: transparent; color: #94a3b8;'"
+                    >
+                      ⚡ Fauzer
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Card de Preview do Relatório Selecionado -->
+                <div style="background: #090e17; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; position: relative;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+                      📱 Mensagem Formatada para WhatsApp:
+                    </span>
+                    <div style="display: flex; gap: 8px;">
+                      <button
+                        type="button"
+                        @click="copyReport(activeReportTab)"
+                        style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+                      >
+                        <span x-text="copiedTab === activeReportTab ? '✅ Copiado!' : '📋 Copiar Texto'"></span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="dispatchWhatsApp(activeReportTab)"
+                        style="background: rgba(37, 211, 102, 0.18); border: 1px solid rgba(37, 211, 102, 0.4); color: #25d366; font-size: 0.76rem; font-weight: 700; padding: 4px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"
+                      >
+                        <span>📱 Abrir no WhatsApp</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <pre
+                    x-text="buildWhatsAppText(activeReportTab)"
+                    style="margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8rem; line-height: 1.5; color: #e2e8f0; white-space: pre-wrap; max-height: 220px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);"
+                  ></pre>
+                </div>
+              </div>
+
+            </div>
+          </template>
+        </div>
+
+        <!-- Modal Footer (#0b111f) -->
+        <div
+          class="modal-footer eval-modal-footer"
+          style="padding: 16px 26px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 12px;"
+        >
+          <!-- Mensagem Toast -->
+          <div>
+            <span
+              x-show="toastMsg"
+              x-text="toastMsg"
+              style="font-size: 0.84rem; font-weight: 600;"
+              :style="toastSuccess ? 'color: #00e599;' : 'color: #f87171;'"
+            ></span>
+          </div>
+
+          <!-- Botões de Ação -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn"
+              @click="closeModal()"
+              style="font-size: 0.85rem; font-weight: 600; padding: 8px 18px; border-radius: 8px;"
+            >
+              Fechar
+            </button>
+
+            <!-- Botão Salvar Rascunho (Permite continuar a reunião sem fechar) -->
+            <button
+              type="button"
+              class="btn"
+              @click="saveAlignment()"
+              :disabled="saving"
+              style="font-size: 0.85rem; font-weight: 700; background: rgba(255, 255, 255, 0.08); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+              title="Salva as anotações e demandas em modo rascunho sem fechar a aferição"
+            >
+              <span>💾</span>
+              <span x-show="!saving">Salvar Rascunho</span>
+              <span x-show="saving">Salvando...</span>
+            </button>
+
+            <!-- Botão Finalizar Aferição & Liberar Relatórios -->
+            <button
+              type="button"
+              class="btn primary"
+              @click="finalizeAlignment()"
+              :disabled="saving"
+              style="font-size: 0.85rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 8px; box-shadow: 0 4px 14px rgba(229, 169, 59, 0.35);"
+            >
+              <span>🚀 Finalizar Aferição & Liberar</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </template>
+</div>
+
+<script src="{{ url_for('static', filename='js/modal-employee-evaluation.js') }}?v=20261027_eval_v5"></script>

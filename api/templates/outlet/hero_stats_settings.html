@@ -1,0 +1,124 @@
+{# Componente de Gestão dos 4 Cards de Destaque / Estatísticas do Hero do Outlet #}
+<div x-data="{
+  card1_number: '{{ items|length }}+',
+  card1_label: '{{ settings.stat_card_1_label | default('Modelos Disponíveis') | e }}',
+  card2_number: '{{ settings.stat_card_2_number | default('18X') | e }}',
+  card2_label: '{{ settings.stat_card_2_label | default('Parcelamento Facilitado') | e }}',
+  card3_number: '{{ settings.stat_card_3_number | default('Até 50%') | e }}',
+  card3_label: '{{ settings.stat_card_3_label | default('Abaixo da Tabela') | e }}',
+  card4_number: '{{ settings.stat_card_4_number | default('100%') | e }}',
+  card4_label: '{{ settings.stat_card_4_label | default('Revisados e com Garantia') | e }}'
+}" style="margin-top: 20px; border-top: 1px solid var(--line); padding-top: 18px; margin-bottom: 18px;">
+  
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+    <div>
+      <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px;">
+        <span>📊</span>
+        <span>Destaques & Estatísticas do Hero (4 Cards Promocionais)</span>
+      </h4>
+      <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: var(--muted);">
+        Edite os textos e números dos 4 cards de topo do Outlet. O Card 1 mantém a contagem de modelos dinâmica do catálogo.
+      </p>
+    </div>
+    <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(229, 169, 59, 0.3);">
+      ⚡ Live Preview Ativo
+    </span>
+  </div>
+
+  <!-- LIVE PREVIEW CONTAINER (Idêntico à loja pública) -->
+  <div style="background: #090e17; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+    <div style="font-size: 0.68rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+      <span>👁️ Pré-visualização na Loja Pública:</span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+      <!-- Preview Card 1 -->
+      <div style="background: #111a2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 12px; text-align: center;">
+        <strong style="display: block; font-size: 1.45rem; font-weight: 900; color: #e5a93b; letter-spacing: -0.02em;" x-text="card1_number"></strong>
+        <span style="display: block; font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 3px;" x-text="card1_label"></span>
+      </div>
+      <!-- Preview Card 2 -->
+      <div style="background: #111a2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 12px; text-align: center;">
+        <strong style="display: block; font-size: 1.45rem; font-weight: 900; color: #e5a93b; letter-spacing: -0.02em;" x-text="card2_number"></strong>
+        <span style="display: block; font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 3px;" x-text="card2_label"></span>
+      </div>
+      <!-- Preview Card 3 -->
+      <div style="background: #111a2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 12px; text-align: center;">
+        <strong style="display: block; font-size: 1.45rem; font-weight: 900; color: #e5a93b; letter-spacing: -0.02em;" x-text="card3_number"></strong>
+        <span style="display: block; font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 3px;" x-text="card3_label"></span>
+      </div>
+      <!-- Preview Card 4 -->
+      <div style="background: #111a2e; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px 12px; text-align: center;">
+        <strong style="display: block; font-size: 1.45rem; font-weight: 900; color: #e5a93b; letter-spacing: -0.02em;" x-text="card4_number"></strong>
+        <span style="display: block; font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 3px;" x-text="card4_label"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID DE CAMPOS DE EDIÇÃO (4 COLUNAS) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+    
+    <!-- Coluna Card 1 -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;">
+      <div style="font-size: 0.72rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;">
+        Card 1 (Catálogo)
+      </div>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-bottom: 3px;">Destaque / Número</label>
+        <input type="text" value="{{ items|length }}+" disabled style="width: 100%; opacity: 0.7; cursor: not-allowed; font-weight: 700; color: #e5a93b;" title="Dinâmico de acordo com os modelos ativos do catálogo">
+        <small style="font-size: 0.65rem; color: var(--muted); display: block; margin-top: 2px;">⚡ Dinâmico automático</small>
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Texto / Legenda</label>
+        <input type="text" name="stat_card_1_label" x-model="card1_label" placeholder="Modelos Disponíveis" required style="width: 100%;">
+      </div>
+    </div>
+
+    <!-- Coluna Card 2 -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;">
+      <div style="font-size: 0.72rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;">
+        Card 2 (Condição)
+      </div>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Destaque / Número</label>
+        <input type="text" name="stat_card_2_number" x-model="card2_number" placeholder="18X" required style="width: 100%; font-weight: 700; color: #e5a93b;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Texto / Legenda</label>
+        <input type="text" name="stat_card_2_label" x-model="card2_label" placeholder="Parcelamento Facilitado" required style="width: 100%;">
+      </div>
+    </div>
+
+    <!-- Coluna Card 3 -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;">
+      <div style="font-size: 0.72rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;">
+        Card 3 (Desconto)
+      </div>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Destaque / Número</label>
+        <input type="text" name="stat_card_3_number" x-model="card3_number" placeholder="Até 50%" required style="width: 100%; font-weight: 700; color: #e5a93b;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Texto / Legenda</label>
+        <input type="text" name="stat_card_3_label" x-model="card3_label" placeholder="Abaixo da Tabela" required style="width: 100%;">
+      </div>
+    </div>
+
+    <!-- Coluna Card 4 -->
+    <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;">
+      <div style="font-size: 0.72rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 8px;">
+        Card 4 (Garantia / Info)
+      </div>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Destaque / Número</label>
+        <input type="text" name="stat_card_4_number" x-model="card4_number" placeholder="100%" required style="width: 100%; font-weight: 700; color: #e5a93b;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text); margin-bottom: 3px;">Texto / Legenda</label>
+        <input type="text" name="stat_card_4_label" x-model="card4_label" placeholder="Revisados e com Garantia" required style="width: 100%;">
+      </div>
+    </div>
+
+  </div>
+
+</div>

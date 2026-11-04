@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Entrada & Rateio de Custos COLVIX • M-One{% endblock %}
+
+{% block content %}
+<div class="page-container" style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+  
+  <!-- CABEÇALHO -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 10px;">
+        📥 Entrada & Rateio de Custos (COLVIX)
+      </h1>
+      <p style="color: var(--text-muted, #94a3b8); font-size: 0.88rem; margin: 4px 0 0 0;">
+        Multi-entrada de dados de importação, rateio proporcional de impostos/despesas e apuração do Custo Unitário COLVIX.
+      </p>
+    </div>
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="btn secondary sm" style="border-radius: 8px; text-decoration: none;">
+      ← Voltar aos Lotes
+    </a>
+  </div>
+
+  <!-- NAVEGAÇÃO DE ABAS DO MÓDULO -->
+  <div class="fiscal-tabs-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)); padding-bottom: 12px; margin-bottom: 24px;">
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      📊 Visão Geral & Lotes
+    </a>
+    <a href="{{ url_for('fiscal_pricing.cost_entry') }}" class="fiscal-tab-item active" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; color: #00E599; background: rgba(0, 229, 153, 0.1); border: 1px solid rgba(0, 229, 153, 0.3); text-decoration: none;">
+      📥 Entrada & Rateio COLVIX
+    </a>
+    <a href="{{ url_for('fiscal_pricing.simulation_dual') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      ⚖️ Simulador M-ONE vs PJ
+    </a>
+    <a href="{{ url_for('fiscal_pricing.credits_ledger') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      💳 Conta-Corrente de Créditos
+    </a>
+  </div>
+
+  <!-- HERO CARD: FONTE ÚNICA DE DADOS (PLANILHA EXCEL) COM BOTÃO PROCESSAR E ANALISAR -->
+  <div style="background: linear-gradient(135deg, rgba(0, 229, 153, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%); border: 2px solid #00E599; border-radius: 18px; padding: 26px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0, 229, 153, 0.15);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+      <div style="max-width: 650px;">
+        <span style="font-size: 0.72rem; font-weight: 900; text-transform: uppercase; background: #00E599; color: #052e16; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.05em;">FONTE ÚNICA DE DADOS RECOMENDADA</span>
+        <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 10px 0 6px 0;">
+          📊 Importação & Processamento de Planilha Excel (.xlsx / .csv)
+        </h2>
+        <p style="color: var(--text-muted, #cbd5e1); font-size: 0.88rem; margin: 0; line-height: 1.45;">
+          Selecione a planilha com os dados do lote COLVIX e clique em <b>Processar & Analisar</b> para calcular automaticamente os rateios e o custo unitário.
+        </p>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+        <input type="file" id="heroExcelInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="onExcelFileSelected(this)">
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn secondary lg" onclick="document.getElementById('heroExcelInput').click()" style="border-radius: 12px; padding: 12px 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: 1px solid rgba(0,229,153,0.4); color: #fff;">
+            📁 1. Selecionar Planilha
+          </button>
+          
+          <button type="button" id="btnProcessExcel" class="btn primary lg" onclick="processSelectedExcel()" style="background: #00E599; color: #052e16; font-size: 0.95rem; font-weight: 900; border-radius: 12px; padding: 12px 24px; box-shadow: 0 4px 15px rgba(0, 229, 153, 0.4); cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px;">
+            <span>⚡</span> 2. PROCESSAR & ANALISAR PLANILHA
+          </button>
+        </div>
+        
+        <div id="heroExcelStatus" style="font-size: 0.84rem; color: #00E599; font-weight: 700; text-align: right;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNERS DE NOTIFICAÇÃO DE SUCESSO DO PROCESSAMENTO -->
+  <div id="processingSuccessBanner" style="display: none; background: rgba(0, 229, 153, 0.15); border: 2px solid #00E599; border-radius: 14px; padding: 16px 20px; margin-bottom: 24px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 1.6rem;">✅</span>
+      <div>
+        <strong id="bannerTitle" style="color: #00E599; font-size: 1rem; display: block;">Planilha Processada e Analisada com Sucesso!</strong>
+        <span id="bannerSubtitle" style="color: #cbd5e1; font-size: 0.85rem;">Confira a tabela de rateio proporcional e Custo Unitário COLVIX abaixo.</span>
+      </div>
+    </div>
+    <button type="button" onclick="scrollToTable()" class="btn primary sm" style="background: #00E599; color: #052e16; font-weight: 800; border-radius: 8px; padding: 8px 16px;">
+      👇 Ver Tabela de Rateio & Custos
+    </button>
+  </div>
+
+  <!-- MULTI-ENTRADA CARD -->
+  <div style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 1rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0 0 16px 0;">
+      1. Outras Fontes de Dados de Entrada
+    </h3>
+
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+      <button type="button" class="source-tab-btn active" id="btnTabExcel" onclick="switchSourceTab('excel')" style="padding: 10px 18px; border-radius: 10px; border: 1px solid rgba(0, 229, 153, 0.4); background: rgba(0, 229, 153, 0.2); color: #00E599; font-weight: 800; cursor: pointer;">
+        📊 Planilha Excel / CSV (Fonte Única)
+      </button>
+      <button type="button" class="source-tab-btn" id="btnTabXml" onclick="switchSourceTab('xml')" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); background: transparent; color: var(--text-muted, #94a3b8); font-weight: 600; cursor: pointer;">
+        📄 Upload XML NF-e DANFE
+      </button>
+      <button type="button" class="source-tab-btn" id="btnTabMone" onclick="switchSourceTab('mone')" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); background: transparent; color: var(--text-muted, #94a3b8); font-weight: 600; cursor: pointer;">
+        🚢 Lote de Importação M-One
+      </button>
+      <button type="button" class="source-tab-btn" id="btnTabManual" onclick="switchSourceTab('manual')" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); background: transparent; color: var(--text-muted, #94a3b8); font-weight: 600; cursor: pointer;">
+        ✍️ Preenchimento Manual
+      </button>
+    </div>
+
+    <!-- PAINEL EXCEL -->
+    <div id="paneExcel" class="source-pane">
+      <div style="border: 2px dashed rgba(0, 229, 153, 0.4); border-radius: 12px; padding: 24px; text-align: center; background: rgba(0, 229, 153, 0.03);">
+        <p style="margin: 0 0 12px 0; color: var(--text, #f8fafc); font-weight: 700; font-size: 0.95rem;">Selecione a planilha Excel da COLVIX (.xlsx, .xls ou .csv)</p>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="onExcelFileSelected(this)">
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn secondary sm" onclick="document.getElementById('excelFileInput').click()" style="border-radius: 8px; font-weight: 700; padding: 8px 16px;">
+            📁 Selecionar Arquivo
+          </button>
+          <button type="button" class="btn primary sm" onclick="processSelectedExcel()" style="background: #00E599; color: #052e16; font-weight: 800; border-radius: 8px; padding: 8px 16px;">
+            ⚡ Processar & Analisar Planilha
+          </button>
+        </div>
+        <div id="excelStatus" style="margin-top: 10px; font-size: 0.85rem; color: #00E599; font-weight: 700;"></div>
+      </div>
+    </div>
+
+    <!-- PAINEL XML -->
+    <div id="paneXml" class="source-pane" style="display: none;">
+      <div style="border: 2px dashed rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 24px; text-align: center; background: rgba(56, 189, 248, 0.04);">
+        <p style="margin: 0 0 12px 0; color: var(--text, #f8fafc); font-weight: 600;">Arraste e solte o XML da NF-e da COLVIX ou selecione o arquivo</p>
+        <input type="file" id="xmlFileInput" accept=".xml" style="display: none;" onchange="handleXmlUpload(this)">
+        <button type="button" class="btn primary sm" onclick="document.getElementById('xmlFileInput').click()" style="background: #38bdf8; color: #0f172a; font-weight: 700; border-radius: 8px;">
+          📁 Selecionar Arquivo XML
+        </button>
+        <div id="xmlStatus" style="margin-top: 10px; font-size: 0.82rem; color: #38bdf8;"></div>
+      </div>
+    </div>
+
+    <!-- PAINEL M-ONE IMPORT -->
+    <div id="paneMone" class="source-pane" style="display: none;">
+      <div style="display: flex; gap: 12px; align-items: center; max-width: 500px;">
+        <select id="moneImportSelect" class="form-input" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+          <option value="">-- Selecione um lote de importação --</option>
+          {% for imp in imports_list %}
+          <option value="{{ imp.id }}">Lote {{ imp.reference or imp.id }} ({{ imp.status }})</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn primary sm" onclick="loadMoneImport()" style="background: #00E599; color: #052e16; font-weight: 700; border-radius: 8px;">
+          Puxar Dados
+        </button>
+      </div>
+    </div>
+
+    <!-- PAINEL MANUAL -->
+    <div id="paneManual" class="source-pane" style="display: none;">
+      <p style="font-size: 0.85rem; color: var(--text-muted, #94a3b8); margin: 0;">Você pode adicionar ou editar os itens manualmente na tabela abaixo.</p>
+    </div>
+  </div>
+
+  <!-- PAINEL DE CABEÇALHO E RATEIOS GERAIS -->
+  <div style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 1rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0 0 16px 0;">
+      2. Totais da Nota / Lote para Rateio Proporcional
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Código do Lote</label>
+        <input type="text" id="hdrBatchCode" class="form-input" value="LOTE-COLVIX-AUT" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Número da NF-e / Referência</label>
+        <input type="text" id="hdrInvoiceNumber" class="form-input" placeholder="Ex: 10452" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">II Total Rateado (R$)</label>
+        <input type="number" step="0.01" id="hdrIiTotal" class="form-input" value="0.00" onchange="recalculateApportionment()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">PIS Total (R$)</label>
+        <input type="number" step="0.01" id="hdrPisTotal" class="form-input" value="0.00" onchange="recalculateApportionment()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">COFINS Total (R$)</label>
+        <input type="number" step="0.01" id="hdrCofinsTotal" class="form-input" value="0.00" onchange="recalculateApportionment()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">AFRMM + Siscomex + Outras (R$)</label>
+        <input type="number" step="0.01" id="hdrExpensesTotal" class="form-input" value="0.00" onchange="recalculateApportionment()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+    </div>
+  </div>
+
+  <!-- TABELA DE ITENS COM RATEIO -->
+  <div id="sectionItemsTable" style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;">
+        3. Itens do Lote & Apuração do Custo Unitário COLVIX
+      </h3>
+      <button type="button" class="btn secondary sm" onclick="addManualRow()" style="border-radius: 8px; font-size: 0.78rem;">
+        ➕ Adicionar Linha Manual
+      </button>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table id="itemsTable" style="width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.1)); color: var(--text-muted, #94a3b8); text-transform: uppercase; font-size: 0.7rem;">
+            <th style="padding: 10px;">Código</th>
+            <th style="padding: 10px;">Descrição do Produto</th>
+            <th style="padding: 10px;">NCM</th>
+            <th style="padding: 10px;">Qtd</th>
+            <th style="padding: 10px;">Val. Unit (R$)</th>
+            <th style="padding: 10px;">Val. Total (R$)</th>
+            <th style="padding: 10px;">Part. %</th>
+            <th style="padding: 10px;">II Rateado</th>
+            <th style="padding: 10px;">PIS Rateado</th>
+            <th style="padding: 10px;">COFINS Rateado</th>
+            <th style="padding: 10px;">Outras Desp.</th>
+            <th style="padding: 10px;">Custo COLVIX Unit.</th>
+            <th style="padding: 10px; text-align: center;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="itemsTableBody">
+          <!-- Linhas injetadas via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SUMÁRIO DA APURAÇÃO -->
+    <div style="margin-top: 20px; padding: 16px; background: rgba(0, 229, 153, 0.05); border: 1px solid rgba(0, 229, 153, 0.2); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); text-transform: uppercase;">Custo Total Geral COLVIX</span>
+        <div id="sumTotalCostColvix" style="font-size: 1.5rem; font-weight: 800; color: #00E599;">R$ 0,00</div>
+      </div>
+      <div>
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); text-transform: uppercase;">Crédito PIS Inicial (1,65%)</span>
+        <div id="sumPisCredit" style="font-size: 1.2rem; font-weight: 700; color: #38bdf8;">R$ 0,00</div>
+      </div>
+      <div>
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); text-transform: uppercase;">Crédito COFINS Inicial (7,6%)</span>
+        <div id="sumCofinsCredit" style="font-size: 1.2rem; font-weight: 700; color: #38bdf8;">R$ 0,00</div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn secondary sm" onclick="saveBatch('simulacao')" style="border-radius: 10px; font-weight: 600;">
+          💾 Salvar Rascunho
+        </button>
+        <button type="button" class="btn primary sm" onclick="saveBatch('efetivado')" style="background: #00E599; color: #052e16; font-weight: 800; border-radius: 10px; padding: 10px 20px;">
+          ✅ Efetivar Lote Fiscal
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/fiscal-pricing.js') }}?v=20260923_v3"></script>
+{% endblock %}

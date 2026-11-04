@@ -1,0 +1,128 @@
+{#
+  M-One Custom Catalogs Active Tab (templates/admin/custom_catalogs_active_tab.html)
+  Aba de listagem e gerenciamento de catálogos personalizados ativos.
+  Anti-monólito modular (< 500 linhas).
+#}
+
+<!-- Tabela de Catálogos Ativos -->
+<div class="panel" style="padding: 0; overflow: hidden;" x-show="activeTab === 'catalogs'">
+  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Catálogos Ativos e Personalizados</h3>
+      <small class="muted">Gerencie slugs, precificação, números de WhatsApp e canais de distribuição</small>
+    </div>
+    <input type="text" x-model="search" placeholder="Filtrar por nome, cliente ou slug..." class="form-input" style="max-width: 280px; font-size: 0.85rem;">
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table class="table" style="width: 100%; border-collapse: collapse; margin: 0; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); background: rgba(255,255,255,0.02); text-align: left;">
+          <th style="padding: 12px 18px;">Catálogo & Cliente</th>
+          <th style="padding: 12px 14px;">Matriz</th>
+          <th style="padding: 12px 14px;">Regra de Preço</th>
+          <th style="padding: 12px 14px;">WhatsApp CTA</th>
+          <th style="padding: 12px 14px; text-align: center;">Acessos / Cliques</th>
+          <th style="padding: 12px 14px; text-align: center;">Status</th>
+          <th style="padding: 12px 18px; text-align: right;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if not catalogs %}
+        <tr>
+          <td colspan="7" style="padding: 48px; text-align: center;" class="muted">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <div style="font-weight: 600; font-size: 1rem; color: var(--text);">Nenhum catálogo personalizado criado ainda</div>
+            <p style="margin: 6px 0 16px; font-size: 0.85rem;">Crie um novo catálogo clonando os produtos do Outlet ou Atacado para lojistas e revendedores.</p>
+            <button type="button" class="btn primary" @click="openModal()">+ Criar Primeiro Catálogo</button>
+          </td>
+        </tr>
+        {% endif %}
+        {% for c in catalogs %}
+        <tr x-show="matchesSearch({{ c.id }})" style="border-bottom: 1px solid var(--border, rgba(255,255,255,0.04));">
+          <td style="padding: 14px 18px;">
+            <div style="font-weight: 700; color: var(--text); font-size: 0.95rem;">{{ c.title }}</div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px;">
+              {% if c.client_name %}
+              <span class="muted" style="font-size: 0.78rem;">👤 {{ c.client_name }}</span>
+              <span class="muted" style="font-size: 0.75rem;">•</span>
+              {% endif %}
+              <a href="/c/{{ c.slug }}" target="_blank" style="color: var(--accent, #6366f1); font-size: 0.8rem; font-family: monospace; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <span>/c/{{ c.slug }}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+            </div>
+          </td>
+          <td style="padding: 14px 14px;">
+            {% if c.source_matrix == 'atacado' %}
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;">
+              🏬 Atacado CNPJ
+            </span>
+            {% else %}
+            <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;">
+              🔥 Outlet MAJ
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 14px;">
+            {% if c.pricing_mode == 'no_price' %}
+            <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;">
+              🚫 Sem Preço
+            </span>
+            {% elif c.pricing_mode == 'percentage_markup' %}
+            <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600;">
+              📈 +{{ c.percentage_markup }}% Margem
+            </span>
+            {% else %}
+            <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;">
+              🏷️ Fixo Matriz
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 14px;">
+            <div style="font-family: monospace; font-size: 0.82rem; color: var(--text);">
+              {{ c.whatsapp_number or 'Não configurado' }}
+            </div>
+            <small class="muted" style="font-size: 0.72rem;">{{ 'White-label' if c.is_white_label else 'Co-branded MAJ' }}</small>
+          </td>
+          <td style="padding: 14px 14px; text-align: center;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text);">
+              {{ c.views_count or 0 }} <span class="muted" style="font-size: 0.75rem; font-weight: normal;">views</span>
+            </div>
+            <small style="color: #10b981; font-weight: 600; font-size: 0.75rem;">
+              {{ c.whatsapp_clicks_count or 0 }} cliques WA
+            </small>
+          </td>
+          <td style="padding: 14px 14px; text-align: center;">
+            <form action="{{ url_for('custom_catalog.toggle_status', catalog_id=c.id) }}" method="POST" style="margin: 0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn" style="padding: 3px 8px; font-size: 0.72rem; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; background: {{ '#00cc8822' if c.is_active else '#ef444422' }}; color: {{ '#00cc88' if c.is_active else '#ef4444' }};">
+                {{ '● Ativo' if c.is_active else '○ Pausado' }}
+              </button>
+            </form>
+          </td>
+          <td style="padding: 14px 18px; text-align: right; white-space: nowrap;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <button type="button" class="btn" title="Copiar Link Público" @click="copyCatalogLink('{{ c.slug }}')" style="padding: 5px 8px; font-size: 0.8rem;">
+                🔗
+              </button>
+              <a href="/c/{{ c.slug }}" target="_blank" class="btn" title="Visualizar Página" style="padding: 5px 8px; font-size: 0.8rem; text-decoration: none;">
+                👁️
+              </a>
+              <button type="button" class="btn" title="Editar Catálogo" @click="editCatalogById({{ c.id }})" style="padding: 5px 8px; font-size: 0.8rem;">
+                ✏️
+              </button>
+              <form action="{{ url_for('custom_catalog.delete_catalog', catalog_id=c.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente o catálogo {{ c.title }}?');" style="margin: 0; display: inline-block;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn" title="Excluir Catálogo" style="padding: 5px 8px; font-size: 0.8rem; color: #ef4444;">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

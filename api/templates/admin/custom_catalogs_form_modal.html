@@ -1,0 +1,152 @@
+{#
+  M-One Custom Catalog Form Modal (templates/admin/custom_catalogs_form_modal.html)
+  Modal de Criação / Edição de Catálogo Personalizado (teleportado para o body).
+  Anti-monólito modular (< 500 linhas).
+#}
+<style>
+  .catalog-notice-atacado { background: #ECFDF5 !important; border: 1.5px solid #10B981 !important; color: #064E3B !important; }
+  .catalog-notice-atacado .notice-title { color: #047857 !important; }
+  .catalog-notice-atacado .notice-body { color: #065F46 !important; }
+  .catalog-notice-markup { background: #EEF2FF !important; border: 1.5px dashed #4F46E5 !important; color: #1E1B4B !important; }
+  .catalog-notice-markup label { color: #312E81 !important; }
+  .catalog-notice-markup .markup-helper { color: #1E293B !important; }
+  [data-theme="dark"] .catalog-notice-atacado { background: rgba(0, 229, 153, 0.12) !important; border: 1px solid rgba(0, 229, 153, 0.45) !important; color: #F8FAFC !important; }
+  [data-theme="dark"] .catalog-notice-atacado .notice-title { color: #00E599 !important; }
+  [data-theme="dark"] .catalog-notice-atacado .notice-body { color: #E2E8F0 !important; }
+  [data-theme="dark"] .catalog-notice-markup { background: rgba(99, 102, 241, 0.15) !important; border: 1.5px dashed #818CF8 !important; color: #F8FAFC !important; }
+  [data-theme="dark"] .catalog-notice-markup label { color: #C7D2FE !important; }
+  [data-theme="dark"] .catalog-notice-markup .markup-helper { color: #F1F5F9 !important; }
+</style>
+<template x-teleport="body">
+  <div x-show="showModal" 
+       x-cloak 
+       class="modal" 
+       :class="{ 'show': showModal }"
+       :style="showModal ? 'display: flex !important;' : 'display: none !important;'"
+       style="position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;">
+    <div class="modal-card" 
+         style="width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; background: var(--panel, #121722); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 16px; box-shadow: 0 24px 50px rgba(0,0,0,0.8); padding: 26px; box-sizing: border-box;">
+      
+      <div class="modal-head" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.1)); padding-bottom: 14px;">
+        <div>
+          <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text, #f8fafc);" x-text="form.id ? 'Editar Catálogo Personalizado' : (form.request_id ? 'Aprovar Solicitação de Catálogo' : 'Novo Catálogo Personalizado')"></h3>
+          <small style="color: var(--muted, #94a3b8); font-size: 0.82rem; margin-top: 4px; display: block;" x-text="form.request_id ? 'Revise os dados enviados pelo vendedor e defina a matriz e regras de preço para ativar' : 'Configure a matriz clonada, precificação e canal exclusivo de WhatsApp'"></small>
+        </div>
+        <button type="button" @click="closeModal()" class="modal-close-btn" title="Fechar modal" aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form action="{{ url_for('custom_catalog.save_catalog') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="catalog_id" x-model="form.id">
+        <input type="hidden" name="request_id" x-model="form.request_id">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Nome do Catálogo *</label>
+            <input type="text" name="title" x-model="form.title" @input="autoSlug()" required class="form-input" placeholder="Ex: Catálogo Verão AutoVix" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Nome do Cliente / Loja</label>
+            <input type="text" name="client_name" x-model="form.client_name" class="form-input" placeholder="Ex: AutoVix Multimarcas" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Slug do Link Público *</label>
+          <div style="display: flex; align-items: center; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; overflow: hidden;">
+            <span style="padding: 10px 14px; background: rgba(255,255,255,0.04); color: var(--muted, #94a3b8); font-size: 0.85rem; font-family: monospace; border-right: 1px solid var(--line, rgba(255,255,255,0.1));">https://m-one.../c/</span>
+            <input type="text" name="slug" x-model="form.slug" required placeholder="autovix-verao" style="flex: 1; border: none; background: transparent; padding: 10px 14px; color: var(--accent, #00e599); font-weight: 700; font-family: monospace; font-size: 0.9rem; outline: none;">
+          </div>
+          <small style="color: var(--muted, #94a3b8); font-size: 0.75rem; margin-top: 4px; display: block;">O cliente acessará diretamente através deste link exclusivo.</small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Matriz de Origem *</label>
+            <select name="source_matrix" x-model="form.source_matrix" class="form-input" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+              <option value="atacado">🏬 MAJ Atacado CNPJ (Estoque Global B2B - Padrão V3)</option>
+              <option value="outlet">🔥 Outlet MAJ (Lotes Varejo B2C)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Regra de Precificação *</label>
+            <select name="pricing_mode" x-model="form.pricing_mode" class="form-input" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+              <option value="fixed_matrix">🏷️ Preço Fixo da Matriz</option>
+              <option value="no_price">🚫 Sem Preço (Apenas Consulta WhatsApp)</option>
+              <option value="percentage_markup">📈 Adicionar Margem Percentual (%)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Aviso informativo quando Matriz for Atacado -->
+        <div x-show="form.source_matrix === 'atacado'" 
+             class="catalog-notice-atacado" 
+             style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; display: flex; align-items: flex-start; gap: 10px; background: #ECFDF5; border: 1.5px solid #10B981;">
+          <span style="font-size: 1.15rem; line-height: 1.2; flex-shrink: 0;">⚡</span>
+          <div style="font-size: 0.84rem; line-height: 1.45;">
+            <strong class="notice-title" style="font-weight: 800; color: #047857;">Matriz Atacado CNPJ:</strong>
+            <span class="notice-body" style="font-weight: 600; color: #064E3B;">Catálogos gerados a partir do Atacado operam estritamente com preços à vista CNPJ (sem parcelamento).</span>
+          </div>
+        </div>
+
+        <!-- Campo condicional de margem percentual -->
+        <div x-show="form.pricing_mode === 'percentage_markup'" 
+             class="catalog-notice-markup" 
+             style="margin-bottom: 16px; padding: 14px 16px; border-radius: 10px; background: #EEF2FF; border: 1.5px dashed #4F46E5;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 8px; color: #312E81;">Margem Adicional sobre Todos os Produtos (%)</label>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <input type="number" step="0.5" name="percentage_markup" x-model="form.percentage_markup" placeholder="Ex: 15.0" class="form-input" style="max-width: 110px; padding: 8px 12px; background: var(--panel2); border: 1.5px solid #4F46E5; border-radius: 8px; color: var(--text); font-weight: 800; font-size: 0.95rem;">
+            <span class="markup-helper" style="font-size: 0.84rem; font-weight: 700; color: #1E293B;">% somado ao valor de cada veículo da matriz</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">WhatsApp de Atendimento *</label>
+            <input type="text" name="whatsapp_number" x-model="form.whatsapp_number" required class="form-input" placeholder="Ex: 27996051538" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+            <small style="color: var(--muted, #94a3b8); font-size: 0.75rem; margin-top: 4px; display: block;">Número com DDD para envio de leads.</small>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">URL do Logo do Parceiro (Opcional)</label>
+            <input type="text" name="logo_url" x-model="form.logo_url" class="form-input" placeholder="/static/images/custom_catalogs/partner_logo.png" style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.9rem;">
+            <small style="color: var(--muted, #94a3b8); font-size: 0.75rem; margin-top: 4px; display: block;">Se em branco, utiliza o logo padrão do parceiro.</small>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text, #f8fafc);">Mensagem Personalizada do WhatsApp (Opcional)</label>
+          <textarea name="whatsapp_message_template" x-model="form.whatsapp_message_template" rows="2" class="form-input" placeholder="Olá! Vi o produto {produto} ({preco}) no catálogo {loja} e tenho interesse..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #182030); border: 1px solid var(--line, rgba(255,255,255,0.14)); border-radius: 8px; color: var(--text, #f8fafc); font-size: 0.85rem; line-height: 1.4;"></textarea>
+          <small style="color: var(--muted, #94a3b8); font-size: 0.75rem; margin-top: 4px; display: block;">Tags disponíveis: <code>{produto}</code>, <code>{preco}</code>, <code>{loja}</code></small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; background: var(--panel2, #182030); padding: 14px; border-radius: 10px; border: 1px solid var(--line, rgba(255,255,255,0.1));">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+            <input type="checkbox" name="sync_stock" x-model="form.sync_stock" style="accent-color: var(--accent, #00e599); width: 18px; height: 18px;">
+            <div>
+              <div style="font-size: 0.84rem; font-weight: 700; color: var(--text, #f8fafc);">Sincronizar Estoque</div>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Atualizar quantidade em tempo real com a matriz</small>
+            </div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+            <input type="checkbox" name="is_white_label" x-model="form.is_white_label" style="accent-color: var(--accent, #00e599); width: 18px; height: 18px;">
+            <div>
+              <div style="font-size: 0.84rem; font-weight: 700; color: var(--text, #f8fafc);">Modo White-Label 100%</div>
+              <small style="color: var(--muted, #94a3b8); font-size: 0.74rem;">Ocultar selos e menções à MAJ Mobilidade</small>
+            </div>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--line, rgba(255,255,255,0.1)); padding-top: 16px;">
+          <button type="button" class="btn" @click="closeModal()" style="background: rgba(255,255,255,0.06); color: var(--text, #f8fafc); border: 1px solid var(--line, rgba(255,255,255,0.15)); padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancelar</button>
+          <button type="submit" class="btn primary" style="background: var(--accent, #00e599); color: #0a0d14; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 800; cursor: pointer;" x-text="form.request_id ? 'Aprovar e Criar Catálogo' : 'Salvar e Publicar Catálogo'"></button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</template>

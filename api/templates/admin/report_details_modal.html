@@ -1,0 +1,62 @@
+{#
+  M-One Implementation Plan - Modais de Prazo e Detalhes do Relatório
+  templates/admin/report_details_modal.html
+  Conformidade estrita de UX/UI: Teleporte Alpine, Dark Theme e Geometria Precisa.
+#}
+
+<!-- ===================================================================== -->
+<!-- MODAL: ALTERAR PRAZO DO CICLO                                         -->
+<!-- ===================================================================== -->
+<template x-teleport="body">
+  <div x-show="showDeadlineModal" 
+       x-cloak 
+       class="plano-modal-backdrop"
+       :style="showDeadlineModal ? 'display: flex !important;' : 'display: none !important;'"
+       @click.self="showDeadlineModal = false"
+       @keydown.escape.window="showDeadlineModal = false">
+    <div class="panel" 
+         style="margin: auto; max-width: 480px; width: 100%; border-radius: 16px; padding: 26px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">
+          Alterar Prazo Oficial de Entrega
+        </h3>
+        <button type="button" class="modal-close-btn" @click="showDeadlineModal = false" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <p class="muted" style="font-size: 0.82rem; margin-bottom: 20px; line-height: 1.45;">
+        Ajuste o horário limite para os colaboradores submeterem seus relatórios do {{ cycle.title }}.
+      </p>
+
+      <form action="{{ url_for('implementation_plan.update_deadline') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="cycle_id" value="{{ cycle.id }}">
+
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 6px;">
+            Nova Data e Hora Limite:
+          </label>
+          <input type="datetime-local" 
+                 name="deadline" 
+                 required
+                 value="{{ cycle.deadline|string|replace(' ', 'T') if cycle.deadline else '' }}"
+                 class="form-input"
+                 style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); color: var(--text); font-size: 0.9rem; box-sizing: border-box;">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn" style="background: var(--panel2); color: var(--text); cursor: pointer; border: 1px solid var(--line);" @click="showDeadlineModal = false">
+            Cancelar
+          </button>
+          <button type="submit" class="btn primary" style="font-weight: 800; cursor: pointer;">
+            Salvar Novo Prazo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+

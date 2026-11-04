@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}M-One • Importações e Compras da China{% endblock %}
+
+{% block page_title %}
+<div style="display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+  <span>Importações & Compras da China</span>
+  <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 99px; padding: 2px 10px; letter-spacing: 0.03em;">
+    Módulo Comex
+  </span>
+</div>
+{% endblock %}
+
+{% block page_subtitle %}
+Acompanhamento de ponta a ponta: compras na China, câmbio, desembaraço aduaneiro e apuração do Fator de Custo real.
+{% endblock %}
+
+{% block top_actions %}
+  {% if me.role in ['admin', 'support'] %}
+    <button type="button" class="btn secondary" onclick="openRepositoryModal()" title="Repositório inteligente de documentos e dossiê ZIP" style="height: 38px; padding: 0 14px; font-size: 12.5px; border-color: rgba(37, 99, 235, 0.4); color: #2563EB; font-weight: 700;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+      <span>📁 Repositório de Documentos</span>
+    </button>
+    <button type="button" class="btn secondary" onclick="openSettlementModal()" title="Conciliar fechamento, prestação de contas do despachante e pagamentos" style="height: 38px; padding: 0 14px; font-size: 12.5px; border-color: rgba(2, 132, 199, 0.4); color: #0284C7; font-weight: 700;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>📑 Conciliar Fechamento</span>
+    </button>
+    <button type="button" class="btn secondary" onclick="openModal('docRulesModal')" title="Configurar regras e obrigatoriedades documentais" style="height: 38px; padding: 0 14px; font-size: 12.5px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Regras de Documentos</span>
+    </button>
+    <button type="button" class="btn primary" onclick="openModal('newImport')" style="height: 38px; padding: 0 16px; font-size: 13px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Nova Importação</span>
+    </button>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Abas de Navegação: Ativas vs Arquivadas -->
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('imports.imports', tab='active') }}" class="btn {{ 'primary' if current_tab != 'archived' else 'secondary' }} sm" style="font-weight: 700; border-radius: 8px; text-decoration: none; height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Importações Ativas</span>
+        <span class="badge" style="font-size: 11px; font-weight: 800; background: {{ 'rgba(255,255,255,0.25)' if current_tab != 'archived' else 'var(--panel2)' }}; color: {{ '#FFFFFF' if current_tab != 'archived' else 'var(--text)' }}; padding: 1px 8px; border-radius: 99px;">
+          {{ active_count }}
+        </span>
+      </a>
+      <a href="{{ url_for('imports.imports', tab='archived') }}" class="btn {{ 'primary' if current_tab == 'archived' else 'secondary' }} sm" style="font-weight: 700; border-radius: 8px; text-decoration: none; height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        <span>Arquivadas</span>
+        <span class="badge" style="font-size: 11px; font-weight: 800; background: {{ 'rgba(255,255,255,0.25)' if current_tab == 'archived' else 'var(--panel2)' }}; color: {{ '#FFFFFF' if current_tab == 'archived' else 'var(--text)' }}; padding: 1px 8px; border-radius: 99px;">
+          {{ archived_count }}
+        </span>
+      </a>
+    </div>
+
+    {% if current_tab == 'archived' %}
+      <span style="font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px;">
+        <span>ℹ️</span> Processos arquivados preservam histórico e podem ser restaurados ou excluídos com segurança.
+      </span>
+    {% endif %}
+  </div>
+
+  <!-- Gaveta de Demonstração e Testes (Recolhível) -->
+  {% if me.role in ['admin', 'support'] and current_tab != 'archived' %}
+  <details class="comex-card" style="margin-bottom: 24px; border: 1px dashed var(--line); padding: 0; overflow: hidden; border-radius: 12px;">
+    <summary style="padding: 12px 18px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; background: var(--panel2); list-style: none;">
+      <span style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 15px;">🧪</span>
+        <span style="color: var(--text);">Ambiente de Demonstração e Testes (Gaveta)</span>
+        <span class="badge" style="font-size: 10px; background: rgba(245, 158, 11, 0.15); color: #B45309;">Opcional</span>
+      </span>
+      <span style="font-size: 11px; color: var(--muted);">Clique para abrir / fechar ▾</span>
+    </summary>
+    <div style="padding: 16px 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div style="max-width: 620px;">
+        <strong style="font-size: 13px; color: var(--text); display: block;">Lote Demonstrativo para Exploração (7 Abas)</strong>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--muted); line-height: 1.5;">
+          Gere um lote completo simulado (IMP-2026-DEMO) com produtos, pagamentos no exterior, despesas nacionais e numerário para explorar as 7 abas sem misturar com sua operação real.
+        </p>
+      </div>
+      <form method="post" action="{{ url_for('imports.create_demo') }}">
+        <button type="submit" class="btn sm outline" style="color: #B45309; border-color: rgba(245, 158, 11, 0.4); font-weight: 700;">
+          ⚡ Gerar Lote Demo de Exemplo
+        </button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+
+  <!-- Listagem de Importações -->
+  {% if imports and imports|length > 0 %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      {% for i in imports %}
+      <div class="comex-card" style="padding: 20px; border-radius: 14px;">
+        <!-- Cabeçalho do Card -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 14px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <!-- Nome da Importação Editável -->
+              <a href="{{ url_for('imports.import_detail', iid=i.id) }}" style="font-size: 18px; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.02em;">
+                {{ i.name or i.reference }}
+              </a>
+
+              <!-- Sticker Protegido Não Editável com Código Oficial -->
+              <span class="sticker-code" style="display: inline-flex; align-items: center; gap: 5px; background: rgba(15, 23, 42, 0.05); color: #1E293B; border: 1px solid rgba(15, 23, 42, 0.16); border-radius: 6px; padding: 2px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; user-select: all;" title="Código identificador protegido e imutável (BL / Lote oficial)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <span>{{ i.reference }}</span>
+              </span>
+
+              {% if me.role in ['admin', 'support'] %}
+              <button type="button" onclick="openRenameImportModal({{ i.id }}, '{{ (i.name or i.reference)|escape }}', '{{ i.reference|escape }}')" title="Editar nome desta importação" style="background: none; border: none; padding: 2px 5px; cursor: pointer; color: var(--muted); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease;" onmouseover="this.style.color='#0284C7'; this.style.background='rgba(2,132,199,0.08)';" onmouseout="this.style.color='var(--muted)'; this.style.background='none';">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+              {% endif %}
+
+              <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(2, 132, 199, 0.12); color: #0284C7; border: 1px solid rgba(2, 132, 199, 0.25);">
+                Etapa: {{ (i.step or 'compra')|capitalize }}
+              </span>
+              {% if i.status == 'released' %}
+                <span class="badge" style="font-size: 11px; font-weight: 700; background: rgba(4, 120, 87, 0.12); color: #047857; border: 1px solid rgba(4, 120, 87, 0.25);">
+                  ✓ Estoque Liberado
+                </span>
+              {% elif i.status == 'closed' %}
+                <span class="badge" style="font-size: 11px; font-weight: 700; background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">
+                  🔒 Fechado
+                </span>
+              {% endif %}
+            </div>
+
+            <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span>Fornecedor: <strong style="color: var(--text);">{{ i.supplier_name or '—' }}</strong></span>
+              <span>•</span>
+              <span>Incoterm: <strong style="color: var(--text);">{{ i.incoterm or 'FOB' }}</strong></span>
+              <span>•</span>
+              <span>Invoice: <strong style="color: var(--text);">{{ i.invoice_no or '—' }}</strong></span>
+              <span>•</span>
+              <span>BL: <strong style="color: var(--text);">{{ i.bl_no or '—' }}</strong></span>
+            </p>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            {% if me.role in ['admin', 'support'] %}
+              {% if i.is_archived or current_tab == 'archived' %}
+                <!-- Ações para Arquivadas -->
+                <form method="post" action="{{ url_for('import_lifecycle.unarchive_import', iid=i.id) }}" onsubmit="return confirm('Deseja restaurar a importação {{ i.reference }} para a lista de ativas?');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: #0284C7; border-color: rgba(2, 132, 199, 0.4); display: inline-flex; align-items: center; gap: 5px;" title="Restaurar para a lista de ativas">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                    <span>Desarquivar</span>
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('import_lifecycle.delete_import', iid=i.id) }}" onsubmit="return confirm('⚠️ ATENÇÃO: Deseja realmente excluir esta importação permanentemente?\n\n- Os chassis permanecerão no estoque com a anotação [Lote Original: {{ i.reference }}].\n- Todos os documentos permanecerão preservados na Central de Documentos.\n- Esta ação remove a importação de comex.');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: #DC2626; border-color: rgba(220, 38, 38, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Excluir importação permanentemente (preserva chassis e documentos)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    <span>Deletar</span>
+                  </button>
+                </form>
+              {% else %}
+                <!-- Ações para Ativas -->
+                <button type="button" class="btn secondary sm" onclick="openRenameImportModal({{ i.id }}, '{{ (i.name or i.reference)|escape }}', '{{ i.reference|escape }}')" style="font-weight: 600; padding: 7px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px;" title="Editar o nome desta importação">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Editar Nome</span>
+                </button>
+                <form method="post" action="{{ url_for('import_lifecycle.archive_import', iid=i.id) }}" onsubmit="return confirm('Deseja arquivar a importação {{ i.reference }}? Ela será movida para a aba de Arquivadas.');" style="display: inline; margin: 0;">
+                  <button type="submit" class="btn secondary sm" style="font-weight: 600; padding: 7px 12px; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;" title="Arquivar processo">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                    <span>Arquivar</span>
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
+            <a href="{{ url_for('imports.import_detail', iid=i.id) }}" class="btn primary sm" style="font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>Visualizar</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Indicadores Financeiros do Lote -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px;">
+          <!-- Fator de Custo -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Fator de Custo</span>
+            <div class="comex-value-amber" style="font-size: 20px; font-weight: 800;">
+              {% if i.financials and i.financials.cost_factor %}
+                R$ {{ "%.4f"|format(i.financials.cost_factor) }}
+              {% elif i.cost_factor %}
+                R$ {{ "%.4f"|format(i.cost_factor) }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">R$ / US$</small>
+          </div>
+
+          <!-- Total Compra (PI) & Dólar Médio -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #2563EB;">
+            <span class="comex-label">Total PI (Dólar Médio)</span>
+            <div class="comex-value-blue" style="font-size: 18px; font-weight: 800;">
+              US$ {{ "%.2f"|format((i.financials.pi_amount_usd if i.financials else (i.pi_amount_usd or 0)) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">
+              {% if i.financials and i.financials.pi_dolar_medio %}
+                Dólar Médio: <strong style="color: #2563EB;">R$ {{ "%.2f"|format(i.financials.pi_dolar_medio) }}</strong>
+              {% else %}
+                PI = CI + Extra
+              {% endif %}
+            </small>
+          </div>
+
+          <!-- FOB Negociado (Produtos) -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #059669;">
+            <span class="comex-label">FOB Produtos (sem frete)</span>
+            <div class="comex-value-emerald" style="font-size: 18px; font-weight: 800;">
+              US$ {{ "%.2f"|format((i.financials.fob_negotiated_usd if i.financials else (i.pi_amount_usd or i.ci_amount_usd or 0)) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">FOB negociado real</small>
+          </div>
+
+          <!-- Frete Marítimo (US$) -->
+          <div class="comex-card-subtle" style="border-left: 3px solid #0284C7;">
+            <span class="comex-label">Frete Marítimo (US$)</span>
+            <div style="font-size: 18px; font-weight: 800; color: #0284C7;">
+              US$ {{ "%.2f"|format((i.financials.ocean_freight_usd if i.financials else 0) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Frete Internacional</small>
+          </div>
+
+          <!-- Total Desembolsado -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Total Desembolsado</span>
+            <div style="font-size: 18px; font-weight: 800; color: var(--text);">
+              R$ {{ "%.2f"|format((i.financials.total_disbursed_brl if i.financials else 0) or 0) }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Líquido Brasil + China</small>
+          </div>
+
+          <!-- Chassis Vinculados -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Chassis Vinculados</span>
+            <div class="comex-value-blue" style="font-size: 20px; font-weight: 800;">
+              {{ i.chassis_count or 0 }} <span style="font-size: 12px; font-weight: normal; color: var(--muted);">unidades</span>
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Estoque físico</small>
+          </div>
+
+          <!-- Previsão Chegada -->
+          <div class="comex-card-subtle">
+            <span class="comex-label">Previsão Chegada</span>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text); padding-top: 3px;">
+              {{ i.arrival_date_estimated or i.arrival_date or '—' }}
+            </div>
+            <small style="color: var(--muted); font-size: 11px;">Porto de destino</small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Empty State Minimalista e Limpo -->
+    <div class="comex-card" style="padding: 48px 24px; text-align: center; border-radius: 16px;">
+      <div style="font-size: 40px; margin-bottom: 12px;">{{ '📦' if current_tab == 'archived' else '🚢' }}</div>
+      <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: var(--text);">
+        {{ 'Nenhuma importação arquivada' if current_tab == 'archived' else 'Nenhuma importação ativa cadastrada' }}
+      </h3>
+      <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--muted); max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+        {% if current_tab == 'archived' %}
+          Quando você arquivar lotes encerrados ou concluídos, eles ficarão armazenados nesta aba com opções de restauração ou exclusão segura.
+        {% else %}
+          Clique abaixo para cadastrar seu primeiro lote com preenchimento guiado por IA ou abra a gaveta acima para testar um lote demo.
+        {% endif %}
+      </p>
+      {% if current_tab != 'archived' %}
+      <button class="btn primary" onclick="openModal('newImport')" style="font-weight: 700; padding: 12px 24px;">
+        + Cadastrar Nova Importação
+      </button>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- Modais do Módulo Comex -->
+{% include 'imports/modal_new_import.html' %}
+{% include 'imports/modal_rename_import.html' %}
+{% include 'imports/modal_doc_rules.html' %}
+{% include 'imports/modal_settlement_reconciliation.html' %}
+{% include 'imports/modal_doc_repository.html' %}
+
+{% endblock %}

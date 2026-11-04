@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Consulta de Fretes & Transportadoras — M-One{% endblock %}
+{% block page_title %}Consulta de Fretes & Transportadoras{% endblock %}
+{% block page_subtitle %}Simulação instantânea multi-produtos com dimensões, peso e 1/3 do valor de atacado{% endblock %}
+{% block top_actions %}
+  <span class="pill" style="background: rgba(0, 229, 153, 0.12); color: var(--accent); border: 1px solid rgba(0, 229, 153, 0.25); font-weight: 700; font-size: 0.75rem; padding: 5px 12px; border-radius: 99px;">
+    🟢 {{ carriers|length }} Transportadoras Ativas • Origem Vitória/ES
+  </span>
+  <button type="button" onclick="resetFreightForm()" class="btn secondary sm" style="font-size: 0.78rem;" title="Limpar todos os campos da cotação">
+    <span>↺ Limpar Formulário</span>
+  </button>
+{% endblock %}
+
+{% block content %}
+<div class="w-full space-y-6 text-[var(--text-primary)] font-sans">
+
+  <!-- BARRA DE SUB-ABAS M-ONE -->
+  <div class="sub-tabs-bar" style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:10px;overflow-x:auto;">
+    <button type="button" class="tab-btn {% if active_tab == 'simulator' %}active{% endif %}" id="freightTabBtn-simulator" onclick="switchFreightTab('simulator')">
+      <span>🚚 Simulador de Frete</span>
+    </button>
+    <button type="button" class="tab-btn {% if active_tab == 'carriers' %}active{% endif %}" id="freightTabBtn-carriers" onclick="switchFreightTab('carriers')">
+      <span>🏢 Transportadoras & Tabelas</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(56, 189, 248, 0.15); color: var(--brand-blue); border-color: rgba(56, 189, 248, 0.3);">{{ tables|length }}</span>
+    </button>
+    <button type="button" class="tab-btn {% if active_tab == 'quotes' %}active{% endif %}" id="freightTabBtn-quotes" onclick="switchFreightTab('quotes')">
+      <span>📋 Histórico de Cotações & Envios</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(0, 229, 153, 0.15); color: var(--accent); border-color: rgba(0, 229, 153, 0.3);">{{ archived_quotes|length }}</span>
+    </button>
+    <button type="button" class="tab-btn {% if active_tab == 'data-sources' %}active{% endif %}" id="freightTabBtn-data-sources" onclick="switchFreightTab('data-sources')">
+      <span>📑 Fonte de Dados dos Produtos</span>
+      <span class="badge" style="font-size: 9px; padding: 1px 6px; margin-left: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">{{ specs_stats.total_products if specs_stats is defined else products|length }}</span>
+    </button>
+  </div>
+
+  <!-- ABA 1: SIMULADOR DE FRETE (SPLIT SCREEN: FORMULÁRIO + FEED DE RESULTADOS) -->
+  <div id="freightPane-simulator" class="freight-tab-pane" style="{% if active_tab != 'simulator' %}display: none;{% endif %}">
+    <div class="freight-main-grid" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 20px; align-items: start;">
+
+    <!-- COLUNA DA ESQUERDA: CARDS INDEPENDENTES PASSO 1 & PASSO 2 -->
+    <div class="space-y-6">
+      
+      <form id="freightCalcForm" onsubmit="event.preventDefault(); runFreightCalculation();" class="space-y-6">
+        
+        <!-- CARD INDEPENDENTE 1: IDENTIFICAÇÃO DO CLIENTE & DESTINO -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm space-y-5 transition-all">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+            <div class="flex items-center gap-3">
+              <span class="w-7 h-7 rounded-full bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 font-black text-xs flex items-center justify-center shadow-xs">1</span>
+              <div>
+                <h2 class="text-sm font-bold text-[var(--text-primary)]">Identificação do Cliente & Destino</h2>
+                <p class="text-[11px] text-[var(--text-muted)]">Destinatário da cotação e dados para emissão</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] font-medium">
+                <span>Origem:</span>
+                <strong class="text-[var(--text-primary)]">{{ default_cep }} (Vitória/ES)</strong>
+              </div>
+              <button type="submit" id="btnFreightSubmitHeader" class="bg-[var(--brand-emerald)] hover:opacity-95 text-[#052e16] font-extrabold text-xs py-2.5 px-4 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer">
+                <svg class="icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Calcular Melhores Opções de Frete</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Cliente / Razão Social</label>
+              <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Empresa / Nome Fantasia</label>
+              <input type="text" id="company_name" placeholder="Ex: MAJ Mobilidade" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">CPF / CNPJ</label>
+              <input type="text" id="cpf_cnpj" placeholder="Ex: 00.000.000/0001-00" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Contato / WhatsApp</label>
+              <input type="text" id="contact_phone" placeholder="Ex: (27) 99999-8888" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Nome do Responsável</label>
+              <input type="text" id="contact_person" placeholder="Ex: João da Silva" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">CEP de Destino *</label>
+              <div class="relative flex items-center">
+                <input type="text" id="cep_dest" required placeholder="29000-000" maxlength="9" class="form-input w-full pl-3.5 pr-20 py-2.5 text-xs font-bold rounded-xl" onblur="lookupViaCEP(this.value)">
+                <button type="button" onclick="lookupViaCEP(document.getElementById('cep_dest').value)" class="absolute right-1 px-3 py-1.5 rounded-lg bg-[var(--brand-blue)] hover:opacity-90 text-white text-[11px] font-bold transition-all cursor-pointer">
+                  Buscar
+                </button>
+              </div>
+              <small id="cepLocationText" class="text-[10px] text-[var(--brand-blue)] block mt-1 min-h-[14px] font-medium"></small>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Endereço Completo para Envio (Rua, Nº, Bairro, Cidade/UF)</label>
+            <input type="text" id="full_address" placeholder="Ex: Av. Vitória, 1500, Bento Ferreira, Vitória/ES" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+            <input type="hidden" id="cep_orig" value="{{ default_cep }}">
+          </div>
+
+        </div>
+
+        <!-- CARD INDEPENDENTE 2: ESPECIFICAÇÕES DA CARGA & PRODUTOS -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm space-y-5 transition-all">
+          
+          <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
+            <div class="flex items-center gap-3">
+              <span class="w-7 h-7 rounded-full bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 font-black text-xs flex items-center justify-center shadow-xs">2</span>
+              <div>
+                <h2 class="text-sm font-bold text-[var(--text-primary)]">Itens & Especificações da Carga</h2>
+                <p class="text-[11px] text-[var(--text-muted)]">Veículos, dimensões e seguro automático de 1/3 do atacado</p>
+              </div>
+            </div>
+            <button type="button" onclick="addProductRow()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-[var(--brand-emerald)] border border-emerald-500/25 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs">
+              <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>ADICIONAR ITEM</span>
+            </button>
+          </div>
+
+          <!-- CARDS DOS ITENS DA CARGA GERADOS DINAMICAMENTE -->
+          <div id="productRowsContainer" class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
+            <!-- Cards dinâmicos gerados via static/js/freight.js -->
+          </div>
+
+          <!-- 4 BENTO METRICS DA CARGA COM CHARGE-LINE NEON (CANÔNICO M-ONE) -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+            <div class="bento-metric" style="padding: 14px 16px; min-height: 92px;">
+              <div>
+                <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Total Itens</small>
+                <strong id="summaryTotalQty" class="tabular-nums" style="font-size: 1.45rem; font-weight: 800; color: var(--text); margin: 4px 0 2px; display: block;">0</strong>
+                <span style="font-size: 0.75rem; color: var(--muted);">Unidades da carga</span>
+              </div>
+              <div class="charge-line" style="width: 100%;"></div>
+            </div>
+
+            <div class="bento-metric" style="padding: 14px 16px; min-height: 92px;">
+              <div>
+                <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Peso Físico</small>
+                <strong id="summaryTotalWeight" class="tabular-nums" style="font-size: 1.45rem; font-weight: 800; color: var(--text); margin: 4px 0 2px; display: block;">0,0 kg</strong>
+                <span style="font-size: 0.75rem; color: var(--muted);">Balança total</span>
+              </div>
+              <div class="charge-line" style="width: 100%;"></div>
+            </div>
+
+            <div class="bento-metric" style="padding: 14px 16px; min-height: 92px;">
+              <div>
+                <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Peso Cúbico</small>
+                <strong id="summaryCubicWeight" class="tabular-nums" style="font-size: 1.45rem; font-weight: 800; color: var(--brand-blue); margin: 4px 0 2px; display: block;">0,0 kg</strong>
+                <span style="font-size: 0.75rem; color: var(--brand-blue);">Cubagem (C×L×A/6000)</span>
+              </div>
+              <div class="charge-line" style="width: 100%;"></div>
+            </div>
+
+            <div class="bento-metric" style="padding: 14px 16px; min-height: 92px;">
+              <div>
+                <small style="color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Base Seguro (1/3)</small>
+                <strong id="summaryTotalInsurance" class="tabular-nums" style="font-size: 1.45rem; font-weight: 800; color: var(--accent); margin: 4px 0 2px; display: block;">R$ 0,00</strong>
+                <span style="font-size: 0.75rem; color: var(--accent);">Valor averbado</span>
+              </div>
+              <div class="charge-line" style="width: 100%;"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </form>
+
+    </div>
+
+    <!-- COLUNA DA DIREITA: PAINEL DE RESULTADOS ESTILO PAINEL EXECUTIVO DO DASHBOARD -->
+    <div class="panel" style="margin-bottom: 0; position: sticky; top: 6rem;">
+      
+      <div class="panel-head" style="margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h3 style="display: flex; align-items: center; gap: 8px; font-size: 1rem; color: var(--text);">
+            <span class="radar-dot"></span>
+            <span>Opções Disponíveis de Frete</span>
+          </h3>
+          <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.76rem;">Cotações comparadas e ordenadas por menor valor</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="copyWhatsAppMessage()" class="btn sm secondary" style="font-size: 0.74rem; padding: 4px 10px;" title="Copiar resumo para WhatsApp">
+            <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>WhatsApp</span>
+          </button>
+          <button type="button" onclick="exportFreightPDF()" class="btn sm primary" style="font-size: 0.74rem; padding: 4px 10px;" title="Exportar PDF consolidado">
+            <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <span>PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ÁREA DINÂMICA DE RESULTADOS -->
+      <div id="freightResultsArea" class="flex-1 flex flex-col justify-center">
+        
+        <!-- EMPTY STATE REFINADO (SEM MOLDURA PONTILHADA CRUA) -->
+        <div id="freightEmptyState" class="bg-[var(--surface-subtle)] border border-[var(--border-subtle)] rounded-2xl p-8 text-center flex-1 flex flex-col items-center justify-center my-auto min-h-[380px] shadow-xs">
+          <div class="w-14 h-14 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--brand-blue)] flex items-center justify-center mb-3.5 icon-svg shadow-xs">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <h3 class="text-sm font-bold text-[var(--text-primary)]">Pronto para Simular</h3>
+          <p class="text-xs text-[var(--text-secondary)] mt-1 max-w-[280px]">
+            Informe o CEP e selecione os veículos ou peças à esquerda para comparar as cotações em tempo real.
+          </p>
+          <div class="mt-4 flex items-center gap-2 text-[11px] text-[var(--text-muted)] bg-[var(--surface-card)] px-3 py-1.5 rounded-full border border-[var(--border-subtle)]">
+            <span class="w-2 h-2 rounded-full bg-[var(--brand-emerald)]"></span>
+            <span>Seguro de 1/3 do atacado calculado automaticamente</span>
+          </div>
+        </div>
+
+        <!-- LISTA DOS CARDS DAS TRANSPORTADORAS -->
+        <div id="freightOptionsList" class="space-y-3 max-h-[520px] overflow-y-auto pr-1 hidden">
+          <!-- Resultados dinâmicos gerados via static/js/freight.js -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ABA 2: TRANSPORTADORAS & TABELAS (UPLOAD IA + TABELAS ATIVAS) -->
+  <div id="freightPane-carriers" class="freight-tab-pane" style="{% if active_tab != 'carriers' %}display: none;{% endif %}">
+    {% include 'freight_carriers_tab.html' %}
+  </div>
+
+  <!-- ABA 3: HISTÓRICO DE COTAÇÕES & STATUS DE ENVIO -->
+  <div id="freightPane-quotes" class="freight-tab-pane" style="{% if active_tab != 'quotes' %}display: none;{% endif %}">
+    {% include 'freight_quotes_tab.html' %}
+  </div>
+
+  <!-- ABA 4: FONTE DE DADOS DOS PRODUTOS & DIMENSÕES -->
+  <div id="freightPane-data-sources" class="freight-tab-pane" style="{% if active_tab != 'data-sources' %}display: none;{% endif %}">
+    {% include 'freight_data_sources_tab.html' %}
+  </div>
+
+  <!-- MODAIS EXECUTIVOS SOBREPOSTOS -->
+  {% include 'modal_freight_results.html' %}
+  {% include 'modal_table_details.html' %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261007_v5"></script>
+<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261007_v5"></script>
+<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261007_v5"></script>
+
+<script>
+  window.productsCatalog = {{ products|tojson }};
+  window.DEFAULT_FREIGHT_CEP = "{{ default_cep }}";
+  window.FREIGHT_CALCULATE_URL = "{{ url_for('freight_calculate') }}";
+  window.ACTIVE_FREIGHT_TAB = "{{ active_tab }}";
+
+  // Implementação inline global soberana para garantir funcionamento imediato mesmo com cache do navegador
+  window.switchFreightTab = function(tabName) {
+    const validTabs = ['simulator', 'carriers', 'quotes', 'data-sources'];
+    if (!validTabs.includes(tabName)) tabName = 'simulator';
+
+    validTabs.forEach(function(t) {
+      const btn = document.getElementById('freightTabBtn-' + t);
+      const pane = document.getElementById('freightPane-' + t);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+      if (pane) {
+        if (t === tabName) pane.style.display = 'block';
+        else pane.style.display = 'none';
+      }
+    });
+
+    try {
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabName);
+      window.history.replaceState({}, '', url);
+    } catch (e) {}
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const targetTab = params.get('tab') || window.ACTIVE_FREIGHT_TAB;
+    if (targetTab && ['simulator', 'carriers', 'quotes', 'data-sources'].includes(targetTab)) {
+      window.switchFreightTab(targetTab);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Simulador Comercial Comparativo • M-One{% endblock %}
+
+{% block content %}
+<div class="page-container" style="padding: 24px; max-width: 1400px; margin: 0 auto;">
+  
+  <!-- CABEÇALHO DA PÁGINA -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 10px;">
+        ⚖️ Simulador Comercial Comparativo
+        <span style="font-size: 0.75rem; background: rgba(0, 229, 153, 0.15); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.3); padding: 3px 10px; border-radius: 999px; font-weight: 700;">COLVIX ➔ M-ONE vs PJ</span>
+      </h1>
+      <p style="color: var(--text-muted, #94a3b8); font-size: 0.88rem; margin: 4px 0 0 0;">
+        Simule o impacto de ICMS-ST, créditos de PIS/COFINS e Lucro Real (24%) comparando vendas M-ONE vs Venda PJ Direto.
+      </p>
+    </div>
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="btn secondary sm" style="border-radius: 8px; text-decoration: none;">
+      ← Voltar aos Lotes
+    </a>
+  </div>
+
+  <!-- NAVEGAÇÃO DE ABAS DO MÓDULO -->
+  <div class="fiscal-tabs-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)); padding-bottom: 12px; margin-bottom: 24px;">
+    <a href="{{ url_for('fiscal_pricing.index') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      📊 Visão Geral & Lotes
+    </a>
+    <a href="{{ url_for('fiscal_pricing.cost_entry') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      📥 Entrada & Rateio COLVIX
+    </a>
+    <a href="{{ url_for('fiscal_pricing.simulation_dual') }}" class="fiscal-tab-item active" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 700; color: #00E599; background: rgba(0, 229, 153, 0.1); border: 1px solid rgba(0, 229, 153, 0.3); text-decoration: none;">
+      ⚖️ Simulador M-ONE vs PJ
+    </a>
+    <a href="{{ url_for('fiscal_pricing.credits_ledger') }}" class="fiscal-tab-item" style="padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted, #94a3b8); text-decoration: none;">
+      💳 Conta-Corrente de Créditos
+    </a>
+  </div>
+
+  <!-- PAINEL DE INPUTS DE SIMULAÇÃO -->
+  <div style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 1rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0 0 16px 0;">
+      ⚙️ Parâmetros da Simulação Comercial
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Lote COLVIX Origem</label>
+        <select id="simBatchSelect" class="form-input" onchange="onSimBatchChange(this)" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+          <option value="">-- Custo Manual --</option>
+          {% for b in batches %}
+          <option value="{{ b.id }}">Lote {{ b.batch_code }} ({{ b.supplier_name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Custo Unitário COLVIX (R$)</label>
+        <input type="number" step="0.01" id="simUnitCost" class="form-input" value="8500.00" oninput="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Margem de Lucro (%)</label>
+        <input type="number" step="0.5" id="simMarginPct" class="form-input" value="30.0" oninput="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">UF Destino</label>
+        <select id="simDestUf" class="form-input" onchange="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+          <option value="SP" selected>SP (18% ST)</option>
+          <option value="RJ">RJ (20% ST)</option>
+          <option value="MG">MG (18% ST)</option>
+          <option value="PR">PR (19% ST)</option>
+          <option value="SC">SC (17% ST)</option>
+          <option value="RS">RS (17% ST)</option>
+          <option value="BA">BA (20.5% ST)</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Alíquota IPI Saída (%)</label>
+        <input type="number" step="1" id="simIpiPct" class="form-input" value="35.0" oninput="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">MVA (%)</label>
+        <input type="number" step="1" id="simMvaPct" class="form-input" value="34.0" oninput="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Despesas Operacionais (%)</label>
+        <input type="number" step="0.5" id="simOpExpPct" class="form-input" value="5.0" oninput="runSimulation()" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARATIVO LADO A LADO -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; margin-bottom: 24px;">
+    
+    <!-- CENÁRIO 1: COLVIX -> M-ONE -->
+    <div style="background: var(--surface-card, #0f172a); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin: 0;">
+            Cenário 1: COLVIX ➔ M-ONE
+          </h3>
+          <span style="font-size: 0.72rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Intercompany</span>
+        </div>
+
+        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">Preço de Venda Unitário:</td>
+            <td style="padding: 8px 0; font-weight: 700; text-align: right; color: #fff;" id="c1SalePrice">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">ICMS Próprio (12%):</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right;" id="c1IcmsOwn">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">IPI Débito Saída:</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right;" id="c1IpiSale">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">PIS (1,65%) + COFINS (7,6%):</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right;" id="c1PisCofins">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(239, 68, 68, 0.08);">
+            <td style="padding: 10px 8px; font-weight: 700; color: #ef4444;">ICMS-ST Retido no Desembolso:</td>
+            <td style="padding: 10px 8px; font-weight: 800; text-align: right; color: #ef4444;" id="c1IcmsSt">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">Lucro Líquido Real (24% IR/CSLL):</td>
+            <td style="padding: 8px 0; font-weight: 700; text-align: right; color: #00E599;" id="c1NetProfit">R$ 0,00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+        <small style="color: var(--text-muted, #94a3b8);">A M-ONE absorve a retenção do ICMS-ST no fluxo de caixa.</small>
+      </div>
+    </div>
+
+    <!-- CENÁRIO 2: COLVIX -> CLIENTE PJ DIRETO -->
+    <div style="background: var(--surface-card, #0f172a); border: 2px solid #00E599; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 0 20px rgba(0, 229, 153, 0.15);">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #00E599; margin: 0;">
+            Cenário 2: COLVIX ➔ Cliente PJ Direto
+          </h3>
+          <span style="font-size: 0.72rem; background: rgba(0, 229, 153, 0.2); color: #00E599; padding: 3px 8px; border-radius: 6px; font-weight: 800;">ECONOMIA DE CAIXA</span>
+        </div>
+
+        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">Preço de Venda Unitário:</td>
+            <td style="padding: 8px 0; font-weight: 700; text-align: right; color: #fff;" id="c2SalePrice">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">ICMS Próprio (12%):</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right;" id="c2IcmsOwn">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">IPI Débito Saída:</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right;" id="c2IpiSale">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">ICMS-ST (Recolhido pelo PJ Destinatário):</td>
+            <td style="padding: 8px 0; font-weight: 600; text-align: right; color: var(--text-muted, #94a3b8);" id="c2IcmsSt">R$ 0,00 (Cliente)</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(0, 229, 153, 0.12);">
+            <td style="padding: 10px 8px; font-weight: 800; color: #00E599;">Economia Imediata de Caixa M-ONE:</td>
+            <td style="padding: 10px 8px; font-weight: 900; text-align: right; color: #00E599; font-size: 1.1rem;" id="c2CashSaving">R$ 0,00</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <td style="padding: 8px 0; color: var(--text-muted, #94a3b8);">Lucro Líquido Real (24% IR/CSLL):</td>
+            <td style="padding: 8px 0; font-weight: 700; text-align: right; color: #00E599;" id="c2NetProfit">R$ 0,00</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top: 20px; padding: 14px; background: rgba(0, 229, 153, 0.1); border-radius: 10px; border: 1px solid rgba(0, 229, 153, 0.3); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: #00E599;">💡 Venda Direta PJ economiza desembolso ST</span>
+        <button type="button" class="btn primary sm" onclick="openNfeMirrorModal()" style="background: #00E599; color: #052e16; font-weight: 800; border-radius: 8px;">
+          🔍 Espelho NF-e
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% include 'fiscal_pricing/nfe_mirror_modal.html' %}
+<script src="{{ url_for('static', filename='js/fiscal-simulator.js') }}?v=20260923_v1"></script>
+{% endblock %}
