@@ -40,10 +40,12 @@ from routes.radar_routes import radar_bp
 from routes.maintenance_routes import maintenance_bp
 from routes.employee_portal_routes import employee_portal_bp
 from routes.employee_alignment_routes import employee_alignment_bp
+from routes.support_routes import support_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
     dashboard_bp,
+    support_bp,
     employee_portal_bp,
     employee_alignment_bp,
     sales_bp,

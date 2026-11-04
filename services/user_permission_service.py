@@ -197,6 +197,13 @@ ALL_PERMISSIONS = {
         "description": "Rastreamento forense de ações e segurança do sistema",
         "default_roles": ["admin", "support"],
     },
+    "support_tickets": {
+        "category": "governanca",
+        "label": "Central de Suporte & Chamados",
+        "icon": "🛠️",
+        "description": "Gestão de chamados, suporte a erros, pedidos de alteração e atendimento",
+        "default_roles": ["admin", "support"],
+    },
 
     # ---------------- INTEGRAÇÕES & SISTEMA (5) ----------------
     "data_sources": {

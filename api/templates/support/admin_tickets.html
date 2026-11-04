@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}M-One • Painel de Suporte & Atendimento{% endblock %}
+{% block page_title %}Painel Executivo de Suporte & Chamados{% endblock %}
+{% block page_subtitle %}Triagem, atendimento e registro de alterações solicitadas pela equipe da MAJ Mobilidade.{% endblock %}
+
+{% block top_actions %}
+  <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;">
+    <a href="/admin/suporte?status=todos" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'todos' or not current_status %}background:#00e599;color:#000;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      Todos
+    </a>
+    <a href="/admin/suporte?status=pendente" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'pendente' %}background:#ef4444;color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      🚨 Pendentes ({{ badges.badge_count }})
+    </a>
+    <a href="/admin/suporte?status=em_andamento" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'em_andamento' %}background:#3b82f6;color:#fff;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      Em Andamento
+    </a>
+    <a href="/admin/suporte?status=resolvido" class="btn secondary" style="padding:6px 11px;font-size:12px;font-weight:700;border:none;{% if current_status == 'resolvido' %}background:#10b981;color:#000;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
+      Resolvidos
+    </a>
+  </div>
+  <a href="/suporte" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+    👁️ Visão do Usuário
+  </a>
+{% endblock %}
+
+{% block content %}
+<script src="{{ url_for('static', filename='js/support-ticket.js') }}"></script>
+
+<div x-data="supportTicketApp({
+  isStaff: true,
+  currentUserId: {{ me.id }}
+})" class="support-admin-container" style="display:flex;flex-direction:column;gap:24px;">
+
+  <!-- Alerta de Chamado Urgente se houver -->
+  {% if badges.has_urgent_pending and badges.latest_urgent %}
+  <div style="background:linear-gradient(90deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.15) 100%);border:1px solid #ef4444;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:pulseUrgent 2s infinite;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:24px;">🚨</span>
+      <div>
+        <div style="font-weight:800;color:#fff;font-size:0.95rem;">
+          CHAMADO URGENTE PENDENTE: <span style="color:#fca5a5;">{{ badges.latest_urgent.ticket_code }}</span> — {{ badges.latest_urgent.title }}
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">
+          Área afetada: <strong style="color:var(--text);">{{ badges.latest_urgent.module_label }}</strong> • Solicitado recentemente
+        </div>
+      </div>
+    </div>
+    <a href="/admin/suporte?status=pendente" style="background:#ef4444;color:#fff;font-weight:700;padding:6px 16px;border:none;border-radius:6px;font-size:0.85rem;text-decoration:none;">
+      Atender Agora ⚡
+    </a>
+  </div>
+  <style>
+    @keyframes pulseUrgent {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+  {% endif %}
+
+  <!-- Tabela de Chamados do Painel Executivo -->
+  <div class="card" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div>
+        <h3 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--text);">Fila de Atendimento & Alterações</h3>
+        <p style="margin:2px 0 0;font-size:0.85rem;color:var(--muted);">Clique em qualquer chamado para ver o print em alta resolução e responder.</p>
+      </div>
+      <span class="badge" style="background:var(--card);border:1px solid var(--line);color:var(--text);padding:4px 10px;border-radius:6px;font-size:0.8rem;">
+        {{ tickets|length }} chamado(s) exibidos
+      </span>
+    </div>
+
+    {% if tickets|length == 0 %}
+      <div style="text-align:center;padding:50px 20px;color:var(--muted);">
+        <div style="font-size:36px;margin-bottom:10px;">🎉</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text);">Nenhum chamado nesta fila!</div>
+        <div style="font-size:0.85rem;margin-top:4px;">Todas as solicitações de alteração e correções foram atendidas.</div>
+      </div>
+    {% else %}
+      <div class="table-responsive" style="overflow-x:auto;">
+        <table class="table" style="width:100%;border-collapse:collapse;text-align:left;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--line);color:var(--muted);font-size:0.8rem;text-transform:uppercase;">
+              <th style="padding:10px 12px;">Código</th>
+              <th style="padding:10px 12px;">Solicitante</th>
+              <th style="padding:10px 12px;">Área / Módulo</th>
+              <th style="padding:10px 12px;">Título da Demanda</th>
+              <th style="padding:10px 12px;">Urgência</th>
+              <th style="padding:10px 12px;">Status</th>
+              <th style="padding:10px 12px;">Data</th>
+              <th style="padding:10px 12px;text-align:right;">Atendimento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr style="border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);cursor:pointer;" @click="openTicketDetails({{ t.id }})">
+              <td style="padding:12px;font-family:monospace;font-weight:700;color:#00e599;">{{ t.ticket_code }}</td>
+              <td style="padding:12px;">
+                <div style="font-weight:600;color:var(--text);">{{ t.user_name }}</div>
+                <div style="font-size:0.75rem;color:var(--muted);display:flex;align-items:center;gap:6px;">
+                  <span>@{{ t.username }}</span>
+                  {% if t.user_phone %}
+                    <a href="https://wa.me/55{{ t.user_phone }}" target="_blank" @click.stop style="color:#00e599;text-decoration:none;" title="Chamar no WhatsApp">📱</a>
+                  {% endif %}
+                </div>
+              </td>
+              <td style="padding:12px;">
+                <span style="font-size:0.82rem;padding:3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);">
+                  {{ t.module_label }}
+                </span>
+              </td>
+              <td style="padding:12px;font-weight:600;">
+                {{ t.title }}
+                {% if t.unread_user_messages > 0 %}
+                  <span style="margin-left:6px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;">
+                    NOVA MENSAGEM
+                  </span>
+                {% endif %}
+              </td>
+              <td style="padding:12px;">
+                {% if t.urgency == 'urgente' %}
+                  <span style="background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">🚨 Urgente</span>
+                {% elif t.urgency == 'alta' %}
+                  <span style="background:rgba(245,158,11,0.2);color:#f59e0b;border:1px solid #f59e0b;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">⚡ Alta</span>
+                {% else %}
+                  <span style="background:var(--panel2);color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:6px;font-size:11px;">{{ t.urgency|capitalize }}</span>
+                {% endif %}
+              </td>
+              <td style="padding:12px;">
+                {% if t.status == 'pendente' %}
+                  <span style="background:#ffb703;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">Pendente</span>
+                {% elif t.status == 'em_andamento' %}
+                  <span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">Em Andamento</span>
+                {% elif t.status == 'resolvido' %}
+                  <span style="background:#10b981;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">✅ Resolvido</span>
+                {% else %}
+                  <span style="background:#64748b;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;">{{ t.status|capitalize }}</span>
+                {% endif %}
+              </td>
+              <td style="padding:12px;font-size:0.8rem;color:var(--muted);">
+                {{ t.created_at.strftime('%d/%m %H:%M') if t.created_at else '' }}
+              </td>
+              <td style="padding:12px;text-align:right;">
+                <button type="button" class="btn secondary" style="padding:5px 12px;font-size:0.82rem;font-weight:700;">
+                  Atender 🛠️
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Modal Executivo de Atendimento do Fauzer (Teleportado para body) -->
+  <template x-teleport="body">
+    <div x-show="isDetailModalOpen" x-cloak class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
+      <div class="modal-card" @click.away="closeTicketDetails()" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:820px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
+        
+        <!-- Cabeçalho do Modal -->
+        <div class="modal-head" style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-family:monospace;font-size:1.15rem;font-weight:800;color:#00e599;" x-text="activeTicket?.ticket_code"></div>
+            <span style="font-size:0.85rem;padding:3px 8px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);" x-text="activeTicket?.module_label"></span>
+            <span style="font-size:0.75rem;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444;font-weight:700;" x-text="activeTicket?.urgency?.toUpperCase()"></span>
+          </div>
+          <button type="button" class="modal-close-btn" @click="closeTicketDetails()" style="width:32px;height:32px;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Conteúdo do Modal (Timeline e Detalhes) -->
+        <div id="ticketMessagesThread" style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;">
+          <!-- Card de Identificação da Demanda -->
+          <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:1.1rem;font-weight:700;color:var(--text);" x-text="activeTicket?.title"></div>
+              <div style="font-size:0.8rem;color:var(--muted);">
+                Aberto por <strong x-text="activeTicket?.user_name"></strong> (@<span x-text="activeTicket?.username"></span>)
+              </div>
+            </div>
+            <div style="font-size:0.9rem;color:var(--text);margin-top:8px;white-space:pre-wrap;background:var(--card);padding:12px;border-radius:8px;border:1px solid var(--line);" x-text="activeTicket?.description"></div>
+          </div>
+
+          <!-- Timeline de Mensagens -->
+          <template x-for="msg in activeTicket?.messages" :key="msg.id">
+            <div :style="msg.is_staff ? 'align-self:flex-end;max-width:85%;' : 'align-self:flex-start;max-width:85%;'">
+              <div :style="msg.is_staff ? 'background:rgba(0,229,153,0.1);border:1px solid rgba(0,229,153,0.3);border-radius:12px 12px 2px 12px;padding:12px 16px;' : 'background:var(--card);border:1px solid var(--line);border-radius:12px 12px 12px 2px;padding:12px 16px;'">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;">
+                  <span style="font-size:0.75rem;font-weight:700;" :style="msg.is_staff ? 'color:#00e599;' : 'color:var(--text-muted);'" x-text="msg.is_staff ? '🛡️ Fauzer (Suporte)' : msg.sender_name"></span>
+                  <span style="font-size:0.7rem;color:var(--muted);" x-text="msg.created_at"></span>
+                </div>
+                <div style="font-size:0.9rem;color:var(--text);white-space:pre-wrap;" x-text="msg.message_text"></div>
+                <!-- Anexos da Mensagem -->
+                <template x-if="msg.attachments && msg.attachments.length > 0">
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+                    <template x-for="(att, i) in msg.attachments" :key="i">
+                      <img :src="att" style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:pointer;" @click="openLightbox(att)" alt="Print Anexo" />
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Painel de Resposta & Conclusão do Fauzer -->
+        <div style="padding:18px 24px;border-top:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <!-- Controle de Status -->
+            <div>
+              <label class="form-label" style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+                Status do Chamado
+              </label>
+              <select x-model="replyStatus" class="form-input" style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;font-weight:700;">
+                <option value="pendente">⏳ Pendente (Aguardando Atendimento)</option>
+                <option value="em_andamento">⚡ Em Andamento (Em Análise / Alteração)</option>
+                <option value="resolvido">✅ Resolvido (Alteração Realizada)</option>
+                <option value="cancelado">❌ Cancelado / Não Aplicável</option>
+              </select>
+            </div>
+
+            <!-- Nota de Entrega da Alteração -->
+            <div>
+              <label class="form-label" style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+                Nota de Entrega da Alteração (O que foi ajustado?)
+              </label>
+              <input type="text" x-model="resolutionNotes" class="form-input" placeholder="Ex: Preço ajustado e publicado no Vercel" style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;" />
+            </div>
+          </div>
+
+          <!-- Mensagem de Resposta -->
+          <form @submit.prevent="sendReply" style="display:flex;flex-direction:column;gap:10px;">
+            <textarea x-model="replyText" rows="2" class="form-input" placeholder="Mensagem para o colaborador (ou cole prints com Ctrl+V)..." style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:0.9rem;resize:none;"></textarea>
+
+            <!-- Miniaturas anexadas -->
+            <div x-show="replyAttachments.length > 0" x-cloak style="display:flex;flex-wrap:wrap;gap:8px;">
+              <template x-for="(att, idx) in replyAttachments" :key="idx">
+                <div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
+                  <img :src="att" style="width:100%;height:100%;object-fit:cover;" alt="Print Reply" />
+                  <button type="button" @click.stop="removeAttachment(idx, true)" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.8);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;">✕</button>
+                </div>
+              </template>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <button type="button" class="btn secondary" onclick="document.getElementById('adminTicketReplyFileInput').click()" style="font-size:0.8rem;padding:4px 10px;">
+                📎 Anexar Print
+                <input type="file" id="adminTicketReplyFileInput" accept="image/*" multiple style="display:none;" @change="handleFileInput($event, true)" />
+              </button>
+              <button type="submit" class="btn green" :disabled="isSendingReply" style="font-weight:800;padding:8px 20px;">
+                <span x-text="isSendingReply ? 'Salvando...' : 'Salvar Alteração & Responder 🚀'">Salvar Alteração & Responder 🚀</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </template>
+
+  <!-- Lightbox de Visualização de Prints em Tela Cheia -->
+  <template x-teleport="body">
+    <div x-show="lightboxImage" x-cloak @click="closeLightbox()" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;">
+      <img :src="lightboxImage" style="max-width:95vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);" alt="Visualização em alta resolução" />
+    </div>
+  </template>
+
+</div>
+{% endblock %}

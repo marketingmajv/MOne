@@ -78,7 +78,7 @@
 
 <div class="prospector-app" x-data="prospectorApp('{{ active_tab }}', '{{ default_nicho }}', '{{ sheets_url }}', {{ vendedor_atual.id or 0 }}, '{{ (vendedor_atual.name or vendedor_atual.username or '')|replace('\'', '\\\'') }}', '{{ (vendedor_atual.phone or '')|replace('\'', '\\\'') }}', {{ 'true' if is_seller else 'false' }})" @abrir-aba-radar.window="setTab('radar')">
   <!-- Toast / Alerta de Ação -->
-  <div x-show="alertaMsg" x-cloak class="alert-banner" style="border-left: 4px solid #0070F3; margin-bottom: 12px;">
+  <div x-show="alertaMsg" x-cloak class="alert-banner" style="border-left: 4px solid #00E599; margin-bottom: 12px;">
     <div class="alert-banner-text" x-text="alertaMsg"></div>
     <button type="button" class="btn sm" @click="alertaMsg = ''">✕</button>
   </div>

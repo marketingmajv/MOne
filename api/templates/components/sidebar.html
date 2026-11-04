@@ -203,15 +203,17 @@
         </svg>
         <span>Meu Relatório</span>
       </a>
+      <a href="{{ url_for('support.support_admin_page') if me and me.role in ['admin', 'support'] else url_for('support.support_user_page') }}" class="nav-item {{ 'active' if 'suporte' in request.path else '' }}" title="Central de Suporte & Chamados">
+        <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+        <span>Central de Suporte</span>
+        <span id="supportSidebarBadge" class="badge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;"></span>
+      </a>
     </div>
-
-    {# ==================================================================== #}
-    {# COMERCIAL & VENDAS #}
-    {# ==================================================================== #}
     {% if has_comercial %}
     <div class="nav-section">
       <div class="nav-section-label">COMERCIAL & VENDAS</div>
-
       {% if can_sales %}
       <a href="{{ url_for('sales') }}" class="nav-item {{ 'active' if is_active_sales else '' }}" title="Painel de Vendas e Pedidos">
         <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -8,7 +8,7 @@
   
   <div class="panel flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style="padding: 16px 20px; margin-bottom: 20px;">
     <div class="flex items-center gap-3">
-      <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 112, 243, 0.12); color: var(--brand-blue, #0070F3); border: 1px solid rgba(0, 112, 243, 0.25); display: flex; align-items: center; justify-content: center;" class="icon-svg">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 229, 153, 0.12); color: var(--accent, #00E599); border: 1px solid rgba(0, 229, 153, 0.25); display: flex; align-items: center; justify-content: center;" class="icon-svg">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       </div>
       <div>
@@ -35,7 +35,7 @@
         <h3>Últimas Ações Registradas</h3>
         <p>Mostrando até 300 registros mais recentes</p>
       </div>
-      <span class="pill bg-[#0070F3]/20 text-[#38BDF8] border-[#0070F3]/40">{{ logs|length }} registros</span>
+      <span class="pill" style="background: rgba(0, 229, 153, 0.15); color: #00E599; border: 1px solid rgba(0, 229, 153, 0.3);">{{ logs|length }} registros</span>
     </div>
 
     {% if logs %}

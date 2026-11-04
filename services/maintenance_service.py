@@ -247,7 +247,7 @@ def send_whatsapp_message_botconversa(phone: str, text: str, first_name: str = "
     sub_res = _botconversa_request(
         "webhook/subscriber/",
         method="POST",
-        payload={"phone": e164_plus, "first_name": first_name.strip()},
+        payload={"phone": e164_plus, "first_name": first_name.strip(), "last_name": "MAJ"},
     )
 
     if not sub_res.get("success") or not sub_res.get("data", {}).get("id"):

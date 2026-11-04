@@ -73,6 +73,7 @@ BLUEPRINT_TO_PERMISSION_MAP: Dict[str, str] = {
     "prospector": "prospector",
     "radar": "radar",
     "imports": "imports",
+    "support": "support_tickets",
 }
 
 

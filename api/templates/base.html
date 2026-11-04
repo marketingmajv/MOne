@@ -86,6 +86,21 @@
         </div>
       </header>
 
+      {% if me and me.role in ['admin', 'support'] %}
+      <div id="fauzerUrgentSupportBanner" style="display:none;background:linear-gradient(90deg, #991b1b, #b91c1c);color:#ffffff;padding:8px 18px;border-radius:10px;margin:12px 24px 0;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(220,38,38,0.3);border:1px solid #f87171;animation:bannerPulse 2s infinite;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;font-weight:700;">
+          <span style="font-size:1.15rem;">🚨</span>
+          <span>CHAMADO URGENTE PENDENTE: <span id="urgentTicketTitle" style="color:#fef08a;font-weight:800;">Carregando...</span></span>
+        </div>
+        <a href="{{ url_for('support.support_admin_page') }}?status=pendente" style="background:#ffffff;color:#991b1b;padding:4px 12px;border-radius:6px;font-weight:800;font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+          Atender Agora ⚡
+        </a>
+      </div>
+      <style>
+        @keyframes bannerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
+      </style>
+      {% endif %}
+
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-stack">
@@ -122,6 +137,25 @@
     }
     document.addEventListener('DOMContentLoaded', () => {
       updateThemeUi(document.documentElement.getAttribute('data-theme') || 'light');
+      fetch('/api/suporte/badges')
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) return;
+          const badgeElem = document.getElementById('supportSidebarBadge');
+          if (badgeElem && data.badge_count > 0) {
+            badgeElem.textContent = data.badge_count;
+            badgeElem.style.display = 'inline-flex';
+          }
+          const banner = document.getElementById('fauzerUrgentSupportBanner');
+          if (banner && data.has_urgent_pending) {
+            banner.style.display = 'flex';
+            const titleElem = document.getElementById('urgentTicketTitle');
+            if (titleElem && data.latest_urgent) {
+              titleElem.textContent = data.latest_urgent.ticket_code + ' — ' + data.latest_urgent.title;
+            }
+          }
+        })
+        .catch(() => {});
     });
 
     // Injeção Automática de Proteção CSRF (Formulários, HTMX e Fetch)
