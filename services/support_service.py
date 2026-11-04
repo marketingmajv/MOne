@@ -23,8 +23,15 @@ from services.user_permission_service import ALL_PERMISSIONS, user_has_permissio
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SUPPORT_UPLOAD_DIR = BASE_DIR / "uploads" / "support"
-SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+if os.environ.get("VERCEL"):
+    SUPPORT_UPLOAD_DIR = Path("/tmp/uploads/support")
+else:
+    SUPPORT_UPLOAD_DIR = BASE_DIR / "uploads" / "support"
+
+try:
+    SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.debug("Support upload dir mkdir warning: %s", e)
 
 FAUZER_PHONE = "27999157162"
 _support_schema_ensured = False
@@ -147,7 +154,10 @@ def _generate_ticket_code(conn) -> str:
 def save_support_attachment(data_or_file: Any) -> Optional[str]:
     """Salva arquivo de imagem/print vindo de upload tradicional ou Base64 (Ctrl+V)."""
     try:
-        SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
         filename = f"print_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.webp"
         target_path = SUPPORT_UPLOAD_DIR / filename
 

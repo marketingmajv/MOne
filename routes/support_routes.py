@@ -32,6 +32,8 @@ support_bp = Blueprint("support", __name__)
 def support_user_page():
     """Portal do Colaborador: abertura e acompanhamento de chamados de suporte."""
     me = current_user()
+    if not me:
+        return redirect(url_for("login"))
     tickets = list_tickets_for_user(me["id"])
     available_modules = get_available_modules_for_user(me)
     return render_template(
@@ -48,6 +50,8 @@ def support_user_page():
 def support_admin_page():
     """Painel Executivo de Triagem e Resolução do Fauzer."""
     me = current_user()
+    if not me:
+        return redirect(url_for("login"))
     status_filter = request.args.get("status", "todos")
     tickets = list_all_tickets_for_admin(status_filter=status_filter)
     badges = get_support_badges(me)
