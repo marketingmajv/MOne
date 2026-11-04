@@ -86,7 +86,7 @@
         </div>
       </header>
 
-      {% if me and me.role in ['admin', 'support'] %}
+      {% if me and (me.username or '')|lower == 'fauzer' %}
       <div id="fauzerUrgentSupportBanner" style="display:none;background:linear-gradient(90deg, #991b1b, #b91c1c);color:#ffffff;padding:8px 18px;border-radius:10px;margin:12px 24px 0;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(220,38,38,0.3);border:1px solid #f87171;animation:bannerPulse 2s infinite;">
         <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;font-weight:700;">
           <span style="font-size:1.15rem;">🚨</span>

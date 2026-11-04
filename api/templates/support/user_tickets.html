@@ -5,6 +5,11 @@
 {% block page_subtitle %}Abra solicitações de alteração, reporte inconsistências com prints e acompanhe o atendimento com o suporte.{% endblock %}
 
 {% block top_actions %}
+  {% if me and (me.username or '')|lower == 'fauzer' %}
+  <a href="/admin/suporte" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+    ⚡ Painel de Atendimento (Fauzer)
+  </a>
+  {% endif %}
   <a href="#formNovoChamado" class="btn primary" style="display:inline-flex;align-items:center;gap:6px;">
     ➕ Novo Chamado
   </a>

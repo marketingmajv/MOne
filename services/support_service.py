@@ -433,20 +433,27 @@ def add_ticket_reply(
     return {"success": True, "status": status_to_set}
 
 
+def is_fauzer_user(user: Optional[Dict[str, Any]]) -> bool:
+    """Verifica se o usuário autenticado é exclusivamente o Fauzer (responsável técnico pelo suporte)."""
+    if not user:
+        return False
+    return str(user.get("username") or "").strip().lower() == "fauzer"
+
+
 def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
-    """Retorna contadores de badges reativos e estado de alerta urgente."""
+    """Retorna contadores de badges reativos e estado de alerta urgente exclusivo do Fauzer."""
     ensure_support_schema()
     user_id = user["id"]
-    is_admin = str(user.get("role") or "").lower() in ("admin", "support")
+    is_fauzer = is_fauzer_user(user)
 
     with db() as conn:
         pg = _is_pg(conn)
-        if is_admin:
+        if is_fauzer:
             sql = "SELECT COUNT(*) AS total FROM support_tickets WHERE status = 'pendente';"
             row = conn.execute(sql).fetchone()
             pending_count = int(row["total"] if (isinstance(row, dict) or hasattr(row, "keys")) else (row[0] if row else 0))
 
-            # Último chamado pendente para alerta no topo
+            # Último chamado pendente para alerta no topo (exclusivo Fauzer)
             sql_urgent = """
             SELECT ticket_code, title, module_label, created_at 
             FROM support_tickets 
@@ -464,6 +471,9 @@ def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
                 "latest_urgent": latest_urgent,
             }
         else:
+            # Para solicitantes (Luiza, Léo, Gabriel, etc.):
+            # Retorna apenas unread_replies dos seus próprios chamados abertos.
+            # has_urgent_pending é SEMPRE False e latest_urgent é None.
             sql = """
             SELECT COUNT(*) AS total
             FROM support_ticket_messages m
