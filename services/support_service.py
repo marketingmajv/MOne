@@ -8,14 +8,14 @@ Anti-monólito estrito: < 500 linhas.
 from __future__ import annotations
 
 import base64
+import io
 import json
 import logging
 import os
-import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from database import db
 from services.support_items_service import (
@@ -25,15 +25,11 @@ from services.support_items_service import (
     parse_ticket_modules,
     save_ticket_items,
 )
-from services.user_permission_service import ALL_PERMISSIONS, user_has_permission_check
 
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-if os.environ.get("VERCEL"):
-    SUPPORT_UPLOAD_DIR = Path("/tmp/uploads/support")
-else:
-    SUPPORT_UPLOAD_DIR = BASE_DIR / "uploads" / "support"
+SUPPORT_UPLOAD_DIR = Path("/tmp/uploads/support") if os.environ.get("VERCEL") else (BASE_DIR / "uploads" / "support")
 
 try:
     SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -48,6 +44,52 @@ def _is_pg(conn) -> bool:
     return hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
 
 
+def _fmt_dt(val: Any) -> str:
+    if isinstance(val, datetime):
+        return val.strftime("%d/%m/%Y %H:%M")
+    if isinstance(val, str) and val:
+        return val[:16].replace("T", " ")
+    return ""
+
+
+def _resolve_valid_attachments(raw_atts: Any) -> Tuple[List[str], int]:
+    """Filtra anexos válidos, converte arquivos locais legados em Data URI e descarta links /tmp expirados."""
+    if isinstance(raw_atts, str):
+        try:
+            att_list = json.loads(raw_atts)
+        except Exception:
+            att_list = []
+    elif isinstance(raw_atts, list):
+        att_list = raw_atts
+    else:
+        att_list = []
+
+    valid: List[str] = []
+    expired_count = 0
+    for att in att_list:
+        if not isinstance(att, str) or not att.strip():
+            continue
+        s = att.strip()
+        if s.startswith("data:image/"):
+            valid.append(s)
+        elif s.startswith("/uploads/support/"):
+            fname = s.split("/uploads/support/", 1)[1]
+            candidate = SUPPORT_UPLOAD_DIR / fname
+            if not candidate.exists():
+                candidate = BASE_DIR / "uploads" / "support" / fname
+            if candidate.exists():
+                try:
+                    b64 = base64.b64encode(candidate.read_bytes()).decode("ascii")
+                    valid.append(f"data:image/webp;base64,{b64}")
+                except Exception:
+                    expired_count += 1
+            else:
+                expired_count += 1
+        elif s.startswith(("http://", "https://", "/static/", "/public/")):
+            valid.append(s)
+    return valid, expired_count
+
+
 def ensure_support_schema() -> None:
     """Garante a existência das tabelas de suporte no Supabase PostgreSQL / SQLite."""
     global _support_schema_ensured
@@ -60,7 +102,7 @@ def ensure_support_schema() -> None:
         ts_type = "TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP"
         json_type = "JSONB DEFAULT '[]'::jsonb" if pg else "TEXT DEFAULT '[]'"
 
-        sql_tickets = f"""
+        conn.execute(f"""
         CREATE TABLE IF NOT EXISTS support_tickets (
             id {serial_pk},
             ticket_code VARCHAR(30) UNIQUE NOT NULL,
@@ -76,10 +118,8 @@ def ensure_support_schema() -> None:
             updated_at {ts_type},
             resolved_at TIMESTAMP WITHOUT TIME ZONE
         );
-        """
-        conn.execute(sql_tickets)
-
-        sql_messages = f"""
+        """)
+        conn.execute(f"""
         CREATE TABLE IF NOT EXISTS support_ticket_messages (
             id {serial_pk},
             ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
@@ -91,15 +131,13 @@ def ensure_support_schema() -> None:
             read_by_user BOOLEAN DEFAULT FALSE,
             read_by_staff BOOLEAN DEFAULT FALSE
         );
-        """
-        conn.execute(sql_messages)
-
+        """)
         try:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_support_messages_ticket_id ON support_ticket_messages(ticket_id);")
         except Exception as e:
-            logger.debug("Índices de suporte já existentes ou não suportados: %s", e)
+            logger.debug("Índices de suporte já existentes: %s", e)
 
         conn.commit()
         _support_schema_ensured = True
@@ -111,46 +149,40 @@ def _generate_ticket_code(conn) -> str:
     year = datetime.now().year
     pg = _is_pg(conn)
     sql = "SELECT COUNT(*) AS total FROM support_tickets WHERE ticket_code LIKE %s" if pg else "SELECT COUNT(*) AS total FROM support_tickets WHERE ticket_code LIKE ?"
-    pattern = f"SUP-{year}-%"
-    row = conn.execute(sql, (pattern,)).fetchone()
+    row = conn.execute(sql, (f"SUP-{year}-%",)).fetchone()
     raw_val = row["total"] if (isinstance(row, dict) or hasattr(row, "keys")) else (row[0] if row else 0)
-    count = int(raw_val or 0) + 1
-    return f"SUP-{year}-{count:04d}"
+    return f"SUP-{year}-{int(raw_val or 0) + 1:04d}"
 
 
 def save_support_attachment(data_or_file: Any) -> Optional[str]:
-    """Salva arquivo de imagem/print vindo de upload tradicional ou Base64 (Ctrl+V)."""
+    """Salva arquivo de imagem/print vindo de upload ou Base64 (Ctrl+V) como Data URI WebP persistente."""
     try:
-        try:
-            SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            pass
-        filename = f"print_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.webp"
-        target_path = SUPPORT_UPLOAD_DIR / filename
-
         from PIL import Image
 
         if isinstance(data_or_file, str) and "base64," in data_or_file:
-            header, encoded = data_or_file.split("base64,", 1)
-            raw_bytes = base64.b64decode(encoded)
-            import io
-            img = Image.open(io.BytesIO(raw_bytes))
+            _, encoded = data_or_file.split("base64,", 1)
+            img = Image.open(io.BytesIO(base64.b64decode(encoded)))
         elif hasattr(data_or_file, "read"):
             img = Image.open(data_or_file)
         else:
             return None
 
-        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
-            img = img.convert("RGBA")
-        else:
-            img = img.convert("RGB")
+        img = img.convert("RGBA") if (img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info)) else img.convert("RGB")
+        if max(img.size) > 1600:
+            img.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
 
-        max_dim = 2560
-        if max(img.size) > max_dim:
-            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, "WEBP", quality=82, method=6)
+        webp_bytes = buf.getvalue()
 
-        img.save(str(target_path), "WEBP", quality=88, method=6)
-        return f"/uploads/support/{filename}"
+        try:
+            SUPPORT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            filename = f"print_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.webp"
+            (SUPPORT_UPLOAD_DIR / filename).write_bytes(webp_bytes)
+        except Exception:
+            pass
+
+        return f"data:image/webp;base64,{base64.b64encode(webp_bytes).decode('ascii')}"
     except Exception as e:
         logger.error("Erro ao salvar anexo de suporte: %s", e, exc_info=True)
         return None
@@ -224,11 +256,7 @@ def create_ticket(
 
         save_ticket_items(conn, ticket_id, items)
 
-        msg_text = description.strip()
-        if items:
-            items_str = "\n".join([f"• Alteração {idx+1}: {it}" for idx, it in enumerate(items) if it.strip()])
-            msg_text = f"{msg_text}\n\n📋 Alterações:\n{items_str}" if msg_text else f"📋 Alterações Solicitadas:\n{items_str}"
-
+        msg_text = description.strip() or f"Chamado aberto: {title.strip()}"
         att_json = json.dumps(attachments, ensure_ascii=False)
         ins_m = """
         INSERT INTO support_ticket_messages (ticket_id, sender_id, is_staff, message_text, attachments, created_at, read_by_user, read_by_staff)
@@ -281,7 +309,6 @@ def list_all_tickets_for_admin(status_filter: Optional[str] = None) -> List[Dict
         pg = _is_pg(conn)
         where_clauses = []
         params = []
-
         if status_filter and status_filter != "todos":
             where_clauses.append("t.status = %s" if pg else "t.status = ?")
             params.append(status_filter)
@@ -333,13 +360,11 @@ def get_ticket_details(ticket_id: int, current_user_id: int, is_admin: bool = Fa
         if not is_admin and ticket["user_id"] != current_user_id:
             return None
 
-        # Marcação de leitura
         if is_admin:
             up_read = "UPDATE support_ticket_messages SET read_by_staff = TRUE WHERE ticket_id = %s" if pg else "UPDATE support_ticket_messages SET read_by_staff = 1 WHERE ticket_id = ?"
-            conn.execute(up_read, (ticket_id,))
         else:
             up_read = "UPDATE support_ticket_messages SET read_by_user = TRUE WHERE ticket_id = %s" if pg else "UPDATE support_ticket_messages SET read_by_user = 1 WHERE ticket_id = ?"
-            conn.execute(up_read, (ticket_id,))
+        conn.execute(up_read, (ticket_id,))
         conn.commit()
 
         sql_m = """
@@ -356,21 +381,42 @@ def get_ticket_details(ticket_id: int, current_user_id: int, is_admin: bool = Fa
         ORDER BY m.created_at ASC;
         """
         msg_rows = conn.execute(sql_m, (ticket_id,)).fetchall()
+        items = get_ticket_items(ticket_id)
         messages = []
-        for r in msg_rows:
+        all_attachments: List[str] = []
+        expired_attachments_total = 0
+        desc_clean = str(ticket.get("description") or "").strip()
+
+        for idx, r in enumerate(msg_rows):
             d = dict(r)
-            if isinstance(d.get("attachments"), str):
-                try:
-                    d["attachments"] = json.loads(d["attachments"])
-                except Exception:
-                    d["attachments"] = []
-            elif not d.get("attachments"):
-                d["attachments"] = []
+            valid_atts, expired_cnt = _resolve_valid_attachments(d.get("attachments"))
+            d["attachments"] = valid_atts
+            expired_attachments_total += expired_cnt
+
+            for att in valid_atts:
+                if att not in all_attachments:
+                    all_attachments.append(att)
+
+            d["created_at"] = _fmt_dt(d.get("created_at"))
+            if idx == 0 and isinstance(d.get("message_text"), str):
+                for marker in ("\n\n📋 Alterações:", "📋 Alterações Solicitadas:"):
+                    if marker in d["message_text"]:
+                        d["message_text"] = d["message_text"].split(marker)[0].strip()
+                # Evita duplicar a 1ª mensagem automática quando já exibida no card superior do chamado
+                msg_clean = d["message_text"].strip()
+                if not d.get("is_staff") and (not msg_clean or msg_clean == desc_clean or msg_clean.startswith("Chamado aberto:")):
+                    continue
+
             messages.append(d)
 
+        ticket["created_at"] = _fmt_dt(ticket.get("created_at"))
+        ticket["updated_at"] = _fmt_dt(ticket.get("updated_at"))
+        ticket["resolved_at"] = _fmt_dt(ticket.get("resolved_at"))
         ticket["messages"] = messages
         ticket["modules"] = parse_ticket_modules(ticket)
-        ticket["items"] = get_ticket_items(ticket_id)
+        ticket["items"] = items
+        ticket["all_attachments"] = all_attachments
+        ticket["expired_attachments_count"] = expired_attachments_total
         return ticket
 
 
@@ -402,15 +448,8 @@ def add_ticket_reply(
         """
         conn.execute(ins, (ticket_id, sender_id, is_staff, message_text.strip(), att_json, read_user, read_staff))
 
-        # Atualização do chamado
-        status_to_set = new_status
-        if not status_to_set:
-            status_to_set = "em_andamento" if is_staff else "pendente"
-
-        resolved_clause = ", resolved_at = CURRENT_TIMESTAMP" if status_to_set == "resolvido" else ""
-        if status_to_set != "resolvido":
-            resolved_clause = ", resolved_at = NULL"
-
+        status_to_set = new_status or ("em_andamento" if is_staff else "pendente")
+        resolved_clause = ", resolved_at = CURRENT_TIMESTAMP" if status_to_set == "resolvido" else ", resolved_at = NULL"
         up = f"""
         UPDATE support_tickets 
         SET status = %s, updated_at = CURRENT_TIMESTAMP {resolved_clause}
@@ -435,9 +474,7 @@ def add_ticket_reply(
 
 def is_fauzer_user(user: Optional[Dict[str, Any]]) -> bool:
     """Verifica se o usuário autenticado é exclusivamente o Fauzer (responsável técnico pelo suporte)."""
-    if not user:
-        return False
-    return str(user.get("username") or "").strip().lower() == "fauzer"
+    return bool(user and str(user.get("username") or "").strip().lower() == "fauzer")
 
 
 def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
@@ -449,18 +486,14 @@ def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
     with db() as conn:
         pg = _is_pg(conn)
         if is_fauzer:
-            sql = "SELECT COUNT(*) AS total FROM support_tickets WHERE status = 'pendente';"
-            row = conn.execute(sql).fetchone()
+            row = conn.execute("SELECT COUNT(*) AS total FROM support_tickets WHERE status = 'pendente';").fetchone()
             pending_count = int(row["total"] if (isinstance(row, dict) or hasattr(row, "keys")) else (row[0] if row else 0))
 
-            # Último chamado pendente para alerta no topo (exclusivo Fauzer)
-            sql_urgent = """
+            urgent_row = conn.execute("""
             SELECT ticket_code, title, module_label, created_at 
-            FROM support_tickets 
-            WHERE status = 'pendente' 
+            FROM support_tickets WHERE status = 'pendente' 
             ORDER BY created_at DESC LIMIT 1;
-            """
-            urgent_row = conn.execute(sql_urgent).fetchone()
+            """).fetchone()
             latest_urgent = dict(urgent_row) if urgent_row else None
             if latest_urgent and isinstance(latest_urgent.get("created_at"), datetime):
                 latest_urgent["created_at"] = latest_urgent["created_at"].strftime("%d/%m %H:%M")
@@ -471,24 +504,15 @@ def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
                 "latest_urgent": latest_urgent,
             }
         else:
-            # Para solicitantes (Luiza, Léo, Gabriel, etc.):
-            # Retorna apenas unread_replies dos seus próprios chamados abertos.
-            # has_urgent_pending é SEMPRE False e latest_urgent é None.
             sql = """
-            SELECT COUNT(*) AS total
-            FROM support_ticket_messages m
+            SELECT COUNT(*) AS total FROM support_ticket_messages m
             JOIN support_tickets t ON m.ticket_id = t.id
             WHERE t.user_id = %s AND m.is_staff = TRUE AND m.read_by_user = FALSE;
             """ if pg else """
-            SELECT COUNT(*) AS total
-            FROM support_ticket_messages m
+            SELECT COUNT(*) AS total FROM support_ticket_messages m
             JOIN support_tickets t ON m.ticket_id = t.id
             WHERE t.user_id = ? AND m.is_staff = 1 AND m.read_by_user = 0;
             """
             row = conn.execute(sql, (user_id,)).fetchone()
             unread_count = int(row["total"] if (isinstance(row, dict) or hasattr(row, "keys")) else (row[0] if row else 0))
-            return {
-                "badge_count": unread_count,
-                "has_urgent_pending": False,
-                "latest_urgent": None,
-            }
+            return {"badge_count": unread_count, "has_urgent_pending": False, "latest_urgent": None}

@@ -1,7 +1,7 @@
 /**
  * M-One Support & Tickets Controller (static/js/support-ticket.js)
  * Gerencia a Central de Suporte, captura de prints via Ctrl+V / Cmd+V,
- * drag-and-drop de imagens, timeline de atendimento e alertas reativos.
+ * drag-and-drop de imagens, timeline de atendimento, lightbox isolado e alertas reativos.
  * Anti-monólito: < 500 linhas.
  */
 
@@ -10,11 +10,7 @@ window.supportTicketApp = function(initialConfig = {}) {
   if (!modules || modules.length === 0) {
     const el = document.getElementById('supportModulesData');
     if (el) {
-      try {
-        modules = JSON.parse(el.textContent);
-      } catch (e) {
-        console.warn('Erro ao carregar supportModulesData:', e);
-      }
+      try { modules = JSON.parse(el.textContent); } catch (e) {}
     }
   }
   return {
@@ -31,26 +27,24 @@ window.supportTicketApp = function(initialConfig = {}) {
     isSubmitting: false,
     errorMessage: '',
     successMessage: '',
-    
+
     // Modal de Detalhes / Timeline
     activeTicket: null,
     isDetailModalOpen: false,
     isLoadingTicket: false,
+    hasModalChanges: false,
     replyText: '',
     replyStatus: '',
     resolutionNotes: '',
     replyAttachments: [],
     isSendingReply: false,
+    replyFeedback: '',
     reopenTicket: false,
 
-    // Lightbox de Imagens
+    // Lightbox & Sessão
     lightboxImage: null,
-
-    // Gestão de Ocultação Temporária de Chamados (na sessão atual)
     hiddenTicketIds: [],
     isUrgentBannerDismissed: false,
-
-    // Modal de Cadastro de Correções Internas (exclusivo Fauzer)
     isInternalModalOpen: false,
 
     getCsrfToken() {
@@ -63,6 +57,22 @@ window.supportTicketApp = function(initialConfig = {}) {
       } catch (e) {}
       this.setupGlobalPasteListener();
       this.initBadgesPolling();
+    },
+
+    handleEscape() {
+      if (this.lightboxImage) { this.closeLightbox(); return; }
+      if (this.isDetailModalOpen) { this.closeTicketDetails(); return; }
+      if (this.isInternalModalOpen) { this.closeInternalCorrectionModal(); }
+    },
+
+    statusLabel(status) {
+      const map = {
+        pendente: '⏳ Pendente',
+        em_andamento: '⚡ Em Andamento',
+        resolvido: '✅ Resolvido',
+        cancelado: '❌ Cancelado',
+      };
+      return map[status] || (status ? String(status).toUpperCase() : '⏳ Pendente');
     },
 
     toggleModuleKey(key) {
@@ -89,11 +99,14 @@ window.supportTicketApp = function(initialConfig = {}) {
         const data = await res.json();
         if (data.success) {
           item.completed = data.completed;
+          this.hasModalChanges = true;
           if (data.all_completed && this.activeTicket.status !== 'resolvido') {
             const wantResolve = confirm('🎉 Todas as alterações deste chamado foram marcadas como concluídas!\n\nDeseja alterar o status do chamado para "Resolvido" agora?');
             if (wantResolve) {
               this.replyStatus = 'resolvido';
-              this.resolutionNotes = 'Todas as alterações foram concluídas.';
+              if (!this.resolutionNotes.trim()) {
+                this.resolutionNotes = 'Todas as alterações do checklist foram concluídas.';
+              }
               await this.sendReply();
             }
           }
@@ -104,11 +117,9 @@ window.supportTicketApp = function(initialConfig = {}) {
     },
 
     setupGlobalPasteListener() {
-      // Captura prints via Ctrl+V / Cmd+V em qualquer lugar da tela
       document.addEventListener('paste', (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+        const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
         if (!items) return;
-
         for (let i = 0; i < items.length; i++) {
           if (items[i].type.indexOf('image') !== -1) {
             const file = items[i].getAsFile();
@@ -124,10 +135,7 @@ window.supportTicketApp = function(initialConfig = {}) {
 
     handlePastedImage(file) {
       const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64Data = event.target.result;
-        await this.uploadPrintBase64(base64Data);
-      };
+      reader.onload = async (event) => { await this.uploadPrintBase64(event.target.result); };
       reader.readAsDataURL(file);
     },
 
@@ -160,16 +168,12 @@ window.supportTicketApp = function(initialConfig = {}) {
         });
         const data = await res.json();
         if (data.success && data.url) {
-          if (this.isDetailModalOpen) {
-            this.replyAttachments.push(data.url);
-          } else {
-            this.uploadedAttachments.push(data.url);
-          }
+          if (this.isDetailModalOpen) this.replyAttachments.push(data.url);
+          else this.uploadedAttachments.push(data.url);
         } else {
           alert('Erro ao enviar print: ' + (data.error || 'Falha no processamento'));
         }
       } catch (err) {
-        console.error('Falha ao subir print:', err);
         alert('Falha ao enviar print da área de transferência.');
       }
     },
@@ -186,40 +190,27 @@ window.supportTicketApp = function(initialConfig = {}) {
         });
         const data = await res.json();
         if (data.success && data.url) {
-          if (isReply || this.isDetailModalOpen) {
-            this.replyAttachments.push(data.url);
-          } else {
-            this.uploadedAttachments.push(data.url);
-          }
+          if (isReply || this.isDetailModalOpen) this.replyAttachments.push(data.url);
+          else this.uploadedAttachments.push(data.url);
         } else {
           alert('Erro ao carregar print: ' + (data.error || 'Falha no upload'));
         }
       } catch (err) {
-        console.error('Erro no upload de imagem:', err);
         alert('Erro de conexão ao carregar imagem.');
       }
     },
 
     removeAttachment(idx, isReply = false) {
-      if (isReply) {
-        this.replyAttachments.splice(idx, 1);
-      } else {
-        this.uploadedAttachments.splice(idx, 1);
-      }
+      if (isReply) this.replyAttachments.splice(idx, 1);
+      else this.uploadedAttachments.splice(idx, 1);
     },
 
-    openLightbox(url) {
-      this.lightboxImage = url;
-    },
-
-    closeLightbox() {
-      this.lightboxImage = null;
-    },
+    openLightbox(url) { if (url) this.lightboxImage = url; },
+    closeLightbox() { this.lightboxImage = null; },
 
     async submitTicket() {
       this.errorMessage = '';
       this.successMessage = '';
-
       if (this.selectedModuleKeys.length === 0 && this.selectedModuleKey) {
         this.selectedModuleKeys = [this.selectedModuleKey];
       }
@@ -265,7 +256,7 @@ window.supportTicketApp = function(initialConfig = {}) {
           this.ticketDescription = '';
           this.ticketItems = [''];
           this.uploadedAttachments = [];
-          setTimeout(() => { window.location.reload(); }, 1200);
+          setTimeout(() => { window.location.reload(); }, 1000);
         } else {
           this.errorMessage = data.error || 'Falha ao abrir chamado.';
         }
@@ -276,9 +267,13 @@ window.supportTicketApp = function(initialConfig = {}) {
       }
     },
 
-    async openTicketDetails(ticketId) {
+    async openTicketDetails(ticketId, preserveChangesFlag = false) {
       this.isLoadingTicket = true;
       this.isDetailModalOpen = true;
+      if (!preserveChangesFlag) {
+        this.hasModalChanges = false;
+        this.replyFeedback = '';
+      }
       this.replyText = '';
       this.replyAttachments = [];
       this.reopenTicket = false;
@@ -309,16 +304,21 @@ window.supportTicketApp = function(initialConfig = {}) {
     closeTicketDetails() {
       this.isDetailModalOpen = false;
       this.activeTicket = null;
+      this.lightboxImage = null;
+      if (this.hasModalChanges) {
+        window.location.reload();
+      }
     },
 
     async sendReply() {
       if (!this.activeTicket) return;
-      if (!this.replyText.trim() && !this.resolutionNotes.trim() && this.replyStatus === this.activeTicket.status && !this.reopenTicket) {
-        alert('Digite uma mensagem ou atualize o status.');
+      if (!this.replyText.trim() && !this.resolutionNotes.trim() && this.replyStatus === this.activeTicket.status && !this.reopenTicket && this.replyAttachments.length === 0) {
+        alert('Digite uma mensagem, anexe um print ou atualize o status.');
         return;
       }
 
       this.isSendingReply = true;
+      this.replyFeedback = '';
       try {
         const payload = {
           message_text: this.replyText.trim(),
@@ -336,11 +336,13 @@ window.supportTicketApp = function(initialConfig = {}) {
         });
         const data = await res.json();
         if (data.success) {
-          // Recarrega detalhes para atualizar linha do tempo
-          await this.openTicketDetails(this.activeTicket.id);
+          this.hasModalChanges = true;
+          this.replyFeedback = '✅ Atualização registrada com sucesso!';
+          await this.openTicketDetails(this.activeTicket.id, true);
           this.replyText = '';
           this.replyAttachments = [];
           this.reopenTicket = false;
+          setTimeout(() => { this.replyFeedback = ''; }, 4000);
         } else {
           alert('Erro ao responder: ' + (data.error || 'Falha no envio'));
         }
@@ -351,37 +353,19 @@ window.supportTicketApp = function(initialConfig = {}) {
       }
     },
 
-    // Ocultar / Restaurar Chamados e Alertas da Visão
     dismissUrgentBanner() {
       this.isUrgentBannerDismissed = true;
-      try {
-        sessionStorage.setItem('m_one_urgent_banner_dismissed', 'true');
-      } catch (e) {}
+      try { sessionStorage.setItem('m_one_urgent_banner_dismissed', 'true'); } catch (e) {}
     },
-
-    hideTicket(id) {
-      if (!this.hiddenTicketIds.includes(id)) {
-        this.hiddenTicketIds.push(id);
-      }
-    },
-
+    hideTicket(id) { if (!this.hiddenTicketIds.includes(id)) this.hiddenTicketIds.push(id); },
     unhideAllTickets() {
       this.hiddenTicketIds = [];
       this.isUrgentBannerDismissed = false;
-      try {
-        sessionStorage.removeItem('m_one_urgent_banner_dismissed');
-      } catch (e) {}
+      try { sessionStorage.removeItem('m_one_urgent_banner_dismissed'); } catch (e) {}
     },
+    isTicketHidden(id) { return this.hiddenTicketIds.includes(id); },
+    getVisibleCount(total) { return Math.max(0, total - this.hiddenTicketIds.length); },
 
-    isTicketHidden(id) {
-      return this.hiddenTicketIds.includes(id);
-    },
-
-    getVisibleCount(total) {
-      return Math.max(0, total - this.hiddenTicketIds.length);
-    },
-
-    // Modal de Cadastro de Correções Internas
     openInternalCorrectionModal() {
       this.selectedModuleKeys = ['atacado'];
       this.ticketItems = [''];
@@ -393,10 +377,7 @@ window.supportTicketApp = function(initialConfig = {}) {
       this.successMessage = '';
       this.isInternalModalOpen = true;
     },
-
-    closeInternalCorrectionModal() {
-      this.isInternalModalOpen = false;
-    },
+    closeInternalCorrectionModal() { this.isInternalModalOpen = false; },
 
     async submitInternalCorrection() {
       const validItems = this.ticketItems.map(t => t.trim()).filter(Boolean);
@@ -432,10 +413,8 @@ window.supportTicketApp = function(initialConfig = {}) {
         });
         const data = await res.json();
         if (data.success) {
-          this.successMessage = 'Correção interna cadastrada com sucesso!';
-          setTimeout(() => {
-            window.location.reload();
-          }, 600);
+          this.successMessage = '✅ Correção interna cadastrada com sucesso!';
+          setTimeout(() => { window.location.reload(); }, 600);
         } else {
           this.errorMessage = data.error || 'Erro ao cadastrar correção.';
         }
@@ -447,32 +426,22 @@ window.supportTicketApp = function(initialConfig = {}) {
     },
 
     initBadgesPolling() {
-      // Atualiza badges da sidebar a cada 45 segundos
       setInterval(() => {
         fetch('/api/suporte/badges')
           .then(r => r.json())
           .then(data => {
-            if (data.success) {
-              const badgeElem = document.getElementById('supportSidebarBadge');
-              if (badgeElem) {
-                if (data.badge_count > 0) {
-                  badgeElem.textContent = data.badge_count;
-                  badgeElem.style.display = 'inline-flex';
-                } else {
-                  badgeElem.style.display = 'none';
-                }
-              }
-              const banner = document.getElementById('fauzerUrgentSupportBanner');
-              if (banner) {
-                if (data.has_urgent_pending) {
-                  banner.style.display = 'flex';
-                  const titleElem = document.getElementById('urgentTicketTitle');
-                  if (titleElem && data.latest_urgent) {
-                    titleElem.textContent = `${data.latest_urgent.ticket_code}: ${data.latest_urgent.title} (${data.latest_urgent.module_label})`;
-                  }
-                } else {
-                  banner.style.display = 'none';
-                }
+            if (!data.success) return;
+            const badgeElem = document.getElementById('supportSidebarBadge');
+            if (badgeElem) {
+              badgeElem.textContent = data.badge_count > 0 ? data.badge_count : '';
+              badgeElem.style.display = data.badge_count > 0 ? 'inline-flex' : 'none';
+            }
+            const banner = document.getElementById('fauzerUrgentSupportBanner');
+            if (banner) {
+              banner.style.display = data.has_urgent_pending ? 'flex' : 'none';
+              const titleElem = document.getElementById('urgentTicketTitle');
+              if (titleElem && data.latest_urgent) {
+                titleElem.textContent = `${data.latest_urgent.ticket_code}: ${data.latest_urgent.title} (${data.latest_urgent.module_label})`;
               }
             }
           })
@@ -481,4 +450,3 @@ window.supportTicketApp = function(initialConfig = {}) {
     }
   };
 };
-
