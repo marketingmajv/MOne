@@ -5,14 +5,14 @@
 {% block page_subtitle %}Setorização executiva: ordene veículos, configure a promoção Black November e gerencie o Modo TV da loja.{% endblock %}
 
 {% block top_actions %}
-  <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;">
-    <button type="button" onclick="setGlobalImageMode('atemporal')" title="Mostruário em modo institucional com fotos limpas"
-            style="padding:6px 11px;font-size:11px;font-weight:700;border-radius:6px;border:none;cursor:pointer;{% if global_image_mode != 'promocional' %}background:#00e599;color:#000;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
-      🏛️ Modo Atemporal
+  <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;">
+    <button type="button" onclick="setGlobalImageMode('atemporal')" title="Mudar todos os veículos de uma vez para o Banner Atemporal"
+            style="padding:7px 13px;font-size:11.5px;font-weight:800;border-radius:7px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 14px rgba(0,229,153,0.45);{% else %}background:transparent;color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
+      {% if global_image_mode != 'promocional' %}✅ {% endif %}🏛️ Todos: Atemporal
     </button>
-    <button type="button" onclick="setGlobalImageMode('promocional')" title="Mostruário em modo campanha com fotos promocionais"
-            style="padding:6px 11px;font-size:11px;font-weight:700;border-radius:6px;border:none;cursor:pointer;{% if global_image_mode == 'promocional' %}background:#ffb703;color:#000;{% else %}background:transparent;color:var(--text-muted);{% endif %}">
-      ⚡ Modo Promoção
+    <button type="button" onclick="setGlobalImageMode('promocional')" title="Mudar todos os veículos de uma vez para o Banner Promocional"
+            style="padding:7px 13px;font-size:11.5px;font-weight:800;border-radius:7px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 14px rgba(255,183,3,0.45);{% else %}background:transparent;color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
+      {% if global_image_mode == 'promocional' %}✅ {% endif %}⚡ Todos: Promocional
     </button>
   </div>
   <button type="button" class="btn primary" onclick="openCreateModelModal()" style="display:inline-flex;align-items:center;gap:6px;background:#00e599;color:#000;font-weight:700;">
@@ -101,14 +101,23 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
   <button type="button" onclick="document.getElementById('saveToast').style.display='none'" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;">✕</button>
 </div>
 
+{% set active_models = models|selectattr('is_active')|list %}
+{% set inactive_models = models|rejectattr('is_active')|list %}
+
 <!-- ==============================================
      BARRA DE NAVEGAÇÃO SETORIZADA (TABS)
      ============================================== -->
 <div class="showroom-tabs-nav" role="tablist">
   <button type="button" id="tabNavModelos" class="showroom-tab-btn active" onclick="switchMainTab('modelos')">
     <span style="font-size:16px;">📋</span>
-    <span>Ordenação de Modelos</span>
-    <span class="showroom-tab-badge">{{ models|length }} modelos</span>
+    <span>Ordenação de Modelos (Ativos)</span>
+    <span class="showroom-tab-badge" id="tabActiveModelsBadge">{{ active_models|length }} ativos</span>
+  </button>
+
+  <button type="button" id="tabNavInativos" class="showroom-tab-btn" onclick="switchMainTab('inativos')">
+    <span style="font-size:16px;">📦</span>
+    <span>Modelos Inativos</span>
+    <span class="showroom-tab-badge" id="tabInactiveModelsBadge">{{ inactive_models|length }} inativos</span>
   </button>
 
   <button type="button" id="tabNavPromo" class="showroom-tab-btn" onclick="switchMainTab('promo')">
@@ -140,25 +149,36 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
       <span class="drag-handle" style="color:var(--text-muted);font-size:16px;cursor:grab;user-select:none;" title="Arraste para mover">⋮⋮</span>
       <span class="model-pos-badge" style="font-family:monospace;font-size:12.5px;font-weight:700;min-width:36px;text-align:center;padding:4px 6px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--text);">#{{ idx }}</span>
       <div style="width:44px;height:44px;border-radius:8px;background:var(--card);border:1px solid var(--line);padding:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        {% if m.display_image %}<img src="{{ m.display_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
-        {% elif m.cutout_image %}<img src="{{ m.cutout_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
-        {% elif m.images and m.images|length > 0 %}<img src="{{ m.images[0] }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+        {% if m.display_image %}<img data-thumb-slug="{{ m.slug }}" src="{{ m.display_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+        {% elif m.cutout_image %}<img data-thumb-slug="{{ m.slug }}" src="{{ m.cutout_image }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
+        {% elif m.images and m.images|length > 0 %}<img data-thumb-slug="{{ m.slug }}" src="{{ m.images[0] }}" alt="{{ m.modelo }}" style="max-width:100%;max-height:100%;object-fit:contain;">
         {% else %}<span style="font-size:9px;color:var(--text-muted);">Sem foto</span>{% endif %}
       </div>
       <div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <strong style="font-size:14px;color:var(--text);">{{ m.modelo }}</strong>
           <span class="badge" style="font-size:9.5px;padding:2px 7px;border-radius:100px;font-weight:600;{% if m.categoria == 'Scooter' %}background:rgba(0,180,216,0.15);color:#0077b6;border:1px solid rgba(0,180,216,0.3);{% else %}background:rgba(255,183,3,0.15);color:#d48b00;border:1px solid rgba(255,183,3,0.3);{% endif %}">
             {{ m.categoria|upper }}
           </span>
-          {% if m.effective_image_type == 'promocional' and m.promo_image %}
-            <span class="badge" title="Exibindo foto promocional na vitrine" style="font-size:9.5px;padding:2px 7px;border-radius:100px;font-weight:700;background:rgba(255,183,3,0.18);color:#ffb703;border:1px solid rgba(255,183,3,0.4);">
-              ⚡ PROMO
-            </span>
+          {% if m.promo_banner_image %}
+            {% set is_promo_now = (m.effective_banner_type == 'promocional') %}
+            <div data-banner-group="{{ m.slug }}" style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;gap:3px;">
+              <button type="button" data-banner-opt="atemporal" onclick="toggleModelBannerType('{{ m.slug }}', this, 'atemporal')" title="Selecionar Banner Atemporal para {{ m.modelo }}"
+                      style="font-size:10px;padding:3px 9px;border-radius:6px;font-weight:800;cursor:pointer;transition:all 0.15s ease;{% if not is_promo_now %}background:#00e599;color:#000;border:1.5px solid #00e599;box-shadow:0 0 10px rgba(0,229,153,0.35);{% else %}background:transparent;color:var(--text-muted);border:1px solid transparent;opacity:0.48;{% endif %}">
+                {% if not is_promo_now %}✅ {% endif %}🏛️ ATEMPORAL
+              </button>
+              <button type="button" data-banner-opt="promocional" onclick="toggleModelBannerType('{{ m.slug }}', this, 'promocional')" title="Selecionar Banner Promocional para {{ m.modelo }}"
+                      style="font-size:10px;padding:3px 9px;border-radius:6px;font-weight:800;cursor:pointer;transition:all 0.15s ease;{% if is_promo_now %}background:#ffb703;color:#000;border:1.5px solid #ffb703;box-shadow:0 0 10px rgba(255,183,3,0.4);{% else %}background:transparent;color:var(--text-muted);border:1px solid transparent;opacity:0.48;{% endif %}">
+                {% if is_promo_now %}✅ {% endif %}⚡ PROMO
+              </button>
+            </div>
           {% else %}
-            <span class="badge" title="Exibindo foto atemporal padrão" style="font-size:9.5px;padding:2px 7px;border-radius:100px;font-weight:600;background:rgba(0,229,153,0.12);color:#00e599;border:1px solid rgba(0,229,153,0.3);">
-              🏛️ ATEMPORAL
+            <span style="font-size:10px;padding:3px 9px;border-radius:6px;font-weight:800;background:#00e599;color:#000;border:1.5px solid #00e599;display:inline-flex;align-items:center;gap:4px;">
+              ✅ 🏛️ ATEMPORAL
             </span>
+            <button type="button" onclick="openEditModelModal('{{ m.slug }}')" title="Este modelo ainda não tem 2º Banner Promocional cadastrado. Clique para enviar." style="font-size:9.5px;padding:3px 8px;border-radius:6px;font-weight:700;background:rgba(245,158,11,0.14);color:#f59e0b;border:1px dashed rgba(245,158,11,0.45);cursor:pointer;">
+              ⚠️ Sem Banner Promo (Enviar)
+            </button>
           {% endif %}
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:monospace;">
@@ -177,9 +197,9 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
         <button type="button" class="btn sm secondary" onclick="moveModelItem(this, 1)" title="Descer" style="padding:3px 7px;">▼</button>
         <button type="button" class="btn sm secondary" onclick="moveModelToTop(this)" title="Topo" style="padding:3px 7px;font-weight:600;">🔝</button>
       </div>
-      <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin:0 0 0 6px;font-size:11.5px;font-weight:600;">
-        <input type="checkbox" id="status-{{ m.slug }}" {% if m.is_active %}checked{% endif %} onchange="toggleModelActive('{{ m.slug }}', this.checked)" style="width:15px;height:15px;cursor:pointer;">
-        <span id="lbl-status-{{ m.slug }}" style="color:{% if m.is_active %}#2e7d32{% else %}#c62828{% endif %};">
+      <label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin:0 0 0 6px;font-size:11.5px;font-weight:600;" title="Desmarque para enviar para a aba Modelos Inativos">
+        <input type="checkbox" class="status-chk-{{ m.slug }}" {% if m.is_active %}checked{% endif %} onchange="toggleModelActive('{{ m.slug }}', this.checked)" style="width:15px;height:15px;cursor:pointer;">
+        <span class="lbl-status-{{ m.slug }}" style="color:{% if m.is_active %}#2e7d32{% else %}#c62828{% endif %};">
           {{ 'Ativo' if m.is_active else 'Inativo' }}
         </span>
       </label>
@@ -188,7 +208,32 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
   {% endmacro %}
 
   <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
-    
+
+    <!-- Chave Geral de Banners em Massa + Edição Individual -->
+    {% set promo_ready_count = (active_models|selectattr('promo_banner_image')|list)|length %}
+    {% set promo_active_count = (active_models|selectattr('effective_banner_type', 'equalto', 'promocional')|list)|length %}
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:12px;background:var(--bg);border:1px solid var(--line);">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-size:14px;color:var(--text);">🖼️ Chave Geral de Banners (Todos os Veículos Ativos)</strong>
+          <span class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;background:rgba(255,183,3,0.16);color:#ffb703;border:1px solid rgba(255,183,3,0.35);font-weight:700;">
+            ⚡ {{ promo_active_count }}/{{ active_models|length }} em Banner Promo ({{ promo_ready_count }}/{{ active_models|length }} com 2º banner cadastrado)
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+          Altere todos os veículos ativos em 1 comando ou clique na tag <strong>🏛️ ATEMPORAL / ⚡ PROMO</strong> de cada veículo abaixo para alternar individualmente.
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button type="button" onclick="setGlobalImageMode('atemporal')" class="btn sm" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-weight:800;border-radius:9px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 18px rgba(0,229,153,0.45);transform:scale(1.02);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
+          {% if global_image_mode != 'promocional' %}✅ {% endif %}🏛️ Mudar Todos para Banner Atemporal
+        </button>
+        <button type="button" onclick="setGlobalImageMode('promocional')" class="btn sm" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-weight:800;border-radius:9px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 18px rgba(255,183,3,0.45);transform:scale(1.02);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
+          {% if global_image_mode == 'promocional' %}✅ {% endif %}⚡ Mudar Todos para Banner Promocional
+        </button>
+      </div>
+    </div>
+
     <!-- Abas de Seleção de Modo do Menu (Categoria vs Livre) -->
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:14px;">
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -206,11 +251,11 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
       </div>
     </div>
 
-    <!-- MODO 1: MENU POR CATEGORIA -->
+    <!-- MODO 1: MENU POR CATEGORIA (APENAS ATIVOS) -->
     <div id="panelMenuCategory" style="display:{{ 'none' if menu_config and menu_config.mode == 'free' else 'block' }};">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--line);flex-wrap:wrap;gap:10px;">
         <span style="font-size:13px;color:var(--text-muted);">
-          💡 Veículos agrupados por categoria com divisor visual. Ordene os itens dentro de cada grupo ou inverta a ordem dos grupos.
+          💡 Exibindo apenas veículos <strong>Ativos</strong>. Desmarque a caixa "Ativo" de qualquer item para movê-lo para a aba <strong>📦 Modelos Inativos</strong>.
         </span>
         <button type="button" class="btn sm secondary" onclick="invertCategoryGroups()" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;">
           ↕️ Inverter Ordem dos Grupos (Scooters ⇄ Bikes)
@@ -225,12 +270,12 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
             <strong style="font-size:15px;color:var(--text);">
               {{ '🛵 Scooters Elétricas' if cat|lower != 'bike' else '🚲 E-Bikes & Bicicletas' }}
             </strong>
-            <span class="badge" style="font-size:11px;padding:2px 8px;border-radius:100px;">
-              {{ (models|selectattr('categoria', 'equalto', cat)|list)|length }} modelos
+            <span class="badge cat-count-badge" data-cat-count="{{ cat }}" style="font-size:11px;padding:2px 8px;border-radius:100px;">
+              {{ (active_models|selectattr('categoria', 'equalto', cat)|list)|length }} modelos
             </span>
           </div>
           <div class="sortable-models-container cat-sortable-list" data-cat="{{ cat }}" style="display:flex;flex-direction:column;gap:8px;">
-            {% for m in models if m.categoria == cat %}
+            {% for m in active_models if m.categoria == cat %}
               {{ render_model_card(m, loop.index) }}
             {% endfor %}
           </div>
@@ -239,11 +284,11 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
       </div>
     </div>
 
-    <!-- MODO 2: MENU LIVRE / ALEATÓRIO -->
+    <!-- MODO 2: MENU LIVRE / ALEATÓRIO (APENAS ATIVOS) -->
     <div id="panelMenuFree" style="display:{{ 'block' if menu_config and menu_config.mode == 'free' else 'none' }};">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--line);flex-wrap:wrap;gap:10px;">
         <span style="font-size:13px;color:var(--text-muted);">
-          💡 Divisão de categorias removida. Arraste qualquer produto para qualquer posição ou sorteie uma ordem aleatória instantânea.
+          💡 Divisão de categorias removida (apenas veículos ativos). Arraste qualquer produto para qualquer posição ou sorteie uma ordem aleatória.
         </span>
         <button type="button" class="btn sm primary" onclick="shuffleFreeModelsList()" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;">
           🎲 Embaralhar Aleatoriamente (Shuffle)
@@ -251,7 +296,7 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
       </div>
 
       <div id="sortableFreeModelsList" class="sortable-models-container" style="display:flex;flex-direction:column;gap:8px;">
-        {% for m in models %}
+        {% for m in active_models %}
           {{ render_model_card(m, loop.index) }}
         {% endfor %}
       </div>
@@ -265,6 +310,30 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
       <button type="button" class="btn primary" id="btnSaveOrder" onclick="saveNewOrder()" style="font-weight:700;">
         💾 Salvar Configurações & Ordem do Mostruário
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     SETOR 1B: MODELOS INATIVOS / ARQUIVADOS
+     ============================================== -->
+<div id="sectorInativos" class="showroom-sector-pane" style="display:none;">
+  <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line);">
+      <div>
+        <strong style="font-size:15px;color:var(--text);">📦 Modelos Inativos / Ocultos da Vitrine</strong>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px;">
+          Estes modelos não aparecem no mostruário público (<code>/modelos</code>) nem na lista principal de ordenação. Marque a caixa <strong>Ativo</strong> para devolvê-los imediatamente à vitrine.
+        </div>
+      </div>
+    </div>
+    <div id="inactiveModelsList" style="display:flex;flex-direction:column;gap:8px;">
+      {% for m in inactive_models %}
+        {{ render_model_card(m, loop.index) }}
+      {% endfor %}
+    </div>
+    <div id="inactiveEmptyState" style="display:{{ 'none' if inactive_models|length > 0 else 'block' }};padding:28px;text-align:center;color:var(--text-muted);border:1px dashed var(--line);border-radius:10px;">
+      🎉 Nenhum modelo inativo no momento. Todos os veículos estão ativos na vitrine!
     </div>
   </div>
 </div>
@@ -291,6 +360,13 @@ window.SHOWROOM_ADMIN_CONFIG = {
 };
 
 async function setGlobalImageMode(mode) {
+  if (window.MOnePreloader) {
+    window.MOnePreloader.show(
+      mode === 'promocional' ? 'Ativando Banners Promocionais em todo o Showroom...' : 'Ativando Banners Atemporais em todo o Showroom...',
+      'SHOWROOM MAJ',
+      true
+    );
+  }
   try {
     const res = await fetch('/api/models/global-image-mode', {
       method: 'POST',
@@ -300,6 +376,7 @@ async function setGlobalImageMode(mode) {
     if (!res.ok) throw new Error('Falha ao alternar modo global de imagens.');
     window.location.reload();
   } catch (err) {
+    if (window.MOnePreloader) window.MOnePreloader.hide();
     alert(err.message);
   }
 }

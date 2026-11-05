@@ -144,18 +144,18 @@
                   </p>
                 </div>
 
-                <div style="display: inline-flex; gap: 6px; background: var(--panel2, #1e293b); padding: 4px; border-radius: 8px; border: 1px solid var(--line, #334155);">
+                <div style="display: inline-flex; gap: 8px; background: var(--panel2, #1e293b); padding: 5px; border-radius: 10px; border: 1px solid var(--line, #334155);">
                   <button type="button"
                           @click="form.active_banner_type = 'atemporal'"
-                          :style="form.active_banner_type === 'atemporal' ? 'background: #00e599; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
-                          style="border: none; border-radius: 6px; padding: 5px 12px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
-                    🟢 Ativar Banner Atemporal
+                          :style="form.active_banner_type === 'atemporal' ? 'background: #00e599; color: #000; font-weight: 800; border: 2px solid #00e599; box-shadow: 0 0 16px rgba(0,229,153,0.45); transform: scale(1.03);' : 'background: transparent; color: var(--muted, #94a3b8); border: 1px dashed var(--line, #334155); opacity: 0.5;'"
+                          style="border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                    <span x-text="form.active_banner_type === 'atemporal' ? '✅ SELECIONADO: Banner Atemporal' : '🏛️ Selecionar Banner Atemporal'"></span>
                   </button>
                   <button type="button"
                           @click="form.active_banner_type = 'promocional'"
-                          :style="form.active_banner_type === 'promocional' ? 'background: #ffb703; color: #000; font-weight: 700;' : 'background: transparent; color: var(--muted, #94a3b8);'"
-                          style="border: none; border-radius: 6px; padding: 5px 12px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
-                    ⚡ Ativar Banner Promocional
+                          :style="form.active_banner_type === 'promocional' ? 'background: #ffb703; color: #000; font-weight: 800; border: 2px solid #ffb703; box-shadow: 0 0 16px rgba(255,183,3,0.45); transform: scale(1.03);' : 'background: transparent; color: var(--muted, #94a3b8); border: 1px dashed var(--line, #334155); opacity: 0.5;'"
+                          style="border-radius: 7px; padding: 7px 14px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                    <span x-text="form.active_banner_type === 'promocional' ? '✅ SELECIONADO: Banner Promocional' : '⚡ Selecionar Banner Promocional'"></span>
                   </button>
                 </div>
               </div>
@@ -164,17 +164,20 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
                 
                 <!-- QUADRO 1: BANNER ATEMPORAL (TOPO OFICIAL 16:9) -->
-                <div :style="form.active_banner_type === 'atemporal' ? 'border-color: #00e599; box-shadow: 0 0 16px rgba(0,229,153,0.15);' : 'border-color: var(--line, #334155);'"
-                     style="display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line, #334155); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                <div @click="form.active_banner_type = 'atemporal'"
+                     :style="form.active_banner_type === 'atemporal' ? 'border: 2.5px solid #00e599; box-shadow: 0 0 22px rgba(0,229,153,0.28); background: rgba(0,229,153,0.06); opacity: 1;' : 'border: 1.5px dashed var(--line, #334155); background: rgba(0,0,0,0.25); opacity: 0.62;'"
+                     style="display: flex; flex-direction: column; gap: 10px; border-radius: 12px; padding: 14px; transition: all 0.2s ease; cursor: pointer;">
                   
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
                       🏛️ Banner Atemporal (Topo 16:9)
                     </span>
-                    <span x-show="form.active_banner_type === 'atemporal'"
-                          style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(0,229,153,0.2); color: #00e599; border: 1px solid rgba(0,229,153,0.4);">
-                      ✓ ATIVO NO MOSTRUÁRIO
-                    </span>
+                    <button type="button"
+                            @click.stop="form.active_banner_type = 'atemporal'"
+                            :style="form.active_banner_type === 'atemporal' ? 'background: #00e599; color: #000; border: 1.5px solid #00e599; box-shadow: 0 0 12px rgba(0,229,153,0.4);' : 'background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); border: 1px solid var(--line, #334155);'"
+                            style="font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 100px; cursor: pointer;">
+                      <span x-text="form.active_banner_type === 'atemporal' ? '✅ ATIVO NA VITRINE' : '🔘 Selecionar Este'"></span>
+                    </button>
                   </div>
 
                   <!-- Container 16:9 de Alta Fidelidade -->
@@ -190,29 +193,29 @@
                     </template>
                   </div>
 
-                  <div>
+                  <div @click.stop>
                     <input type="file" id="bannerAtemporalInput" @change="onBannerAtemporalSelected($event)" accept="image/png,image/webp,image/jpeg,image/jpg" style="display: none;">
                     <button type="button" class="btn secondary" @click="document.getElementById('bannerAtemporalInput').click()" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px;">
-                      📁 Trocar Banner Atemporal (16:9)
+                      📁 Trocar Arquivo do Banner Atemporal (16:9)
                     </button>
-                    <p style="font-size: 10px; color: var(--muted, #94a3b8); margin: 4px 0 0 0; text-align: center;">
-                      Banner panorâmico de estúdio oficial que coroa o topo da página do produto.
-                    </p>
                   </div>
                 </div>
 
                 <!-- QUADRO 2: BANNER PROMOCIONAL (CAMPANHA 16:9) -->
-                <div :style="form.active_banner_type === 'promocional' ? 'border-color: #ffb703; box-shadow: 0 0 16px rgba(255,183,3,0.18);' : 'border-color: var(--line, #334155);'"
-                     style="display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line, #334155); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.3); transition: all 0.2s ease;">
+                <div @click="form.active_banner_type = 'promocional'"
+                     :style="form.active_banner_type === 'promocional' ? 'border: 2.5px solid #ffb703; box-shadow: 0 0 22px rgba(255,183,3,0.3); background: rgba(255,183,3,0.06); opacity: 1;' : 'border: 1.5px dashed var(--line, #334155); background: rgba(0,0,0,0.25); opacity: 0.62;'"
+                     style="display: flex; flex-direction: column; gap: 10px; border-radius: 12px; padding: 14px; transition: all 0.2s ease; cursor: pointer;">
                   
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                    <span style="color: var(--text, #f8fafc); font-size: 12.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
                       ⚡ Banner Promocional (Campanha 16:9)
                     </span>
-                    <span x-show="form.active_banner_type === 'promocional'"
-                          style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 100px; background: rgba(255,183,3,0.2); color: #ffb703; border: 1px solid rgba(255,183,3,0.4);">
-                      ✓ ATIVO NO MOSTRUÁRIO
-                    </span>
+                    <button type="button"
+                            @click.stop="form.active_banner_type = 'promocional'"
+                            :style="form.active_banner_type === 'promocional' ? 'background: #ffb703; color: #000; border: 1.5px solid #ffb703; box-shadow: 0 0 12px rgba(255,183,3,0.45);' : 'background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); border: 1px solid var(--line, #334155);'"
+                            style="font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 100px; cursor: pointer;">
+                      <span x-text="form.active_banner_type === 'promocional' ? '✅ ATIVO NA VITRINE' : '🔘 Selecionar Este'"></span>
+                    </button>
                   </div>
 
                   <!-- Container 16:9 de Alta Fidelidade -->
@@ -228,14 +231,11 @@
                     </template>
                   </div>
 
-                  <div>
+                  <div @click.stop>
                     <input type="file" id="bannerPromoInput" @change="onBannerPromoSelected($event)" accept="image/png,image/webp,image/jpeg,image/jpg" style="display: none;">
                     <button type="button" class="btn secondary" @click="document.getElementById('bannerPromoInput').click()" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px;">
-                      📁 Trocar Banner Promo (16:9)
+                      📁 Trocar Arquivo do Banner Promo (16:9)
                     </button>
-                    <p style="font-size: 10px; color: var(--muted, #94a3b8); margin: 4px 0 0 0; text-align: center;">
-                      Versão com selo de Black November, descontos ou arte sazonal.
-                    </p>
                   </div>
                 </div>
 

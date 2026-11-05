@@ -191,40 +191,40 @@
               <template x-if="item.color">
                 <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
               </template>
-              <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+              <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
                 <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
-                  🏷️ <span x-text="item.specs_json.color_prices.length + ' opções de valor'"></span>
+                  🏷️ <span x-text="getActiveColorPrices(item).length + ' opções de valor'"></span>
                 </span>
               </template>
             </div>
 
             <!-- Preços e Parcelamento -->
             <div class="card-pricing">
-              <template x-if="item.price_original && Number(item.price_original) > Number(item.price_outlet)">
+              <template x-if="item.price_original && Number(item.price_original) > getItemDisplayPrice(item)">
                 <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
               </template>
 
               <div class="price-to">
-                <template x-if="item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 1">
+                <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
                   <span class="price-starting-tag">A partir de</span>
                 </template>
                 <span class="currency">R$</span>
-                <span class="amount" x-text="formatPrice(item.price_outlet)"></span>
+                <span class="amount" x-text="formatPrice(getItemDisplayPrice(item))"></span>
                 <span class="payment-method">à vista</span>
               </div>
-              <template x-if="item.installment_12 && Number(item.installment_12) > 0">
+              <template x-if="getItemDisplayInst12(item) > 0">
                 <div class="price-installments">
-                  ou em <strong x-text="'12x de R$ ' + formatPrice(item.installment_12)"></strong>
+                  ou em <strong x-text="'12x de R$ ' + formatPrice(getItemDisplayInst12(item))"></strong>
                 </div>
               </template>
-              <template x-if="item.installment_18 && Number(item.installment_18) > 0">
-                <div class="price-installments-sub" x-text="'ou 18x de R$ ' + formatPrice(item.installment_18)"></div>
+              <template x-if="getItemDisplayInst18(item) > 0">
+                <div class="price-installments-sub" x-text="'ou 18x de R$ ' + formatPrice(getItemDisplayInst18(item))"></div>
               </template>
             </div>
 
             <!-- Botões de Ação -->
             <div class="card-actions">
-              <a :href="getWhatsAppUrl(item.name, formatPrice(item.price_outlet))" 
+              <a :href="getWhatsAppUrl(item.name, formatPrice(getItemDisplayPrice(item)))" 
                  target="_blank" 
                  class="btn-buy-whatsapp">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
@@ -317,11 +317,11 @@
               <!-- Box de Preço e Simulador de Parcelas -->
               <div class="modal-pricing-box">
                 <!-- Seletor Interativo de Cores quando há variação de preço -->
-                <template x-if="selectedItem.specs_json && selectedItem.specs_json.color_prices && selectedItem.specs_json.color_prices.length > 1">
+                <template x-if="selectedItem.show_color_prices !== false && getActiveColorPrices(selectedItem).length > 1">
                   <div class="modal-color-prices-selector">
                     <span class="selector-title">🎨 Escolha a Cor para ver o Preço:</span>
                     <div class="color-options-grid">
-                      <template x-for="cp in selectedItem.specs_json.color_prices" :key="cp.colors">
+                      <template x-for="cp in getActiveColorPrices(selectedItem)" :key="cp.colors">
                         <button type="button" 
                                 class="color-price-btn" 
                                 :class="{'active': selectedColorObj && selectedColorObj.colors === cp.colors}" 
@@ -492,8 +492,9 @@
             this.selectedItem = item;
             this.activeImage = item.image_main;
             this.selectedInstallment = 12;
-            if (item.specs_json && item.specs_json.color_prices && item.specs_json.color_prices.length > 0) {
-              this.selectedColorObj = item.specs_json.color_prices[0];
+            const activeCps = this.getActiveColorPrices(item);
+            if (item.show_color_prices !== false && activeCps.length > 0) {
+              this.selectedColorObj = this.getMainColorPriceObj(item) || activeCps[0];
             } else {
               this.selectedColorObj = null;
             }
@@ -505,9 +506,67 @@
           this.selectedColorObj = cp;
         },
 
+        parseBrlPrice(strVal) {
+          if (!strVal) return 0;
+          const num = parseFloat(String(strVal).replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+          return num > 0 ? num : 0;
+        },
+
+        getActiveColorPrices(item) {
+          if (!item || !item.specs_json || !Array.isArray(item.specs_json.color_prices)) return [];
+          return item.specs_json.color_prices.filter(cp => cp && cp.active !== false);
+        },
+
+        getMainColorPriceObj(item) {
+          const activeCps = this.getActiveColorPrices(item);
+          if (activeCps.length === 0) return null;
+          const explicitMain = activeCps.find(cp => cp.is_main === true);
+          if (explicitMain) return explicitMain;
+          let best = activeCps[0];
+          let minP = this.parseBrlPrice(best.price) || Infinity;
+          for (const cp of activeCps) {
+            const p = this.parseBrlPrice(cp.price);
+            if (p > 0 && p < minP) {
+              minP = p;
+              best = cp;
+            }
+          }
+          return best;
+        },
+
+        getItemDisplayPrice(item) {
+          if (!item) return 0;
+          const mainCp = this.getMainColorPriceObj(item);
+          if (mainCp && mainCp.price) {
+            const p = this.parseBrlPrice(mainCp.price);
+            if (p > 0) return p;
+          }
+          return Number(item.price_outlet) || 0;
+        },
+
+        getItemDisplayInst12(item) {
+          if (!item) return 0;
+          const mainCp = this.getMainColorPriceObj(item);
+          if (mainCp && mainCp.p12) {
+            const p = this.parseBrlPrice(mainCp.p12);
+            if (p > 0) return p;
+          }
+          return Number(item.installment_12) || 0;
+        },
+
+        getItemDisplayInst18(item) {
+          if (!item) return 0;
+          const mainCp = this.getMainColorPriceObj(item);
+          if (mainCp && mainCp.p18) {
+            const p = this.parseBrlPrice(mainCp.p18);
+            if (p > 0) return p;
+          }
+          return Number(item.installment_18) || 0;
+        },
+
         getActiveColorBadge() {
           if (!this.selectedItem) return '';
-          if (this.selectedColorObj && this.selectedColorObj.colors) {
+          if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.colors) {
             let c = this.selectedColorObj.colors;
             if (c.toLowerCase().includes('cores padrão') || c.toLowerCase().includes('cores padrao')) {
               return '🎨 Cores Padrão (Promoção)';
@@ -523,29 +582,29 @@
 
         getActivePrice() {
           if (!this.selectedItem) return 0;
-          if (this.selectedColorObj && this.selectedColorObj.price) {
-            const num = parseFloat(this.selectedColorObj.price.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+          if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.price) {
+            const num = this.parseBrlPrice(this.selectedColorObj.price);
             if (num > 0) return num;
           }
-          return this.selectedItem.price_outlet || 0;
+          return this.getItemDisplayPrice(this.selectedItem);
         },
 
         getActiveInstallment12() {
           if (!this.selectedItem) return 0;
-          if (this.selectedColorObj && this.selectedColorObj.p12) {
-            const num = parseFloat(this.selectedColorObj.p12.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+          if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.p12) {
+            const num = this.parseBrlPrice(this.selectedColorObj.p12);
             if (num > 0) return num;
           }
-          return this.selectedItem.installment_12 || 0;
+          return this.getItemDisplayInst12(this.selectedItem);
         },
 
         getActiveInstallment18() {
           if (!this.selectedItem) return 0;
-          if (this.selectedColorObj && this.selectedColorObj.p18) {
-            const num = parseFloat(this.selectedColorObj.p18.replace(/[^\d,\.]/g, '').replace('.', '').replace(',', '.'));
+          if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.p18) {
+            const num = this.parseBrlPrice(this.selectedColorObj.p18);
             if (num > 0) return num;
           }
-          return this.selectedItem.installment_18 || 0;
+          return this.getItemDisplayInst18(this.selectedItem);
         },
 
         getItemGallery(item) {

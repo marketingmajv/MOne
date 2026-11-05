@@ -195,6 +195,7 @@ def save_item():
     try:
         item_id = request.form.get("item_id")
         item_id = int(item_id) if item_id and item_id.isdigit() else None
+        existing = get_outlet_item_by_id_or_slug(item_id) if item_id else None
 
         # Galeria de fotos adicionais
         gallery_raw = request.form.get("images_gallery", "[]")
@@ -203,18 +204,31 @@ def save_item():
         except Exception:
             gallery = [img.strip() for img in gallery_raw.split("\n") if img.strip()]
 
-        # Ficha técnica JSON
-        specs_raw = request.form.get("specs_json", "{}")
-        try:
-            specs = json.loads(specs_raw) if specs_raw else {}
-        except Exception:
-            specs = {}
+        # Ficha técnica JSON (preserva specs_json existente quando não enviado pelo modal)
+        specs_raw = request.form.get("specs_json")
+        if specs_raw:
+            try:
+                specs = json.loads(specs_raw)
+            except Exception:
+                specs = dict(existing.get("specs_json", {})) if existing and isinstance(existing.get("specs_json"), dict) else {}
+        else:
+            specs = dict(existing.get("specs_json", {})) if existing and isinstance(existing.get("specs_json"), dict) else {}
+
+        # Variações de preço por cor (color_prices_json enviado pelo modal de edição)
+        color_prices_raw = request.form.get("color_prices_json")
+        if color_prices_raw is not None:
+            try:
+                parsed_cp = json.loads(color_prices_raw)
+                if isinstance(parsed_cp, list):
+                    specs["color_prices"] = parsed_cp
+            except Exception as cp_err:
+                logger.warning("Aviso ao fazer parse de color_prices_json: %s", cp_err)
 
         data = {
             "name": request.form.get("name"),
             "slug": slugify(request.form.get("slug") or request.form.get("name")),
             "category": request.form.get("category"),
-            "condition": request.form.get("condition"),
+            "condition": request.form.get("condition") or (existing.get("condition") if existing else "Na caixa"),
             "color": request.form.get("color"),
             "price_original": request.form.get("price_original"),
             "price_outlet": request.form.get("price_outlet"),
@@ -222,16 +236,17 @@ def save_item():
             "installment_18": request.form.get("installment_18"),
             "installments_text": request.form.get("installments_text"),
             "stock_qty": request.form.get("stock_qty"),
-            "location": request.form.get("location"),
-            "badge": request.form.get("badge"),
+            "location": request.form.get("location") or (existing.get("location") if existing else "GALPÃO MAJ"),
+            "badge": request.form.get("badge") if request.form.get("badge") is not None else (existing.get("badge") if existing else ""),
             "description": request.form.get("description"),
             "image_main": request.form.get("image_main"),
             "images_gallery": gallery,
             "specs_json": specs,
-            "status": request.form.get("status", "active"),
+            "status": request.form.get("status") or (existing.get("status") if existing else "active"),
             "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
-            "sort_order": request.form.get("sort_order", 0),
-            "notes": request.form.get("notes"),
+            "show_color_prices": request.form.get("show_color_prices") in ["1", "true", "on", True],
+            "sort_order": request.form.get("sort_order") if request.form.get("sort_order") is not None else (existing.get("sort_order", 0) if existing else 0),
+            "notes": request.form.get("notes") if request.form.get("notes") is not None else (existing.get("notes") if existing else ""),
         }
 
         # Upload de foto principal se enviada via arquivo

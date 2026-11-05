@@ -30,6 +30,9 @@ from services.showroom_crud_service import (
     export_models_to_xlsx_bytes,
     get_global_image_mode,
     set_global_image_mode,
+    toggle_model_banner_type,
+    load_model_overrides,
+    save_model_overrides,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,16 +72,30 @@ def api_get_model(slug):
 
 
 @showroom_bp.route("/api/models/<slug>/status", methods=["POST"])
+@showroom_bp.route("/api/models/<slug>/toggle-active", methods=["POST"])
 def api_set_model_status(slug):
-    """Ativa ou inativa um modelo específico no catálogo."""
+    """Ativa ou inativa um modelo específico no catálogo e persiste no banco/overrides."""
     body = request.get_json(silent=True) or {}
-    is_active = body.get("active", True)
-    set_model_active_status(slug, is_active)
+    is_active = bool(body["is_active"]) if "is_active" in body else bool(body.get("active", True))
+    clean_slug = slug.strip().lower()
+    overrides = load_model_overrides()
+    if clean_slug in overrides and isinstance(overrides[clean_slug], dict):
+        overrides[clean_slug]["is_active"] = is_active
+    else:
+        m = get_model_by_slug(clean_slug) or {}
+        overrides[clean_slug] = {
+            "slug": clean_slug,
+            "modelo": m.get("modelo", clean_slug.upper()),
+            "categoria": m.get("categoria", "Scooter"),
+            "is_active": is_active,
+        }
+    save_model_overrides(overrides)
+    set_model_active_status(clean_slug, is_active)
     return jsonify({
         "status": "success",
-        "slug": slug,
-        "is_active": bool(is_active),
-        "message": f"Modelo {slug} {'ativado' if is_active else 'inativado'} com sucesso.",
+        "slug": clean_slug,
+        "is_active": is_active,
+        "message": f"Modelo {clean_slug} {'ativado' if is_active else 'inativado'} com sucesso.",
     }), 200
 
 
@@ -210,15 +227,32 @@ def api_get_global_image_mode():
 @login_required
 @roles_required("admin", "support")
 def api_set_global_image_mode():
-    """Altera a chave mestra do modo de imagens do showroom ('atemporal' vs 'promocional')."""
+    """Altera a chave mestra do modo de imagens do showroom ('atemporal' vs 'promocional') em massa."""
     body = request.get_json(silent=True) or {}
     mode = body.get("mode", "atemporal")
     updated = set_global_image_mode(mode)
     return jsonify({
         "status": "success",
         "mode": updated,
-        "message": f"Modo de imagens do mostruário atualizado para '{updated}'.",
+        "message": f"Todos os banners foram alterados para '{updated}' com sucesso.",
     }), 200
+
+
+@showroom_bp.route("/api/models/<slug>/toggle-banner-type", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_toggle_model_banner_type(slug):
+    """Alterna individualmente o tipo de banner ativo ('atemporal' vs 'promocional') de um modelo."""
+    try:
+        body = request.get_json(silent=True) or {}
+        target_type = body.get("type")
+        result = toggle_model_banner_type(slug, target_type=target_type)
+        return jsonify(result), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 404
+    except Exception as e:
+        logger.error("Erro ao alternar banner do modelo %s: %s", slug, e, exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @showroom_bp.route("/admin/models/export-xlsx", methods=["GET"])

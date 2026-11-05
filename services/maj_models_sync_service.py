@@ -473,11 +473,18 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
 
 
 def get_all_models(include_inactive: bool = False) -> List[Dict[str, Any]]:
-    """Retorna os modelos sincronizados (ativos por padrão)."""
+    """Retorna os modelos sincronizados aplicando sempre os overrides mais recentes do Supabase."""
+    import copy
     data = sync_models_from_sheets(force=False)
+    base_list = copy.deepcopy(data.get("all_models") or data.get("models") or [])
+    try:
+        from services.showroom_crud_service import merge_showroom_overrides
+        base_list = merge_showroom_overrides(base_list)
+    except Exception as e:
+        logger.debug("Aviso ao aplicar merge_showroom_overrides em get_all_models: %s", e)
     if include_inactive:
-        return data.get("all_models", data.get("models", []))
-    return data.get("models", [])
+        return base_list
+    return [m for m in base_list if m.get("is_active", True)]
 
 
 def get_model_by_slug(slug: str) -> Optional[Dict[str, Any]]:

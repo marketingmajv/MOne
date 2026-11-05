@@ -52,6 +52,7 @@ def ensure_outlet_schema():
                 if reg:
                     try:
                         conn.execute("ALTER TABLE outlet_items ADD COLUMN IF NOT EXISTS show_on_demand BOOLEAN DEFAULT FALSE")
+                        conn.execute("ALTER TABLE outlet_items ADD COLUMN IF NOT EXISTS show_color_prices BOOLEAN DEFAULT TRUE")
                         conn.commit()
                     except Exception as col_err:
                         logger.debug("Alter outlet_items pg warning: %s", col_err)
@@ -82,6 +83,7 @@ def ensure_outlet_schema():
                     images_gallery TEXT,
                     status VARCHAR(30) NOT NULL DEFAULT 'active',
                     show_on_demand BOOLEAN DEFAULT FALSE,
+                    show_color_prices BOOLEAN DEFAULT TRUE,
                     sort_order INTEGER DEFAULT 0,
                     notes TEXT,
                     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -103,6 +105,11 @@ def ensure_outlet_schema():
         else:
             try:
                 conn.execute("ALTER TABLE outlet_items ADD COLUMN show_on_demand BOOLEAN DEFAULT 0")
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE outlet_items ADD COLUMN show_color_prices BOOLEAN DEFAULT 1")
                 conn.commit()
             except Exception:
                 pass
@@ -128,6 +135,8 @@ def ensure_outlet_schema():
                 image_main TEXT,
                 images_gallery TEXT,
                 status TEXT NOT NULL DEFAULT 'active',
+                show_on_demand BOOLEAN DEFAULT 0,
+                show_color_prices BOOLEAN DEFAULT 1,
                 sort_order INTEGER DEFAULT 0,
                 notes TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -234,6 +243,7 @@ def get_all_outlet_items(status: Optional[str] = None, search: Optional[str] = N
         for r in rows:
             item = dict(r)
             item["show_on_demand"] = bool(item.get("show_on_demand"))
+            item["show_color_prices"] = True if item.get("show_color_prices") is None else bool(item.get("show_color_prices"))
             if item.get("images_gallery") and isinstance(item["images_gallery"], str):
                 try:
                     item["images_gallery"] = json.loads(item["images_gallery"])
@@ -265,6 +275,7 @@ def get_outlet_item_by_id_or_slug(identifier: Any) -> Optional[Dict[str, Any]]:
             return None
         item = dict(row)
         item["show_on_demand"] = bool(item.get("show_on_demand"))
+        item["show_color_prices"] = True if item.get("show_color_prices") is None else bool(item.get("show_color_prices"))
         if item.get("images_gallery") and isinstance(item["images_gallery"], str):
             try:
                 item["images_gallery"] = json.loads(item["images_gallery"])
@@ -309,6 +320,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
         inst_text = data.get("installments_text") or f"12x de R$ {inst12:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stock_qty = int(data.get("stock_qty") or 0)
         show_on_demand = bool(data.get("show_on_demand"))
+        show_color_prices = True if data.get("show_color_prices") is None else bool(data.get("show_color_prices"))
         location = (data.get("location") or "GALPÃO MAJ").strip()
         badge = (data.get("badge") or "").strip()
         description = (data.get("description") or "").strip()
@@ -342,7 +354,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                 installment_12 = ?, installment_18 = ?, installments_text = ?,
                 stock_qty = ?, location = ?, badge = ?, specs_json = ?,
                 description = ?, image_main = ?, images_gallery = ?,
-                status = ?, show_on_demand = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                status = ?, show_on_demand = ?, show_color_prices = ?, sort_order = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """
             run_exec(
@@ -354,7 +366,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, show_on_demand, sort_order, notes, item_id
+                    status, show_on_demand, show_color_prices, sort_order, notes, item_id
                 )
             )
             conn.commit()
@@ -368,14 +380,14 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                 installment_12, installment_18, installments_text,
                 stock_qty, location, badge, specs_json,
                 description, image_main, images_gallery,
-                status, show_on_demand, sort_order, notes
+                status, show_on_demand, show_color_prices, sort_order, notes
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?, ?,
                 ?, ?, ?,
-                ?, ?, ?, ?
+                ?, ?, ?, ?, ?
             )
             """
             if is_pg:
@@ -390,7 +402,7 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
                     inst12, inst18, inst_text,
                     stock_qty, location, badge, specs_str,
                     description, image_main, gallery_str,
-                    status, show_on_demand, sort_order, notes
+                    status, show_on_demand, show_color_prices, sort_order, notes
                 )
             )
             conn.commit()

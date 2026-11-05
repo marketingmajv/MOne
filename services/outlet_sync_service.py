@@ -167,6 +167,8 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
         existing = get_outlet_item_by_id_or_slug(slug)
         main_img = ""
         gallery = []
+        inst12_val = grp["installment_12"]
+        inst18_val = grp["installment_18"]
         if existing:
             main_img = existing.get("image_main") or ""
             gallery = existing.get("images_gallery") or []
@@ -179,6 +181,27 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
                 category = existing.get("category")
             if existing.get("price_original") and float(existing.get("price_original")) > 0:
                 price_orig = float(existing.get("price_original"))
+            existing_specs = existing.get("specs_json") if isinstance(existing.get("specs_json"), dict) else {}
+            if existing_specs.get("color_prices"):
+                specs["color_prices"] = existing_specs["color_prices"]
+
+        # Se houver variações de cor configuradas, definir preço principal a partir da variação principal/menor ativa
+        if isinstance(specs.get("color_prices"), list) and specs["color_prices"]:
+            active_cps = [cp for cp in specs["color_prices"] if cp.get("active", True) is not False]
+            if active_cps:
+                chosen_cp = next((cp for cp in active_cps if cp.get("is_main")), None)
+                if not chosen_cp:
+                    chosen_cp = min(
+                        active_cps,
+                        key=lambda cp: parse_currency(cp.get("price") or "") or float("inf"),
+                    )
+                cp_price = parse_currency(chosen_cp.get("price") or "")
+                if cp_price > 0:
+                    price_out = cp_price
+                    cp_p12 = parse_currency(chosen_cp.get("p12") or "")
+                    cp_p18 = parse_currency(chosen_cp.get("p18") or "")
+                    inst12_val = cp_p12 if cp_p12 > 0 else round((price_out * 1.1013216) / 12, 2)
+                    inst18_val = cp_p18 if cp_p18 > 0 else round((price_out * 1.1437722) / 18, 2)
 
         if not main_img:
             slug_img = re.sub(r"[^\w]", "-", model_name.lower())
@@ -186,10 +209,11 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
             main_img = f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{slug_img}/{slug_img}-01.jpg"
 
         inst_text = ""
-        if grp["installment_12"] > 0:
-            inst_text = f"12x de R$ {grp['installment_12']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        if inst12_val > 0:
+            inst_text = f"12x de R$ {inst12_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
         show_on_demand_val = bool(existing.get("show_on_demand")) if existing else False
+        show_color_prices_val = True if (not existing or existing.get("show_color_prices") is None) else bool(existing.get("show_color_prices"))
 
         item_dict = {
             "slug": slug,
@@ -199,11 +223,12 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
             "color": colors_str,
             "price_original": price_orig,
             "price_outlet": price_out,
-            "installment_12": grp["installment_12"],
-            "installment_18": grp["installment_18"],
+            "installment_12": inst12_val,
+            "installment_18": inst18_val,
             "installments_text": inst_text,
             "stock_qty": grp["total_qty"],
             "show_on_demand": show_on_demand_val,
+            "show_color_prices": show_color_prices_val,
             "location": ", ".join(grp["locations"]),
             "badge": badge,
             "specs_json": specs,

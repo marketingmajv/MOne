@@ -81,7 +81,9 @@
       'm9-pro': '/public/images/models/banners/m9-pro-banner.webp', 'v20-ultra': '/public/images/models/banners/v20-ultra-banner.webp', 'v8-mini': '/public/images/models/banners/v8-mini-banner.webp',
       'rz-110': '/public/images/models/banners/rz-110-banner.webp', 'm50-pro': '/public/images/models/banners/m50-pro-banner.webp'
     };
-    const bannerUrl = found.banner_image || bannerMap[slug], offX = isNext ? 40 : -40;
+    const isPromoBanner = found.effective_banner_type === 'promocional' && Boolean(found.promo_banner_image);
+    const rawBanner = isPromoBanner ? found.promo_banner_image : (found.active_banner || found.banner_image || bannerMap[slug]);
+    const bannerUrl = rawBanner ? (rawBanner.startsWith('data:') ? rawBanner : `${rawBanner}?v=20261105`) : '', offX = isNext ? 40 : -40;
     if (bannerElem) {
       const hasBanner = Boolean(bannerUrl);
       if (hasBanner) {
@@ -90,8 +92,8 @@
           pImg.style.transition = 'opacity 0.22s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
           pImg.style.opacity = '0'; pImg.style.transform = `translateX(${-offX}px)`;
           setTimeout(() => {
-            if (pSource) pSource.srcset = `${bannerUrl}?v=20261016_2k`;
-            pImg.src = `${bannerUrl}?v=20261016_2k`; pImg.alt = `${found.modelo} - MAJ Mobilidade`;
+            if (pSource) pSource.srcset = bannerUrl;
+            pImg.src = bannerUrl; pImg.alt = `${found.modelo} - MAJ Mobilidade`;
             pImg.style.transform = `translateX(${offX}px)`;
             requestAnimationFrame(() => { pImg.style.opacity = '1'; pImg.style.transform = 'translateX(0)'; });
           }, 150);

@@ -153,6 +153,7 @@ function showroomModelModal() {
       const file = event.target.files?.[0];
       if (!file) return;
       this.bannerAtemporalFile = file;
+      this.form.active_banner_type = 'atemporal';
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -165,6 +166,7 @@ function showroomModelModal() {
       const file = event.target.files?.[0];
       if (!file) return;
       this.bannerPromoFile = file;
+      this.form.active_banner_type = 'promocional';
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -181,6 +183,9 @@ function showroomModelModal() {
       }
 
       this.saving = true;
+      if (window.MOnePreloader) {
+        window.MOnePreloader.show('Salvando modelo e otimizando banners (16:9)...', 'SHOWROOM MAJ', true);
+      }
       try {
         const fd = new FormData();
         Object.keys(this.form).forEach((k) => {
@@ -204,10 +209,10 @@ function showroomModelModal() {
           throw new Error(json.error || 'Erro ao salvar modelo.');
         }
 
-        alert(`Modelo ${json.slug || this.form.modelo} atualizado com sucesso!`);
         this.isOpen = false;
         window.location.reload();
       } catch (err) {
+        if (window.MOnePreloader) window.MOnePreloader.hide();
         alert('Falha ao salvar: ' + err.message);
       } finally {
         this.saving = false;
