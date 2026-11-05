@@ -4,6 +4,7 @@ Rotas do Catálogo de Atacado (Venda Exclusiva CNPJ) e Painel Administrativo.
 Independente do módulo Outlet.
 """
 
+import json
 import logging
 import os
 import re
@@ -18,10 +19,17 @@ from services.atacado_service import (
     delete_atacado_item,
     get_atacado_setting,
     set_atacado_setting,
-    sync_atacado_catalog
+    sync_atacado_catalog,
+    slugify,
 )
-from services.atacado_enrichment_service import enrich_atacado_items
+from services.atacado_enrichment_service import (
+    enrich_atacado_items,
+    extract_canonical_tech_specs,
+    sync_atacado_to_canonical_model,
+)
 _enrich_atacado_v2_items = enrich_atacado_items
+
+logger = logging.getLogger(__name__)
 
 atacado_bp = Blueprint("atacado", __name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -284,14 +292,25 @@ def admin_atacado_sync():
     return redirect(url_for("atacado.admin_atacado"))
 
 
+@atacado_bp.route("/admin/atacado/canonical-specs/<path:slug>", methods=["GET"])
+@login_required
+@roles_required("admin", "support", "finance")
+def admin_atacado_canonical_specs(slug):
+    """Retorna a ficha técnica canônica vinculada pelo slug ou nome do modelo."""
+    name_hint = request.args.get("name", "").strip()
+    specs = extract_canonical_tech_specs(slug=slug, name=name_hint)
+    return jsonify({"success": True, "canonical_specs": specs}), 200
+
+
 @atacado_bp.route("/admin/atacado/save", methods=["POST"])
 @login_required
 @roles_required("admin", "support", "finance")
 def admin_atacado_save():
-    """Cria ou edita um produto no catálogo de atacado."""
+    """Cria ou edita um produto no catálogo de atacado e sincroniza especificações canônicas."""
     try:
         item_id = request.form.get("item_id")
         item_id = int(item_id) if item_id and item_id.isdigit() else None
+        existing_item = get_atacado_item_by_id_or_slug(item_id) if item_id else None
 
         gallery_input = request.form.get("images_gallery")
         if gallery_input and isinstance(gallery_input, str) and gallery_input.strip().startswith("["):
@@ -306,7 +325,7 @@ def admin_atacado_save():
         if uploaded_files:
             for file in uploaded_files:
                 if file and file.filename:
-                    safe_name = f"{slugify(Path(file.filename).stem)}_{int(request.form.get('price_outlet') or 0)}.{file.filename.rsplit('.', 1)[-1].lower()}"
+                    safe_name = f"{slugify(Path(file.filename).stem)}_{int(float(request.form.get('price_outlet') or 0))}.{file.filename.rsplit('.', 1)[-1].lower()}"
                     dest = UPLOAD_ATACADO_DIR / safe_name
                     file.save(dest)
                     rel_path = f"/static/img/atacado/uploads/{safe_name}"
@@ -316,13 +335,16 @@ def admin_atacado_save():
         if not main_img and gallery_imgs:
             main_img = gallery_imgs[0]
 
+        existing_specs = existing_item.get("specs_json") if existing_item else {}
+        synced_specs = sync_atacado_to_canonical_model(request.form.to_dict(), existing_specs=existing_specs)
+
         data = {
             "name": request.form.get("name"),
             "slug": request.form.get("slug"),
-            "category": request.form.get("category", "Atacado CNPJ"),
-            "condition": request.form.get("condition", "Novo"),
+            "category": request.form.get("category") or (existing_item.get("category") if existing_item else "Atacado CNPJ"),
+            "condition": request.form.get("condition") or (existing_item.get("condition") if existing_item else "Novo"),
             "color": request.form.get("color", ""),
-            "price_original": request.form.get("price_original"),
+            "price_original": request.form.get("price_original") or (existing_item.get("price_original") if existing_item else 0),
             "price_outlet": request.form.get("price_outlet"),
             "price_atacado_plus": request.form.get("price_atacado_plus"),
             "installment_12": request.form.get("installment_12"),
@@ -330,19 +352,24 @@ def admin_atacado_save():
             "stock_qty": request.form.get("stock_qty"),
             "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
             "is_best_seller": request.form.get("is_best_seller") in ["1", "true", "on", True],
-            "location": request.form.get("location"),
+            "location": request.form.get("location") or (existing_item.get("location") if existing_item else "GALPÃO M-ONE / GALPÃO MAJ"),
             "badge": request.form.get("badge") or request.form.get("differentiator"),
+            "specs_json": synced_specs,
             "description": request.form.get("description"),
             "image_main": main_img,
             "images_gallery": gallery_imgs,
-            "status": request.form.get("status", "active"),
+            "status": request.form.get("status") or (existing_item.get("status") if existing_item else "active"),
             "notes": request.form.get("notes")
         }
 
         saved_id = save_atacado_item(data, item_id=item_id)
-        audit("save_atacado_item", f"Item Atacado ID={saved_id} ({data['name']}) salvo com sucesso")
-        flash(f"Produto Atacado '{data['name']}' salvo com sucesso.", "success")
+        audit("save_atacado_item", f"Item Atacado ID={saved_id} ({data['name']}) salvo e sincronizado com base canônica")
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": True, "item_id": saved_id, "name": data["name"]})
+        flash(f"Produto Atacado '{data['name']}' e Ficha Técnica Canônica salvos com sucesso.", "success")
     except Exception as e:
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": False, "error": str(e)}), 400
         flash(f"Erro ao salvar produto de atacado: {str(e)}", "danger")
 
     return redirect(url_for("atacado.admin_atacado"))

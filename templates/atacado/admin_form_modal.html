@@ -1,109 +1,420 @@
-<!-- Modal Edição / Criação Produto Atacado (Modular Anti-Monólito) -->
-<div id="atacadoFormModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target === this) closeAtacadoModal()">
-  <div style="background: var(--bg-card, #121722); border: 1px solid var(--border-gold, #00cc88); border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; color: #fff;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3 id="atacadoModalTitle" style="font-size: 1.2rem; font-weight: 800; margin: 0; color: #00cc88;">+ Editar Produto Atacado</h3>
-      <button type="button" class="modal-close-btn" onclick="closeAtacadoModal()" title="Fechar modal" aria-label="Fechar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
+{#
+  Modal Moderno de Edição/Criação de Produtos do Atacado + Modal de Confirmação Pós-Salvamento
+  (templates/atacado/admin_form_modal.html)
+  Sistema estruturado em 4 Abas com Alpine.js, <template x-teleport="body">,
+  vínculo inteligente com a Ficha Técnica Canônica (maj_models.json) e Galeria Tradicional.
+  Modular Anti-Monólito (< 500 linhas).
+#}
+
+<div x-data="atacadoModelModal()" x-cloak>
+  <template x-teleport="body">
+    <div>
+      <!-- ================================================================= -->
+      <!-- MODAL 1: EDIÇÃO / CRIAÇÃO DE PRODUTO DO ATACADO (4 ABAS)          -->
+      <!-- ================================================================= -->
+      <div id="atacadoFormModal"
+           class="modal show"
+           x-show="isOpen"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           style="position: fixed; inset: 0; z-index: 99998; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;"
+           @keydown.escape.window="if (isOpen) close()"
+           @click.self="close()">
+
+        <div class="modal-card"
+             style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: 100%; max-width: 920px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); overflow: hidden;">
+
+          <!-- Cabeçalho do Modal -->
+          <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155); background: var(--panel, #0f172a); margin: 0;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <h3 id="atacadoModalTitle" style="font-size: 1.15rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <span x-text="isEditing ? '✏️ Editar Produto Atacado: ' + (form.name || '') : '➕ Novo Produto Atacado CNPJ'"></span>
+                </h3>
+                <span x-show="canonicalLinked"
+                      style="font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(0, 204, 136, 0.15); color: #059669; border: 1px solid rgba(0, 204, 136, 0.35);">
+                  🔗 Ficha Canônica: <span x-text="canonicalSlug"></span>
+                </span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--muted, #94a3b8); margin: 4px 0 0 0;">
+                Condições comerciais B2B, especificações técnicas sincronizadas com a base canônica e galeria tradicional.
+              </p>
+            </div>
+
+            <button type="button"
+                    class="modal-close-btn"
+                    @click="close()"
+                    title="Fechar modal"
+                    aria-label="Fechar"
+                    style="padding: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line, #334155); background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Barra de Navegação das 4 Abas (Grid 4 colunas sem corte lateral) -->
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px 24px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155);">
+            <button type="button"
+                    @click="activeTab = 'comercial'"
+                    :style="activeTab === 'comercial' ? 'background: #00cc88; color: #000; font-weight: 800; border-color: #00cc88;' : 'background: var(--panel, #0f172a); color: var(--text, #f8fafc); border-color: var(--line, #334155);'"
+                    style="border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s ease;">
+              💼 1. Comercial & Preços B2B
+            </button>
+            <button type="button"
+                    @click="activeTab = 'motor'"
+                    :style="activeTab === 'motor' ? 'background: #00cc88; color: #000; font-weight: 800; border-color: #00cc88;' : 'background: var(--panel, #0f172a); color: var(--text, #f8fafc); border-color: var(--line, #334155);'"
+                    style="border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s ease;">
+              ⚡ 2. Motor & Bateria
+            </button>
+            <button type="button"
+                    @click="activeTab = 'estrutura'"
+                    :style="activeTab === 'estrutura' ? 'background: #00cc88; color: #000; font-weight: 800; border-color: #00cc88;' : 'background: var(--panel, #0f172a); color: var(--text, #f8fafc); border-color: var(--line, #334155);'"
+                    style="border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s ease;">
+              🛡️ 3. Estrutura, Freios & Carga
+            </button>
+            <button type="button"
+                    @click="activeTab = 'galeria'"
+                    :style="activeTab === 'galeria' ? 'background: #00cc88; color: #000; font-weight: 800; border-color: #00cc88;' : 'background: var(--panel, #0f172a); color: var(--text, #f8fafc); border-color: var(--line, #334155);'"
+                    style="border: 1px solid var(--line, #334155); border-radius: 8px; padding: 8px 10px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s ease;">
+              <span>📸 4. Fotos & Galeria</span>
+              <span style="font-size: 0.68rem; padding: 1px 6px; border-radius: 99px; background: rgba(0,0,0,0.22); color: inherit;" x-text="gallery.length"></span>
+            </button>
+          </div>
+
+          <!-- Formulário Unificado das 4 Abas -->
+          <form action="{{ url_for('atacado.admin_atacado_save') }}"
+                method="POST"
+                enctype="multipart/form-data"
+                data-no-preloader="true"
+                @submit.prevent="handleFormSubmit($event)"
+                style="overflow-y: auto; padding: 22px 24px; flex: 1; display: flex; flex-direction: column; gap: 18px;">
+
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="item_id" id="atacado_form_item_id" :value="form.id">
+            <input type="hidden" name="slug" id="atacado_form_slug" :value="form.slug">
+            <input type="hidden" name="image_main" id="atacado_form_image_main" :value="imageMain">
+            <input type="hidden" name="images_gallery" id="atacado_form_images_gallery" :value="JSON.stringify(gallery)">
+
+            <!-- ABA 1 — 💼 COMERCIAL & PREÇOS B2B -->
+            <div x-show="activeTab === 'comercial'" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Nome do Modelo *</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" name="name" id="atacado_form_name" class="form-input" x-model="form.name" @input="onNameChange()" @blur="fetchCanonicalSpecs(false)" placeholder="Ex: MAX 12, GP1000, FLOW ONE, V20 ULTRA" required style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.88rem;">
+                    <button type="button" class="btn sm" @click="fetchCanonicalSpecs(true)" title="Recarregar especificações da Ficha Técnica Canônica pelo nome/slug" style="white-space: nowrap; background: rgba(0, 204, 136, 0.12); color: #059669; border: 1px solid rgba(0, 204, 136, 0.3); font-weight: 700; padding: 0 12px;">
+                      🔄 Puxar Ficha
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Categoria *</label>
+                  <select name="category" id="atacado_form_category" class="form-input" x-model="form.category" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.88rem;">
+                    <option value="Scooter Elétrica">Scooter Elétrica</option>
+                    <option value="Bike Elétrica">Bike Elétrica</option>
+                    <option value="Triciclo Elétrico">Triciclo Elétrico</option>
+                    <option value="Patinete Elétrico">Patinete Elétrico</option>
+                    <option value="Atacado CNPJ">Atacado CNPJ (Geral)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 12px; border: 1px solid var(--line, #334155);">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: #059669;">Preço Atacado À Vista (R$) *</label>
+                  <input type="number" step="0.01" name="price_outlet" id="atacado_form_price_outlet" class="form-input" x-model="form.price_outlet" required placeholder="Ex: 6800.00" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid rgba(0, 204, 136, 0.4); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.9rem; font-weight: 700;">
+                  <small style="color: var(--muted, #94a3b8); font-size: 0.72rem; display: block; margin-top: 3px;">Base para cálculo dos tiers (Até 10 / 11-20 / 21+ un).</small>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Preço Atacado Plus (R$)</label>
+                  <input type="number" step="0.01" name="price_atacado_plus" id="atacado_form_price_atacado_plus" class="form-input" x-model="form.price_atacado_plus" placeholder="Ex: 6600.00" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.9rem;">
+                  <small style="color: var(--muted, #94a3b8); font-size: 0.72rem; display: block; margin-top: 3px;">Condição especial para grandes lotes / parceiros.</small>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Estoque Total (Unidades) *</label>
+                  <input type="number" name="stock_qty" id="atacado_form_stock_qty" class="form-input" x-model="form.stock_qty" required style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.9rem; font-weight: 700;">
+                  <small style="color: var(--muted, #94a3b8); font-size: 0.72rem; display: block; margin-top: 3px;">Volume unificado Galpão MAJ + COLVIX.</small>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">🎨 Cores e Lotes Disponíveis</label>
+                  <input type="text" name="color" id="atacado_form_color" class="form-input" x-model="form.color" placeholder="Ex: Preto carbono, Branco, Azul, Vermelho" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">🏷️ Selo / Diferencial Comercial do Modelo</label>
+                  <input type="text" name="badge" id="atacado_form_badge" class="form-input" x-model="form.badge" placeholder="Ex: 🎁 Baú Incluso de Fábrica ou 🛞 Pneus Fat Tire 20x4.0" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div style="padding: 12px 14px; border: 1px solid rgba(229, 169, 59, 0.3); border-radius: 10px; background: rgba(229, 169, 59, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <div>
+                    <label for="atacado_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: var(--text, #f8fafc); cursor: pointer; display: block;">📦 Sob Encomenda se estoque zerado</label>
+                    <small style="color: var(--muted, #94a3b8); font-size: 0.72rem; display: block; margin-top: 2px;">Mantém visível no catálogo CNPJ como "Sob Encomenda" quando estoque = 0.</small>
+                  </div>
+                  <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" x-model="form.show_on_demand" style="width: 18px; height: 18px; cursor: pointer; accent-color: #e5a93b; flex-shrink: 0;">
+                </div>
+                <div style="padding: 12px 14px; border: 1px solid rgba(0, 204, 136, 0.3); border-radius: 10px; background: rgba(0, 204, 136, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <div>
+                    <label for="atacado_form_is_best_seller" style="font-size: 0.82rem; font-weight: 700; color: var(--text, #f8fafc); cursor: pointer; display: block;">⭐ Destaque Mais Vendido</label>
+                    <small style="color: var(--muted, #94a3b8); font-size: 0.72rem; display: block; margin-top: 2px;">Exibido com selo de destaque e incluído no filtro rápido [Mais Vendidos].</small>
+                  </div>
+                  <input type="checkbox" name="is_best_seller" id="atacado_form_is_best_seller" value="1" x-model="form.is_best_seller" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88; flex-shrink: 0;">
+                </div>
+              </div>
+            </div>
+
+            <!-- ABA 2 — ⚡ MOTOR & BATERIA -->
+            <div x-show="activeTab === 'motor'" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="padding: 10px 14px; border-radius: 10px; background: rgba(0, 204, 136, 0.07); border: 1px solid rgba(0, 204, 136, 0.25); font-size: 0.78rem; color: var(--text, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
+                <span>⚡ As alterações técnicas desta aba são sincronizadas automaticamente com a Ficha Técnica Canônica (<code>maj_models.json</code>).</span>
+                <span style="color: #059669; font-weight: 700;" x-text="'Slug: ' + (canonicalSlug || form.slug || 'novo')"></span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Potência Nominal (Watts)</label>
+                  <input type="text" name="potencia_nominal_w" class="form-input" x-model="form.potencia_nominal_w" placeholder="Ex: 1000W, 1500W, 2000W" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Velocidade Máxima (km/h)</label>
+                  <input type="text" name="velocidade_max_kmh" class="form-input" x-model="form.velocidade_max_kmh" placeholder="Ex: 32 km/h" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Modos de Condução</label>
+                  <input type="text" name="modos_conducao" class="form-input" x-model="form.modos_conducao" placeholder="Ex: 3 níveis (Eco / Normal / Sport)" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Voltagem (V)</label>
+                  <input type="text" name="voltagem_v" class="form-input" x-model="form.voltagem_v" @input="calcWh()" placeholder="Ex: 60V ou 72V" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Capacidade (Ah)</label>
+                  <input type="text" name="capacidade_ah" class="form-input" x-model="form.capacidade_ah" @input="calcWh()" placeholder="Ex: 20Ah, 24Ah, 30Ah" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Capacidade Energética (Wh)</label>
+                  <input type="text" name="capacidade_wh" class="form-input" x-model="form.capacidade_wh" placeholder="Ex: 1200Wh" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Autonomia Conservadora (km)</label>
+                  <input type="text" name="autonomia_conservadora_km" class="form-input" x-model="form.autonomia_conservadora_km" placeholder="Ex: 35 km" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Autonomia Máxima (km)</label>
+                  <input type="text" name="autonomia_maxima_km" class="form-input" x-model="form.autonomia_maxima_km" placeholder="Ex: 50 km" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Possui Marcha a Ré?</label>
+                  <select name="possui_re" class="form-input" x-model="form.possui_re" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Química da Bateria (LiFePO₄ LFP, Lítio Íon, Chumbo)</label>
+                <input type="text" name="quimica_bateria" class="form-input" x-model="form.quimica_bateria" placeholder="Ex: LiFePO₄ (LFP), Lítio Íon ou Chumbo Ácido" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <!-- ABA 3 — 🛡️ ESTRUTURA, FREIOS & CARGA -->
+            <div x-show="activeTab === 'estrutura'" style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Sistema de Freios (Dianteiro / Traseiro)</label>
+                <input type="text" name="freios" class="form-input" x-model="form.freios" placeholder="Ex: Dianteiro/Traseiro Hidráulico a disco" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Suspensão / Amortecimento</label>
+                  <input type="text" name="suspensao" class="form-input" x-model="form.suspensao" placeholder="Ex: Dupla dianteira e traseira hidráulica" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Aro / Pneu</label>
+                  <input type="text" name="aro_pneu" class="form-input" x-model="form.aro_pneu" placeholder="Ex: Aro 10/12 tubeless ou Fat Tire 20x4.0" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Carga Máxima Suportada (kg)</label>
+                  <input type="text" name="carga_maxima_kg" class="form-input" x-model="form.carga_maxima_kg" placeholder="Ex: 180 kg" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Peso do Veículo (kg)</label>
+                  <input type="text" name="peso_kg" class="form-input" x-model="form.peso_kg" placeholder="Ex: 75 kg" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.85rem;">
+                </div>
+              </div>
+            </div>
+
+            <!-- ABA 4 — 📸 FOTOS & GALERIA TRADICIONAL -->
+            <div x-show="activeTab === 'galeria'" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="padding: 16px; border: 1px solid var(--line, #334155); border-radius: 12px; background: rgba(255,255,255,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                  <div>
+                    <label style="display: block; font-size: 0.88rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;">📸 Foto Principal de Vitrine & Galeria Tradicional do Catálogo</label>
+                    <small style="color: var(--muted, #94a3b8); font-size: 0.75rem;">Adicione fotos do modelo (máx. 12 imagens) e clique em <strong>Definir Capa</strong> para escolher a foto principal da vitrine B2B.</small>
+                  </div>
+                  <div>
+                    <input type="file" id="atacado_file_input" accept="image/*" multiple style="display: none;" @change="handleGalleryUpload($event)">
+                    <button type="button" class="btn sm" @click="document.getElementById('atacado_file_input').click()" style="background: rgba(0, 204, 136, 0.15); color: #059669; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;">
+                      📁 Enviar Fotos para a Galeria
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                  <input type="text" class="form-input" x-model="newPhotoUrl" placeholder="Ou cole a URL direta de uma foto existente (ex: /public/images/max-12/max-12-01.jpg)..." style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 7px 12px; flex: 1; font-size: 0.8rem;">
+                  <button type="button" class="btn sm" @click="addPhotoByUrl()" style="white-space: nowrap;">Adicionar URL</button>
+                </div>
+
+                <div x-show="uploadStatus" x-text="uploadStatus" :style="uploadError ? 'color: #ef4444;' : 'color: #059669;'" style="margin-top: 6px; margin-bottom: 8px; font-size: 0.78rem; font-weight: 700;"></div>
+
+                <div id="atacado_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); gap: 12px; margin-top: 12px;">
+                  <template x-if="gallery.length === 0">
+                    <div style="grid-column: 1 / -1; padding: 22px; text-align: center; border: 1px dashed var(--line, #334155); border-radius: 10px; color: var(--muted, #94a3b8); font-size: 0.8rem;">
+                      Nenhuma foto cadastrada na galeria deste produto. Use o botão acima para enviar imagens.
+                    </div>
+                  </template>
+
+                  <template x-for="(imgUrl, idx) in gallery" :key="idx">
+                    <div :style="imgUrl === imageMain ? 'border: 2px solid #00cc88; box-shadow: 0 0 12px rgba(0,204,136,0.2);' : 'border: 1px solid var(--line, #334155);'"
+                         style="position: relative; border-radius: 10px; padding: 6px; background: var(--panel2, #1e293b); display: flex; flex-direction: column; align-items: center;">
+                      <img :src="imgUrl" alt="Foto Galeria" style="width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 6px; background: var(--bg, #0b0f17);" @error="$event.target.src='/static/logo.png'">
+                      <span x-show="imgUrl === imageMain" style="position: absolute; top: 10px; left: 10px; background: #00cc88; color: #000; font-weight: 800; font-size: 0.65rem; padding: 2px 7px; border-radius: 4px;">⭐ CAPA</span>
+                      <div style="display: flex; gap: 4px; width: 100%; margin-top: 6px;">
+                        <button type="button" x-show="imgUrl !== imageMain" @click="setCoverPhoto(idx)" class="btn sm" style="flex: 1; padding: 3px 6px; font-size: 0.68rem; background: rgba(0, 204, 136, 0.15); color: #059669; border: 1px solid rgba(0,204,136,0.3);">Definir Capa</button>
+                        <button type="button" @click="removePhoto(idx)" class="btn sm" style="padding: 3px 8px; font-size: 0.68rem; color: #ef4444; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);" title="Remover foto">Remover</button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Descrição Livre do Catálogo B2B</label>
+                  <textarea name="description" id="atacado_form_description" rows="3" class="form-input" x-model="form.description" placeholder="Argumentos comerciais e resumo exibido no modal de detalhes do catálogo de atacado..." style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.84rem; resize: vertical;"></textarea>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text, #f8fafc);">Notas Operacionais Internas (Restrito Admin)</label>
+                  <textarea name="notes" id="atacado_form_notes" rows="3" class="form-input" x-model="form.notes" placeholder="Observações internas de lote, alocação nos galpões ou condições comerciais específicas..." style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; padding: 9px 12px; width: 100%; font-size: 0.84rem; resize: vertical;"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rodapé Fixo com Navegação de Abas e Botão de Salvar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line, #334155); flex-wrap: wrap;">
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn sm" x-show="activeTab !== 'comercial'" @click="prevTab()" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">← Aba Anterior</button>
+                <button type="button" class="btn sm" x-show="activeTab !== 'galeria'" @click="nextTab()" style="background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">Próxima Aba →</button>
+              </div>
+
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button" @click="close()" :disabled="processingUpload || saving" class="btn sm">Cancelar</button>
+                <button type="submit" id="atacado_save_btn" :disabled="processingUpload || saving" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none; padding: 9px 20px;">
+                  <span x-show="!processingUpload && !saving">💾 Salvar Produto & Sincronizar Ficha Canônica</span>
+                  <span x-show="processingUpload">⏳ Processando Fotos...</span>
+                  <span x-show="saving">⏳ Salvando e Sincronizando...</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- MODAL 2: CONFIRMAÇÃO DE SUCESSO / ALERTA PÓS-PRELOADER            -->
+      <!-- ================================================================= -->
+      <div id="atacadoSaveFeedbackModal"
+           class="modal show"
+           x-show="feedbackModal.open"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           style="position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;"
+           @keydown.escape.window="if (feedbackModal.open) confirmFeedbackModal()"
+           @keydown.enter.window="if (feedbackModal.open) confirmFeedbackModal()"
+           @click.self="confirmFeedbackModal()">
+
+        <div class="modal-card"
+             style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: 100%; max-width: 480px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); overflow: hidden;">
+
+          <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--line, #334155); background: var(--panel, #0f172a); margin: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span x-text="feedbackModal.success ? '✅' : '⚠️'" style="font-size: 1.25rem;"></span>
+              <div>
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;" x-text="feedbackModal.title"></h3>
+                <p style="font-size: 0.76rem; color: var(--muted, #94a3b8); margin: 2px 0 0 0;" x-text="feedbackModal.subtitle"></p>
+              </div>
+            </div>
+
+            <button type="button"
+                    class="modal-close-btn"
+                    @click="confirmFeedbackModal()"
+                    title="Fechar alerta"
+                    aria-label="Fechar"
+                    style="padding: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line, #334155); background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;">
+            <div :style="feedbackModal.success ? 'background: rgba(0, 204, 136, 0.08); border: 1px solid rgba(0, 204, 136, 0.3);' : 'background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3);'"
+                 style="padding: 14px 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <span style="color: var(--muted, #94a3b8); font-weight: 600;">Modelo Atualizado:</span>
+                <strong style="color: var(--text, #f8fafc); font-size: 0.92rem;" x-text="feedbackModal.modelName"></strong>
+              </div>
+              <div x-show="feedbackModal.success" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;">
+                <span style="color: var(--muted, #94a3b8); font-weight: 600;">Preço Atacado / Estoque:</span>
+                <strong style="color: #059669;" x-text="feedbackModal.priceAndStock"></strong>
+              </div>
+              <div x-show="feedbackModal.success" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;">
+                <span style="color: var(--muted, #94a3b8); font-weight: 600;">Ficha Técnica Canônica:</span>
+                <span style="color: #059669; font-weight: 700;" x-text="'🔗 Sincronizada (' + (feedbackModal.canonicalSlug || 'base') + ')'"></span>
+              </div>
+              <div x-show="feedbackModal.success" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;">
+                <span style="color: var(--muted, #94a3b8); font-weight: 600;">Galeria Tradicional:</span>
+                <span style="color: var(--text, #f8fafc); font-weight: 700;" x-text="feedbackModal.galleryCount + ' foto(s) ativa(s)'"></span>
+              </div>
+              <div x-show="!feedbackModal.success" style="font-size: 0.83rem; color: #ef4444; font-weight: 600;" x-text="feedbackModal.errorMsg"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px;">
+              <button type="button"
+                      class="btn primary"
+                      @click="confirmFeedbackModal()"
+                      style="background: #00cc88; color: #000; font-weight: 800; border: none; padding: 9px 22px; width: 100%; justify-content: center;">
+                <span x-text="feedbackModal.success ? '✅ Concluir e Atualizar Painel' : 'Entendido'"></span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-
-    <form action="{{ url_for('atacado.admin_atacado_save') }}" method="POST" enctype="multipart/form-data" onsubmit="return validateAtacadoFormPayload(this)">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="item_id" id="atacado_form_item_id">
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Nome do Modelo</label>
-          <input type="text" name="name" id="atacado_form_name" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado À Vista (R$)</label>
-          <input type="number" step="0.01" name="price_outlet" id="atacado_form_price_outlet" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Preço Atacado Plus (R$)</label>
-          <input type="number" step="0.01" name="price_atacado_plus" id="atacado_form_price_atacado_plus" style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Estoque Total (Unidades)</label>
-          <input type="number" name="stock_qty" id="atacado_form_stock_qty" required style="width: 100%; padding: 8px; font-size: 0.85rem;">
-        </div>
-      </div>
-
-      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(229, 169, 59, 0.25); border-radius: 8px; background: rgba(229, 169, 59, 0.05); display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <label for="atacado_form_show_on_demand" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
-            📦 Exibir como "Sob Encomenda" se estoque estiver zerado
-          </label>
-          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-            Se desmarcado, o modelo é automaticamente ocultado do catálogo CNPJ ao zerar o estoque.
-          </small>
-        </div>
-        <input type="checkbox" name="show_on_demand" id="atacado_form_show_on_demand" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
-      </div>
-
-      <div style="margin-bottom: 14px; padding: 10px 14px; border: 1px solid rgba(0, 204, 136, 0.25); border-radius: 8px; background: rgba(0, 204, 136, 0.05); display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <label for="atacado_form_is_best_seller" style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; cursor: pointer; display: block;">
-            ⭐ Destaque como "Mais Vendido"
-          </label>
-          <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-            Exibido com prioridade e incluído no filtro rápido <strong>[MAIS VENDIDOS]</strong> do catálogo.
-          </small>
-        </div>
-        <input type="checkbox" name="is_best_seller" id="atacado_form_is_best_seller" value="1" style="width: 18px; height: 18px; cursor: pointer; accent-color: #00cc88;">
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Cores e Lotes Disponíveis</label>
-        <input type="text" name="color" id="atacado_form_color" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: Preto carbono (18 un), Branco (48 un)">
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">🏷️ Diferencial do Modelo (Sticker / Selo do Catálogo)</label>
-        <input type="text" name="badge" id="atacado_form_badge" style="width: 100%; padding: 8px; font-size: 0.85rem;" placeholder="ex: 🎁 Baú Incluso de Fábrica ou 🛞 Pneus Fat Tire 20x4.0">
-        <small style="color: var(--muted); font-size: 0.72rem; display: block; margin-top: 2px;">
-          Exibido como chip de vantagem no card e na modal. Deixe em branco para usar o padrão de fábrica.
-        </small>
-      </div>
-
-      <!-- Galeria de Fotos e Foto Capa do Atacado -->
-      <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
-        <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Atacado</label>
-        <small style="color: var(--muted); display: block; margin-bottom: 10px; font-size: 0.75rem;">
-          Envie fotos do modelo para o catálogo de atacado. Selecione qual foto será a <strong>Foto Capa (Principal)</strong>.
-        </small>
-
-        <input type="hidden" name="image_main" id="atacado_form_image_main">
-        <input type="hidden" name="images_gallery" id="atacado_form_images_gallery">
-
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-          <input type="file" id="atacado_file_input" accept="image/*" multiple style="width: 100%;" onchange="handleAtacadoGalleryUpload(this)">
-        </div>
-
-        <div id="atacado_upload_status_badge" style="display: none; margin-top: 6px; font-size: 0.78rem; font-weight: 700;"></div>
-
-        <!-- Preview da Galeria e Foto Capa -->
-        <div id="atacado_gallery_preview_container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 12px;"></div>
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Descrição / Observações de Atacado</label>
-        <textarea name="description" id="atacado_form_description" rows="2" style="width: 100%; padding: 8px; font-size: 0.85rem;"></textarea>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-        <button type="button" onclick="closeAtacadoModal()" class="btn sm">Cancelar</button>
-        <button type="submit" id="atacado_save_btn" class="btn primary sm" style="background: #00cc88; color: #000; font-weight: 800; border: none;">Salvar no Atacado</button>
-      </div>
-    </form>
-  </div>
+  </template>
 </div>
-

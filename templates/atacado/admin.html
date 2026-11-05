@@ -2,7 +2,7 @@
 {% block title %}Painel Atacado CNPJ | M-One{% endblock %}
 
 {% block content %}
-<div style="padding: 20px; max-width: 1400px; margin: 0 auto;">
+<div style="padding: 4px 0 20px; width: 100%; max-width: 100%; min-width: 0;">
   
   <!-- Header do Painel -->
   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
@@ -131,38 +131,38 @@
       </form>
     </div>
 
-    <div style="overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+    <div style="overflow-x: auto; width: 100%;">
+      <table style="width: 100%; min-width: 0; border-collapse: collapse; font-size: 0.83rem; text-align: left;">
         <thead>
           <tr style="background: rgba(255,255,255,0.03); color: var(--muted); border-bottom: 1px solid var(--line);">
-            <th style="padding: 12px 16px;">Imagem</th>
-            <th style="padding: 12px 16px;">Modelo / Categoria</th>
-            <th style="padding: 12px 16px;">Preço Atacado À Vista</th>
-            <th style="padding: 12px 16px;">Preço Atacado Plus</th>
-            <th style="padding: 12px 16px;">Estoque Real</th>
-            <th style="padding: 12px 16px;">Se Zerado</th>
-            <th style="padding: 12px 16px;">Mais Vendido</th>
-            <th style="padding: 12px 16px;">Status</th>
-            <th style="padding: 12px 16px; text-align: right;">Ações</th>
+            <th style="padding: 11px 12px; width: 58px;">Foto</th>
+            <th style="padding: 11px 10px;">Modelo / Categoria</th>
+            <th style="padding: 11px 10px;">Preço À Vista</th>
+            <th style="padding: 11px 10px;">Preço Plus</th>
+            <th style="padding: 11px 10px;">Estoque</th>
+            <th style="padding: 11px 10px;">Se Zerado</th>
+            <th style="padding: 11px 10px;">Mais Vendido</th>
+            <th style="padding: 11px 10px;">Status</th>
+            <th style="padding: 11px 14px; text-align: right;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for item in items %}
           <tr style="border-bottom: 1px solid var(--line); transition: background 0.2s;">
-            <td style="padding: 10px 16px;">
-              <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" alt="{{ item.name }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);">
+            <td style="padding: 9px 12px; width: 58px;">
+              <img src="{{ item.image_main or url_for('static', filename='logo.png') }}" alt="{{ item.name }}" style="width: 42px; height: 42px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);">
             </td>
-            <td style="padding: 10px 16px;">
-              <strong style="color: var(--text); font-size: 0.95rem; display: block;">{{ item.name }}</strong>
-              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; font-size: 0.70rem; margin-top: 2px; display: inline-block;">
+            <td style="padding: 9px 10px; max-width: 210px;">
+              <strong style="color: var(--text); font-size: 0.92rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.name }}</strong>
+              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #d97706; font-size: 0.68rem; margin-top: 2px; display: inline-block; max-width: 195px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 {{ item.differentiator or item.badge or 'Sem sticker' }}
               </span>
-              <small style="color: var(--muted); display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;">
+              <small style="color: var(--muted); display: block; max-width: 195px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;">
                 {{ item.color or 'Cores diversas' }}
               </small>
             </td>
-            <td style="padding: 10px 16px;">
-              <strong style="color: #00cc88; font-size: 0.95rem;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
+              <strong style="color: #059669; font-size: 0.92rem;">
                 {% if item.price_outlet > 0 %}
                   R$ {{ "{:,.2f}".format(item.price_outlet).replace(",", "X").replace(".", ",").replace("X", ".") }}
                 {% else %}
@@ -170,59 +170,52 @@
                 {% endif %}
               </strong>
             </td>
-            <td style="padding: 10px 16px;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
               {% if item.price_atacado_plus > 0 %}
-                <span style="color: #e2e8f0; font-weight: 600;">R$ {{ "{:,.2f}".format(item.price_atacado_plus).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
+                <span style="color: var(--text); font-weight: 600;">R$ {{ "{:,.2f}".format(item.price_atacado_plus).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
               {% else %}
                 <span style="color: var(--muted);">-</span>
               {% endif %}
             </td>
-            <td style="padding: 10px 16px;">
-              {% if item.installment_12 > 0 %}
-                <span style="color: var(--muted);">12x R$ {{ "{:,.2f}".format(item.installment_12).replace(",", "X").replace(".", ",").replace("X", ".") }}</span>
-              {% else %}
-                <span style="color: var(--muted);">-</span>
-              {% endif %}
-            </td>
-            <td style="padding: 10px 16px;">
-              <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; font-weight: 700;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
+              <span class="badge" style="background: rgba(0, 204, 136, 0.15); color: #059669; font-weight: 700;">
                 {{ item.stock_qty }} un
               </span>
             </td>
-            <td style="padding: 10px 16px;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
               <button type="button" 
                       class="btn sm" 
-                      style="{{ 'background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 700;' if item.show_on_demand else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      style="padding: 4px 9px; font-size: 0.74rem; {{ 'background: rgba(229, 169, 59, 0.15); color: #d97706; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 700;' if item.show_on_demand else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.25); font-weight: 600;' }}"
                       onclick="toggleAtacadoOnDemand({{ item.id }}, this)"
                       title="Alternar entre Ocultar ou Exibir Sob Encomenda quando estoque for 0">
                 {{ '📦 Sob Encomenda' if item.show_on_demand else '🚫 Ocultar' }}
               </button>
             </td>
-            <td style="padding: 10px 16px;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
               <button type="button" 
                       class="btn sm" 
-                      style="{{ 'background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;' if item.is_best_seller else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.2); font-weight: 600;' }}"
+                      style="padding: 4px 9px; font-size: 0.74rem; {{ 'background: rgba(0, 204, 136, 0.15); color: #059669; border: 1px solid rgba(0, 204, 136, 0.35); font-weight: 700;' if item.is_best_seller else 'background: rgba(148, 163, 184, 0.1); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.25); font-weight: 600;' }}"
                       onclick="toggleAtacadoBestSeller({{ item.id }}, this)"
                       title="Clique para marcar/desmarcar como Mais Vendido">
                 {{ '⭐ Mais Vendido' if item.is_best_seller else '☆ Padrão' }}
               </button>
             </td>
-            <td style="padding: 10px 16px;">
+            <td style="padding: 9px 10px; white-space: nowrap;">
               <form action="{{ url_for('atacado.admin_atacado_status', item_id=item.id) }}" method="POST" style="margin: 0;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% if item.status == 'active' %}
-                  <button type="submit" class="btn sm" style="background: rgba(0, 204, 136, 0.12); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.3); font-weight: 700;">Ativo</button>
+                  <button type="submit" class="btn sm" style="padding: 4px 9px; font-size: 0.74rem; background: rgba(0, 204, 136, 0.12); color: #059669; border: 1px solid rgba(0, 204, 136, 0.3); font-weight: 700;">Ativo</button>
                 {% else %}
-                  <button type="submit" class="btn sm" style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);">Inativo</button>
+                  <button type="submit" class="btn sm" style="padding: 4px 9px; font-size: 0.74rem; background: rgba(148, 163, 184, 0.12); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.3);">Inativo</button>
                 {% endif %}
               </form>
             </td>
-            <td style="padding: 10px 16px; text-align: right;">
-              <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                <button type="button" class="btn sm" onclick="editAtacadoItem({{ item.id }})">Editar</button>
+            <td style="padding: 9px 14px; text-align: right; white-space: nowrap;">
+              <div style="display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                <button type="button" class="btn sm" onclick="editAtacadoItem({{ item.id }})" style="padding: 4px 10px; font-size: 0.76rem; font-weight: 700;">✏️ Editar</button>
                 <form action="{{ url_for('atacado.admin_atacado_delete', item_id=item.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir {{ item.name }} do Atacado?');" style="margin: 0;">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="btn sm" style="color: #ef4444;">✕</button>
+                  <button type="submit" class="btn sm" style="padding: 4px 8px; font-size: 0.76rem; color: #ef4444;" title="Excluir modelo">✕</button>
                 </form>
               </div>
             </td>
@@ -238,64 +231,10 @@
 {% include 'atacado/admin_form_modal.html' %}
 
 <script>
-  const ATACADO_ITEMS_LIST = {{ items|tojson }};
-  let ATACADO_CURRENT_GALLERY = [];
-  let ATACADO_CURRENT_IMAGE_MAIN = '';
-
-  function openAtacadoModal() {
-    document.getElementById('atacado_form_item_id').value = '';
-    document.getElementById('atacado_form_name').value = '';
-    document.getElementById('atacado_form_price_outlet').value = '';
-    document.getElementById('atacado_form_price_atacado_plus').value = '';
-    document.getElementById('atacado_form_stock_qty').value = '1';
-    document.getElementById('atacado_form_show_on_demand').checked = false;
-    document.getElementById('atacado_form_is_best_seller').checked = false;
-    document.getElementById('atacado_form_color').value = '';
-    document.getElementById('atacado_form_badge').value = '';
-    document.getElementById('atacado_form_description').value = '';
-    ATACADO_CURRENT_GALLERY = [];
-    ATACADO_CURRENT_IMAGE_MAIN = '';
-    renderAtacadoGalleryPreview();
-    document.getElementById('atacadoModalTitle').textContent = '+ Novo Produto Atacado';
-    document.getElementById('atacadoFormModal').style.display = 'flex';
-  }
-
-  function closeAtacadoModal() {
-    document.getElementById('atacadoFormModal').style.display = 'none';
-  }
-
-  function editAtacadoItem(itemOrId) {
-    let item = itemOrId;
-    if (typeof itemOrId === 'number' || typeof itemOrId === 'string') {
-      item = (ATACADO_ITEMS_LIST || []).find(i => String(i.id) === String(itemOrId)) || {};
-    }
-    document.getElementById('atacado_form_item_id').value = item.id || '';
-    document.getElementById('atacado_form_name').value = item.name || '';
-    document.getElementById('atacado_form_price_outlet').value = item.price_outlet || '';
-    document.getElementById('atacado_form_price_atacado_plus').value = item.price_atacado_plus || '';
-    document.getElementById('atacado_form_stock_qty').value = item.stock_qty || 0;
-    document.getElementById('atacado_form_show_on_demand').checked = !!item.show_on_demand;
-    document.getElementById('atacado_form_is_best_seller').checked = !!item.is_best_seller;
-    document.getElementById('atacado_form_color').value = item.color || '';
-    document.getElementById('atacado_form_badge').value = item.differentiator || item.badge || '';
-    document.getElementById('atacado_form_description').value = item.description || '';
-
-    ATACADO_CURRENT_IMAGE_MAIN = item.image_main || '';
-    let gal = item.images_gallery || [];
-    if (typeof gal === 'string') {
-      try { gal = JSON.parse(gal); } catch(e) { gal = []; }
-    }
-    ATACADO_CURRENT_GALLERY = Array.isArray(gal) ? [...gal] : [];
-    if (ATACADO_CURRENT_IMAGE_MAIN && !ATACADO_CURRENT_GALLERY.includes(ATACADO_CURRENT_IMAGE_MAIN)) {
-      ATACADO_CURRENT_GALLERY.unshift(ATACADO_CURRENT_IMAGE_MAIN);
-    }
-    renderAtacadoGalleryPreview();
-
-    document.getElementById('atacadoModalTitle').textContent = 'Editar Produto: ' + (item.name || '');
-    document.getElementById('atacadoFormModal').style.display = 'flex';
-  }
+  window.ATACADO_ITEMS_LIST = {{ items|tojson }};
+  const ATACADO_ITEMS_LIST = window.ATACADO_ITEMS_LIST;
 </script>
-<script src="{{ url_for('static', filename='js/atacado-admin.js') }}"></script>
+<script src="{{ url_for('static', filename='js/atacado-admin.js') }}?v=20261104_tabs_v3"></script>
 <script>
   async function toggleAtacadoOnDemand(itemId, btn) {
     try {

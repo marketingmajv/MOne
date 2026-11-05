@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-04T21:46:36Z",
+  "updated_at": "2026-11-05T00:23:17Z",
   "total_models": 14,
   "total_all": 17,
   "menu_mode": "free",
@@ -785,7 +785,11 @@
           "Altura do assento (cm)": "84",
           "Porta-objetos / baú": "Não",
           "Conforto e ergonomia": "Muito bom — proposta robusta, confortável e estável para pisos variados; o porte pode exigir mais esforço em manobras paradas.",
-          "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional."
+          "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional.",
+          "Carga máxima suportada (kg)": "160",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
+          "Suspensão": "Dupla dianteira e traseira",
+          "Aro / Pneu": "Aro 20"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -845,7 +849,8 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Modelo V20 ULTRA para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
         }
       },
       "banner_image": "/public/images/models/banners/v20-ultra-banner.webp",
@@ -874,7 +879,7 @@
         "peso_kg": "50kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
+        "descricao_livre": "Modelo V20 ULTRA para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano; freios hidráulicos; aro 20; quadro reforçado; conforto e estabilidade para pisos variados."
       },
       "effective_image_type": "atemporal",
@@ -2635,7 +2640,11 @@
           "Altura do assento (cm)": "84",
           "Porta-objetos / baú": "Não",
           "Conforto e ergonomia": "Muito bom — proposta robusta, confortável e estável para pisos variados; o porte pode exigir mais esforço em manobras paradas.",
-          "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional."
+          "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional.",
+          "Carga máxima suportada (kg)": "160",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
+          "Suspensão": "Dupla dianteira e traseira",
+          "Aro / Pneu": "Aro 20"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -2695,7 +2704,8 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Modelo V20 ULTRA para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
         }
       },
       "banner_image": "/public/images/models/banners/v20-ultra-banner.webp",
@@ -2724,7 +2734,7 @@
         "peso_kg": "50kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
+        "descricao_livre": "Modelo V20 ULTRA para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
         "pontos_fortes": "Motor de 1.000 W com pico registrado de 1.920 W; cinco níveis de assistência; câmbio Shimano; freios hidráulicos; aro 20; quadro reforçado; conforto e estabilidade para pisos variados."
       },
       "effective_image_type": "atemporal",
@@ -3438,7 +3448,7 @@
         },
         "Desempenho": {
           "Potência nominal (W)": "1000",
-          "Velocidade máxima (km/h)": "32",
+          "Velocidade máxima (km/h)": "Até 32 km/h",
           "Modos de condução": "3 niveis",
           "Possui ré?": "Não",
           "Inclinação recomendada (%)": "Não informado",
@@ -3458,7 +3468,7 @@
           "Fonte da informação": "Valores baseados nas especificações técnicas disponíveis e em informações fornecidas informalmente por fabricantes e fornecedores. Como não há divulgação clara ou padronizada das condições de teste, os resultados apresentados devem ser considerados estimativas e podem variar significativamente nas condições reais de uso."
         },
         "Estrutura e conforto": {
-          "Carga máxima (kg)": "160",
+          "Carga máxima (kg)": "160 kg",
           "Ocupantes homologados": "2",
           "Ocupantes recomendados": "2",
           "Peso do veículo (kg)": "50kg",
@@ -3468,7 +3478,11 @@
           "Altura do assento (cm)": "85",
           "Porta-objetos / baú": "Não",
           "Conforto e ergonomia": "Muito bom — boa acomodação e estabilidade, com posição equilibrada entre condução elétrica e pedal assistido.",
-          "Observações estruturais": "Construção robusta com quadro em aço carbono de alta qualidade e peças metálicas distribuídas pelo conjunto. Os componentes plásticos complementam o acabamento com aparência funcional e bem integrada."
+          "Observações estruturais": "Construção robusta com quadro em aço carbono de alta qualidade e peças metálicas distribuídas pelo conjunto. Os componentes plásticos complementam o acabamento com aparência funcional e bem integrada.",
+          "Carga máxima suportada (kg)": "160 kg",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
+          "Suspensão": "Dupla dianteira e traseira",
+          "Aro / Pneu": "Aro 20"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -3528,7 +3542,8 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Modelo V80 PRO para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
         }
       },
       "banner_image": "",
@@ -3547,18 +3562,18 @@
       ],
       "metrics": {
         "potencia_nominal_w": "1000",
-        "velocidade_max_kmh": "32",
+        "velocidade_max_kmh": "Até 32 km/h",
         "autonomia_conservadora_km": "35km",
         "autonomia_maxima_km": "50",
         "voltagem_v": "48v",
         "capacidade_ah": "15.6ah",
         "capacidade_wh": "748.8wh",
         "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-        "carga_maxima_kg": "160",
+        "carga_maxima_kg": "160 kg",
         "peso_kg": "50kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Boa estabilidade e conforto, com motor de alto desempenho, câmbio Shimano e freios hidráulicos para alternar entre pedal e assistência elétrica.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Câmbio Shimano 7 velocidades\nAro 20\"\n Freios a disco hidráulico\n Suporta até 160 kg",
+        "descricao_livre": "Modelo V80 PRO para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
         "pontos_fortes": "Boa estabilidade e conforto; motor de 1.000 W com pico registrado de 1.920 W; câmbio Shimano de sete velocidades; freios hidráulicos; bateria de 15,6 Ah; aro 20 e condução equilibrada entre pedal e assistência."
       },
       "effective_image_type": "atemporal",
@@ -3726,7 +3741,7 @@
         },
         "Desempenho": {
           "Potência nominal (W)": "1000",
-          "Velocidade máxima (km/h)": "32",
+          "Velocidade máxima (km/h)": "Até 32 km/h",
           "Modos de condução": "3 niveis",
           "Possui ré?": "Sim",
           "Inclinação recomendada (%)": "Não informado",
@@ -3746,7 +3761,7 @@
           "Fonte da informação": "Valores baseados nas especificações técnicas disponíveis e em informações fornecidas informalmente por fabricantes e fornecedores. Como não há divulgação clara ou padronizada das condições de teste, os resultados apresentados devem ser considerados estimativas e podem variar significativamente nas condições reais de uso."
         },
         "Estrutura e conforto": {
-          "Carga máxima (kg)": "180",
+          "Carga máxima (kg)": "180 kg",
           "Ocupantes homologados": "2",
           "Ocupantes recomendados": "2",
           "Peso do veículo (kg)": "90kg",
@@ -3756,7 +3771,11 @@
           "Altura do assento (cm)": "70",
           "Porta-objetos / baú": "Baú",
           "Conforto e ergonomia": "Excelente — boa acomodação e posição de pilotagem, mantendo dimensões semelhantes às da MAX 12.",
-          "Observações estruturais": "Chassi compacto e firme, produzido em aço carbono de alta qualidade e complementado por peças metálicas. Os acabamentos plásticos mantêm o conjunto bem resolvido; embora mais compacta que a versão anterior, apresenta porte semelhante ao da MAX 12."
+          "Observações estruturais": "Chassi compacto e firme, produzido em aço carbono de alta qualidade e complementado por peças metálicas. Os acabamentos plásticos mantêm o conjunto bem resolvido; embora mais compacta que a versão anterior, apresenta porte semelhante ao da MAX 12.",
+          "Carga máxima suportada (kg)": "180 kg",
+          "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
+          "Suspensão": "Invertida esportiva",
+          "Aro / Pneu": "Pneus largos"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -3816,7 +3835,8 @@
           "col_22": "",
           "col_23": "",
           "col_24": "",
-          "col_25": ""
+          "col_25": "",
+          "Descrição livre": "Modelo Sport 701 short para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
         }
       },
       "banner_image": "",
@@ -3835,18 +3855,18 @@
       ],
       "metrics": {
         "potencia_nominal_w": "1000",
-        "velocidade_max_kmh": "32",
+        "velocidade_max_kmh": "Até 32 km/h",
         "autonomia_conservadora_km": "35km",
         "autonomia_maxima_km": "50",
         "voltagem_v": "60v",
         "capacidade_ah": "20ah",
         "capacidade_wh": "1200wh",
         "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-        "carga_maxima_kg": "180",
+        "carga_maxima_kg": "180 kg",
         "peso_kg": "90kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Conforto excelente em uma versão mais compacta que o modelo anterior, mantendo porte semelhante ao da MAX 12, com baú e marcha a ré.",
-        "descricao_livre": "Motor 1000W\n Até 32 km/h\n Autonomia de até 50 km*\n Suporta até 200 kg\n Freios a disco",
+        "descricao_livre": "Modelo Sport 701 short para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
         "pontos_fortes": "Conforto excelente; motor de 1.000 W com pico registrado de 2.400 W; três modos; marcha a ré; baú; boa acomodação e chassi firme. É mais compacta que a versão anterior, mantendo porte semelhante ao da MAX 12."
       },
       "effective_image_type": "atemporal",

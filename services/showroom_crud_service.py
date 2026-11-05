@@ -184,14 +184,25 @@ def merge_showroom_overrides(models: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 def get_model_full_for_edit(slug: str) -> Optional[Dict[str, Any]]:
     """Retorna dados completos e banners panorâmicos (16:9) para o modal."""
-    from services.maj_models_sync_service import get_all_models
+    from services.maj_models_sync_service import get_all_models, normalize_slug
     clean_slug = slug.lower().strip()
+    norm_slug = normalize_slug(slug.replace("-", " "))
+    alias_candidates = {clean_slug, norm_slug}
+    if clean_slug in ("classic", "classic-1000"):
+        alias_candidates.add("classic-1000")
     models = get_all_models(include_inactive=True)
-    target = next((m for m in models if m.get("slug") == clean_slug), None)
+    target = next(
+        (
+            m for m in models
+            if m.get("slug") in alias_candidates
+            or normalize_slug(m.get("modelo", "")) in alias_candidates
+        ),
+        None,
+    )
     if not target:
         return None
 
-    banners = resolve_disk_banners(clean_slug)
+    banners = resolve_disk_banners(target.get("slug") or clean_slug)
     banner_atemp = target.get("banner_image") or banners["atemporal"] or ""
     banner_promo = target.get("promo_banner_image") or banners["promocional"] or ""
 

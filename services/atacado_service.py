@@ -644,20 +644,41 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             specs_obj.pop("Cores Disponíveis", None)
 
             # Verificar se produto já existe no banco atacado
-            existing = run_exec(conn, "SELECT id, image_main, images_gallery, show_on_demand FROM atacado_items WHERE name = ?", (model,)).fetchone()
+            existing = run_exec(conn, "SELECT id, image_main, images_gallery, show_on_demand, is_best_seller, specs_json, badge, description, notes, category FROM atacado_items WHERE name = ?", (model,)).fetchone()
             show_on_demand_val = False
+            is_best_seller_val = False
+            badge_val = "VENDA ATACADO CNPJ"
+            desc_val = f"Modelo {model} para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
+            notes_val = ""
+            category_val = "Atacado CNPJ"
             if existing:
                 e_dict = dict(existing)
                 show_on_demand_val = bool(e_dict.get("show_on_demand"))
+                is_best_seller_val = bool(e_dict.get("is_best_seller"))
                 if e_dict.get("image_main"):
                     image_main = e_dict["image_main"]
                 if e_dict.get("images_gallery") and str(e_dict["images_gallery"]).strip() not in ["[]", ""]:
                     images_gallery = e_dict["images_gallery"]
+                if e_dict.get("badge") and e_dict["badge"] not in ["VENDA ATACADO CNPJ", "EXCLUSIVO CNPJ"]:
+                    badge_val = e_dict["badge"]
+                if e_dict.get("description"):
+                    desc_val = e_dict["description"]
+                if e_dict.get("notes"):
+                    notes_val = e_dict["notes"]
+                if e_dict.get("category") and e_dict["category"] != "Atacado CNPJ":
+                    category_val = e_dict["category"]
+                if e_dict.get("specs_json"):
+                    try:
+                        prev_specs = json.loads(e_dict["specs_json"]) if isinstance(e_dict["specs_json"], str) else e_dict["specs_json"]
+                        if isinstance(prev_specs, dict):
+                            specs_obj.update(prev_specs)
+                    except Exception:
+                        pass
 
             item_data = {
                 "name": model,
                 "slug": slugify(model),
-                "category": "Atacado CNPJ",
+                "category": category_val,
                 "condition": "Novo na caixa / Revisado",
                 "color": colors_str,
                 "price_original": p_sugerido_varejo,
@@ -667,10 +688,12 @@ def sync_atacado_catalog() -> Dict[str, Any]:
                 "installment_18": p18,
                 "stock_qty": total_qty,
                 "show_on_demand": show_on_demand_val,
+                "is_best_seller": is_best_seller_val,
                 "location": sources_str,
-                "badge": "VENDA ATACADO CNPJ",
+                "badge": badge_val,
                 "specs_json": specs_obj,
-                "description": f"Modelo {model} para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade.",
+                "description": desc_val,
+                "notes": notes_val,
                 "image_main": image_main,
                 "images_gallery": images_gallery,
                 "status": "active" if (total_qty > 0 or show_on_demand_val or price_atacado > 0) else "inactive"
