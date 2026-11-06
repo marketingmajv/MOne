@@ -328,6 +328,7 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
     specs = prod.get("specs_json") or {}
     copy_at = (prod.get("copy_atacado") or "").strip()
     copy_ou = (prod.get("copy_outlet") or "").strip()
+    copy_sh = (prod.get("copy_showroom") or "").strip()
     img_main = prod.get("image_main") or ""
 
     channels_updated = []
@@ -389,6 +390,35 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
                 params.append(at_id)
                 run_exec(conn, f"UPDATE atacado_items SET {', '.join(update_fields)} WHERE id = ?", tuple(params))
                 channels_updated.append("Atacado B2B")
+
+        # 3. Propagação para o Showroom & Modelos
+        try:
+            from services.showroom_crud_service import load_model_overrides, save_model_overrides
+            overrides = load_model_overrides()
+            sh_ovr = overrides.get(slug, {}) if isinstance(overrides.get(slug), dict) else {}
+            if copy_sh:
+                sh_ovr["descricao_livre"] = copy_sh
+            if prod.get("banner_widescreen"):
+                sh_ovr["banner_image"] = prod["banner_widescreen"]
+                sh_ovr["promo_banner_image"] = prod["banner_widescreen"]
+            if img_main:
+                sh_ovr["display_image"] = img_main
+
+            metrics = sh_ovr.get("metrics", {}) if isinstance(sh_ovr.get("metrics"), dict) else {}
+            if specs.get("Motor"):
+                metrics["potencia_nominal_w"] = str(specs["Motor"])
+            if specs.get("Velocidade Máxima"):
+                metrics["velocidade_max_kmh"] = str(specs["Velocidade Máxima"])
+            if specs.get("Autonomia"):
+                metrics["autonomia_conservadora_km"] = str(specs["Autonomia"])
+            if metrics:
+                sh_ovr["metrics"] = metrics
+
+            overrides[slug] = sh_ovr
+            save_model_overrides(overrides)
+            channels_updated.append("Showroom")
+        except Exception as e:
+            logger.warning("Aviso ao propagar para o Showroom (%s): %s", slug, e)
 
         try:
             conn.commit()

@@ -646,20 +646,20 @@
     "modelo": "CLASSIC 1000",
     "slug": "classic-1000",
     "is_active": true,
-    "banner_image": "/public/images/models/banners/classic-1000-banner.webp",
+    "banner_image": "/public/images/models/banners/classic-1000-banner-promo.webp",
     "promo_banner_image": "/public/images/models/banners/classic-1000-banner-promo.webp",
     "active_banner_type": "promocional",
     "active_image_type": "promocional",
     "hero_image": "/public/images/models/banners/classic-1000-banner.webp",
-    "display_image": "/public/images/models/banners/classic-1000-banner.webp",
+    "display_image": "/public/images/models/banners/classic-1000-banner-promo.webp",
     "cutout_image": "/public/images/models/banners/classic-1000-banner.webp",
     "images": [
       "/public/images/models/banners/classic-1000-banner.webp"
     ],
     "metrics": {
-      "potencia_nominal_w": "1000",
-      "velocidade_max_kmh": "32",
-      "autonomia_conservadora_km": "35km",
+      "potencia_nominal_w": "1000W",
+      "velocidade_max_kmh": "Até 32 km/h",
+      "autonomia_conservadora_km": "Até 60 km",
       "autonomia_maxima_km": "60",
       "voltagem_v": "60v",
       "capacidade_ah": "24ah",
@@ -707,7 +707,8 @@
       "Texto livre": {
         "Descrição livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios a disco dianteiro e traseiro a tambor"
       }
-    }
+    },
+    "descricao_livre": "Estilo clássico, banco amplo e posição de pilotagem relaxada, combinados com boa capacidade de bateria para trajetos urbanos confortáveis."
   },
   "db-zero": {
     "slug": "db-zero",
