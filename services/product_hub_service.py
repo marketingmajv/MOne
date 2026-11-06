@@ -315,7 +315,7 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
     return res_id
 
 
-def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
+def propagate_product_to_channels(identifier: Any, sync_showroom: bool = True) -> Dict[str, Any]:
     """
     Propaga a Ficha Técnica Ouro e as Copys Contextuais do Produto Mestre para os canais
     de Atacado B2B e Varejo Outlet. NUNCA reseta preços, estoques ou variações de cores!
@@ -339,7 +339,6 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
             ou_row = run_exec(conn, "SELECT id, specs_json FROM outlet_items WHERE slug = ? OR name = ?", (slug, prod["name"])).fetchone()
             if ou_row:
                 ou_id = ou_row["id"] if isinstance(ou_row, dict) else ou_row[0]
-                # Preserva color_prices existente do outlet
                 curr_specs = ou_row.get("specs_json") if isinstance(ou_row, dict) else ou_row[1]
                 if isinstance(curr_specs, str):
                     try:
@@ -353,7 +352,6 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
                 if "color_prices" in curr_specs:
                     merged_specs["color_prices"] = curr_specs["color_prices"]
 
-                # Atualiza Outlet
                 update_fields = ["specs_json = ?", "updated_at = CURRENT_TIMESTAMP"]
                 params = [json.dumps(merged_specs, ensure_ascii=False)]
 
@@ -371,7 +369,6 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
 
         # 2. Propagação para o Atacado
         if prod.get("sync_atacado") is not False:
-            # Compatibilidade de slug para o atacado (v8-mini-ultra)
             at_slug = "v8-mini-ultra" if slug == "v8-mini" else slug
             at_row = run_exec(conn, "SELECT id, specs_json FROM atacado_items WHERE slug = ? OR slug = ? OR name = ?", (at_slug, slug, prod["name"])).fetchone()
             if at_row:
@@ -391,7 +388,13 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
                 run_exec(conn, f"UPDATE atacado_items SET {', '.join(update_fields)} WHERE id = ?", tuple(params))
                 channels_updated.append("Atacado B2B")
 
-        # 3. Propagação para o Showroom & Modelos
+        try:
+            conn.commit()
+        except Exception:
+            pass
+
+    # 3. Propagação para o Showroom & Modelos
+    if sync_showroom:
         try:
             from services.showroom_crud_service import load_model_overrides, save_model_overrides
             overrides = load_model_overrides()
@@ -420,11 +423,6 @@ def propagate_product_to_channels(identifier: Any) -> Dict[str, Any]:
         except Exception as e:
             logger.warning("Aviso ao propagar para o Showroom (%s): %s", slug, e)
 
-        try:
-            conn.commit()
-        except Exception:
-            pass
-
     return {
         "success": True,
         "product": prod["name"],
@@ -438,12 +436,52 @@ def propagate_all_products_to_channels() -> Dict[str, Any]:
     products = get_all_master_products()
     count = 0
     details = []
+
+    try:
+        from services.showroom_crud_service import load_model_overrides, save_model_overrides
+        overrides = load_model_overrides()
+    except Exception:
+        overrides = {}
+
     for p in products:
         if p.get("status") == "active":
-            res = propagate_product_to_channels(p["id"])
+            slug = p["slug"]
+            specs = p.get("specs_json") or {}
+            res = propagate_product_to_channels(p["id"], sync_showroom=False)
             if res.get("success"):
                 count += 1
-                details.append(f"{p['name']} ({', '.join(res.get('channels_updated', []))})")
+                chans = list(res.get("channels_updated", []))
+
+                if overrides is not None:
+                    sh_ovr = overrides.get(slug, {}) if isinstance(overrides.get(slug), dict) else {}
+                    if p.get("copy_showroom"):
+                        sh_ovr["descricao_livre"] = p["copy_showroom"].strip()
+                    if p.get("banner_widescreen"):
+                        sh_ovr["banner_image"] = p["banner_widescreen"]
+                        sh_ovr["promo_banner_image"] = p["banner_widescreen"]
+                    if p.get("image_main"):
+                        sh_ovr["display_image"] = p["image_main"]
+
+                    metrics = sh_ovr.get("metrics", {}) if isinstance(sh_ovr.get("metrics"), dict) else {}
+                    if specs.get("Motor"):
+                        metrics["potencia_nominal_w"] = str(specs["Motor"])
+                    if specs.get("Velocidade Máxima"):
+                        metrics["velocidade_max_kmh"] = str(specs["Velocidade Máxima"])
+                    if specs.get("Autonomia"):
+                        metrics["autonomia_conservadora_km"] = str(specs["Autonomia"])
+                    if metrics:
+                        sh_ovr["metrics"] = metrics
+                    overrides[slug] = sh_ovr
+                    chans.append("Showroom")
+
+                details.append(f"{p['name']} ({', '.join(chans)})")
+
+    if overrides:
+        try:
+            from services.showroom_crud_service import save_model_overrides
+            save_model_overrides(overrides)
+        except Exception as e:
+            logger.warning("Aviso ao salvar overrides em massa para o Showroom: %s", e)
 
     return {
         "success": True,
