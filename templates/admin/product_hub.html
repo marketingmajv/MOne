@@ -178,7 +178,7 @@
 
   <!-- Modal Nativo de Edição / Criação de Produto Mestre (3 Abas) -->
   <div class="modal" id="masterProductModal" onclick="if(event.target === this) closeMasterProductModal()">
-    <div class="modal-card" style="max-width: 900px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px;">
+    <div class="modal-card large" style="width: min(880px, 95vw) !important; max-width: 880px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; padding: 0;">
       
       <!-- Cabeçalho do Modal -->
       <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155);">
@@ -194,16 +194,16 @@
         </button>
       </div>
 
-      <!-- Barra de Abas do Modal -->
-      <div style="display: flex; gap: 8px; padding: 10px 24px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155);">
-        <button type="button" id="tab_btn_midia" class="btn sm" onclick="switchMasterTab('midia')" style="font-weight: 800; background: #00cc88; color: #000;">
+      <!-- Barra de Abas do Modal Responsiva -->
+      <div style="display: flex; gap: 8px; padding: 10px 20px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); flex-wrap: wrap;">
+        <button type="button" id="tab_btn_midia" class="btn sm" onclick="switchMasterTab('midia')" style="font-weight: 800; background: #00cc88; color: #000; flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
           📸 1. Identificação & Mídia
         </button>
-        <button type="button" id="tab_btn_specs" class="btn sm" onclick="switchMasterTab('specs')" style="font-weight: 700; background: transparent; color: var(--text);">
-          ⚙️ 2. Ficha Técnica Ouro (Única)
+        <button type="button" id="tab_btn_specs" class="btn sm" onclick="switchMasterTab('specs')" style="font-weight: 700; background: transparent; color: var(--text); flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
+          ⚙️ 2. Ficha Técnica Ouro
         </button>
-        <button type="button" id="tab_btn_copys" class="btn sm" onclick="switchMasterTab('copys')" style="font-weight: 700; background: transparent; color: var(--text);">
-          ✍️ 3. Copys Contextuais (Canais)
+        <button type="button" id="tab_btn_copys" class="btn sm" onclick="switchMasterTab('copys')" style="font-weight: 700; background: transparent; color: var(--text); flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
+          ✍️ 3. Copys por Canal
         </button>
       </div>
 
@@ -362,3 +362,4 @@
 </script>
 <script src="{{ url_for('static', filename='js/product-hub.js') }}"></script>
 {% endblock %}
+

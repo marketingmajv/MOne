@@ -184,3 +184,4 @@ def sync_all():
         flash(f"Erro ao sincronizar produtos: {e}", "danger")
 
     return redirect(url_for("product_hub.index"))
+
