@@ -27,6 +27,10 @@ def ensure_governance_schema() -> None:
             ("edit_request_status", "VARCHAR(30) DEFAULT NULL" if pg else "TEXT DEFAULT NULL"),
             ("edit_request_reason", "TEXT DEFAULT ''"),
             ("edit_requested_at", "TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL" if pg else "TIMESTAMP DEFAULT NULL"),
+            ("exemption_type", "VARCHAR(50) DEFAULT NULL" if pg else "TEXT DEFAULT NULL"),
+            ("exemption_reason", "TEXT DEFAULT ''"),
+            ("exempted_at", "TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL" if pg else "TIMESTAMP DEFAULT NULL"),
+            ("exempted_by", "VARCHAR(50) DEFAULT NULL" if pg else "TEXT DEFAULT NULL"),
         ]
         cycle_cols = [
             ("feedback_released_all", "BOOLEAN DEFAULT FALSE" if pg else "INTEGER DEFAULT 0"),
@@ -286,4 +290,138 @@ def get_cycle_governance_status(cycle_id: int) -> Dict[str, Any]:
             "pending_requests_count": len(pending_requests),
             "pending_edit_requests_count": len(pending_requests),
         }
+
+
+def set_employee_exemption(
+    cycle_id: int,
+    employee_key: str,
+    exemption_type: str,
+    exemption_reason: str,
+    operator_username: str = "gerencia"
+) -> Dict[str, Any]:
+    """Registra uma ausência justificada ou licença (paternidade, saúde, férias) para um colaborador no ciclo."""
+    ensure_governance_schema()
+    key = employee_key.lower().strip()
+    reason_clean = (exemption_reason or "").strip()
+    type_clean = (exemption_type or "licenca").strip().lower()
+    now = datetime.now()
+
+    with db() as conn:
+        pg = _is_pg(conn)
+        ph = "%s" if pg else "?"
+        now_val = now if pg else now.strftime("%Y-%m-%d %H:%M:%S")
+
+        cur = conn.execute(
+            f"SELECT id, answers_json FROM maj_employee_reports WHERE cycle_id = {ph} AND employee_key = {ph} LIMIT 1",
+            (cycle_id, key)
+        )
+        row = cur.fetchone()
+
+        if row:
+            up_sql = f"""
+                UPDATE maj_employee_reports
+                SET status = 'exempt',
+                    exemption_type = {ph},
+                    exemption_reason = {ph},
+                    exempted_at = {ph},
+                    exempted_by = {ph},
+                    updated_at = {ph}
+                WHERE id = {ph}
+            """
+            conn.execute(up_sql, (type_clean, reason_clean, now_val, operator_username, now_val, row["id"]))
+        else:
+            from services.employee_reports_data import get_reporting_employee_meta
+            meta = get_reporting_employee_meta(key) or {"name": key.capitalize(), "role_title": "Colaborador"}
+            ins_sql = f"""
+                INSERT INTO maj_employee_reports
+                (cycle_id, employee_key, employee_name, role_title, answers_json, status,
+                 exemption_type, exemption_reason, exempted_at, exempted_by, updated_at)
+                VALUES ({ph}, {ph}, {ph}, {ph}, '{{}}', 'exempt', {ph}, {ph}, {ph}, {ph}, {ph})
+            """
+            conn.execute(
+                ins_sql,
+                (cycle_id, key, meta["name"], meta["role_title"], type_clean, reason_clean, now_val, operator_username, now_val)
+            )
+
+        try:
+            conn.execute(
+                f"INSERT INTO audit_log (user_id, action, detail, created_at) VALUES (0, {ph}, {ph}, {ph})",
+                ("relatorio.exemption_set", f"ciclo={cycle_id}; colab={key}; tipo={type_clean}; motivo={reason_clean[:60]}; op={operator_username}", now_val)
+            )
+        except Exception:
+            pass
+
+        conn.commit()
+
+    return {
+        "success": True,
+        "message": f"Justificativa/Licença registrada com sucesso para {key.capitalize()}!",
+        "employee_key": key,
+        "cycle_id": cycle_id,
+        "status": "exempt",
+        "exemption_type": type_clean,
+        "exemption_reason": reason_clean,
+    }
+
+
+def remove_employee_exemption(
+    cycle_id: int,
+    employee_key: str,
+    operator_username: str = "gerencia"
+) -> Dict[str, Any]:
+    """Remove a justificativa/licença e restaura o status original do colaborador no ciclo."""
+    ensure_governance_schema()
+    key = employee_key.lower().strip()
+    now = datetime.now()
+
+    with db() as conn:
+        pg = _is_pg(conn)
+        ph = "%s" if pg else "?"
+        now_val = now if pg else now.strftime("%Y-%m-%d %H:%M:%S")
+
+        cur = conn.execute(
+            f"SELECT id, answers_json, submitted_at FROM maj_employee_reports WHERE cycle_id = {ph} AND employee_key = {ph} LIMIT 1",
+            (cycle_id, key)
+        )
+        row = cur.fetchone()
+
+        if row:
+            sub = row.get("submitted_at")
+            ans = row.get("answers_json") or "{}"
+            if sub:
+                new_status = "submitted_on_time"
+            elif ans and ans != "{}":
+                new_status = "draft"
+            else:
+                new_status = "draft"
+
+            up_sql = f"""
+                UPDATE maj_employee_reports
+                SET status = {ph},
+                    exemption_type = NULL,
+                    exemption_reason = '',
+                    exempted_at = NULL,
+                    exempted_by = NULL,
+                    updated_at = {ph}
+                WHERE id = {ph}
+            """
+            conn.execute(up_sql, (new_status, now_val, row["id"]))
+
+        try:
+            conn.execute(
+                f"INSERT INTO audit_log (user_id, action, detail, created_at) VALUES (0, {ph}, {ph}, {ph})",
+                ("relatorio.exemption_removed", f"ciclo={cycle_id}; colab={key}; op={operator_username}", now_val)
+            )
+        except Exception:
+            pass
+
+        conn.commit()
+
+    return {
+        "success": True,
+        "message": f"Justificativa/Licença removida com sucesso para {key.capitalize()}.",
+        "employee_key": key,
+        "cycle_id": cycle_id,
+    }
+
 

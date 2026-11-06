@@ -1,11 +1,6 @@
 """
 M-One Employee Alignment & Evaluation Routes (routes/employee_alignment_routes.py)
-Rotas de API para o novo sistema de aferição e confronto de respostas:
-- Consulta da tríade (Pergunta, Fornecida, Desejada)
-- Configuração de respostas desejadas por funcionário
-- Aferição com IA (Gemini) individual e em lote
-- Liberação deliberada de gabarito/feedback para colaboradores
-Segregação modular estrita (< 500 linhas).
+Rotas de API para aferição, governança de prazos, deliberações e ausências justificadas.
 """
 
 from __future__ import annotations
@@ -23,6 +18,15 @@ from services.employee_alignment_service import (
     suggest_comment_with_ai,
     toggle_feedback_release,
 )
+from services.employee_governance_service import (
+    decide_report_edit_request,
+    get_cycle_governance_status,
+    remove_employee_exemption,
+    set_employee_exemption,
+    toggle_cycle_edit_unlock_all,
+    toggle_cycle_feedback_release_all,
+    toggle_report_edit_unlock,
+)
 from services.employee_reports_data import is_admin_viewer
 
 logger = logging.getLogger(__name__)
@@ -31,12 +35,8 @@ employee_alignment_bp = Blueprint("employee_alignment", __name__)
 
 
 def _is_admin() -> bool:
-    me = current_user()
-    if not me:
-        return False
-    username = (me.get("username") or "").lower().strip()
-    role = (me.get("role") or "").lower().strip()
-    return is_admin_viewer(username, role)
+    me = current_user() or {}
+    return is_admin_viewer((me.get("username") or "").lower().strip(), (me.get("role") or "").lower().strip())
 
 
 @employee_alignment_bp.route("/api/relatorio/detalhes/<int:cycle_id>/<employee_key>", methods=["GET"])
@@ -336,7 +336,6 @@ def api_decide_edit_request():
         return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
 
     try:
-        from services.employee_governance_service import decide_report_edit_request
         me = current_user() or {}
         res = decide_report_edit_request(int(cycle_id), employee_key, approved, me.get("username", "gerencia"))
         return jsonify(res)
@@ -361,7 +360,6 @@ def api_toggle_edit_unlocked():
         return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
 
     try:
-        from services.employee_governance_service import toggle_report_edit_unlock
         res_val = toggle_report_edit_unlock(int(cycle_id), employee_key, is_unlocked)
         action_msg = "liberado para edição" if res_val else "bloqueado contra edições"
         return jsonify({
@@ -389,7 +387,6 @@ def api_toggle_cycle_feedback():
         return jsonify({"success": False, "error": "cycle_id é obrigatório."}), 400
 
     try:
-        from services.employee_governance_service import toggle_cycle_feedback_release_all
         res_val = toggle_cycle_feedback_release_all(int(cycle_id), is_released)
         msg = "Deliberações e feedbacks liberados para toda a equipe no ciclo!" if res_val else "Deliberações bloqueadas (modo confidencial) para todo o ciclo."
         return jsonify({"success": True, "message": msg, "feedback_released_all": res_val})
@@ -413,7 +410,6 @@ def api_toggle_cycle_edit():
         return jsonify({"success": False, "error": "cycle_id é obrigatório."}), 400
 
     try:
-        from services.employee_governance_service import toggle_cycle_edit_unlock_all
         res_val = toggle_cycle_edit_unlock_all(int(cycle_id), is_unlocked)
         msg = "Edição liberada para todos os colaboradores no ciclo!" if res_val else "Edição bloqueada para todos os colaboradores no ciclo."
         return jsonify({"success": True, "message": msg, "edit_unlocked_all": res_val})
@@ -429,11 +425,69 @@ def api_get_governance_status(cycle_id: int):
     if not _is_admin():
         return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
     try:
-        from services.employee_governance_service import get_cycle_governance_status
         data = get_cycle_governance_status(cycle_id)
         return jsonify({"success": True, "data": data})
     except Exception as e:
         logger.error(f"Erro ao buscar status de governança ({cycle_id}): {e}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/set-exemption", methods=["POST"])
+@login_required
+def api_set_employee_exemption():
+    """Registra ausência justificada ou licença (paternidade, saúde, férias)."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+    exemption_type = payload.get("exemption_type") or "licenca"
+    exemption_reason = payload.get("exemption_reason") or ""
+
+    if not cycle_id or not employee_key or not exemption_reason.strip():
+        return jsonify({"success": False, "error": "Ciclo, colaborador e motivo são obrigatórios."}), 400
+
+    try:
+        me = current_user() or {}
+        res = set_employee_exemption(
+            int(cycle_id),
+            employee_key,
+            exemption_type,
+            exemption_reason,
+            operator_username=me.get("username", "gerencia")
+        )
+        return jsonify(res)
+    except Exception as e:
+        logger.error(f"Erro ao registrar ausência/licença: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_alignment_bp.route("/api/gestao-interna/remove-exemption", methods=["POST"])
+@login_required
+def api_remove_employee_exemption():
+    """Remove ausência justificada ou licença."""
+    if not _is_admin():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    cycle_id = payload.get("cycle_id")
+    employee_key = payload.get("employee_key")
+
+    if not cycle_id or not employee_key:
+        return jsonify({"success": False, "error": "cycle_id e employee_key são obrigatórios."}), 400
+
+    try:
+        me = current_user() or {}
+        res = remove_employee_exemption(
+            int(cycle_id),
+            employee_key,
+            operator_username=me.get("username", "gerencia")
+        )
+        return jsonify(res)
+    except Exception as e:
+        logger.error(f"Erro ao remover ausência/licença: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 

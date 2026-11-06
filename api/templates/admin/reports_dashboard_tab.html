@@ -266,6 +266,18 @@
                   <span>Respostas</span>
                 </button>
 
+                <!-- Botão Indicador de Licença / Ausência Justificada -->
+                {% if emp.is_exempt %}
+                <button type="button"
+                        class="btn sm"
+                        style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 0.76rem; font-weight: 700; padding: 6px 11px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;"
+                        title="Ausência justificada registrada. Clique para visualizar ou editar."
+                        @click.stop="$dispatch('open-exemption-modal', { cycleId: {{ cycle.id }}, employeeKey: '{{ emp.key }}', employeeName: '{{ emp.name }}', isExempt: true, exemptionType: '{{ emp.exemption_type }}', exemptionReason: '{{ emp.exemption_reason }}' })">
+                  <span>{{ emp.icon }}</span>
+                  <span>{{ 'Licença Registrada' if 'patern' in emp.exemption_type else 'Justificado' }}</span>
+                </button>
+                {% endif %}
+
                 <!-- Botão 3: Sincronizar Google Doc (opcional na linha) -->
                 {% if emp.uses_google_doc %}
                 <button type="button" 
@@ -404,6 +416,19 @@
                       <div>
                         <div style="line-height: 1.2;">{{ 'Bloquear Edição' if emp.is_edit_unlocked else 'Liberar Edição' }}</div>
                         <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Acesso ao formulário</div>
+                      </div>
+                    </button>
+
+                    <!-- Item: Justificar Ausência / Licença -->
+                    <button type="button" 
+                            style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; color: #38bdf8; font-size: 0.78rem; font-weight: 600; text-align: left; cursor: pointer; transition: background 0.15s ease;"
+                            onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'"
+                            onmouseout="this.style.background='transparent'"
+                            @click.stop="menuOpen = false; $dispatch('open-exemption-modal', { cycleId: {{ cycle.id }}, employeeKey: '{{ emp.key }}', employeeName: '{{ emp.name }}', isExempt: {{ 'true' if emp.is_exempt else 'false' }}, exemptionType: '{{ emp.exemption_type }}', exemptionReason: '{{ emp.exemption_reason }}' })">
+                      <span style="font-size: 1rem;">👶</span>
+                      <div>
+                        <div style="line-height: 1.2;">{{ 'Alterar Licença / Ausência' if emp.is_exempt else 'Justificar Ausência / Licença' }}</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Paternidade, atestado, férias</div>
                       </div>
                     </button>
 

@@ -10,7 +10,11 @@
         {{ summary.completion_percent }}%
       </span>
       <span class="muted" style="font-size: 0.8rem;">
-        ({{ summary.total_submitted }}/{{ summary.counts.total }} entregues)
+        {% if summary.counts.exempt and summary.counts.exempt > 0 %}
+          ({{ summary.total_submitted }}/{{ summary.active_total }} ativos • {{ summary.counts.exempt }} licença)
+        {% else %}
+          ({{ summary.total_submitted }}/{{ summary.counts.total }} entregues)
+        {% endif %}
       </span>
     </div>
     <div style="background: var(--panel2); border-radius: 6px; height: 6px; width: 100%; margin-top: 8px; overflow: hidden;">
@@ -69,5 +73,23 @@
       Acompanhamento gerencial
     </small>
   </div>
+
+  {% if summary.counts.exempt and summary.counts.exempt > 0 %}
+  <!-- Card Licenças / Ausências Justificadas -->
+  <div class="panel" style="margin-bottom: 0; padding: 16px 20px; border-left: 4px solid #38bdf8; border-radius: 12px; background: rgba(56, 189, 248, 0.05);">
+    <small style="display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; color: #38bdf8;">
+      Ausências / Licenças
+    </small>
+    <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 4px;">
+      <span style="font-size: 1.7rem; font-weight: 800; color: #38bdf8;">
+        {{ summary.counts.exempt }}
+      </span>
+      <span class="muted" style="font-size: 0.8rem;">isento(s)</span>
+    </div>
+    <small style="font-size: 0.75rem; color: #38bdf8; display: block; margin-top: 6px;">
+      👶 Não penaliza adesão
+    </small>
+  </div>
+  {% endif %}
 </div>
 

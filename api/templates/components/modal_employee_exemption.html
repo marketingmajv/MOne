@@ -1,0 +1,229 @@
+<!-- MODAL DE JUSTIFICATIVA DE AUSÊNCIA / LICENÇA (DIRETORIA & GERÊNCIA) -->
+<!-- Regra Mandatória M-One: x-teleport="body", modal-close-btn com SVG geométrico e paleta dark theme -->
+<div x-data="employeeExemptionModal()" @open-exemption-modal.window="openModal($event.detail)">
+  <template x-teleport="body">
+    <div
+      class="modal"
+      :class="{ 'show': isOpen }"
+      x-show="isOpen"
+      x-cloak
+      style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; z-index: 99999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 20px;"
+      @keydown.escape.window="closeModal()"
+    >
+      <div
+        class="modal-card"
+        style="width: 100%; max-width: 520px; background: var(--panel, #1e293b); border: 1px solid var(--line, #334155); border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); overflow: hidden; display: flex; flex-direction: column;"
+        @click.outside="closeModal()"
+      >
+        <!-- Cabeçalho -->
+        <div class="modal-head" style="padding: 18px 24px; border-bottom: 1px solid var(--line, #334155); display: flex; align-items: center; justify-content: space-between; background: var(--panel2, #0f172a);">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+              👶
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text, #f8fafc);">
+                Justificar Ausência / Licença
+              </h3>
+              <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--muted, #94a3b8);">
+                Colaborador: <strong style="color: var(--text, #f8fafc);" x-text="employeeName"></strong> (<span x-text="'@' + employeeKey"></span>)
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="modal-close-btn"
+            @click="closeModal()"
+            title="Fechar (Esc)"
+            style="width: 36px !important; height: 36px !important; min-width: 36px !important; border-radius: 10px !important; background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f8fafc !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; cursor: pointer !important;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Corpo do Modal -->
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+          <!-- Aviso Institucional de Não Penalização -->
+          <div style="padding: 12px 16px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 1.1rem; line-height: 1;">🛡️</span>
+            <div style="font-size: 0.78rem; color: var(--text, #f8fafc); line-height: 1.4;">
+              <strong style="color: #38bdf8;">Proteção de Indicadores:</strong> Esta ausência não penalizará o colaborador nem rebaixará o percentual de adesão da equipe. A cobrança via WhatsApp será desativada para este ciclo.
+            </div>
+          </div>
+
+          <!-- Seleção de Tipo / Atalhos Rápidos -->
+          <div>
+            <label style="display: block; font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted, #94a3b8); margin-bottom: 8px;">
+              Tipo de Ocorrência / Atalhos
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+              <template x-for="p in presets" :key="p.type">
+                <button
+                  type="button"
+                  @click="selectPreset(p)"
+                  style="text-align: left; padding: 10px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; border: 1px solid var(--line, #334155);"
+                  :style="exemptionType === p.type ? 'background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #38bdf8;' : 'background: var(--panel2, #0f172a); color: var(--text, #f8fafc);'"
+                >
+                  <span x-text="p.label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Descrição Detalhada / Texto do Badge -->
+          <div>
+            <label style="display: block; font-size: 0.76rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted, #94a3b8); margin-bottom: 6px;">
+              Texto Exibido no Painel & Histórico
+            </label>
+            <input
+              type="text"
+              class="form-input"
+              x-model="exemptionReason"
+              placeholder="Ex: Licença Paternidade (5 dias)"
+              style="width: 100%; box-sizing: border-box; padding: 10px 14px; background: var(--panel2, #0f172a); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); border-radius: 8px; font-size: 0.86rem;"
+            />
+            <small class="muted" style="font-size: 0.72rem; display: block; margin-top: 4px;">
+              Este texto substituirá o status "Pendente" na linha do colaborador.
+            </small>
+          </div>
+        </div>
+
+        <!-- Rodapé com Ações -->
+        <div style="padding: 16px 24px; border-top: 1px solid var(--line, #334155); background: var(--panel2, #0f172a); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div>
+            <template x-if="isExempt">
+              <button
+                type="button"
+                @click="removeExemption()"
+                :disabled="saving"
+                class="btn sm"
+                style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #ef4444; font-size: 0.78rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer;"
+              >
+                🗑️ Remover Justificativa
+              </button>
+            </template>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button
+              type="button"
+              @click="closeModal()"
+              :disabled="saving"
+              class="btn sm"
+              style="background: transparent; border: 1px solid var(--line, #334155); color: var(--muted, #94a3b8); font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer;"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              @click="saveExemption()"
+              :disabled="saving || !exemptionReason.trim()"
+              class="btn primary sm"
+              style="background: #0284c7; border: 1px solid rgba(56, 189, 248, 0.4); color: #ffffff; font-size: 0.82rem; font-weight: 800; padding: 8px 20px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);"
+            >
+              <span x-show="!saving">💾 Salvar Justificativa</span>
+              <span x-show="saving">Salvando...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<script>
+function employeeExemptionModal() {
+  return {
+    isOpen: false,
+    saving: false,
+    cycleId: null,
+    employeeKey: '',
+    employeeName: '',
+    isExempt: false,
+    exemptionType: 'paternity_leave',
+    exemptionReason: 'Licença Paternidade (5 dias)',
+    presets: [
+      { type: 'paternity_leave', label: '👶 Licença Paternidade (5 dias)', text: 'Licença Paternidade (5 dias)' },
+      { type: 'medical_leave', label: '🏥 Atestado Médico / Saúde', text: 'Atestado Médico / Licença Saúde' },
+      { type: 'vacation', label: '🏖️ Férias Programadas', text: 'Férias Programadas' },
+      { type: 'justified_absence', label: '⚖️ Ausência Justificada', text: 'Ausência Justificada / Força Maior' },
+    ],
+    openModal(data) {
+      this.cycleId = data.cycleId || null;
+      this.employeeKey = data.employeeKey || '';
+      this.employeeName = data.employeeName || data.employeeKey || '';
+      this.isExempt = !!data.isExempt;
+      this.exemptionType = data.exemptionType || 'paternity_leave';
+      this.exemptionReason = data.exemptionReason || 'Licença Paternidade (5 dias)';
+      this.isOpen = true;
+    },
+    closeModal() {
+      if (this.saving) return;
+      this.isOpen = false;
+    },
+    selectPreset(p) {
+      this.exemptionType = p.type;
+      this.exemptionReason = p.text;
+    },
+    async saveExemption() {
+      if (!this.cycleId || !this.employeeKey || !this.exemptionReason.trim()) {
+        alert('Por favor, informe o motivo da ausência.');
+        return;
+      }
+      this.saving = true;
+      try {
+        const resp = await fetch('/api/gestao-interna/set-exemption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cycle_id: this.cycleId,
+            employee_key: this.employeeKey,
+            exemption_type: this.exemptionType,
+            exemption_reason: this.exemptionReason.trim(),
+          })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          window.location.reload();
+        } else {
+          alert('Erro ao salvar justificativa: ' + (res.error || res.message));
+          this.saving = false;
+        }
+      } catch (err) {
+        alert('Falha na comunicação com o servidor: ' + err.message);
+        this.saving = false;
+      }
+    },
+    async removeExemption() {
+      if (!confirm('Deseja realmente remover a justificativa e retornar o colaborador ao status original de pendência?')) {
+        return;
+      }
+      this.saving = true;
+      try {
+        const resp = await fetch('/api/gestao-interna/remove-exemption', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cycle_id: this.cycleId,
+            employee_key: this.employeeKey,
+          })
+        });
+        const res = await resp.json();
+        if (res.success) {
+          window.location.reload();
+        } else {
+          alert('Erro ao remover justificativa: ' + (res.error || res.message));
+          this.saving = false;
+        }
+      } catch (err) {
+        alert('Falha na comunicação com o servidor: ' + err.message);
+        this.saving = false;
+      }
+    }
+  };
+}
+</script>

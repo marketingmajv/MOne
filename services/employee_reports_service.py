@@ -346,6 +346,7 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         "submitted_on_time": 0,
         "submitted_late": 0,
         "draft": 0,
+        "exempt": 0,
         "pending": 0,
     }
 
@@ -361,11 +362,21 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         # Determina estado
         status = rep.get("status") if rep else "pending"
         submitted_at = rep.get("submitted_at") if rep else None
+        is_exempt = (status == "exempt")
+
+        ex_type = (rep.get("exemption_type") or "") if rep else ""
+        ex_reason = (rep.get("exemption_reason") or "") if rep else ""
+        is_paternity = "patern" in ex_type.lower() or "patern" in ex_reason.lower()
 
         status_map = {
             "submitted_on_time": ("Enviado no Prazo", "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30", "✅"),
             "submitted_late": ("Enviado com Atraso", "bg-amber-500/10 text-amber-400 border border-amber-500/30", "⚠️"),
             "draft": ("Rascunho Salvo", "bg-sky-500/10 text-sky-400 border border-sky-500/30", "📝"),
+            "exempt": (
+                ex_reason or "Ausência Justificada / Licença",
+                "bg-sky-500/15 text-sky-400 border border-sky-500/40",
+                "👶" if is_paternity else "⚖️"
+            ),
         }
         status_label, badge_class, icon = status_map.get(status, ("Pendente", "bg-rose-500/10 text-rose-400 border border-rose-500/30", "⏳"))
         counts[status if status in counts else "pending"] += 1
@@ -375,14 +386,16 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         answered_q = sum(1 for q in meta.get("questions", []) if (answers.get(q["id"]) or "").strip())
         progress_pct = int((answered_q / total_q) * 100) if total_q else 0
 
-        # Link do WhatsApp
-        wa_url = generate_whatsapp_charge_url(
-            employee_name=meta["name"],
-            phone=meta.get("phone", ""),
-            cycle_title=cycle.get("title", "Semana Atual"),
-            deadline_str=deadline_str or "Sexta-feira 18h",
-            status_label=status_label
-        )
+        # Link do WhatsApp (suprimido se estiver isento/licença)
+        wa_url = None
+        if not is_exempt:
+            wa_url = generate_whatsapp_charge_url(
+                employee_name=meta["name"],
+                phone=meta.get("phone", ""),
+                cycle_title=cycle.get("title", "Semana Atual"),
+                deadline_str=deadline_str or "Sexta-feira 18h",
+                status_label=status_label
+            )
 
         # Formatação amigável de data e lista estruturada de perguntas com respostas
         submitted_at_fmt = ""
@@ -410,6 +423,11 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "status_label": status_label,
             "badge_class": badge_class,
             "icon": icon,
+            "is_exempt": is_exempt,
+            "exemption_type": ex_type,
+            "exemption_reason": ex_reason,
+            "exempted_by": (rep.get("exempted_by") or "") if rep else "",
+            "exempted_at": (str(rep.get("exempted_at"))[:16]) if rep and rep.get("exempted_at") else "",
             "submitted_at": submitted_at_fmt,
             "answered_count": answered_q,
             "total_questions": total_q,
@@ -427,14 +445,16 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "is_feedback_released": bool(rep.get("is_feedback_released")) if rep else False,
         })
 
+    active_total = max(counts["total"] - counts["exempt"], 0)
     total_submitted = counts["submitted_on_time"] + counts["submitted_late"]
-    on_time_pct = int((counts["submitted_on_time"] / counts["total"]) * 100) if counts["total"] else 0
-    total_completion_pct = int((total_submitted / counts["total"]) * 100) if counts["total"] else 0
+    on_time_pct = int((counts["submitted_on_time"] / active_total) * 100) if active_total else 100
+    total_completion_pct = int((total_submitted / active_total) * 100) if active_total else 100
 
     return {
         "cycle": cycle,
         "deadline_str": deadline_str,
         "counts": counts,
+        "active_total": active_total,
         "total_submitted": total_submitted,
         "on_time_percent": on_time_pct,
         "completion_percent": total_completion_pct,
@@ -442,52 +462,5 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
     }
 
 
-def get_monday_consolidation_briefing(cycle_id: int) -> Dict[str, Any]:
-    """Monta o briefing executivo consolidado para a reunião de segunda-feira (Jam + Geysa + Fauzer)."""
-    summary = get_cycle_submissions_summary(cycle_id)
-    emp_map = {e["key"]: e for e in summary["employees"]}
-
-    # Organização por frentes críticas da reunião
-    front_defs = [
-        ("1. Faturamento, Caixa & Conciliação", "Marisa", "FINANCEIRO", "green", "marisa", [
-            ("Faturamento Relevante", "faturamento_nfs"), ("Entradas Pendentes", "entradas_pendentes"),
-            ("Contas para Geysa", "contas_vencimentos"), ("Piloto Mercado Pago", "piloto_mercado_pago")
-        ]),
-        ("2. Estoque Físico, Galpões & Divergências", "Jhon", "ESTOQUE", "amber", "jhon", [
-            ("Contagem de Sexta", "contagem_rotativa"), ("Divergências Investigadas", "divergencias"),
-            ("NFs de Demonstração", "nfs_demonstracao"), ("Código de Barras", "codigo_barras")
-        ]),
-        ("3. Oficina Técnica, Produtividade & Falhas", "Ricardo", "OFICINA", "cyan", "ricardo", [
-            ("Serviços Liberados", "servicos_concluidos"), ("OS Atrasadas / Pendentes", "os_pendentes"),
-            ("Retrabalhos", "retrabalhos"), ("Defeitos Recorrentes", "defeitos_recorrentes"), ("Peças & Ferramentas", "necessidade_pecas")
-        ]),
-        ("4. Voz do Cliente, Vendas & Objeções", "Luiza, Gabriel & Gustavo", "COMERCIAL", "emerald", "luiza", [
-            ("Modelos Mais Procurados", "modelos_procurados"), ("Objeções Comerciais", "objecoes_perdas"),
-            ("Preços Considerados Altos", "precos_altos"), ("Sugestão da Semana", "sugestao_comercial")
-        ]),
-        ("5. Vendas, Atendimentos & Negociações", "Léo", "VENDAS & ATENDIMENTO", "emerald", "leo", [
-            ("Atendimentos Realizados", "atendimentos_realizados"), ("Vendas Concluídas", "vendas_fechadas"),
-            ("Modelos Procurados", "modelos_mais_procurados"), ("Objeções / Desistências", "objecoes_e_desistencias"),
-            ("Clientes em Negociação", "clientes_em_negociacao"), ("Sugestões Comerciais", "sugestoes_comerciais")
-        ]),
-        ("6. Sistemas, Marketing & Desvios de Processo", "Fauzer", "SISTEMAS", "purple", "fauzer", [
-            ("Marketing & CPL", "marketing_investimento"), ("Sistemas & Bling/M-One", "processos_sistemas"),
-            ("Falhas & Desvios", "falhas_desvios"), ("Decisões para Jam & Geysa", "pontos_decisao_diretoria")
-        ]),
-    ]
-    critical_fronts = []
-    for title, owner, badge, color, emp_key, fields in front_defs:
-        emp = emp_map.get(emp_key, {})
-        ans = emp.get("answers", {})
-        critical_fronts.append({
-            "front_title": title, "owner": owner, "badge": badge, "badge_color": color,
-            "employee_data": emp_map.get(emp_key),
-            "key_highlights": [{"label": lbl, "answer": ans.get(fld)} for lbl, fld in fields]
-        })
-
-    return {
-        "cycle": summary["cycle"],
-        "deadline_str": summary["deadline_str"],
-        "summary": summary,
-        "fronts": critical_fronts,
-    }
+# Re-exporta para compatibilidade com rotas legadas mantendo arquivo < 500 linhas
+from services.employee_reports_briefing_service import get_monday_consolidation_briefing

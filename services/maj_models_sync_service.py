@@ -419,17 +419,17 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
         order_map = {slug: idx for idx, slug in enumerate(custom_order)}
 
         if mode == "free" and custom_order:
-            final_list.sort(key=lambda x: (order_map.get(x["slug"], 999), x["modelo"]))
+            final_list.sort(key=lambda x: (order_map.get(x.get("slug", ""), 999), x.get("modelo", "")))
         elif custom_order:
             final_list.sort(key=lambda x: (
                 cat_order_map.get((x.get("categoria") or "").lower(), 99),
-                order_map.get(x["slug"], 900),
-                x["modelo"]
+                order_map.get(x.get("slug", ""), 900),
+                x.get("modelo", "")
             ))
         else:
-            final_list.sort(key=lambda x: (cat_order_map.get((x.get("categoria") or "").lower(), 99), x["modelo"]))
+            final_list.sort(key=lambda x: (cat_order_map.get((x.get("categoria") or "").lower(), 99), x.get("modelo", "")))
 
-        active_models = [m for m in final_list if m["is_active"]]
+        active_models = [m for m in final_list if m.get("is_active", True)]
 
         result = {
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -437,7 +437,7 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
             "total_all": len(final_list),
             "menu_mode": mode,
             "category_order": cat_order_list,
-            "categories": list(dict.fromkeys(m["categoria"] for m in active_models if m["categoria"])),
+            "categories": list(dict.fromkeys(m.get("categoria", "") for m in active_models if m.get("categoria"))),
             "models": active_models,
             "all_models": final_list,
         }
