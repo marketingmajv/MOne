@@ -178,10 +178,10 @@
 
   <!-- Modal Nativo de Edição / Criação de Produto Mestre (3 Abas) -->
   <div class="modal" id="masterProductModal" onclick="if(event.target === this) closeMasterProductModal()">
-    <div class="modal-card large" style="width: min(880px, 95vw) !important; max-width: 880px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; padding: 0;">
+    <div class="modal-card large" style="width: min(880px, 94vw) !important; max-width: 880px !important; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; padding: 0 !important; box-sizing: border-box;">
       
       <!-- Cabeçalho do Modal -->
-      <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155);">
+      <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--line, #334155); margin: 0;">
         <div>
           <h3 id="master_modal_title" style="font-size: 1.15rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;">Editar Produto Mestre</h3>
           <p style="font-size: 0.75rem; color: var(--muted, #94a3b8); margin: 4px 0 0 0;">Ficha técnica canônica unificada e copys contextuais para Atacado e Varejo.</p>
@@ -194,15 +194,15 @@
         </button>
       </div>
 
-      <!-- Barra de Abas do Modal Responsiva -->
-      <div style="display: flex; gap: 8px; padding: 10px 20px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); flex-wrap: wrap;">
-        <button type="button" id="tab_btn_midia" class="btn sm" onclick="switchMasterTab('midia')" style="font-weight: 800; background: #00cc88; color: #000; flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
-          📸 1. Identificação & Mídia
+      <!-- Barra de Abas do Modal com Grid Perfeito (Nunca Corta no Lado Direito) -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 16px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); width: 100%; box-sizing: border-box;">
+        <button type="button" id="tab_btn_midia" class="btn sm" onclick="switchMasterTab('midia')" style="font-weight: 800; background: #00cc88; color: #000; width: 100%; justify-content: center; text-align: center; white-space: normal; padding: 8px 6px; font-size: 0.78rem;">
+          📸 1. Mídia & Dados
         </button>
-        <button type="button" id="tab_btn_specs" class="btn sm" onclick="switchMasterTab('specs')" style="font-weight: 700; background: transparent; color: var(--text); flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
+        <button type="button" id="tab_btn_specs" class="btn sm" onclick="switchMasterTab('specs')" style="font-weight: 700; background: transparent; color: var(--text); width: 100%; justify-content: center; text-align: center; white-space: normal; padding: 8px 6px; font-size: 0.78rem;">
           ⚙️ 2. Ficha Técnica Ouro
         </button>
-        <button type="button" id="tab_btn_copys" class="btn sm" onclick="switchMasterTab('copys')" style="font-weight: 700; background: transparent; color: var(--text); flex: 1 1 auto; min-width: 160px; justify-content: center; text-align: center;">
+        <button type="button" id="tab_btn_copys" class="btn sm" onclick="switchMasterTab('copys')" style="font-weight: 700; background: transparent; color: var(--text); width: 100%; justify-content: center; text-align: center; white-space: normal; padding: 8px 6px; font-size: 0.78rem;">
           ✍️ 3. Copys por Canal
         </button>
       </div>
@@ -360,6 +360,6 @@
 <script>
   window.MASTER_PRODUCTS_LIST = {{ products|tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/product-hub.js') }}"></script>
+<script src="{{ url_for('static', filename='js/product-hub.js') }}?v=20261106_2"></script>
 {% endblock %}
 
