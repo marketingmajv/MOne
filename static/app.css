@@ -2330,6 +2330,7 @@ button[onclick="resetFreightForm()"]:hover {
   transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s ease;
 }
 
+html.mone-preloader-active .mone-preloader,
 .mone-preloader.active {
   pointer-events: auto;
   opacity: 1;

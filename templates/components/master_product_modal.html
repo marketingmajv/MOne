@@ -1,0 +1,308 @@
+{#
+  M-One Master Product Modal Component (templates/components/master_product_modal.html)
+  Modal Central Mestre estruturado com Alpine.js e <template x-teleport="body">.
+  Opção 1: Gestão canônica de Identificação, Ficha Técnica Ouro e Copys por Canal.
+  Galerias completas e uploads múltiplos permanecem nos modais dedicados de Outlet e Atacado.
+#}
+
+<style>
+  .master-tab-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 9px 10px !important;
+    border-radius: 8px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    border: 1px solid var(--line, #334155) !important;
+    background: transparent !important;
+    color: var(--muted, #94a3b8) !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+  }
+  .master-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--text, #f8fafc) !important;
+  }
+  .master-tab-btn.active {
+    background: #00cc88 !important;
+    color: #000000 !important;
+    border-color: #00cc88 !important;
+    font-weight: 800 !important;
+    box-shadow: 0 2px 8px rgba(0, 204, 136, 0.35) !important;
+  }
+  [data-theme="light"] .master-tab-btn {
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+    background: #ffffff !important;
+  }
+  [data-theme="light"] .master-tab-btn:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+  [data-theme="light"] .master-tab-btn.active {
+    background: #00cc88 !important;
+    color: #000000 !important;
+    border-color: #00cc88 !important;
+  }
+  @media (max-width: 640px) {
+    .master-tab-btn {
+      font-size: 0.74rem !important;
+      padding: 7px 6px !important;
+    }
+  }
+</style>
+
+<div x-data="masterProductModalComponent()" x-cloak>
+  <template x-teleport="body">
+    <div id="masterProductModal"
+         class="modal show"
+         x-show="isOpen"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 16px; margin: 0; box-sizing: border-box;"
+         @keydown.escape.window="if(isOpen) close()"
+         @click.self="close()">
+
+      <div class="modal-card large"
+           style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: min(840px, 95vw); max-width: 840px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; margin: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); position: relative;">
+
+        <!-- Cabeçalho do Modal Mestre -->
+        <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155); margin: 0; background: var(--panel, #0f172a);">
+          <div>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;">
+              <span x-text="isEditing ? '✏️ Editar: ' + (form.name || '') : '➕ Novo Produto Mestre'"></span>
+            </h3>
+            <p style="font-size: 0.75rem; color: var(--muted, #94a3b8); margin: 4px 0 0 0;">Ficha técnica canônica unificada e copys contextuais para Atacado e Varejo.</p>
+          </div>
+          <button type="button" class="modal-close-btn" @click="close()" title="Fechar modal" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Barra de 3 Abas Simétricas (CSS Grid Seguro com minmax(0, 1fr)) -->
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 18px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); width: 100%; box-sizing: border-box;">
+          <button type="button"
+                  class="master-tab-btn"
+                  :class="{ 'active': activeTab === 'midia' }"
+                  @click="activeTab = 'midia'"
+                  title="Identificação e Mídia Canônica">
+            📸 1. Identificação & Mídia
+          </button>
+          <button type="button"
+                  class="master-tab-btn"
+                  :class="{ 'active': activeTab === 'specs' }"
+                  @click="activeTab = 'specs'"
+                  title="Ficha Técnica Canônica">
+            ⚙️ 2. Ficha Técnica Ouro
+          </button>
+          <button type="button"
+                  class="master-tab-btn"
+                  :class="{ 'active': activeTab === 'copys' }"
+                  @click="activeTab = 'copys'"
+                  title="Copys Contextuais por Canal">
+            ✍️ 3. Copys por Canal
+          </button>
+        </div>
+
+        <!-- Formulário com Rolagem Interna -->
+        <form id="masterProductForm" action="{{ url_for('product_hub.save_product') }}" method="POST" @submit="submitForm($event)" style="overflow-y: auto; padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="product_id" :value="form.id">
+          <input type="hidden" name="specs_json" id="master_form_specs_json">
+          <input type="hidden" name="return_to" value="{{ request.path }}">
+
+          <!-- ABA 1: IDENTIFICAÇÃO E MÍDIA CANÔNICA -->
+          <div x-show="activeTab === 'midia'">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Nome do Modelo</label>
+                <input type="text" name="name" x-model="form.name" required class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Slug Canônico</label>
+                <input type="text" name="slug" x-model="form.slug" required class="form-input" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Categoria</label>
+                <input type="text" name="category" x-model="form.category" required class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Marca</label>
+                <input type="text" name="brand" x-model="form.brand" class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Status</label>
+                <select name="status" x-model="form.status" class="form-input" style="width: 100%;">
+                  <option value="active">Ativo (Em linha)</option>
+                  <option value="inactive">Inativo</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Capa Principal e Banner Showroom com Preview Visual -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div style="background: var(--panel2, #1e293b); padding: 12px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                <label style="display: block; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">
+                  ⭐ Foto de Capa (Principal)
+                </label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div style="width: 72px; height: 72px; border-radius: 8px; border: 1.5px solid #00cc88; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <img :src="form.image_main || '/static/logo.png'" alt="Capa" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/logo.png'">
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <input type="text" name="image_main" x-model="form.image_main" class="form-input" placeholder="URL da foto de capa" style="width: 100%; font-size: 0.78rem;">
+                    <small style="display: block; font-size: 0.7rem; color: var(--muted, #94a3b8); margin-top: 4px;">Referência canônica de capa do modelo.</small>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: var(--panel2, #1e293b); padding: 12px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                <label style="display: block; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">
+                  🖼️ Banner Widescreen 16:9 (Showroom)
+                </label>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div style="width: 110px; height: 72px; border-radius: 8px; border: 1px solid var(--line, #334155); background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <img :src="form.banner_widescreen || '/static/logo.png'" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/logo.png'">
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <input type="text" name="banner_widescreen" x-model="form.banner_widescreen" class="form-input" placeholder="URL do banner widescreen" style="width: 100%; font-size: 0.78rem;">
+                    <small style="display: block; font-size: 0.7rem; color: var(--muted, #94a3b8); margin-top: 4px;">Exibido nas vitrines e páginas institucionais.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Informativo da Estratégia de Mídia Desacoplada -->
+            <div style="padding: 10px 14px; border-radius: 8px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); font-size: 0.76rem; color: var(--muted, #94a3b8); line-height: 1.4;">
+              💡 <strong>Galerias Individuais por Canal</strong>: As fotos e mídias adicionais continuam gerenciadas com autonomia total nos modais dedicados de cada canal (<strong style="color: var(--text);">Outlet MAJ</strong> e <strong style="color: var(--text);">Atacado CNPJ</strong>), garantindo a melhor experiência visual e independência para cada tipo de cliente.
+            </div>
+          </div>
+
+          <!-- ABA 2: FICHA TÉCNICA OURO -->
+          <div x-show="activeTab === 'specs'">
+            <div style="padding: 10px 14px; border-radius: 8px; background: rgba(0, 204, 136, 0.08); border: 1px solid rgba(0, 204, 136, 0.3); margin-bottom: 14px; font-size: 0.78rem; color: var(--text);">
+              🔒 <strong>Ficha Canônica Única</strong>: As alterações feitas aqui serão replicadas exatamente com os mesmos números para Atacado, Outlet e Showroom.
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">⚡ Motor</label>
+                <input type="text" x-model="specs['Motor']" class="form-input" placeholder="Ex: 500W, 1000W" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🚀 Velocidade Máxima</label>
+                <input type="text" x-model="specs['Velocidade Máxima']" class="form-input" placeholder="Ex: Até 32 km/h" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🔋 Autonomia</label>
+                <input type="text" x-model="specs['Autonomia']" class="form-input" placeholder="Ex: Até 35 km" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">⚡ Bateria</label>
+                <input type="text" x-model="specs['Bateria']" class="form-input" placeholder="Ex: 36V Lítio, 48V Lítio" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🏋️ Carga Máxima</label>
+                <input type="text" x-model="specs['Carga Máxima']" class="form-input" placeholder="Ex: 120 kg, 160 kg" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🛑 Freios</label>
+                <input type="text" x-model="specs['Freios']" class="form-input" placeholder="Ex: Diant: Hidráulico / Tras: Hidráulico" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">✨ Diferencial / Destaque de Engenharia</label>
+              <input type="text" x-model="specs['Diferencial']" class="form-input" placeholder="Ex: Quadro baixo ergonômico, 3 modos de condução" style="width: 100%;">
+            </div>
+
+            <!-- Campos Extras Customizados -->
+            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line, #334155);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 0;">➕ Especificações Extras (Chave / Valor)</label>
+                <button type="button" class="btn sm" @click="addCustomSpec()" style="color: #00cc88;">+ Adicionar Campo</button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <template x-for="(cs, idx) in customSpecs" :key="idx">
+                  <div style="display: grid; grid-template-columns: 1.2fr 1.8fr auto; gap: 8px; align-items: center;">
+                    <input type="text" class="form-input" placeholder="Nome (Ex: Aro, Suspensão)" x-model="cs.key" style="width: 100%;">
+                    <input type="text" class="form-input" placeholder="Valor (Ex: Dianteira invertida)" x-model="cs.value" style="width: 100%;">
+                    <button type="button" class="btn sm" @click="removeCustomSpec(idx)" style="color: #ef4444; padding: 6px 10px;" title="Remover campo">🗑️</button>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 3: COPYS CONTEXTUAIS -->
+          <div x-show="activeTab === 'copys'">
+            <div style="padding: 10px 14px; border-radius: 8px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); margin-bottom: 14px; font-size: 0.78rem; color: var(--text);">
+              ✍️ <strong>Copys Segmentadas</strong>: Cada canal se comunica com um público diferente. Personalize os argumentos comerciais mantendo as fichas técnicas unificadas.
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: #00cc88;">
+                💼 Copy Atacado B2B (Foco em Revenda, Margem de Lucro e CNPJ)
+              </label>
+              <textarea name="copy_atacado" x-model="form.copy_atacado" rows="3" class="form-input" style="width: 100%;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: #e5a93b;">
+                🏷️ Copy Outlet B2C (Foco no Consumidor Final, Desconto e Queima)
+              </label>
+              <textarea name="copy_outlet" x-model="form.copy_outlet" rows="3" class="form-input" style="width: 100%;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: #38bdf8;">
+                🏛️ Copy Showroom (Conceito Institucional da Marca & Ergonomia)
+              </label>
+              <textarea name="copy_showroom" x-model="form.copy_showroom" rows="3" class="form-input" style="width: 100%;"></textarea>
+            </div>
+          </div>
+
+          <!-- Rodapé com Trava de Propagação e Ações -->
+          <div style="padding-top: 14px; border-top: 1px solid var(--line, #334155); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: auto; background: var(--panel, #0f172a);">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #00cc88; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" name="propagate_now" value="1" x-model="form.propagate_now" style="width: 16px; height: 16px; accent-color: #00cc88;">
+              <span>⚡ Redistribuir alterações automaticamente para Atacado e Outlet ao salvar</span>
+            </label>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn" @click="close()">Cancelar</button>
+              <button type="submit" class="btn primary">Salvar Produto Mestre</button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </template>
+</div>

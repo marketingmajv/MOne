@@ -324,7 +324,13 @@ async function resetToDefaultOrder() {
     });
     if (res.ok) {
       showToast('Ordem restaurada com sucesso! Recarregando página...', true);
-      setTimeout(() => window.location.reload(), 1000);
+      setTimeout(() => {
+        if (window.MOnePreloader && typeof window.MOnePreloader.reload === 'function') {
+          window.MOnePreloader.reload('Restaurando ordem do showroom...', 'SHOWROOM MAJ');
+        } else {
+          window.location.reload();
+        }
+      }, 500);
     }
   } catch (err) {
     showToast('Erro ao resetar: ' + err.message, false);

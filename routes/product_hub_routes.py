@@ -110,6 +110,20 @@ def save_product():
             "banner_widescreen": request.form.get("banner_widescreen", "").strip(),
             "sync_atacado": request.form.get("sync_atacado") in ["1", "true", "on", True],
             "sync_outlet": request.form.get("sync_outlet") in ["1", "true", "on", True],
+            # Dados Comerciais do Outlet (Aba 4)
+            "outlet_price_outlet": request.form.get("outlet_price_outlet"),
+            "outlet_price_original": request.form.get("outlet_price_original"),
+            "outlet_installment_12": request.form.get("outlet_installment_12"),
+            "outlet_installment_18": request.form.get("outlet_installment_18"),
+            "outlet_stock_qty": request.form.get("outlet_stock_qty"),
+            "outlet_color_prices_json": request.form.get("outlet_color_prices_json"),
+            # Dados Comerciais do Atacado (Aba 5)
+            "atacado_price": request.form.get("atacado_price"),
+            "atacado_price_plus": request.form.get("atacado_price_plus"),
+            "atacado_price_original": request.form.get("atacado_price_original"),
+            "atacado_stock_qty": request.form.get("atacado_stock_qty"),
+            "atacado_is_best_seller": request.form.get("atacado_is_best_seller"),
+            "propagate_now": request.form.get("propagate_now") in ["1", "true", "on", True],
         }
 
         saved_id = save_master_product(data, product_id=product_id)
@@ -131,7 +145,48 @@ def save_product():
         logger.exception("Erro ao salvar produto mestre: %s", e)
         flash(f"Erro ao salvar produto: {e}", "danger")
 
+    return_to = request.form.get("return_to")
+    if return_to and (return_to.startswith("/admin/") or return_to.startswith("/")):
+        return redirect(return_to)
+
     return redirect(url_for("product_hub.index"))
+
+
+@product_hub_bp.route("/api/upload-gallery", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_upload_gallery():
+    """Recebe upload múltiplo de imagens para a galeria e retorna URLs salvas."""
+    import base64
+    import time
+    from werkzeug.utils import secure_filename
+
+    files = request.files.getlist("gallery_files")
+    saved_urls = []
+    base_dir = Path(__file__).resolve().parent.parent
+    upload_dir = Path("/tmp/uploads/products") if os.environ.get("VERCEL") else base_dir / "static" / "uploads" / "products"
+    try:
+        upload_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    for f in files:
+        if not f or not f.filename:
+            continue
+        try:
+            safe_name = f"gal_{int(time.time())}_{secure_filename(f.filename)}"
+            f.save(upload_dir / safe_name)
+            saved_urls.append(f"/static/uploads/products/{safe_name}")
+        except Exception:
+            try:
+                f.seek(0)
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+                mime = f.mimetype or "image/jpeg"
+                saved_urls.append(f"data:{mime};base64,{b64}")
+            except Exception as b64_err:
+                logger.error("Falha ao converter imagem para base64: %s", b64_err)
+
+    return jsonify({"success": True, "urls": saved_urls})
 
 
 @product_hub_bp.route("/sync/<int:product_id>", methods=["POST"])

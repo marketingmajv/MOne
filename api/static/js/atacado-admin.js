@@ -435,7 +435,11 @@ function atacadoModelModal() {
       const wasSuccess = this.feedbackModal.success;
       this.feedbackModal.open = false;
       if (wasSuccess) {
-        window.location.reload();
+        if (window.MOnePreloader && typeof window.MOnePreloader.reload === 'function') {
+          window.MOnePreloader.reload('Atualizando catálogo B2B...', 'MAJ ATACADO');
+        } else {
+          window.location.reload();
+        }
       } else {
         this.isOpen = true;
       }

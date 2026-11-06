@@ -16,8 +16,23 @@
   <meta name="mone-build" content="{{ app_version.build if (app_version is defined and app_version) else '20260922.1' }}">
   <script>
     (function() {
+      // 1. Restaurar Tema Imediato
       const savedTheme = localStorage.getItem('mone_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
+
+      // 2. Handoff de Pré-Loader Contínuo (Anti-Flicker & Persistência de Ações)
+      try {
+        const pending = sessionStorage.getItem('mone_preloader_pending');
+        if (pending) {
+          const data = JSON.parse(pending);
+          const age = Date.now() - (data.ts || 0);
+          if (age < 12000) {
+            document.documentElement.classList.add('mone-preloader-active');
+          } else {
+            sessionStorage.removeItem('mone_preloader_pending');
+          }
+        }
+      } catch(e) {}
     })();
   </script>
   <!-- Modern Frontend Stack: HTMX + Alpine.js + Chart.js -->
@@ -48,6 +63,22 @@
       </div>
     </div>
   </div>
+  <script>
+    (function() {
+      try {
+        const pData = sessionStorage.getItem('mone_preloader_pending');
+        if (pData) {
+          const d = JSON.parse(pData);
+          if (d && (Date.now() - (d.ts || 0) < 12000)) {
+            const txtEl = document.querySelector('#monePreloader .mone-preloader-text');
+            const bdgEl = document.querySelector('#monePreloader .mone-preloader-badge');
+            if (txtEl && d.text) txtEl.textContent = d.text;
+            if (bdgEl && d.badge) bdgEl.textContent = d.badge;
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
 
   {% if is_impersonating %}
   <div class="impersonation-bar" style="background: linear-gradient(90deg, #581c87, #7e22ce); color: #ffffff; padding: 10px 20px; font-size: 0.84rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 999999; box-shadow: 0 4px 14px rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.2);">
@@ -209,6 +240,6 @@
   {% include 'profile_modal.html' %}
   {% include 'version_modal.html' %}
   <script src="{{ url_for('static', filename='js/version-manager.js', v='20260922_v1') }}"></script>
-  <script src="{{ url_for('static', filename='js/preloader.js', v='20260915_v1') }}"></script>
+  <script src="{{ url_for('static', filename='js/preloader.js', v='20261106_handoff_v2') }}"></script>
 </body>
 </html>

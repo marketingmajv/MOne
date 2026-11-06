@@ -210,7 +210,11 @@ function showroomModelModal() {
         }
 
         this.isOpen = false;
-        window.location.reload();
+        if (window.MOnePreloader && typeof window.MOnePreloader.reload === 'function') {
+          window.MOnePreloader.reload('Modelo salvo com sucesso! Atualizando showroom...', 'SHOWROOM MAJ');
+        } else {
+          window.location.reload();
+        }
       } catch (err) {
         if (window.MOnePreloader) window.MOnePreloader.hide();
         alert('Falha ao salvar: ' + err.message);
