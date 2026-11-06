@@ -197,6 +197,7 @@ function openOutletNewModal() {
   CURRENT_COLOR_PRICES = [];
   renderGalleryPreview();
   renderColorPricesEditor();
+  if (window.resetOutletSpecs) window.resetOutletSpecs();
   const title = document.getElementById('outlet_modal_title');
   if (title) title.textContent = 'Novo Produto do Outlet';
   openModal('outletModal');
@@ -240,6 +241,7 @@ function openOutletEditModal(id) {
   CURRENT_GALLERY = Array.isArray(gal) ? [...gal] : [];
   if (CURRENT_IMAGE_MAIN && !CURRENT_GALLERY.includes(CURRENT_IMAGE_MAIN)) CURRENT_GALLERY.unshift(CURRENT_IMAGE_MAIN);
   renderGalleryPreview();
+  if (window.renderOutletSpecs) window.renderOutletSpecs(specs);
 
   const title = document.getElementById('outlet_modal_title');
   if (title) title.textContent = 'Editar Produto: ' + (item.name || '');
@@ -300,6 +302,7 @@ function validateOutletFormPayload() {
   if (mainInput) mainInput.value = CURRENT_IMAGE_MAIN || '';
   if (galleryInput) galleryInput.value = JSON.stringify(CURRENT_GALLERY || []);
   syncColorPricesHiddenInput();
+  if (window.serializeOutletSpecs) window.serializeOutletSpecs();
 
   const totalChars = (mainInput?.value || '').length + (galleryInput?.value || '').length;
   const sizeMb = (totalChars * 3 / 4) / (1024 * 1024);

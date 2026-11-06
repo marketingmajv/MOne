@@ -320,6 +320,98 @@
           <input type="text" name="color" id="outlet_form_color" style="width: 100%;">
         </div>
 
+        <!-- Seção Expansível de Ficha Técnica & Especificações -->
+        <div style="margin-bottom: 14px; padding: 14px; border: 1px solid rgba(0, 112, 243, 0.35); border-radius: 10px; background: rgba(0, 112, 243, 0.04);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; user-select: none;" onclick="toggleOutletSpecsSection()">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 0.85rem; font-weight: 800; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                  <span>⚙️ Ficha Técnica & Especificações</span>
+                </label>
+                <span id="outlet_specs_badge" style="font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 12px; background: rgba(0, 112, 243, 0.18); color: #60a5fa; border: 1px solid rgba(0, 112, 243, 0.3);">
+                  0 preenchidos
+                </span>
+              </div>
+              <small class="muted" style="font-size: 0.73rem; display: block; margin-top: 2px;">
+                Dados exibidos na tabela do modal público (Motor, Autonomia, Bateria, Freios, etc.).
+              </small>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span id="outlet_specs_toggle_text" style="font-size: 0.75rem; font-weight: 700; color: #60a5fa;">Recolher</span>
+              <svg id="outlet_specs_chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; transition: transform 0.2s;">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Conteúdo Expansível da Ficha Técnica -->
+          <div id="outlet_specs_content" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line, #334155);">
+            <!-- Barra de Ações Rápidas (Puxar Canônica) -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 8px 12px; border-radius: 8px; background: rgba(0, 204, 136, 0.08); border: 1px dashed rgba(0, 204, 136, 0.35);">
+              <span style="font-size: 0.73rem; color: var(--text);">
+                💡 Preencha os campos ou puxe direto da ficha canônica do modelo.
+              </span>
+              <button type="button" class="btn sm" onclick="populateSpecsFromCanonical()" style="padding: 4px 10px; font-size: 0.75rem; font-weight: 700; color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.4); background: rgba(0, 204, 136, 0.12); display: flex; align-items: center; gap: 5px;" title="Preencher automaticamente com dados oficiais de fábrica">
+                ⚡ Preencher da Ficha Canônica
+              </button>
+            </div>
+
+            <input type="hidden" name="specs_json" id="outlet_form_specs_json">
+
+            <!-- Grid de Campos Principais -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">⚡ Motor</label>
+                <input type="text" id="outlet_spec_motor" class="form-input" placeholder="Ex: 500W, 1000W" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🚀 Velocidade Máxima</label>
+                <input type="text" id="outlet_spec_velocidade" class="form-input" placeholder="Ex: Até 32 km/h" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🔋 Autonomia</label>
+                <input type="text" id="outlet_spec_autonomia" class="form-input" placeholder="Ex: Até 35 km" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">⚡ Bateria</label>
+                <input type="text" id="outlet_spec_bateria" class="form-input" placeholder="Ex: 48V Lítio, 60V Lítio" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🏋️ Carga Máxima</label>
+                <input type="text" id="outlet_spec_carga" class="form-input" placeholder="Ex: 120 kg, 160 kg" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">🛑 Freios</label>
+                <input type="text" id="outlet_spec_freios" class="form-input" placeholder="Ex: Diant: Hidráulico / Tras: Hidráulico" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 3px; color: var(--text);">✨ Diferencial</label>
+              <input type="text" id="outlet_spec_diferencial" class="form-input" placeholder="Ex: Quadro baixo ergonômico, 3 modos de condução" style="width: 100%;" oninput="updateOutletSpecsBadge()">
+            </div>
+
+            <!-- Especificações Extras Dinâmicas -->
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line, #334155);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <label style="font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 0;">
+                  ➕ Especificações Adicionais (Chave / Valor)
+                </label>
+                <button type="button" class="btn sm" onclick="addOutletCustomSpecRow()" style="padding: 3px 8px; font-size: 0.72rem; font-weight: 700; color: #00cc88;">
+                  + Adicionar Campo Extra
+                </button>
+              </div>
+              <div id="outlet_custom_specs_container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Galeria de Fotos e Foto Capa -->
         <div style="margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #334155); border-radius: 10px; background: rgba(255,255,255,0.02);">
           <label style="display: block; font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; color: var(--text);">📸 Galeria de Fotos do Produto</label>
@@ -357,6 +449,8 @@
 
 <script>
   window.OUTLET_ITEMS_LIST = {{ items|tojson }};
+  window.CANONICAL_MODELS = {{ (canonical_models or {})|tojson }};
 </script>
+<script src="{{ url_for('static', filename='js/outlet-admin-specs.js') }}"></script>
 <script src="{{ url_for('static', filename='js/outlet-admin.js') }}"></script>
 {% endblock %}

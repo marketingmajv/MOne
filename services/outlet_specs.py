@@ -279,3 +279,71 @@ MODEL_SPECS: Dict[str, Dict[str, Any]] = {
         "folder_aliases": ["GP 1000", "GP1000", "GP-1000"],
     },
 }
+
+
+def get_all_canonical_specs() -> Dict[str, Dict[str, Any]]:
+    """
+    Retorna dicionário indexado com especificações canônicas dos modelos para auto-preenchimento
+    no modal de edição do Outlet MAJ.
+    """
+    import json
+    from pathlib import Path
+
+    catalog: Dict[str, Dict[str, Any]] = {}
+
+    # 1. Base mestre do Outlet
+    for name, data in MODEL_SPECS.items():
+        key = name.strip().upper()
+        item_entry = {
+            "name": name,
+            "category": data.get("category", ""),
+            "description": data.get("description", ""),
+            "specs": dict(data.get("specs", {})),
+        }
+        catalog[key] = item_entry
+        for alias in data.get("folder_aliases", []):
+            catalog[alias.strip().upper()] = item_entry
+
+    # 2. Enriquecimento canônico a partir de maj_models.json
+    cache_path = Path(__file__).resolve().parent.parent / "static" / "data" / "maj_models.json"
+    if cache_path.is_file():
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+            for m in raw_data.get("all_models", []):
+                mod_name = (m.get("modelo") or "").strip().upper()
+                slug = (m.get("slug") or "").strip().upper()
+                metrics = m.get("metrics") or {}
+                if not mod_name:
+                    continue
+
+                target = catalog.setdefault(mod_name, {
+                    "name": m.get("modelo", ""),
+                    "category": m.get("categoria", ""),
+                    "description": "",
+                    "specs": {},
+                })
+                if slug:
+                    catalog[slug] = target
+
+                sp = target["specs"]
+                if metrics.get("potencia_nominal_w") and not sp.get("Motor"):
+                    sp["Motor"] = f"{metrics['potencia_nominal_w']}W"
+                if metrics.get("velocidade_max_kmh") and not sp.get("Velocidade Máxima"):
+                    sp["Velocidade Máxima"] = f"Até {metrics['velocidade_max_kmh']} km/h"
+                if (metrics.get("autonomia_maxima_km") or metrics.get("autonomia_conservadora_km")) and not sp.get("Autonomia"):
+                    aut = metrics.get("autonomia_maxima_km") or metrics.get("autonomia_conservadora_km")
+                    sp["Autonomia"] = f"Até {aut} km" if "km" not in str(aut).lower() else f"Até {aut}"
+                if metrics.get("voltagem_v") and not sp.get("Bateria"):
+                    sp["Bateria"] = f"{str(metrics['voltagem_v']).upper()} Lítio"
+                if metrics.get("carga_maxima_kg") and not sp.get("Carga Máxima"):
+                    sp["Carga Máxima"] = f"{metrics['carga_maxima_kg']} kg"
+                if metrics.get("freios") and not sp.get("Freios"):
+                    sp["Freios"] = metrics["freios"]
+                if metrics.get("diferencial") and not sp.get("Diferencial"):
+                    sp["Diferencial"] = metrics["diferencial"]
+        except Exception:
+            pass
+
+    return catalog
+

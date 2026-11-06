@@ -173,6 +173,9 @@ def admin_outlet():
         "stat_card_4_label": get_outlet_setting("stat_card_4_label", "Revisados e com Garantia"),
     }
 
+    from services.outlet_specs import get_all_canonical_specs
+    canonical_models = get_all_canonical_specs()
+
     return render_template(
         "outlet/admin.html",
         items=items,
@@ -182,6 +185,7 @@ def admin_outlet():
         settings=settings,
         current_status=status_filter,
         search_query=search,
+        canonical_models=canonical_models,
     )
 
 
