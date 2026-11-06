@@ -100,6 +100,13 @@ ALL_PERMISSIONS = {
         "description": "Gestão de modelos e painel de vitrine Modo TV",
         "default_roles": ["admin", "support", "sales"],
     },
+    "product_hub": {
+        "category": "comercial",
+        "label": "Central de Produtos Mestre",
+        "icon": "📦",
+        "description": "Hub central de produtos, fichas técnicas canônicas e redistribuição para canais",
+        "default_roles": ["admin", "support", "stock"],
+    },
     "prospector": {
         "category": "comercial",
         "label": "Prospecção de Leads",

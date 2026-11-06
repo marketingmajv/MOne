@@ -12,9 +12,10 @@
 {% set can_outlet = me and user_has_permission(me, 'outlet') %}
 {% set can_atacado = me and user_has_permission(me, 'atacado') %}
 {% set can_showroom = me and user_has_permission(me, 'showroom') %}
+{% set can_product_hub = me and user_has_permission(me, 'product_hub') %}
 {% set can_prospector = me and user_has_permission(me, 'prospector') %}
 {% set can_radar = me and user_has_permission(me, 'radar') %}
-{% set has_comercial = can_sales or can_custom_catalogs or can_outlet or can_atacado or can_showroom or can_prospector or can_radar %}
+{% set has_comercial = can_sales or can_custom_catalogs or can_outlet or can_atacado or can_showroom or can_product_hub or can_prospector or can_radar %}
 
 {% set can_stock = me and user_has_permission(me, 'stock') %}
 {% set can_freight = me and user_has_permission(me, 'freight') %}
@@ -50,6 +51,7 @@
 {% set is_active_outlet = ('outlet' in full_ep) %}
 {% set is_active_atacado = ('atacado' in full_ep) %}
 {% set is_active_showroom = ('showroom' in full_ep or 'model' in full_ep) %}
+{% set is_active_product_hub = ('central-produtos' in full_ep or 'product_hub' in full_ep) %}
 {% set is_active_prospector = ('prospector' in full_ep or 'prospeccao' in full_ep) %}
 {% set is_active_radar = ('radar' in full_ep) %}
 
@@ -74,91 +76,21 @@
 {% set is_active_infra = ('infra' in full_ep) %}
 
 <style>
-  /* Sidebar Moderna Linear / Stripe — Garantia Imediata contra Cache */
-  .sidebar {
-    width: 260px !important;
-  }
-  .main {
-    margin-left: 260px !important;
-    width: calc(100% - 260px) !important;
-  }
-  .sidebar-nav-container {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    overflow-y: auto;
-    padding-right: 6px;
-    margin-top: 6px;
-  }
-  .nav-section {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 16px;
-  }
-  .nav-section-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #38bdf8 !important; /* Ciano Elétrico MAJ — alto contraste e super visível */
-    padding: 16px 12px 6px;
-    user-select: none;
-  }
-  .nav-section-label::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: rgba(56, 189, 248, 0.25);
-  }
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    color: #f1f5f9 !important; /* Texto branco-acinzentado nítido e vivo */
-    font-weight: 500;
-    font-size: 13.5px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    transition: all 0.15s ease;
-    text-decoration: none;
-  }
-  .nav-item span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .nav-item .nav-icon {
-    width: 18px;
-    height: 18px;
-    color: #94a3b8 !important; /* Ícones claros e visíveis */
-    transition: color 0.15s ease;
-    flex-shrink: 0;
-  }
-  .nav-item:hover {
-    background: rgba(255, 255, 255, 0.09) !important;
-    color: #ffffff !important;
-  }
-  .nav-item:hover .nav-icon {
-    color: #ffffff !important;
-  }
-  .nav-item.active {
-    background: #0070F3 !important;
-    color: #ffffff !important;
-    font-weight: 700;
-    border: 1px solid #0070F3 !important;
-    box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4) !important;
-  }
-  .nav-item.active .nav-icon {
-    color: #ffffff !important;
-  }
-  .nav-item.active span {
-    color: #ffffff !important;
-  }
+  /* Sidebar Moderna Linear / Stripe */
+  .sidebar { width: 260px !important; }
+  .main { margin-left: 260px !important; width: calc(100% - 260px) !important; }
+  .sidebar-nav-container { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-right: 6px; margin-top: 6px; }
+  .nav-section { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
+  .nav-section-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #38bdf8 !important; padding: 16px 12px 6px; user-select: none; }
+  .nav-section-label::after { content: ""; flex: 1; height: 1px; background: rgba(56, 189, 248, 0.25); }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; color: #f1f5f9 !important; font-weight: 500; font-size: 13.5px; border-radius: 8px; border: 1px solid transparent; transition: all 0.15s ease; text-decoration: none; }
+  .nav-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav-item .nav-icon { width: 18px; height: 18px; color: #94a3b8 !important; transition: color 0.15s ease; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.09) !important; color: #ffffff !important; }
+  .nav-item:hover .nav-icon { color: #ffffff !important; }
+  .nav-item.active { background: #0070F3 !important; color: #ffffff !important; font-weight: 700; border: 1px solid #0070F3 !important; box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4) !important; }
+  .nav-item.active .nav-icon { color: #ffffff !important; }
+  .nav-item.active span { color: #ffffff !important; }
 </style>
 
 <aside class="sidebar" id="sidebar">
@@ -256,6 +188,17 @@
           <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
         </svg>
         <span>Modelos & Showroom</span>
+      </a>
+      {% endif %}
+
+      {% if can_product_hub %}
+      <a href="{{ url_for('product_hub.index') }}" class="nav-item {{ 'active' if is_active_product_hub else '' }}" title="Central de Produtos Mestre (Catálogo Ouro e Distribuição)">
+        <svg class="nav-icon text-emerald-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <span>Central de Produtos</span>
       </a>
       {% endif %}
 
