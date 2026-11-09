@@ -1,0 +1,427 @@
+<!-- MODAL EXECUTIVO DE EDIÇÃO E GOVERNANÇA DAS PERGUNTAS DOS COLABORADORES -->
+<!-- Regra Mandatória M-One: Envelopado com template x-teleport="body" e classe modal-close-btn -->
+<div x-data="employeeQuestionsModal()" @open-questions-modal.window="openModal($event.detail)">
+  <template x-teleport="body">
+    <div
+      class="modal"
+      :class="{ 'show': isOpen }"
+      x-show="isOpen"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @keydown.escape.window="closeModal()"
+      style="display: none; position: fixed; inset: 0; z-index: 10005; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;"
+      :style="isOpen ? 'display: flex;' : 'display: none;'"
+      @click.self="closeModal()"
+    >
+      <div
+        class="modal-card"
+        style="background: #0f172a !important; color: #f8fafc !important; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 20px; width: 100%; max-width: 1120px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.85); overflow: hidden; padding: 0;"
+      >
+        <!-- Cabeçalho do Modal -->
+        <div
+          class="modal-head"
+          style="padding: 18px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 14px; margin: 0;"
+        >
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(229, 169, 59, 0.16); border: 1px solid rgba(229, 169, 59, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+              🗂️
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text, #f8fafc);">
+                  Gestão das Perguntas Semanais dos Colaboradores
+                </h3>
+                <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #fbbf24; border: 1px solid rgba(229, 169, 59, 0.35); font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+                  DIRETORIA MAJ
+                </span>
+                <template x-if="hasUnsavedChanges">
+                  <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+                    ● Alterações não salvas
+                  </span>
+                </template>
+              </div>
+              <p style="margin: 3px 0 0 0; font-size: 0.78rem; color: var(--muted, #94a3b8);">
+                Oculte, reordene, edite, duplique ou copie perguntas entre colaboradores com numeração sequencial automática e preservação de histórico.
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn"
+              @click="addNewQuestion()"
+              :disabled="loading || saving"
+              style="background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); color: #10b981; font-size: 0.8rem; font-weight: 800; padding: 7px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"
+            >
+              <span>➕ Nova Pergunta</span>
+            </button>
+
+            <button
+              type="button"
+              class="modal-close-btn"
+              @click="closeModal()"
+              title="Fechar modal (Esc)"
+              aria-label="Fechar"
+              style="width: 36px; height: 36px; min-width: 36px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Seleção de Colaboradores (Abas / Pills) -->
+        <div style="padding: 12px 24px; background: #0d1527; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <template x-for="emp in employees" :key="emp.key">
+                <button
+                  type="button"
+                  @click="selectEmployee(emp.key)"
+                  style="padding: 7px 13px; border-radius: 9px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.15s ease; border: 1px solid;"
+                  :style="selectedEmployeeKey === emp.key
+                    ? 'background: #e5a93b; color: #000; border-color: #fbbf24; font-weight: 800; box-shadow: 0 2px 10px rgba(229, 169, 59, 0.3);'
+                    : 'background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border-color: rgba(255, 255, 255, 0.12);'"
+                >
+                  <span x-text="emp.name"></span>
+                  <span
+                    style="font-size: 0.68rem; padding: 1px 6px; border-radius: 999px; font-weight: 800;"
+                    :style="selectedEmployeeKey === emp.key
+                      ? 'background: rgba(0, 0, 0, 0.22); color: #ffffff;'
+                      : 'background: rgba(56, 189, 248, 0.16); color: #38bdf8;'"
+                    x-text="emp.active_count"
+                    title="Perguntas visíveis ativas"
+                  ></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Resumo do Colaborador Selecionado -->
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.76rem; color: var(--muted, #94a3b8);">
+              <span>
+                Cargo: <strong style="color: var(--text, #f8fafc);" x-text="currentEmployee.role_title || ''"></strong>
+              </span>
+              <span>•</span>
+              <span style="color: #10b981; font-weight: 700;">
+                👁️ <span x-text="activeCount"></span> Ativas
+              </span>
+              <template x-if="hiddenCount > 0">
+                <span style="color: #fbbf24; font-weight: 700;">
+                  🙈 <span x-text="hiddenCount"></span> Ocultas
+                </span>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Corpo Rolável com a Lista de Perguntas -->
+        <div style="flex: 1; overflow-y: auto; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px; background: #0f172a;">
+          <!-- Estado de Carregamento -->
+          <template x-if="loading">
+            <div style="text-align: center; padding: 50px 20px; color: var(--muted, #94a3b8);">
+              <div style="font-size: 1.8rem; margin-bottom: 10px;">⏳</div>
+              <p style="margin: 0; font-size: 0.9rem;">Carregando cartilha de perguntas do colaborador...</p>
+            </div>
+          </template>
+
+          <!-- Lista de Perguntas -->
+          <template x-if="!loading">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <template x-for="(q, idx) in currentQuestions" :key="q.id || idx">
+                <div
+                  style="border-radius: 14px; padding: 14px 16px; transition: all 0.15s ease; border: 1px solid;"
+                  :style="q.hidden
+                    ? 'background: rgba(15, 23, 42, 0.6); border-color: rgba(245, 158, 11, 0.28); opacity: 0.78;'
+                    : (editingIndex === idx
+                        ? 'background: #162238; border-color: rgba(56, 189, 248, 0.55); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);'
+                        : 'background: #131c2e; border-color: rgba(255, 255, 255, 0.1);')"
+                >
+                  <!-- Linha Superior do Card da Pergunta -->
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 240px;">
+                      <!-- Badge de Numeração Automática ou Oculta -->
+                      <template x-if="!q.hidden">
+                        <span
+                          style="min-width: 30px; height: 30px; border-radius: 8px; background: rgba(56, 189, 248, 0.16); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 800; font-size: 0.84rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                          x-text="q.display_number + '.'"
+                        ></span>
+                      </template>
+                      <template x-if="q.hidden">
+                        <span
+                          style="padding: 4px 8px; border-radius: 7px; background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 800; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;"
+                          title="Pergunta oculta no formulário atual (respostas passadas continuam salvas no histórico)"
+                        >
+                          🙈 OCULTA
+                        </span>
+                      </template>
+
+                      <div style="flex: 1; min-width: 0;">
+                        <div
+                          style="font-size: 0.94rem; font-weight: 800; color: var(--text, #f8fafc); line-height: 1.35;"
+                          :style="q.hidden ? 'text-decoration: line-through; color: #94a3b8;' : ''"
+                          x-text="q.raw_title"
+                        ></div>
+                        <div
+                          style="font-size: 0.76rem; color: var(--muted, #94a3b8); margin-top: 3px; line-height: 1.35;"
+                          x-text="q.help || q.placeholder || 'Sem subtítulo de orientação'"
+                        ></div>
+                      </div>
+                    </div>
+
+                    <!-- Barra de Ações da Pergunta -->
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                      <!-- Subir / Descer -->
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="moveQuestion(idx, -1)"
+                        :disabled="idx === 0"
+                        title="Mover pergunta para cima"
+                        style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; padding: 5px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="moveQuestion(idx, 1)"
+                        :disabled="idx === currentQuestions.length - 1"
+                        title="Mover pergunta para baixo"
+                        style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); color: #cbd5e1; padding: 5px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;"
+                      >
+                        ↓
+                      </button>
+
+                      <!-- Ocultar / Exibir -->
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="toggleHideQuestion(idx)"
+                        style="padding: 5px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; border: 1px solid;"
+                        :style="q.hidden
+                          ? 'background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981;'
+                          : 'background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;'"
+                        :title="q.hidden ? 'Reexibir pergunta e renumerar lista' : 'Ocultar pergunta sem apagar histórico'"
+                      >
+                        <span x-text="q.hidden ? '👁️ Exibir' : '🙈 Ocultar'"></span>
+                      </button>
+
+                      <!-- Editar Campos -->
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="toggleEdit(idx)"
+                        style="padding: 5px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; border: 1px solid;"
+                        :style="editingIndex === idx
+                          ? 'background: rgba(56, 189, 248, 0.22); border-color: #38bdf8; color: #38bdf8;'
+                          : 'background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.14); color: #f8fafc;'"
+                      >
+                        <span x-text="editingIndex === idx ? '▲ Fechar Edição' : '✏️ Editar'"></span>
+                      </button>
+
+                      <!-- Duplicar na mesma lista -->
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="duplicateQuestion(idx)"
+                        title="Duplicar esta pergunta para este colaborador"
+                        style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); color: #cbd5e1; padding: 5px 9px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; cursor: pointer;"
+                      >
+                        📋 Duplicar
+                      </button>
+
+                      <!-- Copiar / Espelhar para Outro Colaborador -->
+                      <div style="position: relative; display: inline-block;" @click.outside="if (copyDropdownIndex === idx) copyDropdownIndex = null">
+                        <button
+                          type="button"
+                          class="btn sm"
+                          @click="copyDropdownIndex = (copyDropdownIndex === idx ? null : idx)"
+                          title="Copiar/espelhar esta pergunta para outro colaborador (ex: Gabriel ↔ Gustavo)"
+                          style="background: rgba(168, 85, 247, 0.14); border: 1px solid rgba(168, 85, 247, 0.38); color: #c084fc; padding: 5px 10px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"
+                        >
+                          <span>📤 Espelhar p/...</span>
+                        </button>
+
+                        <div
+                          x-show="copyDropdownIndex === idx"
+                          x-cloak
+                          style="position: absolute; right: 0; top: calc(100% + 5px); min-width: 210px; background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 10px; box-shadow: 0 14px 32px rgba(0, 0, 0, 0.75); z-index: 120; padding: 6px;"
+                        >
+                          <div style="padding: 4px 8px; font-size: 0.68rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 4px;">
+                            Enviar cópia para:
+                          </div>
+                          <template x-for="target in otherEmployees" :key="target.key">
+                            <button
+                              type="button"
+                              @click="copyQuestionToOtherEmployee(idx, target.key)"
+                              style="width: 100%; text-align: left; padding: 6px 10px; border-radius: 6px; background: transparent; border: none; color: #f8fafc; font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                              onmouseover="this.style.background='rgba(168, 85, 247, 0.18)'"
+                              onmouseout="this.style.background='transparent'"
+                            >
+                              <span x-text="target.name"></span>
+                              <span style="font-size: 0.68rem; color: #c084fc;">+ Copiar</span>
+                            </button>
+                          </template>
+                        </div>
+                      </div>
+
+                      <!-- Excluir Pergunta -->
+                      <button
+                        type="button"
+                        class="btn sm"
+                        @click="deleteQuestion(idx)"
+                        title="Excluir pergunta (histórico de ciclos passados é preservado)"
+                        style="background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; padding: 5px 8px; border-radius: 6px; font-size: 0.74rem; font-weight: 700; cursor: pointer;"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Painel Expansível de Edição da Pergunta -->
+                  <div
+                    x-show="editingIndex === idx"
+                    x-transition
+                    style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 12px;"
+                  >
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                      <!-- Campo 1: Título da Pergunta -->
+                      <div>
+                        <label style="display: block; font-size: 0.74rem; font-weight: 800; color: var(--text, #f8fafc); margin-bottom: 4px; text-transform: uppercase;">
+                          📌 Título da Pergunta (Numeração é automática)
+                        </label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          x-model="q.raw_title"
+                          @input="markChanged()"
+                          placeholder="Ex: Produção da Semana (Motos Montadas eRevisadas)"
+                          style="width: 100%; background: var(--panel2, #090e17); color: var(--text, #f8fafc); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; box-sizing: border-box;"
+                        />
+                      </div>
+
+                      <!-- Campo 2: Subtítulo / Orientação (Help) -->
+                      <div>
+                        <label style="display: block; font-size: 0.74rem; font-weight: 800; color: var(--text, #f8fafc); margin-bottom: 4px; text-transform: uppercase;">
+                          💡 Orientação / Subtítulo de Ajuda (Cartilha)
+                        </label>
+                        <input
+                          type="text"
+                          class="form-input"
+                          x-model="q.help"
+                          @input="markChanged()"
+                          placeholder="Dica exibida logo abaixo do título para orientar o colaborador..."
+                          style="width: 100%; background: var(--panel2, #090e17); color: var(--text, #f8fafc); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; box-sizing: border-box;"
+                        />
+                      </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                      <!-- Campo 3: Placeholder -->
+                      <div>
+                        <label style="display: block; font-size: 0.74rem; font-weight: 800; color: var(--muted, #94a3b8); margin-bottom: 4px; text-transform: uppercase;">
+                          ✍️ Exemplo de Preenchimento (Placeholder)
+                        </label>
+                        <textarea
+                          class="form-input"
+                          rows="2"
+                          x-model="q.placeholder"
+                          @input="markChanged()"
+                          placeholder="Texto de exemplo dentro da caixa de resposta..."
+                          style="width: 100%; background: var(--panel2, #090e17); color: var(--text, #f8fafc); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+
+                      <!-- Campo 4: Gabarito Padrão Ouro da IA -->
+                      <div>
+                        <label style="display: block; font-size: 0.74rem; font-weight: 800; color: #fbbf24; margin-bottom: 4px; text-transform: uppercase;">
+                          🤖 Expectativa da Diretoria / Gabarito de Aferição IA
+                        </label>
+                        <textarea
+                          class="form-input"
+                          rows="2"
+                          x-model="q.desired_answer"
+                          @input="markChanged()"
+                          placeholder="Critério que a IA (Gemini) usará para avaliar se a resposta do colaborador foi satisfatória..."
+                          style="width: 100%; background: var(--panel2, #090e17); color: var(--text, #f8fafc); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 8px 12px; font-size: 0.82rem; resize: vertical; box-sizing: border-box;"
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- Rodapé do Modal -->
+        <div
+          style="padding: 14px 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center; background: #0b111f !important; flex-wrap: wrap; gap: 12px;"
+        >
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <button
+              type="button"
+              class="btn sm"
+              @click="restoreDefaults()"
+              :disabled="loading || saving"
+              style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; font-size: 0.78rem; font-weight: 700; padding: 7px 12px; border-radius: 8px; cursor: pointer;"
+              title="Reverter perguntas deste colaborador para a cartilha original de fábrica"
+            >
+              🔄 Restaurar Cartilha Original
+            </button>
+
+            <span
+              x-show="toastMessage"
+              x-text="toastMessage"
+              style="font-size: 0.82rem; font-weight: 700;"
+              :style="toastSuccess ? 'color: #00e599;' : 'color: #f87171;'"
+            ></span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button
+              type="button"
+              class="btn"
+              @click="closeModal()"
+              style="font-size: 0.82rem; font-weight: 600; padding: 8px 16px; border-radius: 8px;"
+            >
+              Fechar
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              @click="saveQuestions(false)"
+              :disabled="loading || saving"
+              style="background: rgba(56, 189, 248, 0.16); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-size: 0.82rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer;"
+            >
+              <span x-show="!saving">💾 Salvar Alterações</span>
+              <span x-show="saving">Salvando...</span>
+            </button>
+
+            <button
+              type="button"
+              class="btn primary"
+              @click="saveQuestions(true)"
+              :disabled="loading || saving"
+              style="font-size: 0.82rem; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer;"
+              title="Salva as perguntas e atualiza os quadros da página"
+            >
+              <span>✅ Salvar & Atualizar Painel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+<script src="{{ url_for('static', filename='js/modal-employee-questions.js') }}?v=20261109_qmodal_v1"></script>
+

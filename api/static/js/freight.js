@@ -11,6 +11,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function resetFreightForm() {
   document.getElementById("freightCalcForm")?.reset();
+  const selCarriers = document.getElementById("selected_carrier_ids");
+  if (selCarriers) {
+    Array.from(selCarriers.options).forEach(o => { o.selected = (o.value === "ALL"); });
+    _lastCarrierAllSelected = true;
+    onCarrierFilterChange(selCarriers);
+  }
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   setVal("customer_name", ""); setVal("cep_dest", "");
   if (window.DEFAULT_FREIGHT_CEP) setVal("cep_orig", window.DEFAULT_FREIGHT_CEP);
@@ -142,6 +148,47 @@ function updateTotalsSummary() {
 const intVal = (v, def=0) => { const p = parseInt(v); return isNaN(p) ? def : p; };
 const floatVal = (v, def=0.0) => { const p = parseFloat(v); return isNaN(p) ? def : p; };
 
+let _lastCarrierAllSelected = true;
+function onCarrierFilterChange(sel) {
+  if (!sel) return;
+  const opts = Array.from(sel.options);
+  const allOpt = opts.find(o => o.value === "ALL");
+  const specOpts = opts.filter(o => o.value !== "ALL");
+  const selectedSpecs = specOpts.filter(o => o.selected);
+
+  if (allOpt && allOpt.selected && selectedSpecs.length > 0) {
+    if (_lastCarrierAllSelected) {
+      allOpt.selected = false;
+      _lastCarrierAllSelected = false;
+    } else {
+      specOpts.forEach(o => { o.selected = false; });
+      allOpt.selected = true;
+      _lastCarrierAllSelected = true;
+    }
+  } else if (allOpt && !allOpt.selected && selectedSpecs.length === 0) {
+    allOpt.selected = true;
+    _lastCarrierAllSelected = true;
+  } else {
+    _lastCarrierAllSelected = !!(allOpt && allOpt.selected);
+  }
+
+  const badge = document.getElementById("carrierFilterCounterBadge");
+  if (badge) {
+    const activeSpecs = specOpts.filter(o => o.selected);
+    badge.innerText = activeSpecs.length > 0
+      ? `${activeSpecs.length} selecionada(s)`
+      : `Todas (${specOpts.length})`;
+  }
+}
+window.onCarrierFilterChange = onCarrierFilterChange;
+
+function getSelectedCarrierIds() {
+  const sel = document.getElementById("selected_carrier_ids");
+  if (!sel) return null;
+  const vals = Array.from(sel.selectedOptions).map(o => o.value).filter(v => v && v !== "ALL");
+  return vals.length > 0 ? vals.map(v => parseInt(v, 10)).filter(n => !isNaN(n)) : null;
+}
+
 async function lookupViaCEP(cepVal) {
   if (!cepVal) return;
   const clean = cepVal.replace(/\D/g, "");
@@ -255,59 +302,44 @@ async function runFreightCalculation() {
 
   try {
     const calcUrl = window.FREIGHT_CALCULATE_URL || "/freight/calculate";
+    const selected_carrier_ids = getSelectedCarrierIds();
     const resp = await fetch(calcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         cep_dest, cep_orig, items, 
         customer_name, company_name, cpf_cnpj, 
-        contact_phone, contact_person, full_address 
+        contact_phone, contact_person, full_address,
+        selected_carrier_ids
       })
     });
     
     const data = await resp.json();
     window.lastFreightCalculationResult = lastFreightCalculationResult = { ...data, items: data.items || items, customer_name, cep_dest };
 
-    if (!data.success || !data.options || data.options.length === 0) {
+    if (!data.success) {
       optionsList.innerHTML = `
         <div class="bg-amber-950/60 border border-amber-800/60 text-amber-300 p-4 rounded-xl text-xs">
-          ⚠️ ${data.message || 'Nenhuma transportadora cadastrada atende a este CEP ou faixa de peso.'}
+          ⚠️ ${data.message || 'Não foi possível calcular o frete.'}
         </div>
       `;
       return;
     }
 
+    data.options = data.options || [];
     // Ordenação por menor preço e inicialização da seleção múltipla
     data.options.sort((a, b) => a.total_price - b.total_price || a.delivery_days - b.delivery_days);
     if (window.freightSelection) {
       window.freightSelection.included = new Set(data.options.map((_, i) => i));
-      window.freightSelection.recommended = 0;
+      window.freightSelection.recommended = data.options.length > 0 ? 0 : null;
     }
 
-    const rankingCardsHtml = (typeof buildCarrierRankingHtml === "function") ? buildCarrierRankingHtml(data.options) : "";
-    const unservedHtml = (typeof buildUnservedCarriersHtml === "function") ? buildUnservedCarriersHtml(data.unserved_carriers) : "";
-
-    optionsList.innerHTML = `
-      <div class="animate-fade-in space-y-3">
-        <div class="radar-item" style="padding: 12px 14px; margin-bottom: 8px;">
-          <div style="flex: 1; min-width: 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <strong style="color: var(--text); font-size: 0.84rem;">${data.product_name}</strong>
-              <span class="badge" style="font-size: 0.7rem; font-weight: 700;">${data.total_volumes_count || 1} volume(s)</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--muted); margin-top: 4px;">
-              <span>Peso Físico: <strong style="color: var(--text);">${data.total_weight_kg.toFixed(1).replace('.', ',')} kg</strong></span>
-              <span>Base Seguro (1/3): <strong style="color: var(--accent);">R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}</strong></span>
-            </div>
-          </div>
-        </div>
-        <div class="rank-list">${rankingCardsHtml}</div>
-        ${unservedHtml}
-      </div>
-    `;
+    if (typeof renderFreightResultsEverywhere === "function") {
+      renderFreightResultsEverywhere();
+    }
 
     if (typeof openFreightModal === "function") {
-      openFreightModal(data, rankingCardsHtml);
+      openFreightModal(data);
     }
   } catch (err) {
     if (optionsList) {

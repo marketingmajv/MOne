@@ -242,10 +242,21 @@ DEFAULT_DESIRED_ANSWERS: Dict[str, Dict[str, str]] = {
 
 def get_default_desired_answer(employee_key: str, question_id: str) -> str:
     """Retorna a resposta desejada padrão para um colaborador e pergunta específicos."""
-    emp_map = DEFAULT_DESIRED_ANSWERS.get((employee_key or "").strip().lower(), {})
+    emp_map = get_employee_default_desired_map(employee_key)
     return emp_map.get(question_id, "Padrão de excelência operacional conforme a cartilha de funções oficial.")
 
 
 def get_employee_default_desired_map(employee_key: str) -> Dict[str, str]:
-    """Retorna o dicionário completo com todas as respostas desejadas padrão do colaborador."""
-    return dict(DEFAULT_DESIRED_ANSWERS.get((employee_key or "").strip().lower(), {}))
+    """Retorna o dicionário completo com todas as respostas desejadas padrão e customizadas do colaborador."""
+    emp_key = (employee_key or "").strip().lower()
+    base = dict(DEFAULT_DESIRED_ANSWERS.get(emp_key, {}))
+    try:
+        from services.employee_questions_service import get_all_Configured_Questions_For_Editor
+        for q in get_all_Configured_Questions_For_Editor(emp_key):
+            qid = q.get("id")
+            des = (q.get("desired_answer") or "").strip()
+            if qid and des:
+                base[qid] = des
+    except Exception:
+        pass
+    return base

@@ -127,17 +127,22 @@
           <input type="hidden" name="product_id" :value="form.id">
           <input type="hidden" name="specs_json" id="master_form_specs_json">
           <input type="hidden" name="return_to" value="{{ request.path }}">
+          <input type="hidden" name="sync_flags_present" value="1">
 
           <!-- ABA 1: IDENTIFICAÇÃO E MÍDIA CANÔNICA -->
           <div x-show="activeTab === 'midia'">
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
               <div>
                 <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Nome do Modelo</label>
-                <input type="text" name="name" x-model="form.name" required class="form-input" style="width: 100%;">
+                <input type="text" name="name" x-model="form.name" @input="onNameInput()" required class="form-input" style="width: 100%;">
               </div>
               <div>
                 <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">Slug Canônico</label>
                 <input type="text" name="slug" x-model="form.slug" required class="form-input" style="width: 100%;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: var(--text);">SKU (Opcional)</label>
+                <input type="text" name="sku" x-model="form.sku" placeholder="Ex: MAJ-V80" class="form-input" style="width: 100%;">
               </div>
             </div>
 
@@ -159,12 +164,31 @@
               </div>
             </div>
 
-            <!-- Capa Principal e Banner Showroom com Preview Visual -->
+            <!-- Canais Vinculados (Atacado & Outlet) -->
+            <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155);">
+              <span style="font-size: 0.78rem; font-weight: 800; color: var(--text);">🔗 Canais Conectados:</span>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #00cc88; cursor: pointer;">
+                <input type="checkbox" name="sync_atacado" value="1" x-model="form.sync_atacado" style="width: 15px; height: 15px; accent-color: #00cc88;">
+                <span>💼 Sincronizar Atacado B2B</span>
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #e5a93b; cursor: pointer;">
+                <input type="checkbox" name="sync_outlet" value="1" x-model="form.sync_outlet" style="width: 15px; height: 15px; accent-color: #e5a93b;">
+                <span>🏷️ Sincronizar Outlet Varejo</span>
+              </label>
+            </div>
+
+            <!-- Capa Principal e Banner Showroom com Preview Visual + Upload -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div style="background: var(--panel2, #1e293b); padding: 12px; border-radius: 10px; border: 1px solid var(--line, #334155);">
-                <label style="display: block; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">
-                  ⭐ Foto de Capa (Principal)
-                </label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 0.78rem; font-weight: 800; color: var(--text); margin: 0;">
+                    ⭐ Foto de Capa (Principal)
+                  </label>
+                  <label class="btn sm" style="padding: 3px 9px; font-size: 0.7rem; font-weight: 700; color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35); background: rgba(0, 204, 136, 0.1); border-radius: 6px; cursor: pointer; margin: 0;">
+                    <span x-text="uploadingMain ? '⏳ Enviando...' : '📤 Enviar Foto'"></span>
+                    <input type="file" accept="image/*" style="display: none;" @change="uploadImage($event, 'image_main')">
+                  </label>
+                </div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <div style="width: 72px; height: 72px; border-radius: 8px; border: 1.5px solid #00cc88; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                     <img :src="form.image_main || '/static/logo.png'" alt="Capa" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/logo.png'">
@@ -177,9 +201,15 @@
               </div>
 
               <div style="background: var(--panel2, #1e293b); padding: 12px; border-radius: 10px; border: 1px solid var(--line, #334155);">
-                <label style="display: block; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px; color: var(--text);">
-                  🖼️ Banner Widescreen 16:9 (Showroom)
-                </label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 0.78rem; font-weight: 800; color: var(--text); margin: 0;">
+                    🖼️ Banner Widescreen 16:9 (Showroom)
+                  </label>
+                  <label class="btn sm" style="padding: 3px 9px; font-size: 0.7rem; font-weight: 700; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.1); border-radius: 6px; cursor: pointer; margin: 0;">
+                    <span x-text="uploadingBanner ? '⏳ Enviando...' : '📤 Enviar Banner'"></span>
+                    <input type="file" accept="image/*" style="display: none;" @change="uploadImage($event, 'banner_widescreen')">
+                  </label>
+                </div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <div style="width: 110px; height: 72px; border-radius: 8px; border: 1px solid var(--line, #334155); background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
                     <img :src="form.banner_widescreen || '/static/logo.png'" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/logo.png'">

@@ -719,7 +719,7 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
         return {"is_valid": False, "issues": [f"Falha ao interpretar resposta da IA: {str(e)}"], "rates": []}
 
 
-def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None) -> dict:
+def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None, selected_carrier_ids: list = None) -> dict:
     """
     Calcula as opções de frete disponíveis em todas as transportadoras ativas.
     Suporta múltiplos itens e quantidades por modelo.
@@ -861,141 +861,19 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
                 pass
         all_rates = []
 
-    dest_int = int(clean_dest)
-    carrier_best_rates = {}
-    active_carriers = {}
-    carrier_rates_map = {}
-
-    for r_raw in all_rates:
-        r = dict(r_raw) if hasattr(r_raw, "keys") else r_raw
-        c_id = r["carrier_id"]
-        c_name = r["carrier_name"]
-        t_name = r.get("table_name") or ""
-        if c_id not in active_carriers:
-            active_carriers[c_id] = {"id": c_id, "name": c_name, "table_name": t_name}
-            carrier_rates_map[c_id] = []
-        carrier_rates_map[c_id].append(r)
-        
-        # Filtro de CEP
-        r_cep_start = clean_cep(r.get("cep_start"))
-        r_cep_end = clean_cep(r.get("cep_end"))
-        r_uf = str(r.get("uf") or "").upper().strip()
-
-        match_cep = False
-        if r_cep_start and r_cep_end:
-            try:
-                start_int = int(r_cep_start)
-                end_int = int(r_cep_end)
-                if start_int <= dest_int <= end_int:
-                    match_cep = True
-            except Exception:
-                pass
-
-        match_uf = (r_uf and uf_dest and r_uf == uf_dest)
-
-        if not (match_cep or match_uf or (not r_cep_start and not r_uf)):
-            continue
-
-        # Regra do Peso Cubado MAJ: peso_tarifado = max(peso_bruto, volume_m3 * cubing_factor)
-        cubing_factor = float(r.get("cubing_factor") or 300.0)
-        cubic_weight = total_volume_m3 * cubing_factor
-        charged_weight = max(total_weight, cubic_weight)
-
-        # Filtro por Peso Tarifado
-        min_w = float(r.get("min_weight") or 0)
-        max_w = float(r.get("max_weight") or 999999)
-        check_w = charged_weight if charged_weight > 0 else total_weight
-        if check_w > 0 and not (min_w <= check_w <= max_w):
-            continue
-
-        # Cálculo do frete considerando o peso tarifado
-        fixed_p = float(r.get("fixed_price") or 0)
-        w_per_kg = float(r.get("weight_price_per_kg") or 0)
-        ad_val_pct = float(r.get("ad_valorem_percent") or 0)
-        gris_pct = float(r.get("gris_percent") or 0)
-        min_f = float(r.get("min_freight_price") or 0)
-        days = int(r.get("delivery_days") or 1)
-
-        weight_cost = check_w * w_per_kg
-        insurance_cost = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
-
-        total_price = fixed_p + weight_cost + insurance_cost
-        if total_price < min_f:
-            total_price = min_f
-
-        rate_option = {
-            "carrier_id": c_id,
-            "carrier_name": c_name,
-            "table_name": r.get("table_name"),
-            "total_price": round(total_price, 2),
-            "fixed_price": round(fixed_p, 2),
-            "insurance_cost": round(insurance_cost, 2),
-            "delivery_days": days,
-            "gross_weight_kg": round(total_weight, 2),
-            "cubic_weight_kg": round(cubic_weight, 2),
-            "charged_weight_kg": round(charged_weight, 2),
-            "cubing_factor": cubing_factor,
-            "notes": r.get("notes") or ""
-        }
-
-        if c_id not in carrier_best_rates or total_price < carrier_best_rates[c_id]["total_price"]:
-            carrier_best_rates[c_id] = rate_option
-
-    options = list(carrier_best_rates.values())
-
-    # Diagnóstico detalhado de transportadoras ativas não classificadas nesta rota
-    unserved_carriers = []
-    served_ids = set(carrier_best_rates.keys())
-    for c_id, c_info in active_carriers.items():
-        if c_id in served_ids:
-            continue
-        c_rates = carrier_rates_map.get(c_id, [])
-        if not c_rates:
-            reason = "Sem faixas tarifárias cadastradas na tabela."
-        else:
-            dest_matching = []
-            for r in c_rates:
-                s_c = clean_cep(r.get("cep_start"))
-                e_c = clean_cep(r.get("cep_end"))
-                u_c = str(r.get("uf") or "").upper().strip()
-                m_cep = False
-                if s_c and e_c:
-                    try:
-                        if int(s_c) <= dest_int <= int(e_c):
-                            m_cep = True
-                    except Exception:
-                        pass
-                m_uf = (u_c and uf_dest and u_c == uf_dest)
-                if m_cep or m_uf or (not s_c and not u_c):
-                    dest_matching.append(r)
-
-            if not dest_matching:
-                dest_str = f"{city_dest}/{uf_dest}" if (city_dest and uf_dest) else (uf_dest or format_cep(clean_dest))
-                reason = f"Não atende esta localidade ({dest_str})."
-            else:
-                max_w_list = [float(r.get("max_weight") or 0) for r in dest_matching if float(r.get("max_weight") or 0) > 0]
-                min_w_list = [float(r.get("min_weight") or 0) for r in dest_matching]
-                highest_max = max(max_w_list) if max_w_list else 0
-                lowest_min = min(min_w_list) if min_w_list else 0
-
-                check_w = max(total_weight, total_volume_m3 * 300.0)
-                w_gross_str = f"{total_weight:.1f}".replace(".", ",")
-                w_charged_str = f"{check_w:.1f}".replace(".", ",")
-                if highest_max > 0 and check_w > highest_max:
-                    max_str = f"{highest_max:.1f}".replace(".", ",")
-                    reason = f"Peso tarifado ({w_charged_str} kg [Bruto: {w_gross_str}kg]) excede o limite máximo da tabela (até {max_str} kg)."
-                elif check_w < lowest_min:
-                    min_str = f"{lowest_min:.1f}".replace(".", ",")
-                    reason = f"Peso tarifado ({w_charged_str} kg) abaixo do limite mínimo da tabela ({min_str} kg)."
-                else:
-                    reason = "Faixa tarifária não contempla os parâmetros da rota."
-
-        unserved_carriers.append({
-            "carrier_id": c_id,
-            "carrier_name": c_info["name"],
-            "table_name": c_info["table_name"],
-            "reason": reason
-        })
+    from services.freight_calc_helpers import evaluate_carrier_rates
+    options, unserved_carriers, all_active_carriers = evaluate_carrier_rates(
+        all_rates=all_rates,
+        clean_cep_fn=clean_cep,
+        format_cep_fn=format_cep,
+        clean_dest=clean_dest,
+        uf_dest=uf_dest,
+        city_dest=city_dest,
+        total_weight=total_weight,
+        total_volume_m3=total_volume_m3,
+        total_insurance_value=total_insurance_value,
+        selected_carrier_ids=selected_carrier_ids,
+    )
 
     overall_charged_weight = max(total_weight, total_volume_m3 * 300.0)
 
@@ -1014,6 +892,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
             "items": processed_items,
             "options": [],
             "unserved_carriers": unserved_carriers,
+            "all_active_carriers": all_active_carriers,
             "message": "Nenhuma transportadora atende este CEP / faixa de peso cadastrada."
         }
 
@@ -1044,7 +923,8 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         "insurance_base_value": round(total_insurance_value, 2),
         "items": processed_items,
         "options": options,
-        "unserved_carriers": unserved_carriers
+        "unserved_carriers": unserved_carriers,
+        "all_active_carriers": all_active_carriers
     }
 
 

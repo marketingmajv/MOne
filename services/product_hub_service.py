@@ -225,9 +225,9 @@ def get_all_master_products(search: Optional[str] = None, category: Optional[str
     params: List[Any] = []
 
     if search:
-        query += " AND (name ILIKE ? OR slug ILIKE ? OR category ILIKE ?)"
+        query += " AND (LOWER(name) LIKE LOWER(?) OR LOWER(slug) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?) OR LOWER(COALESCE(sku, '')) LIKE LOWER(?))"
         term = f"%{search.strip()}%"
-        params.extend([term, term, term])
+        params.extend([term, term, term, term])
 
     if category and category != "all":
         query += " AND category = ?"
@@ -351,13 +351,13 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
 
             run_exec(conn, """
                 UPDATE master_products SET
-                    name = ?, category = ?, brand = ?, sku = ?, status = ?,
+                    slug = ?, name = ?, category = ?, brand = ?, sku = ?, status = ?,
                     specs_json = ?, copy_showroom = ?, copy_atacado = ?, copy_outlet = ?,
                     image_main = ?, images_gallery = ?, banner_widescreen = ?,
                     sync_atacado = ?, sync_outlet = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (
-                data.get("name"), data.get("category", "Mobilidade Elétrica"),
+                target_slug, data.get("name"), data.get("category", "Mobilidade Elétrica"),
                 data.get("brand", "MAJ"), data.get("sku", ""), data.get("status", "active"),
                 specs_str, data.get("copy_showroom", ""), data.get("copy_atacado", ""), data.get("copy_outlet", ""),
                 data.get("image_main", ""), final_gal, data.get("banner_widescreen", ""),

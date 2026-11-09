@@ -134,13 +134,16 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
     comentários e parecer da diretoria, acordos para Jam/Geysa e Fauzer, e status de liberação.
     """
     ensure_alignment_schema()
-    meta = get_reporting_employee_meta(employee_key) or {}
     report = get_employee_report(cycle_id, employee_key)
+    raw_provided = _parse_json(report.get("answers_json"), {})
+    from services.employee_reports_service import get_or_create_current_cycle
+    latest_c = get_or_create_current_cycle()
+    is_hist = bool(latest_c and latest_c.get("id") and int(latest_c["id"]) != int(cycle_id))
+    meta = get_reporting_employee_meta(employee_key, existing_answers=raw_provided, is_historical_cycle=is_hist) or {}
 
     questions = meta.get("questions", [])
     default_desired = get_employee_default_desired_map(employee_key)
 
-    raw_provided = _parse_json(report.get("answers_json"), {})
     raw_desired = _parse_json(report.get("desired_answers_json"), {})
     raw_comments = _parse_json(report.get("director_comments_json"), {})
     evaluation = _parse_json(report.get("evaluation_json"), {})

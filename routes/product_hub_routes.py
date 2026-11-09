@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from pathlib import Path
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from routes.helpers import audit, login_required, roles_required
@@ -67,7 +69,7 @@ def index():
 
 @product_hub_bp.route("/save", methods=["POST"])
 @login_required
-@roles_required("admin", "support")
+@roles_required("admin", "support", "stock")
 def save_product():
     """Salva ou atualiza um produto na Central Mestre e opcionalmente redistribui."""
     try:
@@ -94,6 +96,18 @@ def save_product():
         else:
             gallery = []
 
+        has_sync_flags = request.form.get("sync_flags_present") == "1"
+        sync_atacado = (
+            request.form.get("sync_atacado") in ["1", "true", "on", True]
+            if has_sync_flags
+            else True
+        )
+        sync_outlet = (
+            request.form.get("sync_outlet") in ["1", "true", "on", True]
+            if has_sync_flags
+            else True
+        )
+
         data = {
             "name": request.form.get("name", "").strip(),
             "slug": request.form.get("slug", "").strip(),
@@ -108,8 +122,8 @@ def save_product():
             "image_main": request.form.get("image_main", "").strip(),
             "images_gallery": gallery,
             "banner_widescreen": request.form.get("banner_widescreen", "").strip(),
-            "sync_atacado": request.form.get("sync_atacado") in ["1", "true", "on", True],
-            "sync_outlet": request.form.get("sync_outlet") in ["1", "true", "on", True],
+            "sync_atacado": sync_atacado,
+            "sync_outlet": sync_outlet,
             # Dados Comerciais do Outlet (Aba 4)
             "outlet_price_outlet": request.form.get("outlet_price_outlet"),
             "outlet_price_original": request.form.get("outlet_price_original"),
@@ -123,7 +137,7 @@ def save_product():
             "atacado_price_original": request.form.get("atacado_price_original"),
             "atacado_stock_qty": request.form.get("atacado_stock_qty"),
             "atacado_is_best_seller": request.form.get("atacado_is_best_seller"),
-            "propagate_now": request.form.get("propagate_now") in ["1", "true", "on", True],
+            "propagate_now": False,
         }
 
         saved_id = save_master_product(data, product_id=product_id)
@@ -154,7 +168,7 @@ def save_product():
 
 @product_hub_bp.route("/api/upload-gallery", methods=["POST"])
 @login_required
-@roles_required("admin", "support")
+@roles_required("admin", "support", "stock")
 def api_upload_gallery():
     """Recebe upload múltiplo de imagens para a galeria e retorna URLs salvas."""
     import base64
@@ -191,7 +205,7 @@ def api_upload_gallery():
 
 @product_hub_bp.route("/sync/<int:product_id>", methods=["POST"])
 @login_required
-@roles_required("admin", "support")
+@roles_required("admin", "support", "stock")
 def sync_single(product_id: int):
     """Propaga um produto mestre específico para Atacado e Outlet."""
     try:
@@ -217,7 +231,7 @@ def sync_single(product_id: int):
 
 @product_hub_bp.route("/sync-all", methods=["POST"])
 @login_required
-@roles_required("admin", "support")
+@roles_required("admin", "support", "stock")
 def sync_all():
     """Redistribui em massa todas as fichas técnicas e copys para Atacado e Outlet."""
     try:

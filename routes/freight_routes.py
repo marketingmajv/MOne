@@ -125,6 +125,7 @@ def freight_calculate():
         declared_value = float(data.get("declared_value", 0) or 0)
         cep_orig = data.get("cep_orig", "").strip() or freight_service.DEFAULT_MAJ_CEP
         items = data.get("items", [])
+        selected_carrier_ids = data.get("selected_carrier_ids") or None
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
@@ -135,7 +136,8 @@ def freight_calculate():
                 weight_kg=weight_kg,
                 declared_value=declared_value,
                 product_id=product_id,
-                cep_orig=cep_orig
+                cep_orig=cep_orig,
+                selected_carrier_ids=selected_carrier_ids,
             )
 
             if res.get("success"):
@@ -447,27 +449,41 @@ def freight_carrier_update(carrier_id: int):
 @freight_bp.route("/freight/quotes/select-carrier", methods=["POST"])
 @login_required
 def freight_quote_select_carrier():
-    """Atualiza a transportadora e valor selecionados pelo vendedor na cotação arquivada."""
+    """Atualiza a transportadora, valor e lista de opções ajustadas na cotação arquivada."""
     try:
         data = request.get_json() or {}
         quote_number = data.get("quote_number")
         quote_id = data.get("quote_id")
         carrier_name = data.get("selected_carrier") or data.get("carrier_name")
         price = data.get("selected_price")
+        options = data.get("options")
         if (not quote_number and not quote_id) or not carrier_name:
             return jsonify({"success": False, "message": "Dados insuficientes"}), 400
 
         with db() as conn:
+            opts_json = json.dumps(options, ensure_ascii=False) if isinstance(options, list) else None
             if quote_number:
-                conn.execute(
-                    "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE quote_number = %s",
-                    (carrier_name, float(price or 0), str(quote_number))
-                )
+                if opts_json:
+                    conn.execute(
+                        "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s, carrier_results_json = %s WHERE quote_number = %s",
+                        (carrier_name, float(price or 0), opts_json, str(quote_number)),
+                    )
+                else:
+                    conn.execute(
+                        "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE quote_number = %s",
+                        (carrier_name, float(price or 0), str(quote_number)),
+                    )
             elif quote_id:
-                conn.execute(
-                    "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE id = %s",
-                    (carrier_name, float(price or 0), int(quote_id))
-                )
+                if opts_json:
+                    conn.execute(
+                        "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s, carrier_results_json = %s WHERE id = %s",
+                        (carrier_name, float(price or 0), opts_json, int(quote_id)),
+                    )
+                else:
+                    conn.execute(
+                        "UPDATE freight_quotes SET selected_carrier = %s, selected_price = %s WHERE id = %s",
+                        (carrier_name, float(price or 0), int(quote_id)),
+                    )
             audit("FREIGHT_QUOTE_CARRIER_SELECT", f"Cotação {quote_number or quote_id} marcada com {carrier_name} (R$ {price})")
 
         return jsonify({"success": True})

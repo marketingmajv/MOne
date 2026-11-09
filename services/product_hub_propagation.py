@@ -142,6 +142,15 @@ def propagate_product_to_channels(
                 metrics["velocidade_max_kmh"] = str(specs["Velocidade Máxima"])
             if specs.get("Autonomia"):
                 metrics["autonomia_conservadora_km"] = str(specs["Autonomia"])
+                metrics["autonomia_maxima_km"] = str(specs["Autonomia"])
+            if specs.get("Bateria"):
+                metrics["voltagem_v"] = str(specs["Bateria"])
+            if specs.get("Carga Máxima"):
+                metrics["carga_maxima_kg"] = str(specs["Carga Máxima"])
+            if specs.get("Freios"):
+                metrics["freios"] = str(specs["Freios"])
+            if specs.get("Diferencial"):
+                metrics["diferencial"] = str(specs["Diferencial"])
             if metrics:
                 sh_ovr["metrics"] = metrics
 
@@ -198,6 +207,15 @@ def propagate_all_products_to_channels() -> Dict[str, Any]:
                         metrics["velocidade_max_kmh"] = str(specs["Velocidade Máxima"])
                     if specs.get("Autonomia"):
                         metrics["autonomia_conservadora_km"] = str(specs["Autonomia"])
+                        metrics["autonomia_maxima_km"] = str(specs["Autonomia"])
+                    if specs.get("Bateria"):
+                        metrics["voltagem_v"] = str(specs["Bateria"])
+                    if specs.get("Carga Máxima"):
+                        metrics["carga_maxima_kg"] = str(specs["Carga Máxima"])
+                    if specs.get("Freios"):
+                        metrics["freios"] = str(specs["Freios"])
+                    if specs.get("Diferencial"):
+                        metrics["diferencial"] = str(specs["Diferencial"])
                     if metrics:
                         sh_ovr["metrics"] = metrics
                     overrides[slug] = sh_ovr

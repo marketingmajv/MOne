@@ -104,10 +104,26 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Endereço Completo para Envio (Rua, Nº, Bairro, Cidade/UF)</label>
-            <input type="text" id="full_address" placeholder="Ex: Av. Vitória, 1500, Bento Ferreira, Vitória/ES" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
-            <input type="hidden" id="cep_orig" value="{{ default_cep }}">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+            <div class="lg:col-span-2">
+              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Endereço Completo para Envio (Rua, Nº, Bairro, Cidade/UF)</label>
+              <input type="text" id="full_address" placeholder="Ex: Av. Vitória, 1500, Bento Ferreira, Vitória/ES" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
+              <input type="hidden" id="cep_orig" value="{{ default_cep }}">
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="selected_carrier_ids" class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Transportadoras na Cotação</label>
+                <span id="carrierFilterCounterBadge" class="text-[10px] font-bold text-[var(--brand-emerald)]">Todas ({{ carriers|length }})</span>
+              </div>
+              <select id="selected_carrier_ids" multiple size="3" onchange="onCarrierFilterChange(this)" class="form-input w-full px-3 py-1.5 text-xs rounded-xl" style="min-height: 74px;">
+                <option value="ALL" selected>🌐 Todas as Ativas (Automático)</option>
+                {% for c in carriers %}
+                <option value="{{ c.id }}">🚚 {{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-[10px] text-[var(--text-muted)] block mt-1">Clique em uma transportadora (ou Ctrl/Cmd p/ várias)</small>
+            </div>
           </div>
 
         </div>

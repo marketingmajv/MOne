@@ -102,7 +102,9 @@
   <div class="modal-card">
     <div class="modal-head">
       <h3>Editar Produto • {{ p.name }}</h3>
-      <button onclick="closeModal('editProduct{{ p.id }}')">×</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('editProduct{{ p.id }}')" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <form method="post" action="{{ url_for('edit_product', pid=p.id) }}" class="form-grid">
       <label class="span-2">Modelo / Nome
@@ -148,7 +150,9 @@
   <div class="modal-card">
     <div class="modal-head">
       <h3>Novo produto</h3>
-      <button onclick="closeModal('newProduct')">×</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('newProduct')" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <form method="post" class="form-grid">
       <label class="span-2">Modelo / nome<input name="name" required placeholder="Ex.: Scooter V80 PRO"></label>
@@ -182,7 +186,9 @@
   <div class="modal-card">
     <div class="modal-head">
       <h3>📊 Importar / Sincronizar Tabela de Preços</h3>
-      <button onclick="closeModal('importProductsModal')">×</button>
+      <button type="button" class="modal-close-btn" onclick="closeModal('importProductsModal')" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <form method="post" action="{{ url_for('import_products') }}" enctype="multipart/form-data" class="form-grid">
       <label class="span-2">Link da Planilha (Google Sheets)

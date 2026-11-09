@@ -443,9 +443,27 @@ REPORTING_EMPLOYEES: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_reporting_employee_meta(employee_key: str) -> Optional[Dict[str, Any]]:
-    """Retorna os metadados e perguntas do colaborador pelo identificador."""
-    return REPORTING_EMPLOYEES.get(employee_key.lower().strip())
+def get_reporting_employee_meta(
+    employee_key: str,
+    existing_answers: Optional[Dict[str, Any]] = None,
+    is_historical_cycle: bool = False
+) -> Optional[Dict[str, Any]]:
+    """Retorna os metadados e perguntas efetivas (ativas + histórico) do colaborador pelo identificador."""
+    key = (employee_key or "").lower().strip()
+    base = REPORTING_EMPLOYEES.get(key)
+    if not base:
+        return None
+    meta = dict(base)
+    try:
+        from services.employee_questions_service import get_effective_questions_for_employee
+        meta["questions"] = get_effective_questions_for_employee(
+            key,
+            existing_answers=existing_answers,
+            is_historical_cycle=is_historical_cycle,
+        )
+    except Exception:
+        meta["questions"] = list(base.get("questions", []))
+    return meta
 
 
 def is_admin_viewer(username: Optional[str], role: Optional[str] = None) -> bool:

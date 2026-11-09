@@ -72,6 +72,11 @@ def meu_relatorio():
     is_previous_cycle = bool(current_cycle["id"] != latest_cycle["id"])
 
     report = get_employee_report(current_cycle["id"], emp_key)
+    meta = get_reporting_employee_meta(
+        emp_key,
+        existing_answers=report.get("answers") if isinstance(report, dict) else None,
+        is_historical_cycle=is_previous_cycle,
+    ) or meta
     profile = get_employee_gamification_profile(emp_key)
 
     # Permissões de edição e governança
@@ -310,3 +315,109 @@ def api_solicitar_edicao():
     reason = payload.get("reason", "")
     res = request_report_edit(cycle_id, emp_key, reason, user_id=me.get("id"))
     return jsonify(res)
+
+
+def _check_admin_access() -> bool:
+    from services.employee_reports_data import is_admin_viewer
+    me = current_user() or {}
+    return is_admin_viewer((me.get("username") or "").lower().strip(), (me.get("role") or "").lower().strip())
+
+
+@employee_portal_bp.route("/api/gestao-interna/perguntas", methods=["GET"])
+@login_required
+def api_get_employee_questions():
+    """Retorna os colaboradores e todas as suas perguntas (ativas e ocultas) para o modal de edição."""
+    if not _check_admin_access():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    emp_key = (request.args.get("employee_key") or "").lower().strip()
+    try:
+        from services.employee_questions_service import get_editor_payload
+        data = get_editor_payload(emp_key)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error("Erro ao carregar editor de perguntas: %s", e, exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_portal_bp.route("/api/gestao-interna/perguntas/salvar", methods=["POST"])
+@login_required
+def api_save_employee_questions():
+    """Salva a lista de perguntas customizadas de um colaborador (adição, edição, ocultação, ordem, exclusão)."""
+    if not _check_admin_access():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    emp_key = (payload.get("employee_key") or "").lower().strip()
+    questions = payload.get("questions") or []
+
+    if not emp_key:
+        return jsonify({"success": False, "error": "Colaborador obrigatório."}), 400
+
+    try:
+        from services.employee_questions_service import save_employee_questions
+        me = current_user() or {}
+        data = save_employee_questions(emp_key, questions, operator=(me.get("username") or "diretoria"))
+        return jsonify({
+            "success": True,
+            "message": f"Perguntas de @{emp_key} salvas e atualizadas com sucesso!",
+            "data": data,
+        })
+    except Exception as e:
+        logger.error("Erro ao salvar perguntas de %s: %s", emp_key, e, exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_portal_bp.route("/api/gestao-interna/perguntas/copiar", methods=["POST"])
+@login_required
+def api_copy_employee_question():
+    """Copia/espelha uma pergunta para a cartilha de outro colaborador."""
+    if not _check_admin_access():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    target_key = (payload.get("target_employee_key") or "").lower().strip()
+    question_data = payload.get("question") or {}
+
+    if not target_key or not question_data:
+        return jsonify({"success": False, "error": "Colaborador de destino e dados da pergunta são obrigatórios."}), 400
+
+    try:
+        from services.employee_questions_service import copy_question_to_employee
+        me = current_user() or {}
+        data = copy_question_to_employee(target_key, question_data, operator=(me.get("username") or "diretoria"))
+        return jsonify({
+            "success": True,
+            "message": f"Pergunta espelhada com sucesso para @{target_key}!",
+            "data": data,
+        })
+    except Exception as e:
+        logger.error("Erro ao copiar pergunta para %s: %s", target_key, e, exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@employee_portal_bp.route("/api/gestao-interna/perguntas/restaurar", methods=["POST"])
+@login_required
+def api_restore_employee_questions():
+    """Restaura a cartilha original de perguntas de fábrica do colaborador."""
+    if not _check_admin_access():
+        return jsonify({"success": False, "error": "Acesso restrito à Diretoria e Administradores."}), 403
+
+    payload = request.get_json(silent=True) or {}
+    emp_key = (payload.get("employee_key") or "").lower().strip()
+    if not emp_key:
+        return jsonify({"success": False, "error": "Colaborador obrigatório."}), 400
+
+    try:
+        from services.employee_questions_service import restore_default_questions
+        me = current_user() or {}
+        data = restore_default_questions(emp_key, operator=(me.get("username") or "diretoria"))
+        return jsonify({
+            "success": True,
+            "message": f"Cartilha original de @{emp_key} restaurada com sucesso!",
+            "data": data,
+        })
+    except Exception as e:
+        logger.error("Erro ao restaurar perguntas de %s: %s", emp_key, e, exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+

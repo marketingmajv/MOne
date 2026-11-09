@@ -21,10 +21,13 @@ function masterProductModalComponent() {
     isOpen: false,
     activeTab: 'midia',
     isEditing: false,
+    uploadingMain: false,
+    uploadingBanner: false,
     form: {
       id: '',
       name: '',
       slug: '',
+      sku: '',
       category: 'Bicicletas Elétricas',
       brand: 'MAJ',
       status: 'active',
@@ -33,6 +36,8 @@ function masterProductModalComponent() {
       copy_atacado: '',
       copy_outlet: '',
       copy_showroom: '',
+      sync_atacado: true,
+      sync_outlet: true,
       propagate_now: true
     },
     specs: {
@@ -60,6 +65,7 @@ function masterProductModalComponent() {
         id: '',
         name: '',
         slug: '',
+        sku: '',
         category: 'Bicicletas Elétricas',
         brand: 'MAJ',
         status: 'active',
@@ -68,6 +74,8 @@ function masterProductModalComponent() {
         copy_atacado: '',
         copy_outlet: '',
         copy_showroom: '',
+        sync_atacado: true,
+        sync_outlet: true,
         propagate_now: true
       };
       this.specs = {
@@ -97,6 +105,7 @@ function masterProductModalComponent() {
         id: p.id || '',
         name: p.name || '',
         slug: p.slug || '',
+        sku: p.sku || '',
         category: p.category || 'Bicicletas Elétricas',
         brand: p.brand || 'MAJ',
         status: p.status || 'active',
@@ -105,6 +114,8 @@ function masterProductModalComponent() {
         copy_atacado: p.copy_atacado || '',
         copy_outlet: p.copy_outlet || '',
         copy_showroom: p.copy_showroom || '',
+        sync_atacado: p.sync_atacado !== false,
+        sync_outlet: p.sync_outlet !== false,
         propagate_now: true
       };
 
@@ -134,6 +145,52 @@ function masterProductModalComponent() {
 
     close() {
       this.isOpen = false;
+    },
+
+    onNameInput() {
+      if (!this.isEditing && this.form.name) {
+        this.form.slug = this.form.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+    },
+
+    async uploadImage(event, targetField) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (targetField === 'image_main') this.uploadingMain = true;
+      if (targetField === 'banner_widescreen') this.uploadingBanner = true;
+
+      try {
+        const fd = new FormData();
+        fd.append('gallery_files', file);
+        const csrfInput = document.querySelector('#masterProductForm input[name="csrf_token"]');
+        const headers = {};
+        if (csrfInput && csrfInput.value) {
+          headers['X-CSRFToken'] = csrfInput.value;
+        }
+        const resp = await fetch('/admin/central-produtos/api/upload-gallery', {
+          method: 'POST',
+          headers,
+          body: fd
+        });
+        const data = await resp.json();
+        if (data.success && Array.isArray(data.urls) && data.urls.length > 0) {
+          this.form[targetField] = data.urls[0];
+        } else {
+          alert('Não foi possível fazer upload da imagem.');
+        }
+      } catch (err) {
+        alert('Falha no upload da imagem: ' + err.message);
+      } finally {
+        if (targetField === 'image_main') this.uploadingMain = false;
+        if (targetField === 'banner_widescreen') this.uploadingBanner = false;
+        event.target.value = '';
+      }
     },
 
     addCustomSpec(k = '', v = '') {

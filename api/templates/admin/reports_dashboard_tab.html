@@ -59,32 +59,23 @@
         </button>
         {% endif %}
 
-        <button type="button" 
-                class="btn" 
-                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;"
-                @click="showDocLinksModal = true">
+        <button type="button" class="btn" style="background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" @click="$dispatch('open-questions-modal', {})" title="Adicionar, ocultar, editar, duplicar ou reordenar perguntas dos colaboradores">
+          <span>🗂️ Editar Perguntas</span>
+        </button>
+
+        <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="showDocLinksModal = true">
           🔗 Links dos Docs (6)
         </button>
 
-        <button type="button" 
-                class="btn" 
-                style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;"
-                @click="showDeadlineModal = true">
+        <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.82rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="showDeadlineModal = true">
           ✏️ Alterar Prazo
         </button>
 
-        <button type="button" 
-                class="btn" 
-                style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
-                @click="analyzeAllAI()"
-                title="Confronta respostas e gera aferição de IA para todos os {{ summary.employees|length }} colaboradores">
+        <button type="button" class="btn" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" @click="analyzeAllAI()" title="Confronta respostas e gera aferição de IA para todos os {{ summary.employees|length }} colaboradores">
           <span>⚡ Aferir Respostas com IA (Todos)</span>
         </button>
 
-        <button type="button" 
-                class="btn primary" 
-                style="font-size: 0.82rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
-                @click="syncAllDocs()">
+        <button type="button" class="btn primary" style="font-size: 0.82rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" @click="syncAllDocs()">
           <span>⚡ Sincronizar Todos os Docs</span>
         </button>
       </div>
@@ -359,6 +350,15 @@
                       Ferramentas & Ações
                     </div>
 
+                    <!-- Item: Editar Perguntas do Colaborador -->
+                    <button type="button" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px; background: transparent; border: none; color: #38bdf8; font-size: 0.78rem; font-weight: 700; text-align: left; cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'" onmouseout="this.style.background='transparent'" @click.stop="menuOpen = false; $dispatch('open-questions-modal', { employeeKey: '{{ emp.key }}' })">
+                      <span style="font-size: 1rem;">⚙️</span>
+                      <div>
+                        <div style="line-height: 1.2;">Editar Perguntas</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Ocultar, adicionar ou reordenar</div>
+                      </div>
+                    </button>
+
                     <!-- Item: Sincronizar Google Doc com IA -->
                     {% if emp.uses_google_doc %}
                     <button type="button" 
@@ -425,10 +425,10 @@
                             onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'"
                             onmouseout="this.style.background='transparent'"
                             @click.stop="menuOpen = false; $dispatch('open-exemption-modal', { cycleId: {{ cycle.id }}, employeeKey: '{{ emp.key }}', employeeName: '{{ emp.name }}', isExempt: {{ 'true' if emp.is_exempt else 'false' }}, exemptionType: '{{ emp.exemption_type }}', exemptionReason: '{{ emp.exemption_reason }}' })">
-                      <span style="font-size: 1rem;">👶</span>
+                      <span style="font-size: 1rem;">🗓️</span>
                       <div>
                         <div style="line-height: 1.2;">{{ 'Alterar Licença / Ausência' if emp.is_exempt else 'Justificar Ausência / Licença' }}</div>
-                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Paternidade, atestado, férias</div>
+                        <div style="font-size: 0.67rem; color: var(--muted, #94a3b8); font-weight: 400;">Atestado, férias, licença, abstenção</div>
                       </div>
                     </button>
 

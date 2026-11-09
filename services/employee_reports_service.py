@@ -158,7 +158,6 @@ def get_all_cycles() -> List[Dict[str, Any]]:
 def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
     """Retorna o histórico de relatórios submetidos por um colaborador em todos os ciclos."""
     ensure_reports_schema()
-    meta = get_reporting_employee_meta(employee_key)
     with db() as conn:
         pg = _is_pg(conn)
         ph = "%s" if pg else "?"
@@ -169,7 +168,7 @@ def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
             ORDER BY c.start_date DESC, c.id DESC"""
         rows = conn.execute(sql, (employee_key.lower().strip(),)).fetchall()
         history = []
-        for r in rows:
+        for idx, r in enumerate(rows):
             d = dict(r)
             try:
                 ans = json.loads(d.get("answers_json") or "{}")
@@ -178,6 +177,7 @@ def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
             d["answers"] = ans
             sub = d.get("submitted_at")
             d["submitted_at_fmt"] = sub.strftime("%d/%m/%Y às %H:%M") if hasattr(sub, "strftime") else (str(sub)[:16] if sub else "")
+            meta = get_reporting_employee_meta(employee_key, existing_answers=ans, is_historical_cycle=(idx > 0))
             q_list = []
             if meta:
                 for q in meta.get("questions", []):
@@ -350,7 +350,10 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
         "pending": 0,
     }
 
-    for key, meta in REPORTING_EMPLOYEES.items():
+    latest_c = get_or_create_current_cycle()
+    is_historical_cycle = bool(latest_c and latest_c.get("id") and int(latest_c["id"]) != int(cycle_id))
+
+    for key in REPORTING_EMPLOYEES.keys():
         rep = reports_map.get(key)
         answers = {}
         if rep:
@@ -358,6 +361,8 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
                 answers = json.loads(rep.get("answers_json") or "{}")
             except Exception:
                 answers = {}
+
+        meta = get_reporting_employee_meta(key, existing_answers=answers, is_historical_cycle=is_historical_cycle) or REPORTING_EMPLOYEES[key]
 
         # Determina estado
         status = rep.get("status") if rep else "pending"
