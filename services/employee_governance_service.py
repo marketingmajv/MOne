@@ -15,10 +15,14 @@ from database import db
 from services.employee_reports_service import _is_pg, ensure_reports_schema, get_employee_report
 
 logger = logging.getLogger(__name__)
+_GOVERNANCE_SCHEMA_READY = False
 
 
 def ensure_governance_schema() -> None:
     """Garante a existência das colunas de governança e solicitação de edição."""
+    global _GOVERNANCE_SCHEMA_READY
+    if _GOVERNANCE_SCHEMA_READY:
+        return
     ensure_reports_schema()
     with db() as conn:
         pg = _is_pg(conn)
@@ -63,6 +67,7 @@ def ensure_governance_schema() -> None:
             except Exception as e:
                 logger.debug("SQLite schema notice: %s", e)
         conn.commit()
+    _GOVERNANCE_SCHEMA_READY = True
 
 
 def request_report_edit(cycle_id: int, employee_key: str, reason: str, user_id: Optional[int] = None) -> Dict[str, Any]:

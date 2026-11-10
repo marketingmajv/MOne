@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20261015_sidebar_v3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css', v='20261110_hybrid_preloader_v1') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="mone-version" content="{{ app_version.version if (app_version is defined and app_version) else '1.1.0' }}">
   <meta name="mone-build" content="{{ app_version.build if (app_version is defined and app_version) else '20260922.1' }}">
@@ -20,14 +20,15 @@
       const savedTheme = localStorage.getItem('mone_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
 
-      // 2. Handoff de Pré-Loader Contínuo (Anti-Flicker & Persistência de Ações)
+      // 2. Handoff de Pré-Loader Híbrido Contínuo (Top Neon Bar + Pill)
       try {
         const pending = sessionStorage.getItem('mone_preloader_pending');
         if (pending) {
           const data = JSON.parse(pending);
           const age = Date.now() - (data.ts || 0);
-          if (age < 12000) {
+          if (age < 25000) {
             document.documentElement.classList.add('mone-preloader-active');
+            document.documentElement.style.setProperty('--mone-progress', '65%');
           } else {
             sessionStorage.removeItem('mone_preloader_pending');
           }
@@ -35,11 +36,11 @@
       } catch(e) {}
     })();
   </script>
-  <!-- Modern Frontend Stack: HTMX + Alpine.js + Chart.js -->
-  <script src="https://unpkg.com/htmx.org@2.0.2"></script>
+  <!-- Modern Frontend Stack: HTMX + Alpine.js + Chart.js (Não-Bloqueante) -->
+  <script defer src="https://unpkg.com/htmx.org@2.0.2"></script>
   <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.3/dist/cdn.min.js"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     .htmx-indicator { display: none; opacity: 0; transition: opacity 200ms ease-in; }
     .htmx-request .htmx-indicator { display: inline-block; opacity: 1; }
@@ -48,19 +49,18 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  <!-- Preloader Criativo MAJ OS -->
+  <!-- Preloader Híbrido Inteligente MAJ OS (Top Neon Bar + Pill Executivo) -->
   <div id="monePreloader" class="mone-preloader" aria-hidden="true">
-    <div class="mone-preloader-backdrop"></div>
+    <div class="mone-preloader-track">
+      <div class="mone-preloader-bar"></div>
+    </div>
     <div class="mone-preloader-card">
       <div class="mone-preloader-orb">
         <div class="mone-preloader-ring"></div>
         <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="mone-preloader-logo">
       </div>
       <span class="mone-preloader-badge">MAJ OS</span>
-      <div class="mone-preloader-text">Carregando M-One...</div>
-      <div class="mone-preloader-track">
-        <div class="mone-preloader-bar"></div>
-      </div>
+      <div class="mone-preloader-text">Sincronizando...</div>
     </div>
   </div>
   <script>
@@ -69,7 +69,7 @@
         const pData = sessionStorage.getItem('mone_preloader_pending');
         if (pData) {
           const d = JSON.parse(pData);
-          if (d && (Date.now() - (d.ts || 0) < 12000)) {
+          if (d && (Date.now() - (d.ts || 0) < 25000)) {
             const txtEl = document.querySelector('#monePreloader .mone-preloader-text');
             const bdgEl = document.querySelector('#monePreloader .mone-preloader-badge');
             if (txtEl && d.text) txtEl.textContent = d.text;
@@ -173,23 +173,38 @@
     }
     document.addEventListener('DOMContentLoaded', () => {
       updateThemeUi(document.documentElement.getAttribute('data-theme') || 'light');
+      const applySupportBadges = (data) => {
+        if (!data || !data.success) return;
+        const badgeElem = document.getElementById('supportSidebarBadge');
+        if (badgeElem && data.badge_count > 0) {
+          badgeElem.textContent = data.badge_count;
+          badgeElem.style.display = 'inline-flex';
+        }
+        const banner = document.getElementById('fauzerUrgentSupportBanner');
+        if (banner && data.has_urgent_pending) {
+          banner.style.display = 'flex';
+          const titleElem = document.getElementById('urgentTicketTitle');
+          if (titleElem && data.latest_urgent) {
+            titleElem.textContent = data.latest_urgent.ticket_code + ' — ' + data.latest_urgent.title;
+          }
+        }
+      };
+      try {
+        const isSupportPage = window.location.pathname.includes('/suporte');
+        const cachedRaw = !isSupportPage && sessionStorage.getItem('mone_support_badges_cache');
+        if (cachedRaw) {
+          const parsed = JSON.parse(cachedRaw);
+          if (parsed && (Date.now() - (parsed.ts || 0) < 60000)) {
+            applySupportBadges(parsed.data);
+            return;
+          }
+        }
+      } catch (e) {}
       fetch('/api/suporte/badges')
         .then(r => r.json())
         .then(data => {
-          if (!data.success) return;
-          const badgeElem = document.getElementById('supportSidebarBadge');
-          if (badgeElem && data.badge_count > 0) {
-            badgeElem.textContent = data.badge_count;
-            badgeElem.style.display = 'inline-flex';
-          }
-          const banner = document.getElementById('fauzerUrgentSupportBanner');
-          if (banner && data.has_urgent_pending) {
-            banner.style.display = 'flex';
-            const titleElem = document.getElementById('urgentTicketTitle');
-            if (titleElem && data.latest_urgent) {
-              titleElem.textContent = data.latest_urgent.ticket_code + ' — ' + data.latest_urgent.title;
-            }
-          }
+          applySupportBadges(data);
+          try { sessionStorage.setItem('mone_support_badges_cache', JSON.stringify({ ts: Date.now(), data })); } catch (e) {}
         })
         .catch(() => {});
     });
@@ -235,11 +250,11 @@
       return _origFetch(url, opts);
     };
   </script>
+  <script src="{{ url_for('static', filename='js/preloader.js', v='20261110_hybrid_preloader_v1') }}"></script>
   {% block scripts %}{% endblock %}
   
   {% include 'profile_modal.html' %}
   {% include 'version_modal.html' %}
   <script src="{{ url_for('static', filename='js/version-manager.js', v='20260922_v1') }}"></script>
-  <script src="{{ url_for('static', filename='js/preloader.js', v='20261106_handoff_v2') }}"></script>
 </body>
 </html>

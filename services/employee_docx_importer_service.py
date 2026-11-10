@@ -37,15 +37,23 @@ except Exception:
     pass
 
 
+_DOCX_SCHEMA_READY = False
+
+
 def ensure_docx_schema() -> None:
     """Garante a coluna docx_filename na tabela maj_employee_reports."""
+    global _DOCX_SCHEMA_READY
+    if _DOCX_SCHEMA_READY:
+        return
     ensure_reports_schema()
     with db() as conn:
+        pg = _is_pg(conn)
         try:
-            conn.execute("ALTER TABLE maj_employee_reports ADD COLUMN docx_filename TEXT;")
+            conn.execute("ALTER TABLE maj_employee_reports ADD COLUMN IF NOT EXISTS docx_filename TEXT;" if pg else "ALTER TABLE maj_employee_reports ADD COLUMN docx_filename TEXT;")
             conn.commit()
         except Exception:
             pass
+    _DOCX_SCHEMA_READY = True
 
 
 def extract_text_from_file_bytes(file_bytes: bytes, filename: str = "") -> Tuple[bool, str]:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -13,6 +14,7 @@ load_dotenv()
 load_dotenv(".env.local")
 
 logger = logging.getLogger(__name__)
+_conn_last_used: dict[int, float] = {}
 
 try:
     import psycopg2
@@ -117,6 +119,7 @@ class PGConnWrapper:
                 pass
         if self.pool:
             try:
+                _conn_last_used[id(self.conn)] = time.monotonic()
                 self.pool.putconn(self.conn)
             except Exception:
                 pass
@@ -184,12 +187,16 @@ def db():
             if pool:
                 try:
                     conn_raw = pool.getconn()
-                    # Testar vivacidade da conexão obtida do pool
-                    with conn_raw.cursor() as cur:
-                        cur.execute("SELECT 1")
+                    last_ts = _conn_last_used.get(id(conn_raw), 0.0)
+                    # Só testa vivacidade via rede se a conexão ficou ociosa por > 30s
+                    if getattr(conn_raw, "closed", 0) or (time.monotonic() - last_ts > 30.0):
+                        with conn_raw.cursor() as cur:
+                            cur.execute("SELECT 1")
+                    _conn_last_used[id(conn_raw)] = time.monotonic()
                 except Exception as pool_err:
                     logger.debug("Conexão do pool inválida/expirada, tentando conexão direta: %s", pool_err)
                     if conn_raw:
+                        _conn_last_used.pop(id(conn_raw), None)
                         try:
                             pool.putconn(conn_raw, close=True)
                         except Exception:

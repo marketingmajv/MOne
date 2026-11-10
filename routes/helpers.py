@@ -9,6 +9,7 @@ import base64
 import hashlib
 import os
 import re
+import time
 import unicodedata
 from datetime import datetime
 from functools import wraps
@@ -99,6 +100,9 @@ def save_upload(file_storage, prefix="file") -> str | None:
     return filename
 
 
+_USER_CACHE: dict[int, tuple[float, dict | None]] = {}
+
+
 def current_user() -> dict | None:
     try:
         if hasattr(g, "_current_user"):
@@ -114,9 +118,23 @@ def current_user() -> dict | None:
             pass
         return None
 
+    use_cache = not os.environ.get("TEST_DB_FILE")
+    try:
+        if request.method != "GET":
+            _USER_CACHE.clear()
+        elif use_cache and uid in _USER_CACHE:
+            ts, cached_user = _USER_CACHE[uid]
+            if time.monotonic() - ts < 15.0:
+                g._current_user = cached_user
+                return cached_user
+    except RuntimeError:
+        pass
+
     with db() as conn:
         u = conn.execute("SELECT * FROM users WHERE id=%s AND active=TRUE", (uid,)).fetchone()
         user_dict = dict(u) if u else None
+        if use_cache:
+            _USER_CACHE[uid] = (time.monotonic(), user_dict)
         try:
             g._current_user = user_dict
         except (RuntimeError, AttributeError):

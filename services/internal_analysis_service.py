@@ -18,10 +18,14 @@ from services.employee_reports_service import _is_pg, ensure_reports_schema, get
 from services.gemini_client import execute_gemini_payload
 
 logger = logging.getLogger(__name__)
+_INTERNAL_ANALYSIS_SCHEMA_READY = False
 
 
 def ensure_internal_analysis_schema() -> None:
     """Garante a tabela maj_cycle_internal_analyses para persistência da Análise Interna."""
+    global _INTERNAL_ANALYSIS_SCHEMA_READY
+    if _INTERNAL_ANALYSIS_SCHEMA_READY:
+        return
     ensure_reports_schema()
     with db() as conn:
         pg = _is_pg(conn)
@@ -51,6 +55,7 @@ def ensure_internal_analysis_schema() -> None:
         try:
             conn.executescript(create_sql)
             conn.commit()
+            _INTERNAL_ANALYSIS_SCHEMA_READY = True
         except Exception as e:
             logger.warning(f"Erro ao criar tabela maj_cycle_internal_analyses: {e}")
 

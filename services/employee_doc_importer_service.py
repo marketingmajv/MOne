@@ -32,8 +32,14 @@ DEFAULT_DOC_LINKS = {
 }
 
 
+_DOC_LINKS_SCHEMA_READY = False
+
+
 def ensure_doc_links_schema() -> None:
     """Garante a tabela de links de Google Docs e a coluna na tabela de relatórios."""
+    global _DOC_LINKS_SCHEMA_READY
+    if _DOC_LINKS_SCHEMA_READY:
+        return
     ensure_reports_schema()
     with db() as conn:
         pg = _is_pg(conn)
@@ -56,10 +62,11 @@ def ensure_doc_links_schema() -> None:
 
         # Garante coluna google_doc_url em maj_employee_reports
         try:
-            conn.execute("ALTER TABLE maj_employee_reports ADD COLUMN google_doc_url TEXT;")
+            conn.execute("ALTER TABLE maj_employee_reports ADD COLUMN IF NOT EXISTS google_doc_url TEXT;" if pg else "ALTER TABLE maj_employee_reports ADD COLUMN google_doc_url TEXT;")
             conn.commit()
         except Exception:
             pass
+    _DOC_LINKS_SCHEMA_READY = True
 
 
 def extract_doc_id(url: str) -> Optional[str]:

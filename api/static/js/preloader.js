@@ -1,29 +1,40 @@
 /**
- * M-One MAJ OS Creative Preloader Controller (static/js/preloader.js)
- * Sistema de Pré-Loader Soberano com Handoff Contínuo via SessionStorage.
- * Elimina o vazio entre recargas de página, telas brancas e encerramentos prematuros.
+ * M-One MAJ OS Hybrid Smart Preloader (static/js/preloader.js)
+ * Arquitetura Híbrida (Linear / Vercel / YouTube Style):
+ * - Top Neon Progress Bar + Pill Executivo de Status Não-Bloqueante
+ * - Sincronizado com o Ciclo Real de Rede (beforeunload + window.fetch + HTMX + window.load)
+ * - Nunca encerra enquanto o servidor (TTFB) ou chamadas fetch() iniciais ainda estiverem rodando.
  */
 
 (function () {
   'use strict';
 
   const STORAGE_KEY = 'mone_preloader_pending';
-  const MAX_PENDING_AGE_MS = 12000;
+  const MAX_NAVIGATION_SAFETY_MS = 25000;
+  const QUIET_WINDOW_MS = 220;
 
   let preloaderEl = null;
   let textEl = null;
   let badgeEl = null;
-  let timeoutId = null;
+  let barEl = null;
+
+  let trickleTimer = null;
   let messageCycleInterval = null;
   let safetyTimeout = null;
-  let showStartTime = 0;
+  let quietCheckTimer = null;
+  let inPageFetchShowTimer = null;
+
+  let currentProgress = 0;
+  let navigationInFlight = false;
+  let isInitialBootPending = false;
+  let activeFetches = 0;
+  let lastNetworkFinishTs = 0;
 
   const STATUS_MESSAGES = [
     'Sincronizando com MAJ Operating System...',
-    'Otimizando dados operacionais...',
-    'Conectando ao banco de dados...',
-    'Preparando ambiente de trabalho...',
-    'Validando integridade de dados...'
+    'Carregando dados operacionais...',
+    'Consultando banco de dados...',
+    'Renderizando componentes da tela...'
   ];
 
   function getElements() {
@@ -32,9 +43,28 @@
       if (preloaderEl) {
         textEl = preloaderEl.querySelector('.mone-preloader-text');
         badgeEl = preloaderEl.querySelector('.mone-preloader-badge');
+        barEl = preloaderEl.querySelector('.mone-preloader-bar');
       }
     }
     return !!preloaderEl;
+  }
+
+  function setProgress(pct) {
+    currentProgress = Math.max(0, Math.min(100, pct));
+    document.documentElement.style.setProperty('--mone-progress', `${currentProgress}%`);
+    if (getElements() && barEl) {
+      barEl.style.width = `${currentProgress}%`;
+    }
+  }
+
+  function startTrickle(maxCap = 86) {
+    clearInterval(trickleTimer);
+    trickleTimer = setInterval(() => {
+      if (currentProgress >= maxCap) return;
+      const remaining = maxCap - currentProgress;
+      const step = Math.max(0.8, remaining * 0.14);
+      setProgress(Math.min(maxCap, currentProgress + step));
+    }, 240);
   }
 
   function setPendingStorage(text, badge) {
@@ -42,7 +72,7 @@
       sessionStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          text: text || 'Processando...',
+          text: text || 'Carregando...',
           badge: badge || 'MAJ OS',
           ts: Date.now()
         })
@@ -56,13 +86,16 @@
     } catch (e) {}
   }
 
-  function show(customText, customBadge, immediate = false, persist = true) {
-    if (!getElements()) return;
-
-    clearTimeout(timeoutId);
+  function show(customText, customBadge, immediate = true, persist = true, isNav = false) {
+    getElements();
     clearInterval(messageCycleInterval);
     clearTimeout(safetyTimeout);
-    showStartTime = Date.now();
+    clearTimeout(quietCheckTimer);
+
+    if (isNav) {
+      navigationInFlight = true;
+      document.documentElement.classList.add('mone-content-transitioning');
+    }
 
     const text = customText || (textEl ? textEl.textContent : 'Carregando...');
     const badge = customBadge || (badgeEl ? badgeEl.textContent : 'MAJ OS');
@@ -71,45 +104,56 @@
       setPendingStorage(text, badge);
     }
 
-    const activate = () => {
-      if (textEl && text) textEl.textContent = text;
-      if (badgeEl && badge) badgeEl.textContent = badge;
+    if (textEl && text) textEl.textContent = text;
+    if (badgeEl && badge) badgeEl.textContent = badge;
 
-      document.documentElement.classList.add('mone-preloader-active');
+    document.documentElement.classList.add('mone-preloader-active');
+    if (preloaderEl) {
       preloaderEl.classList.add('active');
       preloaderEl.setAttribute('aria-hidden', 'false');
-
-      // Ciclo contextual se demorar > 1.4s
-      let msgIndex = 0;
-      messageCycleInterval = setInterval(() => {
-        if (textEl && (preloaderEl.classList.contains('active') || document.documentElement.classList.contains('mone-preloader-active'))) {
-          textEl.style.opacity = '0';
-          setTimeout(() => {
-            textEl.textContent = STATUS_MESSAGES[msgIndex % STATUS_MESSAGES.length];
-            textEl.style.opacity = '1';
-            msgIndex++;
-          }, 180);
-        }
-      }, 1500);
-
-      // Trava de segurança contra downloads ou conexões abortadas
-      safetyTimeout = setTimeout(() => {
-        hide(true);
-      }, MAX_PENDING_AGE_MS);
-    };
-
-    if (immediate) {
-      activate();
-    } else {
-      timeoutId = setTimeout(activate, 120);
     }
+
+    if (currentProgress < 18 || currentProgress >= 98) {
+      setProgress(18);
+    }
+    startTrickle(isNav ? 84 : 90);
+
+    let msgIndex = 0;
+    messageCycleInterval = setInterval(() => {
+      if (textEl && document.documentElement.classList.contains('mone-preloader-active')) {
+        textEl.textContent = STATUS_MESSAGES[msgIndex % STATUS_MESSAGES.length];
+        msgIndex++;
+      }
+    }, 2200);
+
+    safetyTimeout = setTimeout(() => {
+      navigationInFlight = false;
+      isInitialBootPending = false;
+      hide(true);
+    }, MAX_NAVIGATION_SAFETY_MS);
   }
 
   function hide(force = false) {
-    clearTimeout(timeoutId);
+    // Nunca fecha se uma navegação de página acabou de ser disparada e aguarda o servidor (exceto force)
+    if (navigationInFlight && !force) {
+      return;
+    }
+    // Se ainda há requisições fetch() ativas da página e não é force, aguarda concluírem
+    if (activeFetches > 0 && !force) {
+      scheduleCompletionCheck();
+      return;
+    }
+
+    clearInterval(trickleTimer);
     clearInterval(messageCycleInterval);
     clearTimeout(safetyTimeout);
+    clearTimeout(quietCheckTimer);
     clearPendingStorage();
+    navigationInFlight = false;
+    isInitialBootPending = false;
+
+    setProgress(100);
+    document.documentElement.classList.remove('mone-content-transitioning');
 
     const doDismiss = () => {
       document.documentElement.classList.remove('mone-preloader-active');
@@ -117,117 +161,191 @@
         preloaderEl.classList.remove('active');
         preloaderEl.setAttribute('aria-hidden', 'true');
       }
+      setTimeout(() => {
+        if (!document.documentElement.classList.contains('mone-preloader-active')) {
+          setProgress(0);
+        }
+      }, 220);
     };
 
     if (force) {
       doDismiss();
-      return;
-    }
-
-    // Garante tempo mínimo visível de 260ms se acabou de ser acionado, para não piscar
-    const elapsed = Date.now() - showStartTime;
-    const minWait = 260;
-    if (elapsed < minWait && showStartTime > 0) {
-      setTimeout(doDismiss, minWait - elapsed);
     } else {
-      doDismiss();
+      setTimeout(doDismiss, 180);
     }
   }
 
-  /**
-   * Dispara recarga de página mantendo o pré-loader ativo de ponta a ponta sem vazio
-   */
+  function scheduleCompletionCheck() {
+    clearTimeout(quietCheckTimer);
+    quietCheckTimer = setTimeout(() => {
+      if (navigationInFlight) return;
+      if (document.readyState !== 'complete') return;
+      if (activeFetches > 0) return;
+      const sinceLastNet = Date.now() - lastNetworkFinishTs;
+      if (lastNetworkFinishTs > 0 && sinceLastNet < QUIET_WINDOW_MS) {
+        scheduleCompletionCheck();
+        return;
+      }
+      hide(false);
+    }, QUIET_WINDOW_MS);
+  }
+
+  function isIgnoredBackgroundUrl(urlStr) {
+    if (!urlStr) return false;
+    const s = String(urlStr);
+    return s.includes('/api/suporte/badges') || s.includes('viacep.com.br');
+  }
+
+  function onNetworkStart(urlStr, label) {
+    if (isIgnoredBackgroundUrl(urlStr)) return () => {};
+    activeFetches++;
+
+    if (document.documentElement.classList.contains('mone-preloader-active')) {
+      if (currentProgress < 68) setProgress(68);
+      startTrickle(93);
+    } else if (!navigationInFlight) {
+      clearTimeout(inPageFetchShowTimer);
+      inPageFetchShowTimer = setTimeout(() => {
+        if (activeFetches > 0 && !document.documentElement.classList.contains('mone-preloader-active')) {
+          show(label || 'Sincronizando dados...', 'MAJ OS', true, false, false);
+        }
+      }, 220);
+    }
+
+    let finished = false;
+    return () => {
+      if (finished) return;
+      finished = true;
+      activeFetches = Math.max(0, activeFetches - 1);
+      lastNetworkFinishTs = Date.now();
+      if (activeFetches === 0) {
+        clearTimeout(inPageFetchShowTimer);
+        if (document.documentElement.classList.contains('mone-preloader-active') && !navigationInFlight) {
+          scheduleCompletionCheck();
+        }
+      }
+    };
+  }
+
+  function hookNetworkInterceptors() {
+    if (window.__moneFetchHooked) return;
+    window.__moneFetchHooked = true;
+
+    const prevFetch = window.fetch;
+    if (typeof prevFetch === 'function') {
+      window.fetch = function (input, init) {
+        const urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+        const done = onNetworkStart(urlStr);
+        try {
+          const p = prevFetch.apply(this, arguments);
+          if (p && typeof p.finally === 'function') {
+            return p.finally(done);
+          }
+          done();
+          return p;
+        } catch (err) {
+          done();
+          throw err;
+        }
+      };
+    }
+
+    document.addEventListener('htmx:beforeRequest', (evt) => {
+      const path = evt.detail?.pathInfo?.requestPath || '';
+      const done = onNetworkStart(path, 'Atualizando visualização...');
+      if (evt.detail && evt.detail.xhr) {
+        evt.detail.xhr.addEventListener('loadend', done, { once: true });
+      } else {
+        setTimeout(done, 1500);
+      }
+    });
+  }
+
   function reload(customText = 'Atualizando página...', customBadge = 'MAJ OS') {
-    show(customText, customBadge, true, true);
+    show(customText, customBadge, true, true, true);
     setTimeout(() => {
       window.location.reload();
-    }, 40);
+    }, 25);
   }
 
-  /**
-   * Navega para outra rota com transição suave imediata
-   */
   function navigate(url, customText = 'Carregando...', customBadge = 'MAJ OS') {
     if (!url) return;
-    show(customText, customBadge, true, true);
+    show(customText, customBadge, true, true, true);
     setTimeout(() => {
       window.location.href = url;
-    }, 40);
+    }, 25);
   }
 
   function extractContextFromLink(a) {
-    const text = (a.innerText || a.textContent || '').trim();
+    const text = (a.innerText || a.textContent || '').replace(/\s+/g, ' ').trim();
     if (text) {
       const lower = text.toLowerCase();
       if (lower.includes('visão geral') || lower.includes('dashboard')) return 'Abrindo Visão Geral...';
       if (lower.includes('vendas')) return 'Abrindo Vendas...';
-      if (lower.includes('fretes')) return 'Sincronizando Fretes...';
+      if (lower.includes('fretes')) return 'Carregando Fretes & Transportadoras...';
       if (lower.includes('estoque')) return 'Carregando Estoque & Chassis...';
-      if (lower.includes('produtos')) return 'Carregando Catálogo de Produtos...';
       if (lower.includes('central de produtos')) return 'Abrindo Central de Produtos Mestre...';
+      if (lower.includes('produtos')) return 'Carregando Catálogo de Produtos...';
       if (lower.includes('pagamentos') || lower.includes('financeiro')) return 'Abrindo Módulo Financeiro...';
       if (lower.includes('importações')) return 'Acessando Importações & Contêineres...';
-      if (lower.includes('usuários')) return 'Gerenciando Usuários & Acessos...';
-      if (lower.includes('auditoria')) return 'Carregando Logs de Auditoria...';
-      if (lower.includes('copilot')) return 'Conectando ao Copilot IA...';
-      if (lower.includes('infra')) return 'Acessando Painel de Infraestrutura...';
-      if (lower.includes('conexões')) return 'Abrindo Hub de Conexões...';
-      if (lower.includes('bling')) return 'Sincronizando com Bling ERP...';
-      return `Carregando ${text}...`;
+      if (lower.includes('gestão interna') || lower.includes('governança')) return 'Abrindo Gestão Interna & Governança...';
+      if (lower.includes('prospector')) return 'Carregando Prospector B2B...';
+      if (lower.includes('radar')) return 'Carregando Radar Comercial...';
+      return `Abrindo ${text.slice(0, 32)}...`;
     }
     return 'Carregando...';
   }
 
-  function initInterceptors() {
-    // Intercepta cliques de navegação em links reais
+  function initDomInterceptors() {
     document.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const link = e.target.closest('a');
       if (!link) return;
 
       const href = link.getAttribute('href');
-      if (!href) return;
-      if (href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
-      if (link.hasAttribute('download') || link.dataset.noPreloader !== undefined) return;
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (link.target === '_blank' || link.hasAttribute('download') || link.dataset.noPreloader !== undefined) return;
       if (link.pathname === window.location.pathname && link.search === window.location.search) return;
 
+      // Feedback instantâneo 0ms no item clicado da Sidebar
+      if (link.classList.contains('nav-item')) {
+        document.querySelectorAll('.sidebar .nav-item.active').forEach(el => el.classList.remove('active'));
+        link.classList.add('active');
+      }
+
       const contextText = extractContextFromLink(link);
-      show(contextText, 'MAJ OS', false, true);
+      show(contextText, 'MAJ OS', true, true, true);
     });
 
-    // Intercepta submissões normais de formulário
     document.addEventListener('submit', (e) => {
+      if (e.defaultPrevented) return;
       const form = e.target;
-      if (form.target === '_blank' || form.dataset.noPreloader !== undefined) return;
-
-      // Se a validação HTML5 falhar (ex: campo required vazio), não dispara o pré-loader
-      if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
-        return;
-      }
+      if (!form || form.target === '_blank' || form.dataset.noPreloader !== undefined) return;
+      if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
 
       const hasFiles = !!form.querySelector('input[type="file"]');
       const msg = hasFiles ? 'Enviando arquivos e processando...' : 'Processando alterações...';
-      show(msg, 'MAJ OS', true, true);
+      show(msg, 'MAJ OS', true, true, true);
     });
 
-    // Ao voltar pelo histórico do navegador (bfcache)
     window.addEventListener('pageshow', (event) => {
       if (event.persisted) {
+        navigationInFlight = false;
         hide(true);
       }
     });
   }
 
-  // Inicialização inteligente e encerramento com Handoff Suave
   function handleInitialLoad() {
     getElements();
-    initInterceptors();
+    initDomInterceptors();
 
     let isPending = false;
     try {
       const pendingRaw = sessionStorage.getItem(STORAGE_KEY);
       if (pendingRaw) {
         const data = JSON.parse(pendingRaw);
-        if (data && Date.now() - (data.ts || 0) < MAX_PENDING_AGE_MS) {
+        if (data && Date.now() - (data.ts || 0) < MAX_NAVIGATION_SAFETY_MS) {
           isPending = true;
           if (textEl && data.text) textEl.textContent = data.text;
           if (badgeEl && data.badge) badgeEl.textContent = data.badge;
@@ -235,26 +353,28 @@
       }
     } catch (e) {}
 
-    if (isPending) {
-      // Se veio de uma ação anterior, mantém o pré-loader na tela até o carregamento completo
-      const finalizeDismissal = () => {
-        setTimeout(() => {
-          hide();
-        }, 300); // 300ms de exibição confirmada para o usuário ter certeza do sucesso
+    if (isPending || activeFetches > 0) {
+      isInitialBootPending = true;
+      setProgress(65);
+      startTrickle(92);
+
+      const onWindowLoaded = () => {
+        setProgress(88);
+        scheduleCompletionCheck();
       };
 
       if (document.readyState === 'complete') {
-        finalizeDismissal();
+        onWindowLoaded();
       } else {
-        window.addEventListener('load', finalizeDismissal, { once: true });
-        // Fallback de segurança caso window.load demore por causa de imagens terciárias
-        setTimeout(finalizeDismissal, 2000);
+        window.addEventListener('load', onWindowLoaded, { once: true });
       }
     } else {
-      // Visita direta inicial: fecha imediatamente
       hide(true);
     }
   }
+
+  // Instala o rastreador de fetch/HTMX imediatamente
+  hookNetworkInterceptors();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', handleInitialLoad);
@@ -262,7 +382,6 @@
     handleInitialLoad();
   }
 
-  // API Global Soberana do MAJ OS
   window.MOnePreloader = {
     show,
     hide,
