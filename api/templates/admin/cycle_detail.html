@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cycle.title }} — Dossiê do Ciclo | M-One{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports-consolidation.css') }}?v=20261111_ux_v2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cycle-dossier.css') }}?v=20261111_cycles_v1">
+
+<script>
+  window.__ACTIVE_TAB__ = "{{ active_tab }}";
+  window.__EMPLOYEES_DATA__ = {{ summary.employees|tojson|safe if (summary is defined and summary and summary.employees) else '[]' }};
+  window.__DOC_LINKS__ = {{ doc_links|tojson|safe if (doc_links is defined and doc_links) else '{}' }};
+  window.__CYCLE_ID__ = {{ cycle.id if (cycle is defined and cycle) else 0 }};
+  window.__INTERNAL_ANALYSIS__ = {{ internal_analysis|tojson|safe if (internal_analysis is defined and internal_analysis) else '{}' }};
+  window.__IS_CURATOR__ = {{ 'true' if is_curator else 'false' }};
+  window.__GOVERNANCE_STATUS__ = {{ governance_status|tojson|safe if (governance_status is defined and governance_status) else '{}' }};
+</script>
+<script src="{{ url_for('static', filename='js/implementation-plan.js') }}?v=20261027_eval_v5"></script>
+<script src="{{ url_for('static', filename='js/implementation-plan-governance.js') }}?v=20261103_gov_v1"></script>
+<script src="{{ url_for('static', filename='js/reports-columns.js') }}?v=20261026_eval_v2"></script>
+
+<div class="content-body rc-root" x-data="implementationPlanApp()">
+
+  <!-- Barra Superior de Navegação Dedicada do Ciclo -->
+  <div class="rc-nav-bar">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <a href="{{ url_for('implementation_plan.index') }}" class="rc-btn">
+        ← Gestão Interna
+      </a>
+      <a href="{{ url_for('cycle_pages.cycles_index') }}" class="rc-btn">
+        📚 Todos os Ciclos
+      </a>
+      {% if is_current_cycle %}
+      <span class="rc-badge rc-badge-gold">⚡ Ciclo Vigente</span>
+      {% else %}
+      <span class="rc-badge rc-badge-blue">📁 Dossiê Histórico</span>
+      {% endif %}
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      {% if prev_cycle %}
+      <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=prev_cycle.id) }}" class="rc-btn" title="{{ prev_cycle.title }}">
+        ← Ciclo Anterior
+      </a>
+      {% endif %}
+
+      <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px;">
+        <select id="cycleSelector"
+                aria-label="Ir para outro ciclo"
+                style="background: transparent; border: none; font-size: 0.84rem; font-weight: 800; color: var(--rc-gold); cursor: pointer; outline: none;"
+                onchange="switchReportCycle(this)">
+          {% for c in all_cycles %}
+          <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
+            {{ c.display_name if c.display_name else (c.title ~ ' (' ~ c.cycle_code ~ ')') }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if next_cycle %}
+      <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=next_cycle.id) }}" class="rc-btn" title="{{ next_cycle.title }}">
+        Próximo Ciclo →
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Header Executivo Dedicado ao Ciclo -->
+  <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--accent, #e5a93b);">
+    <div style="display: flex; justify-content: space-between; align-items: stretch; flex-wrap: wrap; gap: 20px;">
+      <div style="flex: 1 1 480px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+            <span style="font-size: 1.5rem;">📑</span>
+            <h1 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em;">
+              {{ cycle.title }}
+            </h1>
+            <span class="rc-badge rc-badge-gold">DOSSIÊ DO CICLO</span>
+          </div>
+          <p class="muted" style="margin: 0; font-size: 0.88rem; max-width: 780px; line-height: 1.45;">
+            Página exclusiva deste ciclo reunindo a análise setorizada da diretoria (5 setores oficiais), pauta de decisões e as entregas semanais dos 7 colaboradores.
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; text-align: center;">
+            <small class="muted" style="display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 700;">Entregas</small>
+            <div class="comex-value-emerald" style="font-size: 1.2rem; font-weight: 800;">{{ summary.total_submitted }}/{{ summary.counts.total }}</div>
+            <small style="font-size: 0.7rem; color: var(--text-dim); font-weight: 600;">{{ summary.completion_percent }}% concluído</small>
+          </div>
+
+          <button type="button"
+                  class="tab-btn rc-btn"
+                  @click="$dispatch('open-consolidated-demands-modal', { cycleId: {{ cycle.id }} })"
+                  style="background: var(--rc-amber-bg); border-color: var(--rc-amber-border); color: var(--rc-amber); font-weight: 800; padding: 10px 16px;">
+            ⚡ Demandas da Diretoria (WhatsApp)
+          </button>
+        </div>
+      </div>
+
+      {% set hero_kicker = 'Dossiê Dedicado' %}
+      {% include "admin/_cycle_hero_card.html" %}
+    </div>
+  </div>
+
+  <!-- Sub-visões Limpas do Ciclo (2 Abas Focadas) -->
+  <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; flex-wrap: wrap;">
+    <button type="button"
+            class="tab-btn rc-btn rc-btn-gold"
+            :class="{ 'is-active': activeTab === 'consolidation' }"
+            style="padding: 9px 16px;"
+            @click="activeTab = 'consolidation'">
+      📑 Análise Setorizada & Pauta (5 Setores)
+    </button>
+
+    <button type="button"
+            class="tab-btn rc-btn rc-btn-gold"
+            :class="{ 'is-active': activeTab === 'dashboard' }"
+            style="padding: 9px 16px;"
+            @click="activeTab = 'dashboard'">
+      📊 Entregas & Prazos dos 7 Colaboradores ({{ summary.total_submitted }}/{{ summary.counts.total }})
+    </button>
+  </div>
+
+  <!-- Conteúdo das 2 Visões do Ciclo -->
+  {% include "admin/reports_consolidation_tab.html" %}
+  {% include "admin/reports_dashboard_tab.html" %}
+
+  <!-- Modais Compartilhados de Avaliação, Prazo, Sync e Justificativa -->
+  {% include "admin/_implementation_plan_modals.html" %}
+</div>
+
+<script>
+function switchReportCycle(selectEl) {
+  if (!selectEl) return;
+  const cycleId = selectEl.value;
+  if (!cycleId) return;
+  const optText = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text.trim() : 'Ciclo';
+  const targetUrl = '/admin/plano/ciclo/' + cycleId;
+
+  if (window.MOnePreloader && typeof window.MOnePreloader.show === 'function') {
+    window.MOnePreloader.show('Abrindo Dossiê de ' + optText + '...', 'DOSSIÊ', true);
+  }
+  setTimeout(function() {
+    window.location.href = targetUrl;
+  }, 40);
+}
+</script>
+{% endblock %}
+

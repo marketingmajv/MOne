@@ -83,6 +83,25 @@ def get_internal_analysis(cycle_id: int) -> Dict[str, Any]:
                     data[key.replace("_json", "")] = {}
             else:
                 data[key.replace("_json", "")] = raw if isinstance(raw, (dict, list)) else {}
+
+        # Sincroniza deliberações da reunião ao vivo com curated_data.pauta_decisoes para nunca perder status após reload
+        decisions_saved = data.get("meeting_decisions")
+        curated = data.get("curated_data")
+        if isinstance(decisions_saved, list) and decisions_saved and isinstance(curated, dict):
+            base_decs = curated.get("pauta_decisoes") or []
+            if isinstance(base_decs, list) and base_decs:
+                saved_by_id = {d.get("id"): d for d in decisions_saved if isinstance(d, dict) and d.get("id")}
+                for idx, dec in enumerate(base_decs):
+                    if not isinstance(dec, dict):
+                        continue
+                    match = saved_by_id.get(dec.get("id"))
+                    if not match and idx < len(decisions_saved) and isinstance(decisions_saved[idx], dict):
+                        if decisions_saved[idx].get("title") == dec.get("title"):
+                            match = decisions_saved[idx]
+                    if match:
+                        dec["status"] = match.get("status", dec.get("status", "pending"))
+                        dec["deliberacao_texto"] = match.get("deliberacao_texto", dec.get("deliberacao_texto", ""))
+
         return data
 
 
@@ -196,28 +215,34 @@ def _generate_fallback_synthesis(summary: Dict[str, Any]) -> Dict[str, Any]:
         ],
         "pilares": {
             "financeiro": {
-                "titulo": "Financeiro, Caixa & Faturamento",
+                "titulo": "Financeiro & Faturamento",
                 "responsavel": "Marisa",
                 "destaques": ["Emissão de notas fiscais regulares e fechamento de caixa diário."],
                 "pontos_atencao": ["Canhotos e comprovantes pendentes de retorno."]
             },
             "estoque": {
-                "titulo": "Estoque Físico & Galpões",
+                "titulo": "Estoque & Galpões",
                 "responsavel": "Jhon",
                 "destaques": ["Contagem de estoque realizada às sextas-feiras."],
                 "pontos_atencao": ["Divergências pontuais sob investigação."]
             },
             "oficina": {
-                "titulo": "Oficina Técnica & Pós-Vendas",
-                "responsavel": "Ricardo",
-                "destaques": ["Manutenções preventivas e revisões liberadas."],
+                "titulo": "Oficina & Pós-Venda",
+                "responsavel": "Ricardo & Léo",
+                "destaques": ["Manutenções preventivas e triagem de pós-venda em andamento."],
                 "pontos_atencao": ["Aguardando peças de reposição específicas."]
             },
             "comercial": {
-                "titulo": "Comercial, Demanda & Clientes",
-                "responsavel": "Luiza, Léo & Gabriel",
-                "destaques": ["Atendimentos ativos na loja e pelo WhatsApp."],
+                "titulo": "Comercial & Atacado",
+                "responsavel": "Luiza, Gabriel & Gustavo",
+                "destaques": ["Atendimentos ativos na loja, WhatsApp e prospecção B2B."],
                 "pontos_atencao": ["Objeções sobre formas de parcelamento e frete."]
+            },
+            "marketing_sistemas": {
+                "titulo": "Marketing & Sistemas",
+                "responsavel": "Fauzer",
+                "destaques": ["Operação de tráfego pago, GMB e atualizações do M-One em dia."],
+                "pontos_atencao": ["Monitoramento de tempo de 1ª resposta no funil."]
             }
         }
     }

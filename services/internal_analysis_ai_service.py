@@ -258,6 +258,12 @@ Retorne ESTRITAMENTE um objeto JSON válido no seguinte formato:
       "responsavel": "Luiza, Gabriel & Gustavo",
       "destaques": ["Destaques..."],
       "pontos_atencao": ["Pontos de atenção..."]
+    }},
+    "marketing_sistemas": {{
+      "titulo": "Marketing & Sistemas",
+      "responsavel": "Fauzer",
+      "destaques": ["Destaques..."],
+      "pontos_atencao": ["Pontos de atenção..."]
     }}
   }},
   "whatsapp_executive_block": "*RELATÓRIO DOS RELATÓRIOS — MAJ MOBILIDADE*\\n*Ciclo:* ...\\n\\n*🎯 Resumo Executivo:*\\n...\\n\\n*⚠️ Gargalos Crônicos & Alertas:*\\n• ...\\n\\n*⚡ Pauta de Decisões da Diretoria (Jam & Geysa):*\\n1️⃣ ...\\n2️⃣ ...\\n\\n*Pronto para alinhamento na reunião.*",
@@ -440,6 +446,7 @@ def _generate_comparative_fallback(target_data: Dict[str, Any], baseline_data: L
             "estoque": {"titulo": "Estoque Físico & Galpões", "responsavel": "Jhon", "destaques": ["Estoque auditado no Ciclo 02 com etiquetagem de chassis em andamento."], "pontos_atencao": ["Colaborador isento no Ciclo 03; rotina sob monitoramento."]},
             "oficina": {"titulo": "Oficina Técnica & Pós-Vendas", "responsavel": "Ricardo & Léo", "destaques": ["14 serviços concluídos por Ricardo e 6 OS concluídas por Léo.", "Relação interpessoal de apoio na equipe em evolução."], "pontos_atencao": ["Falta de Chave de Impacto e Cola Shock reiterada.", "Falha inédita de controladora na V8 Mini."]},
             "comercial": {"titulo": "Comercial, Demanda & Clientes", "responsavel": "Luiza, Gabriel & Gustavo", "destaques": ["Atendimentos ativos e relacionamento mantido com clientes quentes.", "Procura constante por Max 12 e Classic 1000."], "pontos_atencao": ["Forte queixa de preço no atacado diante de concorrentes com queima de estoque.", "Demanda por renovação de conteúdos de vídeo para marketing."]},
+            "marketing_sistemas": {"titulo": "Marketing & Sistemas", "responsavel": "Fauzer", "destaques": ["Sistema M-One e automações de aferimento em evolução contínua."], "pontos_atencao": ["Demanda de atualização de criativos/vídeos comerciais alinhada com showroom."]},
         },
         "whatsapp_executive_block": f"*RELATÓRIO DOS RELATÓRIOS — MAJ MOBILIDADE*\n*Ciclo:* {title}\n\n*🎯 Resumo Executivo:*\nAnálise comparativa das entregas da equipe confrontada com os Ciclos 1 e 2 como linha de base para alinhamento rápido da Diretoria.\n\n*⚠️ Gargalos Crônicos & Alertas Críticos:*\n• *Financeiro:* Marisa com bloqueio reincidente no Piloto Mercado Pago por falta de instrução.\n• *Oficina:* Ricardo reiterou pedido de Chave de Impacto e Cola Shock para montagens Garow.\n• *Atacado:* Gabriel e Gustavo enfrentam resistência crônica de preço contra concorrência agressiva.\n• *Showroom:* Luiza sugere renovar conteúdos de vídeo (V20/Classic) para aquecer leads.\n\n*⚡ Pauta de Decisões da Reunião (Jam & Geysa):*\n1️⃣ Autorizar compra de Chave de Impacto e insumos para a oficina.\n2️⃣ Orientar operacionalmente Marisa no fluxo do Mercado Pago.\n3️⃣ Definir política comercial de atacado contra preços de queima do mercado.\n\n_Documento pronto para deliberação na reunião de Diretoria._",
         "relatorio_master_colaboradores": [

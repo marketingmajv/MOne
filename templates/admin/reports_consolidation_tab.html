@@ -1,209 +1,29 @@
 <!-- templates/admin/reports_consolidation_tab.html -->
-<div x-show="activeTab === 'consolidation'" 
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports-consolidation.css') }}?v=20261111_ux_v2">
+<script src="{{ url_for('static', filename='js/reports-consolidation.js') }}?v=20261111_ux_v2"></script>
+
+<div x-show="activeTab === 'consolidation'"
      {% if active_tab != 'consolidation' %}x-cloak style="display: none;"{% endif %}
-     x-data="{
-       analysis: window.__INTERNAL_ANALYSIS__ || {},
-       isCurator: window.__IS_CURATOR__ || false,
-       isGenerating: false,
-       isSaving: false,
-       isSimulating: false,
-       isPublishing: false,
-       curatorEditMode: false,
-       statusMsg: '',
-
-       get status() {
-         return (this.analysis && this.analysis.status) ? this.analysis.status : 'curating';
-       },
-       get isPublished() {
-         return this.status === 'published';
-       },
-       get currentData() {
-         if (!this.analysis) return {};
-         return this.analysis.curated_data || this.analysis.ai_summary || {};
-       },
-       get radarAlerts() {
-         return (this.currentData && this.currentData.radar_alerts) || [];
-       },
-       get pautaDecisoes() {
-         return (this.currentData && this.currentData.pauta_decisoes) || [];
-       },
-       get pilares() {
-         return (this.currentData && this.currentData.pilares) || {};
-       },
-       get gargalosCronicos() {
-         return (this.currentData && this.currentData.gargalos_cronicos) || [];
-       },
-       get evolucaoColaboradores() {
-         return (this.currentData && this.currentData.evolucao_colaboradores) || [];
-       },
-       get relatorioMasterColaboradores() {
-         return (this.currentData && this.currentData.relatorio_master_colaboradores) || [];
-       },
-       get whatsappBlock() {
-         return (this.currentData && (this.currentData.whatsapp_executive_block || this.currentData.whatsapp_block)) || '';
-       },
-       get whatsappMasterBlock() {
-         return (this.currentData && (this.currentData.whatsapp_master_block || '')) || '';
-       },
-
-       copyWhatsappBlock() {
-         if (!this.whatsappBlock) {
-           alert('Nenhum resumo executivo do WhatsApp disponível.');
-           return;
-         }
-         navigator.clipboard.writeText(this.whatsappBlock).then(() => {
-           alert('📋 Resumo Executivo copiado com sucesso para a Área de Transferência!\nPronto para colar no WhatsApp de Jam e Geysa.');
-         }).catch(err => {
-           alert('Não foi possível copiar automaticamente: ' + err);
-         });
-       },
-
-       copyWhatsappMasterBlock() {
-         if (!this.whatsappMasterBlock) {
-           alert('Nenhum Relatório MASTER para WhatsApp disponível. Gere a síntese de IA primeiro.');
-           return;
-         }
-         navigator.clipboard.writeText(this.whatsappMasterBlock).then(() => {
-           alert('📋 Relatório MASTER de Aferimento copiado com sucesso para a Área de Transferência!\nPronto para colar no WhatsApp de Jam e Geysa.');
-         }).catch(err => {
-           alert('Não foi possível copiar automaticamente: ' + err);
-         });
-       },
-
-       async gerarIA() {
-         if (!confirm('Deseja executar a síntese balanceada dos relatórios com IA?')) return;
-         this.isGenerating = true;
-         this.statusMsg = 'Lendo relatórios e gerando síntese...';
-         try {
-           const res = await fetch('/admin/plano/api/analise-interna/gerar-ia', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ cycle_id: window.__CYCLE_ID__ })
-           });
-           const data = await res.json();
-           this.isGenerating = false;
-           if (data.status === 'success') {
-             this.analysis = data.analysis;
-             alert('✅ ' + data.message);
-           } else {
-             alert('❌ ' + (data.message || 'Erro ao gerar síntese.'));
-           }
-         } catch(e) {
-           this.isGenerating = false;
-           alert('Falha na comunicação: ' + e);
-         }
-       },
-
-       async salvarCuradoria() {
-         this.isSaving = true;
-         try {
-           const res = await fetch('/admin/plano/api/analise-interna/salvar-curadoria', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ cycle_id: window.__CYCLE_ID__, curated_data: this.currentData })
-           });
-           const data = await res.json();
-           this.isSaving = false;
-           if (data.status === 'success') {
-             this.analysis = data.analysis;
-             this.curatorEditMode = false;
-             alert('✅ ' + data.message);
-           } else {
-             alert('❌ ' + (data.message || 'Erro ao salvar.'));
-           }
-         } catch(e) {
-           this.isSaving = false;
-           alert('Erro ao salvar: ' + e);
-         }
-       },
-
-       async liberarParaDiretoria() {
-         if (!confirm('Deseja homologar e LIBERAR a Análise Interna para Jam e Geysa?')) return;
-         this.isPublishing = true;
-         try {
-           const res = await fetch('/admin/plano/api/analise-interna/liberar', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ cycle_id: window.__CYCLE_ID__, curated_data: this.currentData })
-           });
-           const data = await res.json();
-           this.isPublishing = false;
-           if (data.status === 'success') {
-             this.analysis = data.analysis;
-             alert('🚀 ' + data.message);
-           } else {
-             alert('❌ ' + (data.message || 'Erro ao liberar.'));
-           }
-         } catch(e) {
-           this.isPublishing = false;
-           alert('Erro ao liberar: ' + e);
-         }
-       },
-
-       async salvarDeliberacoes() {
-         this.isSaving = true;
-         try {
-           const res = await fetch('/admin/plano/api/analise-interna/salvar-deliberacoes', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ cycle_id: window.__CYCLE_ID__, meeting_decisions: this.pautaDecisoes })
-           });
-           const data = await res.json();
-           this.isSaving = false;
-           if (data.status === 'success') {
-             alert('✅ Deliberações da reunião registradas com sucesso no banco!');
-           } else {
-             alert('❌ ' + (data.message || 'Erro ao salvar deliberações.'));
-           }
-         } catch(e) {
-           this.isSaving = false;
-           alert('Erro: ' + e);
-         }
-       },
-
-       async simularDados() {
-         if (!confirm('Deseja carregar dados de demonstração realistas para os 7 colaboradores para teste?')) return;
-         this.isSimulating = true;
-         try {
-           const res = await fetch('/admin/plano/api/analise-interna/simular-dados', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ cycle_id: window.__CYCLE_ID__ })
-           });
-           const data = await res.json();
-           this.isSimulating = false;
-           if (data.status === 'success') {
-             this.analysis = data.analysis;
-             alert('🧪 ' + data.message);
-             window.location.reload();
-           } else {
-             alert('❌ ' + (data.message || 'Erro na simulação.'));
-           }
-         } catch(e) {
-           this.isSimulating = false;
-           alert('Erro na simulação: ' + e);
-         }
-       }
-     }">
+     x-data="reportsConsolidationApp()"
+     class="rc-root">
 
   <!-- ========================================================================= -->
   <!-- BARRA DE CONTROLE EXCLUSIVA DO CURADOR ESTRATÉGICO (FAUZER & SUPORTE)     -->
   <!-- ========================================================================= -->
   <template x-if="isCurator">
-    <div class="panel" style="margin-bottom: 22px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 12px; padding: 16px 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div class="rc-curator-bar">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 1.6rem;">🛠️</span>
+          <span style="font-size: 1.45rem;">🛠️</span>
           <div>
-            <div style="font-size: 1.05rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px;">
-              <span>Central de Curadoria da Análise Interna (Fauzer)</span>
-              <span class="badge" 
-                    style="font-size: 0.82rem; font-weight: 800; padding: 4px 10px;"
-                    :style="isPublished ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);'"
+            <div style="font-size: 0.98rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span>Central de Curadoria Setorizada (Fauzer)</span>
+              <span class="rc-badge"
+                    :class="isPublished ? 'rc-badge-green' : 'rc-badge-amber'"
                     x-text="isPublished ? '🟢 LIBERADO PARA JAM & GEYSA' : '🟡 EM CURADORIA (RASCUNHO)'">
               </span>
             </div>
-            <div style="font-size: 0.88rem; color: var(--text-dim); margin-top: 3px;">
+            <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 2px;">
               <span x-show="!isPublished">Jam e Geysa ainda NÃO visualizam esta tela até você clicar em liberar.</span>
               <span x-show="isPublished">Esta Análise Interna está homologada e visível no painel da Diretoria.</span>
             </div>
@@ -211,21 +31,23 @@
         </div>
 
         <!-- Botões de Ação do Curador -->
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="simularDados()" :disabled="isSimulating">
-            <span x-text="isSimulating ? '⏳ Simulando...' : '🧪 Simular Respostas (7)'"></span>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="tab-btn rc-btn" @click="simularDados()" :disabled="isSimulating">
+            <span x-text="isSimulating ? '⏳ Simulando...' : '🧪 Simular Respostas'"></span>
           </button>
-          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="gerarIA()" :disabled="isGenerating">
-            <span x-text="isGenerating ? '⏳ Sintetizando...' : '⚡ Sintetizar com IA'"></span>
+          <button type="button" class="tab-btn rc-btn" @click="gerarIA()" :disabled="isGenerating">
+            <span x-text="isGenerating ? '⏳ Sintetizando...' : '⚡ Sintetizar por Setores (IA)'"></span>
           </button>
-          <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.88rem; font-weight: 600; padding: 8px 14px; border-radius: 8px;" @click="curatorEditMode = !curatorEditMode" x-show="radarAlerts.length || pautaDecisoes.length">
+          <button type="button" class="tab-btn rc-btn"
+                  @click="canonicalSectors.forEach(s => ensureSectorPilar(s.key)); curatorEditMode = !curatorEditMode"
+                  x-show="hasAnyContent && viewMode === 'cycle'">
             <span x-text="curatorEditMode ? '👁️ Ver Prévia Executiva' : '✏️ Editar Cards'"></span>
           </button>
-          <button type="button" class="btn" style="background: #10b981; color: #000; font-size: 0.9rem; font-weight: 800; padding: 9px 18px; border-radius: 8px; border: none;" @click="liberarParaDiretoria()" :disabled="isPublishing" x-show="!isPublished && (radarAlerts.length || pautaDecisoes.length)">
+          <button type="button" class="tab-btn rc-btn rc-btn-success" @click="liberarParaDiretoria()" :disabled="isPublishing" x-show="!isPublished && hasAnyContent">
             <span x-text="isPublishing ? '⏳ Liberando...' : '🚀 Liberar para Jam & Geysa'"></span>
           </button>
-          <button type="button" class="btn" style="background: #10b981; color: #000; font-size: 0.88rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; border: none;" @click="salvarCuradoria()" x-show="curatorEditMode">
-            <span>💾 Salvar Edições</span>
+          <button type="button" class="tab-btn rc-btn rc-btn-success" @click="salvarCuradoria()" x-show="curatorEditMode">
+            <span>💾 Salvar Curadoria</span>
           </button>
         </div>
       </div>
@@ -235,16 +57,16 @@
   <!-- ========================================================================= -->
   <!-- TELA DE ESPERA PARA JAM & GEYSA (SE AINDA NÃO FOR LIBERADO)               -->
   <!-- ========================================================================= -->
-  <div x-show="!isPublished && !isCurator" class="panel" style="padding: 44px 28px; text-align: center; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 24px;">
+  <div x-show="!isPublished && !isCurator && viewMode === 'cycle'" class="panel" style="padding: 44px 28px; text-align: center; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 24px;">
     <div style="font-size: 3rem; margin-bottom: 14px;">⏳</div>
-    <h3 style="font-size: 1.45rem; font-weight: 800; color: var(--text); margin-bottom: 10px;">
+    <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 10px;">
       Análise Interna em Curadoria Estratégica
     </h3>
-    <p class="muted" style="max-width: 660px; margin: 0 auto 18px; font-size: 1.05rem; line-height: 1.6;">
-      Fauzer está realizando a compilação cruzada e curadoria dos 7 relatórios semanais da equipe para a reunião com Jam e Geysa.
-      A versão oficial homologada será liberada nesta tela antes do início da reunião de segunda-feira.
+    <p class="muted" style="max-width: 660px; margin: 0 auto 18px; font-size: 1rem; line-height: 1.6;">
+      Fauzer está organizando e setorizando os relatórios semanais da equipe para a reunião com Jam e Geysa.
+      A versão oficial homologada será liberada nesta tela antes da reunião de segunda-feira.
     </p>
-    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); padding: 8px 18px; border-radius: 20px; font-size: 0.92rem; color: var(--text-dim);">
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); padding: 8px 18px; border-radius: 20px; font-size: 0.9rem; color: var(--text-dim);">
       <span>Prazo oficial das entregas: <strong>{{ summary.deadline_str or 'Sexta-feira 18h' }}</strong></span>
     </div>
   </div>
@@ -253,179 +75,177 @@
   <!-- MODO DE VISUALIZAÇÃO EXECUTIVA (HOMOLOGADO OU PRÉVIA DE FAUZER)          -->
   <!-- ========================================================================= -->
   <div x-show="isPublished || isCurator">
-    <!-- Se não há dados gerados ainda -->
-    <div x-show="!radarAlerts.length && !pautaDecisoes.length" class="panel" style="padding: 40px 24px; text-align: center; border: 1px dashed var(--line); border-radius: 12px; margin-bottom: 24px;">
+
+    <!-- Header Executivo Superior: Alternador Ciclo Atual vs Histórico Multi-Ciclos -->
+    <div class="panel" style="margin-bottom: 18px; border-left: 4px solid var(--accent, #e5a93b); padding: 18px 22px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+            <span style="font-size: 1.5rem;">📑</span>
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text);"
+                x-text="viewMode === 'history' ? 'Histórico Multi-Ciclos — Visão Setorizada' : 'Análise Interna Setorizada — Parâmetro Geral'">
+            </h3>
+            <span class="rc-badge rc-badge-gold">5 SETORES OFICIAIS</span>
+          </div>
+          <p class="muted" style="margin: 0; font-size: 0.88rem; line-height: 1.45;">
+            Gargalos, observações, destaques e decisões organizados por departamento para a reunião de <strong>Jam</strong>, <strong>Geysa</strong> e <strong>Fauzer</strong>.
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button"
+                  class="tab-btn rc-btn rc-btn-gold"
+                  :class="{ 'is-active': viewMode === 'cycle' }"
+                  @click="viewMode = 'cycle'">
+            📋 Visão do Ciclo Atual
+          </button>
+          <button type="button"
+                  class="tab-btn rc-btn rc-btn-blue"
+                  :class="{ 'is-active': viewMode === 'history' }"
+                  @click="switchToHistory()">
+            📊 Histórico Multi-Ciclos
+          </button>
+          <button type="button" class="tab-btn rc-btn" onclick="window.print()">
+            🖨️ PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Resumo Executivo em Destaque (Visão do Ciclo Atual) -->
+      <template x-if="viewMode === 'cycle' && currentData.executive_summary">
+        <div style="margin-top: 14px; padding: 12px 16px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line); font-size: 0.94rem; color: var(--text); line-height: 1.55;">
+          <strong class="rc-val-gold" style="font-weight: 800;">Parâmetro Geral do Ciclo:</strong>
+          <span x-text="currentData.executive_summary"></span>
+        </div>
+      </template>
+    </div>
+
+    <!-- Estado Vazio (Visão do Ciclo Atual sem síntese gerada) -->
+    <div x-show="viewMode === 'cycle' && !hasAnyContent" class="panel" style="padding: 40px 24px; text-align: center; border: 1px dashed var(--line); margin-bottom: 24px;">
       <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📑</span>
-      <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">Análise Interna Ainda Não Gerada</h4>
-      <p class="muted" style="font-size: 1rem; max-width: 620px; margin: 0 auto 18px; line-height: 1.55;">
-        Clique no botão abaixo para processar com IA as respostas enviadas pelos colaboradores deste ciclo ou simule dados para testar.
+      <h4 style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin: 0 0 8px;">Análise Interna Ainda Não Gerada Neste Ciclo</h4>
+      <p class="muted" style="font-size: 0.95rem; max-width: 620px; margin: 0 auto 18px; line-height: 1.55;">
+        Clique abaixo para processar com IA os relatórios enviados pelos colaboradores e setorizar automaticamente em Financeiro, Estoque, Oficina & Pós-Venda, Comercial & Atacado e Marketing & Sistemas.
       </p>
-      <div style="display: flex; justify-content: center; gap: 12px;" x-show="isCurator">
-        <button type="button" class="btn primary" style="font-size: 0.95rem; font-weight: 800; padding: 10px 20px;" @click="gerarIA()" :disabled="isGenerating">
-          <span>⚡ Gerar Síntese com IA Agora</span>
+      <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;" x-show="isCurator">
+        <button type="button" class="btn primary" style="font-size: 0.92rem; font-weight: 800; padding: 10px 20px;" @click="gerarIA()" :disabled="isGenerating">
+          <span>⚡ Gerar Síntese Setorizada com IA</span>
         </button>
-        <button type="button" class="btn" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.95rem; padding: 10px 18px;" @click="simularDados()" :disabled="isSimulating">
+        <button type="button" class="tab-btn rc-btn" style="padding: 10px 18px; font-size: 0.92rem;" @click="simularDados()" :disabled="isSimulating">
           <span>🧪 Carregar Dados de Simulação</span>
         </button>
       </div>
     </div>
 
-    <!-- Conteúdo Oficial da Análise Interna -->
-    <div x-show="radarAlerts.length || pautaDecisoes.length">
-      <!-- Header Executivo da Reunião -->
-      <div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--accent, #e5a93b); padding: 22px 26px; border-radius: 12px; background: var(--panel);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-              <span style="font-size: 1.6rem;">📑</span>
-              <h3 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
-                Análise Interna — Reunião de Diretoria (20–30 min)
-              </h3>
-              <span class="badge" style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.35); font-weight: 800; font-size: 0.82rem; padding: 4px 10px;">
-                PAUTA DELIBERATIVA
-              </span>
-            </div>
-            <p class="muted" style="margin: 0; font-size: 0.98rem; max-width: 860px; line-height: 1.5;">
-              Síntese estratégica cruzada para alinhamento entre <strong>Jam Penitenti</strong> (Diretoria Geral), <strong>Geysa</strong> (Gerência Geral) e <strong>Fauzer</strong>.
-            </p>
-          </div>
+    <!-- Conteúdo Estruturado do Ciclo Atual -->
+    <div x-show="viewMode === 'cycle' && hasAnyContent">
 
-          <button type="button" class="btn" onclick="window.print()" style="background: var(--panel2); border: 1px solid var(--line); color: var(--text); font-size: 0.92rem; font-weight: 600; padding: 9px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
-            <span>🖨️</span>
-            <span>Imprimir / PDF</span>
-          </button>
+      <!-- 4 KPI Cards Clicáveis do Parâmetro Geral (div role=button para evitar colisão de button CSS) -->
+      <div class="rc-kpi-grid">
+        <div role="button" tabindex="0"
+             @click="toggleSectionFilter('gargalos')"
+             @keydown.enter.prevent="toggleSectionFilter('gargalos')"
+             @keydown.space.prevent="toggleSectionFilter('gargalos')"
+             class="rc-kpi-card kpi-red"
+             :class="{ 'is-active': sectionFilter === 'gargalos' }">
+          <span class="rc-kpi-label">🚨 Gargalos Críticos</span>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+            <span class="rc-kpi-value rc-val-red" x-text="totalGargalosCount"></span>
+            <span class="muted" style="font-size: 0.78rem;" x-text="'(' + highGargalosCount + ' urgentes)'"></span>
+          </div>
         </div>
 
-        <!-- Resumo Executivo em 2 Linhas -->
-        <template x-if="currentData.executive_summary">
-          <div style="margin-top: 16px; padding: 14px 18px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line); font-size: 1.05rem; color: var(--text); line-height: 1.6;">
-            <strong style="color: #e5a93b; font-weight: 800;">Resumo Executivo:</strong>
-            <span x-text="currentData.executive_summary"></span>
+        <div role="button" tabindex="0"
+             @click="toggleSectionFilter('observacoes')"
+             @keydown.enter.prevent="toggleSectionFilter('observacoes')"
+             @keydown.space.prevent="toggleSectionFilter('observacoes')"
+             class="rc-kpi-card kpi-amber"
+             :class="{ 'is-active': sectionFilter === 'observacoes' }">
+          <span class="rc-kpi-label">⚠️ Observações & Atenção</span>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+            <span class="rc-kpi-value rc-val-amber" x-text="totalObservacoesCount"></span>
+            <span class="muted" style="font-size: 0.78rem;">pontos mapeados</span>
           </div>
+        </div>
+
+        <div role="button" tabindex="0"
+             @click="toggleSectionFilter('decisoes')"
+             @keydown.enter.prevent="toggleSectionFilter('decisoes')"
+             @keydown.space.prevent="toggleSectionFilter('decisoes')"
+             class="rc-kpi-card kpi-blue"
+             :class="{ 'is-active': sectionFilter === 'decisoes' }">
+          <span class="rc-kpi-label">🎯 Pauta de Decisões</span>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+            <span class="rc-kpi-value rc-val-blue" x-text="pautaDecisoes.length"></span>
+            <span class="muted" style="font-size: 0.78rem;" x-text="'(' + pendingDecisoesCount + ' em aberto)'"></span>
+          </div>
+        </div>
+
+        <div role="button" tabindex="0"
+             @click="toggleSectionFilter('destaques')"
+             @keydown.enter.prevent="toggleSectionFilter('destaques')"
+             @keydown.space.prevent="toggleSectionFilter('destaques')"
+             class="rc-kpi-card kpi-green"
+             :class="{ 'is-active': sectionFilter === 'destaques' }">
+          <span class="rc-kpi-label">✅ Destaques & Entregas</span>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 6px;">
+            <span class="rc-kpi-value rc-val-green" x-text="totalDestaquesCount"></span>
+            <span class="muted" style="font-size: 0.78rem;">avanços da semana</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Navegação por Setor (Pílulas) -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+        <button type="button"
+                class="tab-btn rc-pill"
+                :class="{ 'is-active-gold': activeSector === 'all' }"
+                @click="selectSector('all')">
+          <span>🌐 Parâmetro Geral (Todos)</span>
+        </button>
+
+        <template x-for="sec in canonicalSectors" :key="'pill-' + sec.key">
+          <button type="button"
+                  class="tab-btn rc-pill"
+                  :class="{ 'is-active-sector': activeSector === sec.key }"
+                  :style="{ '--sec-color': sec.color }"
+                  @click="selectSector(sec.key)">
+            <span x-text="sec.icon"></span>
+            <span x-text="sec.shortLabel"></span>
+            <span x-show="getSectorGargalos(sec.key).length > 0"
+                  class="rc-pill-count"
+                  x-text="getSectorGargalos(sec.key).length">
+            </span>
+          </button>
         </template>
       </div>
 
-      <!-- =================================================================== -->
-      <!-- CAMADA COMPARATIVA: WHATSAPP, GARGALOS CRÔNICOS E EVOLUÇÃO         -->
-      <!-- =================================================================== -->
-      {% include "components/internal_analysis_evolution.html" %}
-
-      <!-- =================================================================== -->
-      <!-- CAMADA 1: RADAR DE ALERTAS CRÍTICOS (URGÊNCIAS & GARGALOS)          -->
-      <!-- =================================================================== -->
-      <div style="margin-bottom: 28px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-          <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.4rem;">🚨</span>
-            <span>Radar de Alertas Críticos da Semana</span>
-            <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.82rem; padding: 3px 9px;" x-text="radarAlerts.length + ' Alertas'"></span>
-          </h4>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
-          <template x-for="(alert, idx) in radarAlerts" :key="alert.id || idx">
-            <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;"
-                 :style="alert.severity === 'high' ? 'border-left: 5px solid #ef4444;' : (alert.severity === 'medium' ? 'border-left: 5px solid #f59e0b;' : 'border-left: 5px solid #3b82f6;')">
-              <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                  <span class="badge" 
-                        style="font-size: 0.82rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px;"
-                        :style="alert.severity === 'high' ? 'background: rgba(239, 68, 68, 0.12); color: #ef4444;' : 'background: rgba(245, 158, 11, 0.12); color: #f59e0b;'"
-                        x-text="alert.pilar_label || alert.pilar">
-                  </span>
-                  <span style="font-size: 0.88rem; color: var(--text-dim); font-weight: 600;" x-text="'Envolvidos: ' + ((alert.envolvidos || []).join(', ') || 'Equipe')"></span>
-                </div>
-                <div x-show="!curatorEditMode">
-                  <div style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.35;" x-text="alert.title"></div>
-                  <div style="font-size: 1.02rem; color: #cbd5e1; line-height: 1.6;" x-text="alert.description"></div>
-                </div>
-                <!-- Modo Edição do Curador -->
-                <div x-show="curatorEditMode" style="display: flex; flex-direction: column; gap: 10px;">
-                  <input class="form-input" style="font-size: 1rem; font-weight: 700; width: 100%; padding: 8px 12px;" x-model="alert.title" placeholder="Título do alerta">
-                  <textarea class="form-input" style="font-size: 0.95rem; width: 100%; min-height: 65px; padding: 8px 12px; line-height: 1.5;" x-model="alert.description" placeholder="Descrição do alerta"></textarea>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <!-- =================================================================== -->
-      <!-- CAMADA 2: PAUTA DELIBERATIVA DA DIRETORIA (JAM & GEYSA DECIDEM)      -->
-      <!-- =================================================================== -->
-      <div class="panel" style="margin-bottom: 28px; padding: 24px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
-          <div>
-            <h4 style="font-size: 1.3rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 1.4rem;">🎯</span>
-              <span>Pauta Deliberativa de Decisões (Jam & Geysa)</span>
-            </h4>
-            <small style="color: var(--text-dim); font-size: 0.92rem; display: block; margin-top: 4px;">
-              Registre as resoluções da Diretoria durante a reunião. Os despachos posteriores ficam a cargo de Jam e Geysa.
-            </small>
-          </div>
-
-          <button type="button" 
-                  class="btn primary" 
-                  style="font-size: 0.95rem; font-weight: 800; padding: 9px 20px; border-radius: 8px;"
-                  @click="salvarDeliberacoes()"
-                  :disabled="isSaving">
-            <span x-text="isSaving ? '⏳ Salvando...' : '💾 Salvar Deliberações da Reunião'"></span>
+      <!-- Barra Rápida: Relatório MASTER, Evolução Comparativa & Exportação WhatsApp -->
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;"
+           x-show="whatsappBlock || whatsappMasterBlock || (relatorioMasterColaboradores && relatorioMasterColaboradores.length) || (gargalosCronicos && gargalosCronicos.length) || (evolucaoColaboradores && evolucaoColaboradores.length)">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="tab-btn rc-btn rc-btn-gold" @click="showMasterReport = !showMasterReport" :class="{ 'is-active': showMasterReport }">
+            <span x-text="showMasterReport ? '🔽 Ocultar Relatório MASTER & Evolução' : '🎯 Ver Relatório MASTER & Evolução Comparativa'"></span>
+          </button>
+          <button type="button" class="tab-btn rc-btn" x-show="whatsappMasterBlock" @click="copyWhatsappMasterBlock()">
+            <span>📋 Copiar Relatório MASTER (WhatsApp)</span>
+          </button>
+          <button type="button" class="tab-btn rc-btn" x-show="whatsappBlock" @click="copyWhatsappBlock()">
+            <span>📱 Copiar Pauta (WhatsApp)</span>
           </button>
         </div>
-
-        <div style="display: flex; flex-direction: column; gap: 18px;">
-          <template x-for="(dec, idx) in pautaDecisoes" :key="dec.id || idx">
-            <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 10px;">
-                <div style="display: flex; align-items: baseline; gap: 10px;">
-                  <span style="font-weight: 800; font-size: 1.25rem; color: #e5a93b;" x-text="(idx + 1) + '.'"></span>
-                  <div style="font-weight: 800; font-size: 1.2rem; color: var(--text); line-height: 1.35;" x-text="dec.title"></div>
-                </div>
-                
-                <!-- Status da Deliberação -->
-                <div style="display: flex; gap: 8px;">
-                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
-                          :style="dec.status === 'approved' ? 'background: #10b981; color: #000; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
-                          @click="dec.status = 'approved'">
-                    ✓ Aprovado
-                  </button>
-                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
-                          :style="dec.status === 'postponed' ? 'background: #f59e0b; color: #000; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
-                          @click="dec.status = 'postponed'">
-                    ⏳ Adiado
-                  </button>
-                  <button type="button" class="btn" style="font-size: 0.88rem; padding: 7px 14px; border-radius: 6px;"
-                          :style="dec.status === 'rejected' ? 'background: #ef4444; color: #fff; font-weight: 800;' : 'background: var(--panel); color: var(--text-dim); border: 1px solid var(--line);'"
-                          @click="dec.status = 'rejected'">
-                    ✕ Rejeitado
-                  </button>
-                </div>
-              </div>
-
-              <!-- Contexto e Proposta -->
-              <div style="font-size: 1.05rem; color: #cbd5e1; line-height: 1.65; margin-bottom: 14px;">
-                <div><strong style="color: var(--text); font-weight: 700;">Contexto:</strong> <span x-text="dec.context"></span></div>
-                <div style="margin-top: 4px;"><strong style="color: #e5a93b; font-weight: 700;">Encaminhamento sugerido:</strong> <span x-text="dec.proposta"></span></div>
-              </div>
-
-              <!-- Input para Deliberação ao Vivo -->
-              <div>
-                <input type="text" 
-                       class="form-input" 
-                       style="width: 100%; font-size: 1.02rem; padding: 11px 16px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; line-height: 1.5;"
-                       placeholder="Anotar resolução de Jam e Geysa (ex: Aprovada compra de 10 baterias com fornecedor local; Marisa agenda pagamento)..."
-                       x-model="dec.deliberacao_texto">
-              </div>
-            </div>
-          </template>
-        </div>
       </div>
 
-      <!-- =================================================================== -->
-      <!-- CAMADA 3: OS 4 PILARES DA MAJ (SÍNTESE BALANCEADA POR ÁREA)          -->
-      <!-- =================================================================== -->
-      {% include "components/internal_analysis_pilares.html" %}
+      <div x-show="showMasterReport" x-cloak style="margin-bottom: 22px;">
+        {% include "components/internal_analysis_evolution.html" %}
+      </div>
 
+      <!-- Visão Setorizada dos Conteúdos -->
+      {% include "admin/reports_consolidation_sector_view.html" %}
     </div>
+
+    <!-- Visão Histórico Multi-Ciclos -->
+    {% include "admin/reports_consolidation_history.html" %}
+
   </div>
 </div>

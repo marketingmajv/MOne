@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Todos os Ciclos — Gestão Interna | M-One{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports-consolidation.css') }}?v=20261111_ux_v2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cycle-dossier.css') }}?v=20261111_cycles_v1">
+
+<div class="content-body rc-root">
+  <!-- Barra Superior de Navegação -->
+  <div class="rc-nav-bar">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <a href="{{ url_for('implementation_plan.index') }}" class="rc-btn">
+        ← Voltar para Gestão Interna
+      </a>
+      <span style="color: var(--muted); font-size: 0.85rem;">/</span>
+      <span style="font-size: 0.9rem; font-weight: 800; color: var(--text);">📚 Todos os Ciclos</span>
+    </div>
+
+    {% if cycles %}
+    <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=cycles[0].id) }}" class="rc-btn rc-btn-gold is-active">
+      ⚡ Abrir Dossiê do Ciclo Vigente →
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Cabeçalho Executivo -->
+  <div class="panel" style="margin-bottom: 20px; border-left: 4px solid var(--accent, #e5a93b); padding: 20px 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+          <span style="font-size: 1.5rem;">📚</span>
+          <h1 style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
+            Diretório de Ciclos Semanais (MAJ)
+          </h1>
+          <span class="rc-badge rc-badge-gold">{{ cycles|length }} CICLOS REGISTRADOS</span>
+        </div>
+        <p class="muted" style="margin: 0; font-size: 0.88rem;">
+          Cada ciclo possui uma página própria (Dossiê Completo) reunindo as entregas dos 7 colaboradores, semáforo dos 5 setores, gargalos e decisões da reunião.
+        </p>
+      </div>
+
+      <a href="{{ url_for('implementation_plan.index', tab='consolidation') }}" class="rc-btn">
+        📊 Ver Histórico Multi-Ciclos Comparado
+      </a>
+    </div>
+  </div>
+
+  {% if not cycles %}
+  <div class="panel" style="padding: 44px 24px; text-align: center;">
+    <div style="font-size: 2.5rem; margin-bottom: 10px;">🗓️</div>
+    <h3 style="margin: 0 0 8px; color: var(--text);">Nenhum Ciclo Registrado</h3>
+    <p class="muted" style="margin: 0 auto 16px; max-width: 520px;">
+      Acesse a Gestão Interna para iniciar o ciclo semanal corrente.
+    </p>
+    <a href="{{ url_for('implementation_plan.index') }}" class="btn primary">Ir para Gestão Interna</a>
+  </div>
+  {% else %}
+  <!-- Grid Executivo dos Ciclos -->
+  <div class="rc-cycles-grid">
+    {% for c in cycles %}
+    <div class="rc-cycle-card {% if c.is_current %}is-current{% endif %}">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            {% if c.is_current %}
+            <span class="rc-badge rc-badge-gold">⚡ Ciclo Vigente</span>
+            {% endif %}
+            <span class="rc-badge rc-badge-blue">{{ c.cycle_code }}</span>
+          </div>
+
+          {% if c.analysis_status == 'published' %}
+          <span class="rc-badge rc-badge-green">🟢 Análise Liberada</span>
+          {% elif c.analysis_status == 'curating' %}
+          <span class="rc-badge rc-badge-amber">🟡 Em Curadoria</span>
+          {% else %}
+          <span class="rc-badge" style="background: var(--panel2); color: var(--muted); border: 1px solid var(--line);">⏳ Sem Síntese</span>
+          {% endif %}
+        </div>
+
+        <h2 style="margin: 0 0 4px; font-size: 1.25rem; font-weight: 900; color: var(--text); letter-spacing: -0.01em;">
+          {{ c.short_title }}
+        </h2>
+        <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-dim); margin-bottom: 10px;">
+          🗓️ {{ c.week_subtitle }} • Prazo: {{ c.deadline_str }}
+        </div>
+
+        {% if c.can_view_analysis and c.executive_summary %}
+        <p style="margin: 0 0 12px; font-size: 0.84rem; color: var(--text-dim); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+          {{ c.executive_summary }}
+        </p>
+        {% endif %}
+
+        <!-- Barra de Progresso de Entregas -->
+        <div style="margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-bottom: 4px;">
+            <span style="font-weight: 700; color: var(--muted);">Adesão da Equipe</span>
+            <strong style="color: var(--text);">
+              {{ c.submitted_count }}/{{ c.active_total }} entregues ({{ c.completion_percent }}%)
+              {% if c.exempt_count > 0 %} • {{ c.exempt_count }} licença{% endif %}
+            </strong>
+          </div>
+          <div class="rc-cycle-progress-track">
+            <div class="rc-cycle-progress-fill" style="width: {{ c.completion_percent }}%;"></div>
+          </div>
+        </div>
+
+        <!-- Contadores Rápidos Setorizados -->
+        <div class="rc-cycle-stats-row">
+          {% if c.can_view_analysis and c.analysis_status != 'none' %}
+          <span>🚨 <strong class="rc-val-red">{{ c.gargalos_count }}</strong> gargalos</span>
+          <span>⚠️ <strong class="rc-val-amber">{{ c.observacoes_count }}</strong> obs</span>
+          <span>🎯 <strong class="rc-val-blue">{{ c.decisoes_count }}</strong> decisões</span>
+          <span>✅ <strong class="rc-val-green">{{ c.destaques_count }}</strong> destaques</span>
+          {% else %}
+          <span style="color: var(--muted); font-style: italic;">Síntese setorizada ainda não publicada neste ciclo.</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Ações do Card -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--line);">
+        <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=c.id) }}" class="btn primary" style="flex: 1; text-align: center; justify-content: center; padding: 8px 14px; font-size: 0.84rem;">
+          📑 Abrir Dossiê do Ciclo →
+        </a>
+        <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=c.id, tab='dashboard') }}" class="rc-btn" style="padding: 8px 12px; font-size: 0.82rem;">
+          📊 Entregas ({{ c.submitted_count }})
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

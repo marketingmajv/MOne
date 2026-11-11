@@ -1,0 +1,322 @@
+<!-- templates/admin/reports_consolidation_sector_view.html -->
+<div x-show="viewMode === 'cycle'">
+
+  <!-- ======================================================================= -->
+  <!-- PAINEL SEMÁFORO DOS 5 SETORES (EXIBIDO NO PARÂMETRO GERAL)              -->
+  <!-- ======================================================================= -->
+  <div x-show="activeSector === 'all'" style="margin-bottom: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);">
+        🧭 Mapa Executivo dos 5 Setores (Clique no setor para focar)
+      </div>
+      <span style="font-size: 0.78rem; color: var(--muted);">
+        Cada seção abaixo está agrupada por setor — sem misturar informações.
+      </span>
+    </div>
+
+    <div class="rc-sector-grid">
+      <template x-for="sec in canonicalSectors" :key="'overview-' + sec.key">
+        <div role="button"
+             tabindex="0"
+             @click="selectSector(sec.key)"
+             @keydown.enter.prevent="selectSector(sec.key)"
+             @keydown.space.prevent="selectSector(sec.key)"
+             class="rc-sector-card"
+             :style="{ '--sec-color': sec.color }">
+          <div class="rc-sector-card-top">
+            <div style="min-width: 0;">
+              <div class="rc-sector-card-title">
+                <span x-text="sec.icon"></span>
+                <span x-text="sec.shortLabel"></span>
+              </div>
+              <div class="rc-sector-card-resp" x-text="sec.responsibles"></div>
+            </div>
+            <span class="rc-badge"
+                  :class="getSectorHealth(sec.key).badgeClass"
+                  x-text="getSectorHealth(sec.key).label">
+            </span>
+          </div>
+
+          <div class="rc-sector-card-stats">
+            <span>🚨 <strong x-text="getSectorGargalos(sec.key).length"></strong> gargalos</span>
+            <span>⚠️ <strong x-text="getSectorObservacoes(sec.key).length"></strong> obs</span>
+            <span>🎯 <strong x-text="getSectorDecisoes(sec.key).length"></strong> decisões</span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- BARRA DE FILTRO POR TIPO DE SEÇÃO + SALVAR DELIBERAÇÕES                 -->
+  <!-- ======================================================================= -->
+  <div class="panel" style="margin-bottom: 20px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-right: 4px;">
+        Filtrar Seção:
+      </span>
+      <button type="button" class="tab-btn rc-filter-chip"
+              :class="{ 'is-all': sectionFilter === 'all' }"
+              @click="sectionFilter = 'all'">
+        Tudo
+      </button>
+      <button type="button" class="tab-btn rc-filter-chip"
+              :class="{ 'is-red': sectionFilter === 'gargalos' }"
+              @click="toggleSectionFilter('gargalos')">
+        🚨 Gargalos (<span x-text="totalGargalosCount"></span>)
+      </button>
+      <button type="button" class="tab-btn rc-filter-chip"
+              :class="{ 'is-amber': sectionFilter === 'observacoes' }"
+              @click="toggleSectionFilter('observacoes')">
+        ⚠️ Observações (<span x-text="totalObservacoesCount"></span>)
+      </button>
+      <button type="button" class="tab-btn rc-filter-chip"
+              :class="{ 'is-blue': sectionFilter === 'decisoes' }"
+              @click="toggleSectionFilter('decisoes')">
+        🎯 Decisões (<span x-text="pautaDecisoes.length"></span>)
+      </button>
+      <button type="button" class="tab-btn rc-filter-chip"
+              :class="{ 'is-green': sectionFilter === 'destaques' }"
+              @click="toggleSectionFilter('destaques')">
+        ✅ Destaques (<span x-text="totalDestaquesCount"></span>)
+      </button>
+    </div>
+
+    <button type="button"
+            class="btn primary"
+            style="font-size: 0.85rem; font-weight: 800; padding: 8px 16px; border-radius: 8px;"
+            @click="salvarDeliberacoes()"
+            :disabled="isSaving">
+      <span x-text="isSaving ? '⏳ Salvando...' : '💾 Salvar Deliberações da Reunião'"></span>
+    </button>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- BLOCOS SETORIZADOS (CADA SETOR ISOLADO E COMPLETO)                      -->
+  <!-- ======================================================================= -->
+  <div style="display: flex; flex-direction: column; gap: 22px;">
+    <template x-for="sector in visibleSectors" :key="sector.key">
+      <div class="rc-sector-block"
+           x-show="activeSector !== 'all' || sectorMatchesFilter(sector.key)"
+           :style="{ '--sec-color': sector.color }">
+
+        <!-- Cabeçalho do Setor -->
+        <div class="rc-sector-block-head">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span style="font-size: 1.5rem;" x-text="sector.icon"></span>
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);" x-text="sector.label"></h4>
+                <span class="rc-badge"
+                      :class="getSectorHealth(sector.key).badgeClass"
+                      x-text="getSectorHealth(sector.key).label">
+                </span>
+              </div>
+              <small style="color: var(--muted); font-size: 0.82rem;">
+                Responsáveis: <strong style="color: var(--text);" x-text="sector.responsibles"></strong>
+              </small>
+            </div>
+          </div>
+
+          <!-- Atalhos Diretos para Respostas Individuais dos Colaboradores do Setor -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <template x-for="emp in sector.employees" :key="emp.key">
+              <button type="button"
+                      class="tab-btn rc-emp-chip"
+                      @click="openEvaluation(emp.key)">
+                <span x-text="'📝 ' + emp.name + ' →'"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Grid das 4 Sub-Seções do Setor -->
+        <div class="rc-subcards-grid">
+
+          <!-- SUB-SEÇÃO 1: GARGALOS & ALERTAS CRÍTICOS -->
+          <div x-show="sectionFilter === 'all' || sectionFilter === 'gargalos'" class="rc-subcard">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong class="rc-val-red" style="font-size: 0.86rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                <span>🚨 Gargalos & Alertas</span>
+                <span class="rc-badge rc-badge-red" x-text="getSectorGargalos(sector.key).length"></span>
+              </strong>
+              <button type="button" x-show="curatorEditMode" @click="addAlert(sector.key)"
+                      class="tab-btn rc-btn" style="padding: 3px 9px; font-size: 0.72rem; color: var(--rc-red); border-color: var(--rc-red-border);">
+                + Gargalo
+              </button>
+            </div>
+
+            <template x-if="getSectorGargalos(sector.key).length === 0">
+              <div style="font-size: 0.84rem; color: var(--muted); font-style: italic; padding: 6px 0;">
+                Nenhum gargalo crítico reportado neste setor.
+              </div>
+            </template>
+
+            <template x-for="(alert, aIdx) in getSectorGargalos(sector.key)" :key="alert.id || aIdx">
+              <div class="rc-item-card"
+                   :class="alert.severity === 'high' ? 'sev-high' : (alert.severity === 'medium' ? 'sev-medium' : 'sev-low')">
+                <div x-show="!curatorEditMode">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase;"
+                          :class="alert.severity === 'high' ? 'rc-val-red' : 'rc-val-amber'"
+                          x-text="alert.severity === 'high' ? '● Crítico' : '● Atenção'"></span>
+                    <span style="font-size: 0.74rem; color: var(--muted);" x-text="(alert.envolvidos || []).join(', ')"></span>
+                  </div>
+                  <div class="rc-text-strong" style="margin-bottom: 4px;" x-text="alert.title"></div>
+                  <div class="rc-text-body" x-text="alert.description"></div>
+                </div>
+
+                <!-- Edição Curador -->
+                <div x-show="curatorEditMode" style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <select class="form-input" x-model="alert.pilar" style="font-size: 0.75rem; padding: 4px 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                      <template x-for="opt in canonicalSectors" :key="opt.key">
+                        <option :value="opt.key" x-text="opt.shortLabel"></option>
+                      </template>
+                    </select>
+                    <select class="form-input" x-model="alert.severity" style="font-size: 0.75rem; padding: 4px 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                      <option value="high">Crítico</option>
+                      <option value="medium">Médio</option>
+                      <option value="low">Baixo</option>
+                    </select>
+                    <button type="button" class="tab-btn rc-icon-del" style="margin-left: auto;" @click="removeAlert(alert)">🗑️ Remover</button>
+                  </div>
+                  <input type="text" class="form-input" x-model="alert.title" placeholder="Título do gargalo" style="width: 100%; font-size: 0.85rem; padding: 6px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                  <textarea class="form-input" x-model="alert.description" placeholder="Descrição do impacto" rows="2" style="width: 100%; font-size: 0.82rem; padding: 6px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;"></textarea>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- SUB-SEÇÃO 2: OBSERVAÇÕES & PONTOS DE ATENÇÃO -->
+          <div x-show="sectionFilter === 'all' || sectionFilter === 'observacoes'" class="rc-subcard">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong class="rc-val-amber" style="font-size: 0.86rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️ Observações & Pontos de Atenção</span>
+                <span class="rc-badge rc-badge-amber" x-text="getSectorObservacoes(sector.key).length"></span>
+              </strong>
+              <button type="button" x-show="curatorEditMode" @click="addObservacao(sector.key)"
+                      class="tab-btn rc-btn" style="padding: 3px 9px; font-size: 0.72rem; color: var(--rc-amber); border-color: var(--rc-amber-border);">
+                + Observação
+              </button>
+            </div>
+
+            <template x-if="getSectorObservacoes(sector.key).length === 0">
+              <div style="font-size: 0.84rem; color: var(--muted); font-style: italic; padding: 6px 0;">
+                Sem observações adicionais registradas neste setor.
+              </div>
+            </template>
+
+            <template x-for="(obs, obsIdx) in getSectorObservacoes(sector.key)" :key="'obs-' + sector.key + '-' + obsIdx">
+              <div class="rc-item-card is-obs">
+                <div x-show="!curatorEditMode" class="rc-text-body" style="color: var(--text);" x-text="obs"></div>
+                <div x-show="curatorEditMode && pilares[sector.key]" style="display: flex; gap: 8px; align-items: center;">
+                  <input type="text" class="form-input" x-model="pilares[sector.key].pontos_atencao[obsIdx]" style="flex: 1; font-size: 0.84rem; padding: 6px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                  <button type="button" class="tab-btn rc-icon-del" @click="removeObservacao(sector.key, obsIdx)">🗑️</button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- SUB-SEÇÃO 3: DESTAQUES & ENTREGAS DA SEMANA -->
+          <div x-show="sectionFilter === 'all' || sectionFilter === 'destaques'" class="rc-subcard">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong class="rc-val-green" style="font-size: 0.86rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                <span>✅ Destaques & Entregas</span>
+                <span class="rc-badge rc-badge-green" x-text="getSectorDestaques(sector.key).length"></span>
+              </strong>
+              <button type="button" x-show="curatorEditMode" @click="addDestaque(sector.key)"
+                      class="tab-btn rc-btn" style="padding: 3px 9px; font-size: 0.72rem; color: var(--rc-green); border-color: var(--rc-green-border);">
+                + Destaque
+              </button>
+            </div>
+
+            <template x-if="getSectorDestaques(sector.key).length === 0">
+              <div style="font-size: 0.84rem; color: var(--muted); font-style: italic; padding: 6px 0;">
+                Nenhum destaque registrado neste ciclo.
+              </div>
+            </template>
+
+            <template x-for="(dest, dIdx) in getSectorDestaques(sector.key)" :key="'dest-' + sector.key + '-' + dIdx">
+              <div class="rc-item-card is-dest">
+                <div x-show="!curatorEditMode" class="rc-text-body" style="color: var(--text);">
+                  <span class="rc-val-green" style="font-weight: 800;">•</span> <span x-text="dest"></span>
+                </div>
+                <div x-show="curatorEditMode && pilares[sector.key]" style="display: flex; gap: 8px; align-items: center;">
+                  <input type="text" class="form-input" x-model="pilares[sector.key].destaques[dIdx]" style="flex: 1; font-size: 0.84rem; padding: 6px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                  <button type="button" class="tab-btn rc-icon-del" @click="removeDestaque(sector.key, dIdx)">🗑️</button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- SUB-SEÇÃO 4: DECISÕES DA DIRETORIA (JAM & GEYSA) -->
+          <div x-show="sectionFilter === 'all' || sectionFilter === 'decisoes'" class="rc-subcard">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong class="rc-val-blue" style="font-size: 0.86rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                <span>🎯 Pauta de Decisões (Jam & Geysa)</span>
+                <span class="rc-badge rc-badge-blue" x-text="getSectorDecisoes(sector.key).length"></span>
+              </strong>
+              <button type="button" x-show="curatorEditMode" @click="addDecision(sector.key)"
+                      class="tab-btn rc-btn" style="padding: 3px 9px; font-size: 0.72rem; color: var(--rc-blue); border-color: var(--rc-blue-border);">
+                + Decisão
+              </button>
+            </div>
+
+            <template x-if="getSectorDecisoes(sector.key).length === 0">
+              <div style="font-size: 0.84rem; color: var(--muted); font-style: italic; padding: 6px 0;">
+                Nenhuma deliberação pendente para a Diretoria neste setor.
+              </div>
+            </template>
+
+            <template x-for="(dec, decIdx) in getSectorDecisoes(sector.key)" :key="dec.id || decIdx">
+              <div class="rc-item-card" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap;">
+                  <div x-show="!curatorEditMode" class="rc-text-strong" style="flex: 1;" x-text="dec.title"></div>
+                  <div x-show="curatorEditMode" style="flex: 1; display: flex; gap: 6px; align-items: center;">
+                    <select class="form-input" x-model="dec.pilar" style="font-size: 0.74rem; padding: 4px 8px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                      <template x-for="opt in canonicalSectors" :key="opt.key">
+                        <option :value="opt.key" x-text="opt.shortLabel"></option>
+                      </template>
+                    </select>
+                    <input type="text" class="form-input" x-model="dec.title" placeholder="Título da decisão" style="flex: 1; font-size: 0.85rem; padding: 5px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                    <button type="button" class="tab-btn rc-icon-del" @click="removeDecision(dec)">🗑️</button>
+                  </div>
+
+                  <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button type="button" class="tab-btn rc-dec-btn"
+                            :class="{ 'is-approved': dec.status === 'approved' }"
+                            @click="dec.status = 'approved'">✓ Aprovado</button>
+                    <button type="button" class="tab-btn rc-dec-btn"
+                            :class="{ 'is-postponed': dec.status === 'postponed' }"
+                            @click="dec.status = 'postponed'">⏳ Adiado</button>
+                    <button type="button" class="tab-btn rc-dec-btn"
+                            :class="{ 'is-rejected': dec.status === 'rejected' }"
+                            @click="dec.status = 'rejected'">✕ Rejeitado</button>
+                  </div>
+                </div>
+
+                <div x-show="!curatorEditMode" class="rc-text-body">
+                  <div><strong style="color: var(--text);">Contexto:</strong> <span x-text="dec.context"></span></div>
+                  <div style="margin-top: 2px;"><strong class="rc-val-gold">Sugestão:</strong> <span x-text="dec.proposta"></span></div>
+                </div>
+
+                <div x-show="curatorEditMode" style="display: flex; flex-direction: column; gap: 6px;">
+                  <input type="text" class="form-input" x-model="dec.context" placeholder="Contexto" style="width: 100%; font-size: 0.82rem; padding: 5px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                  <input type="text" class="form-input" x-model="dec.proposta" placeholder="Encaminhamento sugerido" style="width: 100%; font-size: 0.82rem; padding: 5px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px;">
+                </div>
+
+                <input type="text"
+                       class="form-input"
+                       style="width: 100%; font-size: 0.85rem; padding: 8px 12px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 7px;"
+                       placeholder="Anotar resolução de Jam e Geysa nesta reunião..."
+                       x-model="dec.deliberacao_texto">
+              </div>
+            </template>
+          </div>
+
+        </div>
+      </div>
+    </template>
+  </div>
+</div>

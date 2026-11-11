@@ -1,0 +1,70 @@
+<!-- templates/admin/_implementation_plan_modals.html -->
+<style>
+  .plano-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .plano-modal-backdrop[style*="display: none"] {
+    display: none !important;
+  }
+  .plano-modal-box {
+    background: var(--panel, #1e2430);
+    border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+    border-radius: 16px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75);
+    max-width: 760px;
+    width: min(760px, 94vw);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: auto;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .plano-modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel, #1e2430);
+    flex-shrink: 0;
+  }
+  .plano-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+  }
+  .plano-modal-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel, #1e2430);
+    flex-shrink: 0;
+  }
+</style>
+
+{% include "admin/report_details_modal.html" %}
+{% include "admin/doc_sync_modals.html" %}
+{% include "components/modal_employee_evaluation.html" %}
+{% include "components/modal_consolidated_demands.html" %}
+{% include "components/modal_employee_exemption.html" %}
+{% include "components/modal_employee_questions.html" %}
+

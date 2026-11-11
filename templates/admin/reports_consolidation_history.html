@@ -1,0 +1,176 @@
+<!-- templates/admin/reports_consolidation_history.html -->
+<div x-show="viewMode === 'history'" x-cloak>
+
+  <!-- Filtros do Histórico Multi-Ciclos -->
+  <div class="panel" style="margin-bottom: 20px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; color: var(--muted); margin-right: 4px;">
+        Setor:
+      </span>
+      <button type="button" class="tab-btn rc-pill"
+              :class="{ 'is-active-gold': historySectorFilter === 'all' }"
+              @click="historySectorFilter = 'all'">
+        🌐 Todos os Setores
+      </button>
+      <template x-for="sec in canonicalSectors" :key="'hist-sec-' + sec.key">
+        <button type="button" class="tab-btn rc-pill"
+                :class="{ 'is-active-sector': historySectorFilter === sec.key }"
+                :style="{ '--sec-color': sec.color }"
+                @click="historySectorFilter = sec.key">
+          <span x-text="sec.icon + ' ' + sec.shortLabel"></span>
+        </button>
+      </template>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+      <select class="form-input" x-model="historyTypeFilter" style="font-size: 0.8rem; padding: 6px 10px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px;">
+        <option value="all">Mostrar: Gargalos, Obs & Decisões</option>
+        <option value="gargalos">Somente Gargalos 🚨</option>
+        <option value="observacoes">Somente Observações ⚠️</option>
+        <option value="decisoes">Somente Decisões 🎯</option>
+      </select>
+      <button type="button" class="tab-btn rc-btn" @click="loadHistory(true)" :disabled="loadingHistory">
+        <span x-text="loadingHistory ? '⏳ Atualizando...' : '🔄 Atualizar'"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading / Error -->
+  <div x-show="loadingHistory" class="panel" style="padding: 48px 24px; text-align: center;">
+    <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
+    <div style="font-size: 0.98rem; font-weight: 700; color: var(--text);">Consolidando histórico de todos os ciclos...</div>
+  </div>
+
+  <div x-show="historyError && !loadingHistory" class="panel rc-val-red" style="padding: 20px; border: 1px solid var(--rc-red-border);" x-text="historyError"></div>
+
+  <!-- Conteúdo do Histórico Multi-Ciclos -->
+  <template x-if="!loadingHistory && historyData">
+    <div style="display: flex; flex-direction: column; gap: 22px;">
+
+      <!-- 2 Painéis de Destaque: Gargalos Recorrentes & Decisões Pendentes -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
+
+        <!-- Card 1: Gargalos Recorrentes (2+ Ciclos) -->
+        <div class="panel" style="margin: 0; padding: 18px 20px; border-left: 4px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <strong style="font-size: 0.96rem; font-weight: 800; color: var(--text);">🔁 Gargalos Recorrentes (2+ Semanas)</strong>
+            <span class="rc-badge rc-badge-red" x-text="filteredRecurringGargalos.length"></span>
+          </div>
+          <template x-if="filteredRecurringGargalos.length === 0">
+            <div style="font-size: 0.85rem; color: var(--muted); font-style: italic;">
+              Nenhum gargalo repetido detectado entre os ciclos neste filtro.
+            </div>
+          </template>
+          <div style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+            <template x-for="(rec, rIdx) in filteredRecurringGargalos" :key="'rec-' + rIdx">
+              <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 0.74rem; font-weight: 800;" :style="{ color: rec.sector_color }" x-text="rec.sector_icon + ' ' + rec.sector_label"></span>
+                  <span class="rc-badge rc-badge-red" x-text="rec.count + 'x (' + rec.cycles.join(', ') + ')'"></span>
+                </div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text);" x-text="rec.title"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Card 2: Decisões Pendentes / Adiadas Acumuladas -->
+        <div class="panel" style="margin: 0; padding: 18px 20px; border-left: 4px solid #f59e0b;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <strong style="font-size: 0.96rem; font-weight: 800; color: var(--text);">⏳ Decisões Pendentes ou Adiadas</strong>
+            <span class="rc-badge rc-badge-amber" x-text="filteredUnresolvedDecisions.length"></span>
+          </div>
+          <template x-if="filteredUnresolvedDecisions.length === 0">
+            <div style="font-size: 0.85rem; color: var(--muted); font-style: italic;">
+              Nenhuma decisão em aberto nos ciclos anteriores.
+            </div>
+          </template>
+          <div style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+            <template x-for="(ud, uIdx) in filteredUnresolvedDecisions" :key="'ud-' + uIdx">
+              <div style="background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-size: 0.74rem; font-weight: 800;" :style="{ color: ud.sector_color }" x-text="ud.sector_icon + ' ' + ud.sector_label"></span>
+                  <span class="rc-badge rc-badge-amber" x-text="ud.cycle_code + ' • ' + (ud.status === 'postponed' ? 'Adiado' : 'Pendente')"></span>
+                </div>
+                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text);" x-text="ud.title"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linha do Tempo dos Ciclos -->
+      <div>
+        <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text); margin: 0 0 12px 0;">
+          🗓️ Linha do Tempo por Ciclo (<span x-text="historyData.total_cycles"></span> analisados)
+        </h4>
+
+        <template x-if="!historyData.timeline || historyData.timeline.length === 0">
+          <div class="panel" style="padding: 36px; text-align: center; color: var(--muted);">
+            Nenhum ciclo com Análise Interna gerada até o momento.
+          </div>
+        </template>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <template x-for="cItem in historyData.timeline" :key="'tl-' + cItem.cycle_id">
+            <div class="panel" style="margin: 0; padding: 18px 20px;"
+                 x-show="getHistoryCycleSectors(cItem).length > 0 || historySectorFilter === 'all'">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line);">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <strong class="rc-val-gold" style="font-size: 1.02rem;" x-text="cItem.cycle_title"></strong>
+                  <span class="rc-badge"
+                        :class="cItem.status === 'published' ? 'rc-badge-green' : 'rc-badge-amber'"
+                        x-text="cItem.status === 'published' ? '🟢 Liberado' : '🟡 Em Curadoria'"></span>
+                </div>
+                <a :href="'/admin/plano/ciclo/' + cItem.cycle_id" class="rc-btn" style="padding: 4px 10px; font-size: 0.76rem;">
+                  Abrir Dossiê do Ciclo →
+                </a>
+              </div>
+
+              <div x-show="cItem.executive_summary" style="font-size: 0.88rem; color: var(--text-dim); margin-bottom: 12px; line-height: 1.5;" x-text="cItem.executive_summary"></div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                <template x-for="sec in getHistoryCycleSectors(cItem)" :key="'tl-sec-' + cItem.cycle_id + '-' + sec.key">
+                  <div class="rc-hist-card" :style="{ '--sec-color': sec.color }">
+                    <div style="font-size: 0.84rem; font-weight: 800; color: var(--text); margin-bottom: 8px;" x-text="sec.icon + ' ' + sec.short_label"></div>
+
+                    <template x-if="(historyTypeFilter === 'all' || historyTypeFilter === 'gargalos') && sec.gargalos.length > 0">
+                      <div style="margin-bottom: 8px;">
+                        <div class="rc-val-red" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; margin-bottom: 3px;">🚨 Gargalos</div>
+                        <template x-for="(g, gi) in sec.gargalos" :key="gi">
+                          <div style="font-size: 0.8rem; color: var(--text); margin-bottom: 2px;">• <span x-text="g.title"></span></div>
+                        </template>
+                      </div>
+                    </template>
+
+                    <template x-if="(historyTypeFilter === 'all' || historyTypeFilter === 'observacoes') && sec.observacoes.length > 0">
+                      <div style="margin-bottom: 8px;">
+                        <div class="rc-val-amber" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; margin-bottom: 3px;">⚠️ Observações</div>
+                        <template x-for="(o, oi) in sec.observacoes" :key="oi">
+                          <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2px;">• <span x-text="o"></span></div>
+                        </template>
+                      </div>
+                    </template>
+
+                    <template x-if="(historyTypeFilter === 'all' || historyTypeFilter === 'decisoes') && sec.decisoes.length > 0">
+                      <div>
+                        <div class="rc-val-blue" style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; margin-bottom: 3px;">🎯 Decisões</div>
+                        <template x-for="(d, di) in sec.decisoes" :key="di">
+                          <div style="font-size: 0.8rem; color: var(--text); margin-bottom: 2px;">
+                            • <span x-text="d.title"></span>
+                            <span style="font-size: 0.72rem; color: var(--muted);" x-text="'(' + (d.status === 'approved' ? '✓ Aprovado' : (d.status === 'rejected' ? '✕ Rejeitado' : (d.status === 'postponed' ? '⏳ Adiado' : 'Pendente'))) + ')'"></span>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+    </div>
+  </template>
+</div>

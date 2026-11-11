@@ -42,11 +42,15 @@ from routes.employee_portal_routes import employee_portal_bp
 from routes.employee_alignment_routes import employee_alignment_bp
 from routes.support_routes import support_bp
 from routes.product_hub_routes import product_hub_bp
+from routes.internal_analysis_routes import internal_analysis_bp
+from routes.cycle_pages_routes import cycle_pages_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
     dashboard_bp,
     product_hub_bp,
+    internal_analysis_bp,
+    cycle_pages_bp,
     support_bp,
     employee_portal_bp,
     employee_alignment_bp,
