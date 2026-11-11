@@ -1,0 +1,208 @@
+<!-- templates/components/internal_analysis_evolution.html -->
+<div>
+  <!-- ========================================================================= -->
+  <!-- BARRA DE EXPORTAÇÃO EXECUTIVA PARA WHATSAPP (JAM & GEYSA)                 -->
+  <!-- ========================================================================= -->
+  <div class="panel" style="margin-bottom: 24px; padding: 18px 22px; border-radius: 12px; background: linear-gradient(135deg, rgba(229, 169, 59, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(229, 169, 59, 0.35); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 1.8rem;">📱</span>
+      <div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <span>Resumo Executivo para WhatsApp da Diretoria</span>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-weight: 700; font-size: 0.78rem; padding: 2px 8px;">
+            1-CLIQUE
+          </span>
+        </div>
+        <div style="font-size: 0.9rem; color: var(--text-dim); margin-top: 3px;">
+          Síntese formatada com pauta deliberativa e alertas para Jam Penitenti e Geysa prontos para envio.
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <button type="button" 
+              class="btn" 
+              style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 0.92rem; font-weight: 800; padding: 10px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;"
+              @click="copyWhatsappMasterBlock()">
+        <span>📋</span>
+        <span>Copiar Relatório MASTER (WhatsApp)</span>
+      </button>
+
+      <button type="button" 
+              class="btn primary" 
+              style="font-size: 0.92rem; font-weight: 800; padding: 10px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(229, 169, 59, 0.25);"
+              @click="copyWhatsappBlock()">
+        <span>📱</span>
+        <span>Copiar Pauta da Reunião (WhatsApp)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- RELATÓRIO MASTER DE AFERIMENTO DE RESPOSTAS DOS COLABORADORES (IA)        -->
+  <!-- ========================================================================= -->
+  <div style="margin-bottom: 28px;" x-show="relatorioMasterColaboradores && relatorioMasterColaboradores.length">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+      <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">🎯</span>
+        <span>Relatório MASTER de Aferimento dos Colaboradores (IA)</span>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.82rem; padding: 3px 9px;">Auditoria Automática</span>
+      </h4>
+      <button type="button" 
+              class="btn" 
+              style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35); font-weight: 700; font-size: 0.85rem; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;"
+              @click="copyWhatsappMasterBlock()">
+        <span>📋</span>
+        <span>Copiar Relatório MASTER (WhatsApp)</span>
+      </button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px;">
+      <template x-for="item in relatorioMasterColaboradores" :key="item.key">
+        <div class="panel" 
+             style="margin-bottom: 0; padding: 18px 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;"
+             :style="item.status === 'atencao' ? 'border-left: 5px solid #f59e0b;' : (item.status === 'critico' ? 'border-left: 5px solid #ef4444;' : (item.status === 'isento' ? 'border-left: 5px solid #a855f7;' : (item.status === 'pendente' ? 'border-left: 5px solid #ef4444;' : 'border-left: 5px solid #10b981;')))">
+          <div>
+            <!-- Cabeçalho do Card -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px;">
+              <div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--text);" x-text="item.name"></div>
+                <div style="font-size: 0.82rem; color: var(--text-dim);" x-text="item.role"></div>
+              </div>
+
+              <!-- Badge de Status Master -->
+              <span class="badge" 
+                    style="font-size: 0.8rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;"
+                    :style="item.status === 'esperado' ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : (item.status === 'atencao' ? 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);' : (item.status === 'critico' ? 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35);' : (item.status === 'isento' ? 'background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.35);' : 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35);')))">
+                <span x-text="item.status === 'esperado' ? '✅' : (item.status === 'atencao' ? '⚠️' : (item.status === 'critico' ? '🚨' : (item.status === 'isento' ? '⚪' : '🔴')))"></span>
+                <span x-text="item.status_label || (item.status === 'esperado' ? 'Resposta dentro do esperado' : 'Requer Atenção')"></span>
+              </span>
+            </div>
+
+            <!-- Resumo da Avaliação da IA -->
+            <p style="font-size: 0.94rem; color: #cbd5e1; line-height: 1.5; margin: 0 0 12px 0;" x-text="item.resumo"></p>
+
+            <!-- Detalhamento de Respostas sob Atenção (Se houver) -->
+            <template x-if="item.perguntas_atencao && item.perguntas_atencao.length">
+              <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px;">
+                <div style="font-size: 0.82rem; font-weight: 800; color: #f59e0b; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>⚠️ Ponto(s) de Atenção Mapeado(s):</span>
+                </div>
+                <template x-for="(p, pIdx) in item.perguntas_atencao" :key="p.pergunta_id || pIdx">
+                  <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(245, 158, 11, 0.2);">
+                    <div style="font-size: 0.9rem; font-weight: 700; color: var(--text);" x-text="'Pergunta: ' + (p.pergunta_titulo || p.pergunta_id)"></div>
+                    <div x-show="p.resposta_colaborador" style="font-size: 0.85rem; color: var(--text-dim); font-style: italic; margin-top: 3px;" x-text="'Trecho: ' + p.resposta_colaborador"></div>
+                    <div style="font-size: 0.88rem; color: #fbbf24; margin-top: 4px;" x-text="'Diagnóstico IA: ' + p.motivo_alerta"></div>
+                    <div x-show="p.acao_recomendada" style="font-size: 0.85rem; font-weight: 700; color: #10b981; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                      <span>👉 Ação Sugerida:</span>
+                      <span x-text="p.acao_recomendada"></span>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+
+          <!-- Rodapé do Card -->
+          <div style="margin-top: 14px; text-align: right; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 10px;">
+            <button type="button" 
+                    class="btn" 
+                    style="background: transparent; border: none; color: #e5a93b; font-size: 0.84rem; font-weight: 700; cursor: pointer; padding: 0;"
+                    @click="openEvaluation(item.key)">
+              Ver respostas completas do colaborador →
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CAMADA COMPARATIVA: GARGALOS CRÔNICOS & REINCIDENTES                      -->
+  <!-- ========================================================================= -->
+  <div style="margin-bottom: 28px;" x-show="gargalosCronicos && gargalosCronicos.length">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">🔴</span>
+        <span>Gargalos Crônicos & Reincidentes (vs Ciclos Anteriores)</span>
+        <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.82rem; padding: 3px 9px;" x-text="gargalosCronicos.length + ' Reincidências'"></span>
+      </h4>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
+      <template x-for="(g, idx) in gargalosCronicos" :key="g.id || idx">
+        <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); border-left: 5px solid #ef4444; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+              <span class="badge" 
+                    style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); color: #ef4444;"
+                    x-text="g.pilar_label || g.pilar">
+              </span>
+              <span class="badge" 
+                    style="font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);"
+                    x-text="g.origem_ciclos || 'Reincidente'">
+              </span>
+            </div>
+            
+            <div style="font-size: 1.12rem; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.35;" x-text="g.title"></div>
+            <div style="font-size: 0.98rem; color: #cbd5e1; line-height: 1.55; margin-bottom: 12px;" x-text="g.description"></div>
+          </div>
+
+          <div style="border-top: 1px solid var(--line); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <small style="color: var(--text-dim); font-size: 0.86rem; font-weight: 600;">
+              Envolvidos: <strong style="color: var(--text);" x-text="((g.envolvidos || []).join(', ') || 'Equipe')"></strong>
+            </small>
+            <span style="font-size: 0.8rem; color: #ef4444; font-weight: 700;">Ação Imediata</span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CAMADA COMPARATIVA: EVOLUÇÃO & ENGAJAMENTO POR COLABORADOR               -->
+  <!-- ========================================================================= -->
+  <div style="margin-bottom: 28px;" x-show="evolucaoColaboradores && evolucaoColaboradores.length">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+      <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">📈</span>
+        <span>Evolução & Engajamento das Entregas (vs Ciclos 1 e 2)</span>
+        <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.82rem; padding: 3px 9px;">7 Integrantes</span>
+      </h4>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px;">
+      <template x-for="colab in evolucaoColaboradores" :key="colab.key">
+        <div class="panel" style="margin-bottom: 0; padding: 16px 18px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+              <div>
+                <div style="font-size: 1.05rem; font-weight: 800; color: var(--text);" x-text="colab.name"></div>
+                <div style="font-size: 0.82rem; color: var(--text-dim);" x-text="colab.role"></div>
+              </div>
+
+              <!-- Badge de Tendência / Status -->
+              <span class="badge" 
+                    style="font-size: 0.78rem; font-weight: 800; padding: 3px 8px; border-radius: 6px;"
+                    :style="colab.tendencia === 'positiva' ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : (colab.tendencia === 'atencao' ? 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);' : (colab.tendencia === 'isento' ? 'background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.35);' : 'background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.35);'))"
+                    x-text="colab.tendencia_label || colab.tendencia">
+              </span>
+            </div>
+
+            <p style="font-size: 0.92rem; color: #cbd5e1; line-height: 1.5; margin: 8px 0 0 0;" x-text="colab.resumo_evolucao"></p>
+          </div>
+
+          <div style="margin-top: 12px; text-align: right; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
+            <button type="button" 
+                    class="btn" 
+                    style="background: transparent; border: none; color: #e5a93b; font-size: 0.84rem; font-weight: 700; cursor: pointer; padding: 0;"
+                    @click="openEvaluation(colab.key)">
+              Ver relatório completo →
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+

@@ -33,10 +33,13 @@ DEFAULT_DOC_LINKS = {
 
 
 _DOC_LINKS_SCHEMA_READY = False
+_DOC_LINKS_SEEDED = False
+_DOC_LINKS_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
+_DOC_LINKS_CACHE_TS: float = 0.0
 
 
 def ensure_doc_links_schema() -> None:
-    """Garante a tabela de links de Google Docs e a coluna na tabela de relatórios."""
+    """Garante a tabela de links de Google Docs."""
     global _DOC_LINKS_SCHEMA_READY
     if _DOC_LINKS_SCHEMA_READY:
         return
@@ -59,13 +62,6 @@ def ensure_doc_links_schema() -> None:
             conn.commit()
         except Exception:
             pass
-
-        # Garante coluna google_doc_url em maj_employee_reports
-        try:
-            conn.execute("ALTER TABLE maj_employee_reports ADD COLUMN IF NOT EXISTS google_doc_url TEXT;" if pg else "ALTER TABLE maj_employee_reports ADD COLUMN google_doc_url TEXT;")
-            conn.commit()
-        except Exception:
-            pass
     _DOC_LINKS_SCHEMA_READY = True
 
 
@@ -79,41 +75,57 @@ def extract_doc_id(url: str) -> Optional[str]:
 
 def seed_default_doc_links_if_empty() -> None:
     """Pré-cadastra os links oficiais fornecidos caso a tabela esteja vazia."""
+    global _DOC_LINKS_SEEDED
+    if _DOC_LINKS_SEEDED:
+        return
     ensure_doc_links_schema()
     with db() as conn:
-        for key, url in DEFAULT_DOC_LINKS.items():
-            doc_id = extract_doc_id(url)
-            if _is_pg(conn):
-                conn.execute(
-                    """INSERT INTO maj_employee_doc_links (employee_key, google_doc_url, doc_id, updated_at)
-                    VALUES (%s, %s, %s, NOW())
-                    ON CONFLICT (employee_key) DO NOTHING;""",
-                    (key, url, doc_id)
-                )
-            else:
-                conn.execute(
-                    """INSERT OR IGNORE INTO maj_employee_doc_links (employee_key, google_doc_url, doc_id, updated_at)
-                    VALUES (?, ?, ?, CURRENT_TIMESTAMP);""",
-                    (key, url, doc_id)
-                )
-        conn.commit()
+        try:
+            count_row = conn.execute("SELECT COUNT(*) as c FROM maj_employee_doc_links").fetchone()
+            count = count_row["c"] if count_row else 0
+        except Exception:
+            count = 0
+        if count == 0:
+            for key, url in DEFAULT_DOC_LINKS.items():
+                doc_id = extract_doc_id(url)
+                if _is_pg(conn):
+                    conn.execute(
+                        """INSERT INTO maj_employee_doc_links (employee_key, google_doc_url, doc_id, updated_at)
+                        VALUES (%s, %s, %s, NOW())
+                        ON CONFLICT (employee_key) DO NOTHING;""",
+                        (key, url, doc_id)
+                    )
+                else:
+                    conn.execute(
+                        """INSERT OR IGNORE INTO maj_employee_doc_links (employee_key, google_doc_url, doc_id, updated_at)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP);""",
+                        (key, url, doc_id)
+                    )
+            conn.commit()
+    _DOC_LINKS_SEEDED = True
 
 
 def get_all_doc_links() -> Dict[str, Dict[str, Any]]:
-    """Retorna todos os links cadastrados mapeados por chave de colaborador."""
+    """Retorna todos os links cadastrados mapeados por chave de colaborador (com cache em memória)."""
+    global _DOC_LINKS_CACHE, _DOC_LINKS_CACHE_TS
+    import time
+    now = time.time()
+    if _DOC_LINKS_CACHE is not None and (now - _DOC_LINKS_CACHE_TS < 120.0):
+        return _DOC_LINKS_CACHE
+
     ensure_doc_links_schema()
     seed_default_doc_links_if_empty()
     with db() as conn:
         rows = conn.execute("SELECT * FROM maj_employee_doc_links").fetchall() or []
-        links_map = {}
-        for r in rows:
-            d = dict(r)
-            links_map[d["employee_key"]] = d
+        links_map = {dict(r)["employee_key"]: dict(r) for r in rows}
+        _DOC_LINKS_CACHE = links_map
+        _DOC_LINKS_CACHE_TS = now
         return links_map
 
 
 def save_doc_link(employee_key: str, url: str) -> bool:
     """Cadastra ou atualiza o link de Google Doc de um colaborador."""
+    global _DOC_LINKS_CACHE
     ensure_doc_links_schema()
     key = employee_key.lower().strip()
     doc_id = extract_doc_id(url)
@@ -138,7 +150,8 @@ def save_doc_link(employee_key: str, url: str) -> bool:
                 (key, url.strip(), doc_id)
             )
         conn.commit()
-        return True
+    _DOC_LINKS_CACHE = None
+    return True
 
 
 def fetch_google_doc_text(url_or_id: str, timeout: int = 20) -> Tuple[bool, str, str]:

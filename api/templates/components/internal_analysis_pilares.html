@@ -1,0 +1,113 @@
+<!-- templates/components/internal_analysis_pilares.html -->
+<div style="margin-bottom: 28px;">
+  <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text); margin: 0 0 16px 0; display: flex; align-items: center; gap: 10px;">
+    <span style="font-size: 1.4rem;">🏢</span>
+    <span>Visão Consolidada dos 4 Pilares da MAJ</span>
+  </h4>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 18px;">
+    
+    <!-- Pilar 1: Financeiro -->
+    <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+        <div>
+          <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">1. Financeiro, Caixa & Faturamento</h5>
+          <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Marisa</strong></small>
+        </div>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">FINANCEIRO</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
+        <template x-for="(d, i) in (pilares.financeiro ? pilares.financeiro.destaques : [])" :key="i">
+          <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
+        </template>
+        <template x-for="(p, i) in (pilares.financeiro ? pilares.financeiro.pontos_atencao : [])" :key="i">
+          <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
+        </template>
+      </div>
+      <div style="margin-top: 14px; text-align: right;">
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('marisa')">
+          Ver respostas de Marisa →
+        </button>
+      </div>
+    </div>
+
+    <!-- Pilar 2: Estoque -->
+    <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+        <div>
+          <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">2. Estoque Físico & Galpões</h5>
+          <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Jhon</strong></small>
+        </div>
+        <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">ESTOQUE</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
+        <template x-for="(d, i) in (pilares.estoque ? pilares.estoque.destaques : [])" :key="i">
+          <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
+        </template>
+        <template x-for="(p, i) in (pilares.estoque ? pilares.estoque.pontos_atencao : [])" :key="i">
+          <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
+        </template>
+      </div>
+      <div style="margin-top: 14px; text-align: right;">
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('jhon')">
+          Ver respostas do Jhon →
+        </button>
+      </div>
+    </div>
+
+    <!-- Pilar 3: Oficina -->
+    <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+        <div>
+          <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">3. Oficina Técnica & Pós-Vendas</h5>
+          <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsável: <strong style="color: var(--text);">Ricardo</strong></small>
+        </div>
+        <span class="badge" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">OFICINA</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
+        <template x-for="(d, i) in (pilares.oficina ? pilares.oficina.destaques : [])" :key="i">
+          <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
+        </template>
+        <template x-for="(p, i) in (pilares.oficina ? pilares.oficina.pontos_atencao : [])" :key="i">
+          <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
+        </template>
+      </div>
+      <div style="margin-top: 14px; text-align: right;">
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('ricardo')">
+          Ver respostas do Ricardo →
+        </button>
+      </div>
+    </div>
+
+    <!-- Pilar 4: Comercial -->
+    <div class="panel" style="margin-bottom: 0; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 10px;">
+        <div>
+          <h5 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text);">4. Comercial, Demanda & Clientes</h5>
+          <small style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600;">Responsáveis: <strong style="color: var(--text);">Luiza, Léo & Gabriel</strong></small>
+        </div>
+        <span class="badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-size: 0.82rem; font-weight: 800; padding: 3px 8px;">COMERCIAL</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 1.0rem; line-height: 1.6;">
+        <template x-for="(d, i) in (pilares.comercial ? pilares.comercial.destaques : [])" :key="i">
+          <div style="color: var(--text);"><span style="color: #10b981; font-weight: 800;">•</span> <span x-text="d"></span></div>
+        </template>
+        <template x-for="(p, i) in (pilares.comercial ? pilares.comercial.pontos_atencao : [])" :key="i">
+          <div style="color: #f59e0b;"><span style="color: #f59e0b;">⚠️</span> <span x-text="p"></span></div>
+        </template>
+      </div>
+      <div style="margin-top: 14px; text-align: right; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('luiza')">
+          Luiza →
+        </button>
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('leo')">
+          Léo →
+        </button>
+        <button type="button" class="btn" style="background: transparent; border: none; color: #e5a93b; font-size: 0.88rem; font-weight: 700; cursor: pointer; padding: 0;" @click="openEvaluation('gabriel')">
+          Gabriel →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

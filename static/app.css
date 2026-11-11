@@ -2315,7 +2315,7 @@ button[onclick="resetFreightForm()"]:hover {
 }
 
 /* ==========================================================================
-   M-One MAJ OS Hybrid Smart Preloader (Top Neon Bar + Executive Status Pill)
+   M-One MAJ OS Hybrid Smart Preloader (Centralized Executive Blurred Backdrop)
    ========================================================================== */
 .mone-preloader {
   position: fixed;
@@ -2324,20 +2324,39 @@ button[onclick="resetFreightForm()"]:hover {
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s ease;
+  transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.24s ease;
 }
 
 html.mone-preloader-active .mone-preloader,
 .mone-preloader.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: all;
 }
 
+/* Fundo Embaçado de Tela Cheia (Backdrop Blur) */
 .mone-preloader-backdrop {
-  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000001;
+  background: rgba(5, 10, 20, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  transition: opacity 0.24s ease;
 }
 
-/* Top Progress Bar Neon (Linear / YouTube / Vercel Style) */
+html.mone-preloader-active .mone-preloader-backdrop,
+.mone-preloader.active .mone-preloader-backdrop {
+  opacity: 1;
+}
+
+:root[data-theme="light"] .mone-preloader-backdrop,
+html:not([data-theme="dark"]) .mone-preloader-backdrop {
+  background: rgba(240, 245, 255, 0.82);
+}
+
+/* Top Progress Bar Neon (Linear / Vercel Style) */
 .mone-preloader-track {
   position: fixed;
   top: 0;
@@ -2347,7 +2366,7 @@ html.mone-preloader-active .mone-preloader,
   height: 3.5px;
   background: rgba(0, 102, 255, 0.12);
   overflow: hidden;
-  z-index: 1000002;
+  z-index: 1000004;
   margin: 0;
   border-radius: 0;
 }
@@ -2364,49 +2383,56 @@ html.mone-preloader-active .mone-preloader,
   transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Pill Executivo de Status no Topo Direito (Não-Bloqueante) */
+/* Card Executivo Centralizado no Meio da Tela Embaçada */
 .mone-preloader-card {
   position: fixed;
-  top: 14px;
-  right: 18px;
-  z-index: 1000001;
-  display: inline-flex;
-  flex-direction: row;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+  z-index: 1000003;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 8px 15px 8px 11px;
-  border-radius: 9999px;
-  max-width: 420px;
-  width: auto;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 30px 40px;
+  border-radius: 20px;
+  min-width: 300px;
+  max-width: 460px;
+  width: 90%;
+  box-sizing: border-box;
   pointer-events: none;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  transform: translateY(-8px) scale(0.97);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  opacity: 0;
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;
 }
 
 html.mone-preloader-active .mone-preloader-card,
 .mone-preloader.active .mone-preloader-card {
-  transform: translateY(0) scale(1);
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
 }
 
 :root[data-theme="light"] .mone-preloader-card,
 html:not([data-theme="dark"]) .mone-preloader-card {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(0, 102, 255, 0.22);
-  box-shadow: 0 10px 28px -6px rgba(0, 50, 150, 0.18), 0 2px 6px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 102, 255, 0.24);
+  box-shadow: 0 20px 50px -10px rgba(0, 50, 150, 0.25), 0 0 30px rgba(0, 102, 255, 0.08);
 }
 
 :root[data-theme="dark"] .mone-preloader-card {
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(0, 229, 153, 0.32);
-  box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 229, 153, 0.18);
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(0, 229, 153, 0.35);
+  box-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.85), 0 0 35px rgba(0, 229, 153, 0.2);
 }
 
+/* Orb Central com Anel Giratório Neon e Logo */
 .mone-preloader-orb {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2419,7 +2445,7 @@ html:not([data-theme="dark"]) .mone-preloader-card {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  padding: 2.5px;
+  padding: 3.5px;
   background: conic-gradient(from 0deg, transparent 0deg, #0066ff 140deg, #00e599 360deg);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -2428,18 +2454,19 @@ html:not([data-theme="dark"]) .mone-preloader-card {
 }
 
 .mone-preloader-logo {
-  width: 13px;
-  height: 13px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
   user-select: none;
 }
 
+/* Badge Executiva do Módulo */
 .mone-preloader-badge {
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 2px 7px;
+  padding: 3px 12px;
   border-radius: 9999px;
   margin: 0;
   flex-shrink: 0;
@@ -2455,18 +2482,17 @@ html:not([data-theme="dark"]) .mone-preloader-badge {
 :root[data-theme="dark"] .mone-preloader-badge {
   background: rgba(0, 229, 153, 0.14);
   color: #00e599;
-  border: 1px solid rgba(0, 229, 153, 0.3);
+  border: 1px solid rgba(0, 229, 153, 0.35);
 }
 
+/* Texto de Status Centralizado */
 .mone-preloader-text {
-  font-size: 0.78rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  min-height: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 260px;
-  line-height: 1.2;
+  min-height: 24px;
+  line-height: 1.4;
+  text-align: center;
+  max-width: 360px;
 }
 
 :root[data-theme="light"] .mone-preloader-text,
@@ -2478,15 +2504,30 @@ html:not([data-theme="dark"]) .mone-preloader-text {
   color: #f8fafc;
 }
 
-/* Transição Suave da Área de Conteúdo Durante Navegação (Sidebar Livre) */
-html.mone-content-transitioning main.main > section.content {
-  opacity: 0.58;
-  filter: blur(1.2px);
-  transition: opacity 0.18s ease, filter 0.18s ease;
+/* Mini Barra de Progresso no Card */
+.mone-preloader-card-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 4px;
 }
 
-main.main > section.content {
-  transition: opacity 0.18s ease, filter 0.18s ease;
+:root[data-theme="light"] .mone-preloader-card-track {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Efeito de Desfoque Geral de Fundo Durante Navegação / Preloader */
+html.mone-preloader-active .app-shell,
+html.mone-content-transitioning .app-shell {
+  filter: blur(4px);
+  transition: filter 0.2s ease;
+}
+
+.app-shell {
+  transition: filter 0.2s ease;
 }
 
 @keyframes moneSpinRing {

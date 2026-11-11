@@ -155,20 +155,17 @@ def get_all_cycles() -> List[Dict[str, Any]]:
         return list(reversed(cycles_asc))
 
 
-def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
-    """Retorna o histórico de relatórios submetidos por um colaborador em todos os ciclos."""
+def get_all_employees_history_map() -> Dict[str, List[Dict[str, Any]]]:
+    """Retorna o histórico consolidado de todos os colaboradores em uma única query ultra-rápida."""
     ensure_reports_schema()
     with db() as conn:
-        pg = _is_pg(conn)
-        ph = "%s" if pg else "?"
-        sql = f"""SELECT r.*, c.cycle_code, c.title as cycle_title, c.start_date, c.deadline
+        sql = """SELECT r.*, c.cycle_code, c.title as cycle_title, c.start_date, c.deadline
             FROM maj_employee_reports r
             JOIN maj_report_cycles c ON r.cycle_id = c.id
-            WHERE r.employee_key = {ph}
             ORDER BY c.start_date DESC, c.id DESC"""
-        rows = conn.execute(sql, (employee_key.lower().strip(),)).fetchall()
-        history = []
-        for idx, r in enumerate(rows):
+        rows = conn.execute(sql).fetchall() or []
+        history_map: Dict[str, List[Dict[str, Any]]] = {k: [] for k in REPORTING_EMPLOYEES.keys()}
+        for r in rows:
             d = dict(r)
             try:
                 ans = json.loads(d.get("answers_json") or "{}")
@@ -177,20 +174,29 @@ def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
             d["answers"] = ans
             sub = d.get("submitted_at")
             d["submitted_at_fmt"] = sub.strftime("%d/%m/%Y às %H:%M") if hasattr(sub, "strftime") else (str(sub)[:16] if sub else "")
-            meta = get_reporting_employee_meta(employee_key, existing_answers=ans, is_historical_cycle=(idx > 0))
-            q_list = []
-            if meta:
-                for q in meta.get("questions", []):
-                    qid = q["id"]
-                    q_list.append({
-                        "id": qid,
-                        "label": q.get("label", qid),
-                        "help": q.get("help", ""),
-                        "answer": (ans.get(qid) or "").strip(),
-                    })
-            d["questions"] = q_list
-            history.append(d)
-        return history
+            k = (d.get("employee_key") or "").lower().strip()
+            if k in history_map:
+                idx = len(history_map[k])
+                meta = get_reporting_employee_meta(k, existing_answers=ans, is_historical_cycle=(idx > 0))
+                q_list = []
+                if meta:
+                    for q in meta.get("questions", []):
+                        qid = q["id"]
+                        q_list.append({
+                            "id": qid,
+                            "label": q.get("label", qid),
+                            "help": q.get("help", ""),
+                            "answer": (ans.get(qid) or "").strip(),
+                        })
+                d["questions"] = q_list
+                history_map[k].append(d)
+        return history_map
+
+
+def get_employee_history(employee_key: str) -> List[Dict[str, Any]]:
+    """Retorna o histórico de relatórios submetidos por um colaborador em todos os ciclos."""
+    m = get_all_employees_history_map()
+    return m.get((employee_key or "").lower().strip(), [])
 
 
 def get_employee_report(cycle_id: int, employee_key: str) -> Dict[str, Any]:
@@ -352,6 +358,7 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
 
     latest_c = get_or_create_current_cycle()
     is_historical_cycle = bool(latest_c and latest_c.get("id") and int(latest_c["id"]) != int(cycle_id))
+    all_history = get_all_employees_history_map()
 
     for key in REPORTING_EMPLOYEES.keys():
         rep = reports_map.get(key)
@@ -440,7 +447,7 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             "whatsapp_url": wa_url,
             "answers": answers,
             "questions": q_list,
-            "history": get_employee_history(key),
+            "history": all_history.get(key, []),
             "google_doc_url": (rep.get("google_doc_url") if rep else None) or doc_links_map.get(key, {}).get("google_doc_url", ""),
             "docx_filename": (rep.get("docx_filename") if rep else None) or "",
             "uses_google_doc": (key != "fauzer"),

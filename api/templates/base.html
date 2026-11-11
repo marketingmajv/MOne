@@ -49,8 +49,9 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  <!-- Preloader Híbrido Inteligente MAJ OS (Top Neon Bar + Pill Executivo) -->
+  <!-- Preloader Híbrido Inteligente MAJ OS (Centralizado com Tela Embaçada) -->
   <div id="monePreloader" class="mone-preloader" aria-hidden="true">
+    <div class="mone-preloader-backdrop"></div>
     <div class="mone-preloader-track">
       <div class="mone-preloader-bar"></div>
     </div>
@@ -60,7 +61,10 @@
         <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="mone-preloader-logo">
       </div>
       <span class="mone-preloader-badge">MAJ OS</span>
-      <div class="mone-preloader-text">Sincronizando...</div>
+      <div class="mone-preloader-text">Sincronizando com MAJ Operating System...</div>
+      <div class="mone-preloader-card-track">
+        <div class="mone-preloader-bar"></div>
+      </div>
     </div>
   </div>
   <script>
@@ -70,6 +74,12 @@
         if (pData) {
           const d = JSON.parse(pData);
           if (d && (Date.now() - (d.ts || 0) < 25000)) {
+            document.documentElement.classList.add('mone-preloader-active');
+            const pEl = document.getElementById('monePreloader');
+            if (pEl) {
+              pEl.classList.add('active');
+              pEl.setAttribute('aria-hidden', 'false');
+            }
             const txtEl = document.querySelector('#monePreloader .mone-preloader-text');
             const bdgEl = document.querySelector('#monePreloader .mone-preloader-badge');
             if (txtEl && d.text) txtEl.textContent = d.text;

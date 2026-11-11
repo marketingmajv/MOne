@@ -93,10 +93,21 @@ def _get_factory_questions(employee_key: str) -> List[Dict[str, Any]]:
     return normalized
 
 
+_CONFIG_CACHE: Dict[str, Tuple[float, Any]] = {}
+
+
 def _load_db_config(employee_key: str) -> Optional[Dict[str, Any]]:
-    """Carrega o registro salvo no banco para um colaborador, se existir."""
-    ensure_questions_schema()
+    """Carrega o registro salvo no banco para um colaborador, se existir (com cache em memória)."""
+    global _CONFIG_CACHE
+    import time
     emp_key = (employee_key or "").lower().strip()
+    now = time.time()
+    if emp_key in _CONFIG_CACHE:
+        ts, val = _CONFIG_CACHE[emp_key]
+        if now - ts < 120.0:
+            return val
+
+    ensure_questions_schema()
     with db() as conn:
         ph = "%s" if _is_pg(conn) else "?"
         row = conn.execute(
@@ -104,6 +115,7 @@ def _load_db_config(employee_key: str) -> Optional[Dict[str, Any]]:
             (emp_key,)
         ).fetchone()
         if not row:
+            _CONFIG_CACHE[emp_key] = (now, None)
             return None
         d = dict(row)
         try:
@@ -114,6 +126,7 @@ def _load_db_config(employee_key: str) -> Optional[Dict[str, Any]]:
             d["archived"] = json.loads(d.get("archived_questions_json") or "{}")
         except Exception:
             d["archived"] = {}
+        _CONFIG_CACHE[emp_key] = (now, d)
         return d
 
 
@@ -366,6 +379,7 @@ def save_employee_questions(
             )
         conn.commit()
 
+    _CONFIG_CACHE.pop(emp_key, None)
     return get_editor_payload(emp_key)
 
 

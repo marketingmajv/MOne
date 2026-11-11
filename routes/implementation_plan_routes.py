@@ -71,7 +71,7 @@ def index():
     # Para Diretoria & Gerência (Jam, Geysa, Fauzer, Suporte)
     active_tab = request.args.get("tab", "dashboard")
     summary = get_cycle_submissions_summary(cycle["id"])
-    consolidation = get_monday_consolidation_briefing(cycle["id"])
+    consolidation = get_monday_consolidation_briefing(cycle["id"], summary=summary)
     team = get_team_members_data()
     departments = get_departments_data()
     internal_analysis = get_internal_analysis(cycle["id"])

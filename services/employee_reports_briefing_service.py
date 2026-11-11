@@ -5,15 +5,16 @@ Monta o briefing executivo consolidado para a reunião de diretoria da MAJ Mobil
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
-def get_monday_consolidation_briefing(cycle_id: int) -> Dict[str, Any]:
+def get_monday_consolidation_briefing(cycle_id: int, summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Monta o briefing executivo consolidado para a reunião de segunda-feira (Jam + Geysa + Fauzer)."""
-    from services.employee_reports_service import get_cycle_submissions_summary
+    if summary is None:
+        from services.employee_reports_service import get_cycle_submissions_summary
+        summary = get_cycle_submissions_summary(cycle_id)
 
-    summary = get_cycle_submissions_summary(cycle_id)
-    emp_map = {e["key"]: e for e in summary["employees"]}
+    emp_map = {e["key"]: e for e in summary.get("employees", [])}
 
     # Organização por frentes críticas da reunião
     front_defs = [

@@ -40,7 +40,7 @@
           <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 8px; padding: 2px 8px;">
             <span style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Ciclo:</span>
             <select style="background: transparent; border: none; font-size: 12.5px; font-weight: 700; color: #38bdf8; cursor: pointer; outline: none; padding: 2px 4px;"
-                    onchange="window.location.href='/meu-relatorio?cycle_id=' + this.value">
+                    onchange="if (window.MOnePreloader) { window.MOnePreloader.navigate('/meu-relatorio?cycle_id=' + this.value, 'Carregando ' + this.options[this.selectedIndex].text.trim() + '...', 'MEU RELATÓRIO'); } else { window.location.href='/meu-relatorio?cycle_id=' + this.value; }">
               {% for c in all_cycles %}
               <option value="{{ c.id }}" {% if c.id == cycle.id %}selected{% endif %} style="background: var(--panel); color: var(--text);">
                 {{ c.title }} ({{ c.cycle_code }}) {% if latest_cycle and c.id == latest_cycle.id %}★ Atual{% endif %}

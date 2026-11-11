@@ -318,12 +318,27 @@ function switchReportCycle(selectEl) {
   if (!selectEl) return;
   const cycleId = selectEl.value;
   const optText = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text.trim() : 'Ciclo';
-  const targetUrl = '{{ url_for("implementation_plan.index", tab=active_tab) }}' + (cycleId ? '&cycle_id=' + cycleId : '');
-  
-  // Ativa Preloader Criativo MAJ OS imediatamente
+
+  let currentTab = 'dashboard';
+  try {
+    const el = document.querySelector('.content-body');
+    if (window.Alpine && el && Alpine.$data(el) && Alpine.$data(el).activeTab) {
+      currentTab = Alpine.$data(el).activeTab;
+    } else {
+      currentTab = new URLSearchParams(window.location.search).get('tab') || '{{ active_tab }}' || 'dashboard';
+    }
+  } catch(e) {
+    currentTab = '{{ active_tab }}' || 'dashboard';
+  }
+
+  const baseUrl = '{{ url_for("implementation_plan.index") }}';
+  const targetUrl = baseUrl + '?tab=' + encodeURIComponent(currentTab) + (cycleId ? '&cycle_id=' + encodeURIComponent(cycleId) : '');
+
+  // Ativa Preloader Centralizado com Tela Embaçada imediatamente
   if (window.MOnePreloader && typeof window.MOnePreloader.show === 'function') {
-    window.MOnePreloader.show('Carregando ' + optText + '...', 'RELATÓRIOS', true);
+    window.MOnePreloader.show('Carregando ' + optText + '...', 'RELATÓRIOS', true, true, true);
   } else {
+    document.documentElement.classList.add('mone-preloader-active');
     const p = document.getElementById('monePreloader');
     if (p) {
       const textEl = p.querySelector('.mone-preloader-text');
@@ -335,10 +350,9 @@ function switchReportCycle(selectEl) {
     }
   }
 
-  // Micro delay de 40ms para o navegador renderizar a camada visual do preloader
   setTimeout(function() {
     window.location.href = targetUrl;
-  }, 40);
+  }, 35);
 }
 </script>
 {% endblock %}
