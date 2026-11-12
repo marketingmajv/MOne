@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-11T15:17:50Z",
+  "updated_at": "2026-11-12T15:08:49Z",
   "total_models": 18,
   "total_all": 21,
   "menu_mode": "free",
@@ -804,8 +804,8 @@
           "Última atualização": "2026-08-31 00:00:00"
         },
         "Desempenho": {
-          "Potência nominal (W)": "1000",
-          "Velocidade máxima (km/h)": "32",
+          "Potência nominal (W)": "1000W",
+          "Velocidade máxima (km/h)": "Até 32 km/h",
           "Modos de condução": "5 niveis",
           "Possui ré?": "Não",
           "Inclinação recomendada (%)": "Não informado",
@@ -817,7 +817,7 @@
           "Capacidade (Ah)": "15ah",
           "Capacidade (Wh)": "720WH",
           "Bateria removível?": "Sim",
-          "Autonomia conservadora (km)": "35km",
+          "Autonomia conservadora (km)": "Até 50 km",
           "Autonomia máxima estimada (km)": "50",
           "Tempo de recarga": "Não informado",
           "Carregador": "48v 2ah",
@@ -825,7 +825,7 @@
           "Fonte da informação": "Valores baseados nas especificações técnicas disponíveis e em informações fornecidas informalmente por fabricantes e fornecedores. Como não há divulgação clara ou padronizada das condições de teste, os resultados apresentados devem ser considerados estimativas e podem variar significativamente nas condições reais de uso."
         },
         "Estrutura e conforto": {
-          "Carga máxima (kg)": "160",
+          "Carga máxima (kg)": "160 kg",
           "Ocupantes homologados": "2",
           "Ocupantes recomendados": "2",
           "Peso do veículo (kg)": "50kg",
@@ -836,10 +836,10 @@
           "Porta-objetos / baú": "Não",
           "Conforto e ergonomia": "Muito bom — proposta robusta, confortável e estável para pisos variados; o porte pode exigir mais esforço em manobras paradas.",
           "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional.",
-          "Carga máxima suportada (kg)": "160",
+          "Carga máxima suportada (kg)": "160 kg",
           "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
           "Suspensão": "Dupla dianteira e traseira",
-          "Aro / Pneu": "Aro 20"
+          "Aro / Pneu": "Fat Tire 20x4.0 todo terreno"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -927,7 +927,7 @@
         "capacidade_ah": "15ah",
         "capacidade_wh": "720WH",
         "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-        "carga_maxima_kg": "160",
+        "carga_maxima_kg": "160 kg",
         "peso_kg": "50kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
@@ -2812,8 +2812,8 @@
           "Última atualização": "2026-08-31 00:00:00"
         },
         "Desempenho": {
-          "Potência nominal (W)": "1000",
-          "Velocidade máxima (km/h)": "32",
+          "Potência nominal (W)": "1000W",
+          "Velocidade máxima (km/h)": "Até 32 km/h",
           "Modos de condução": "5 niveis",
           "Possui ré?": "Não",
           "Inclinação recomendada (%)": "Não informado",
@@ -2825,7 +2825,7 @@
           "Capacidade (Ah)": "15ah",
           "Capacidade (Wh)": "720WH",
           "Bateria removível?": "Sim",
-          "Autonomia conservadora (km)": "35km",
+          "Autonomia conservadora (km)": "Até 50 km",
           "Autonomia máxima estimada (km)": "50",
           "Tempo de recarga": "Não informado",
           "Carregador": "48v 2ah",
@@ -2833,7 +2833,7 @@
           "Fonte da informação": "Valores baseados nas especificações técnicas disponíveis e em informações fornecidas informalmente por fabricantes e fornecedores. Como não há divulgação clara ou padronizada das condições de teste, os resultados apresentados devem ser considerados estimativas e podem variar significativamente nas condições reais de uso."
         },
         "Estrutura e conforto": {
-          "Carga máxima (kg)": "160",
+          "Carga máxima (kg)": "160 kg",
           "Ocupantes homologados": "2",
           "Ocupantes recomendados": "2",
           "Peso do veículo (kg)": "50kg",
@@ -2844,10 +2844,10 @@
           "Porta-objetos / baú": "Não",
           "Conforto e ergonomia": "Muito bom — proposta robusta, confortável e estável para pisos variados; o porte pode exigir mais esforço em manobras paradas.",
           "Observações estruturais": "Quadro reforçado em aço carbono de alta qualidade, concebido para transmitir firmeza em diferentes condições de piso. A presença de peças metálicas e acabamentos plásticos forma um conjunto robusto e funcional.",
-          "Carga máxima suportada (kg)": "160",
+          "Carga máxima suportada (kg)": "160 kg",
           "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
           "Suspensão": "Dupla dianteira e traseira",
-          "Aro / Pneu": "Aro 20"
+          "Aro / Pneu": "Fat Tire 20x4.0 todo terreno"
         },
         "Segurança e componentes": {
           "Freio dianteiro": "Hidráulico",
@@ -2935,7 +2935,7 @@
         "capacidade_ah": "15ah",
         "capacidade_wh": "720WH",
         "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-        "carga_maxima_kg": "160",
+        "carga_maxima_kg": "160 kg",
         "peso_kg": "50kg",
         "freios": "Diant: Hidráulico / Tras: Hidráulico",
         "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",

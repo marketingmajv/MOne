@@ -92,7 +92,7 @@
       "capacidade_ah": "15ah",
       "capacidade_wh": "720WH",
       "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-      "carga_maxima_kg": "160",
+      "carga_maxima_kg": "160 kg",
       "peso_kg": "50kg",
       "freios": "Diant: Hidráulico / Tras: Hidráulico",
       "diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
@@ -107,8 +107,8 @@
         "Status": "Ativo"
       },
       "Desempenho": {
-        "Potência nominal (W)": "1000",
-        "Velocidade máxima (km/h)": "32",
+        "Potência nominal (W)": "1000W",
+        "Velocidade máxima (km/h)": "Até 32 km/h",
         "Modos de condução": "5 niveis",
         "Possui ré?": "Não"
       },
@@ -117,15 +117,16 @@
         "Voltagem (V)": "48v",
         "Capacidade (Ah)": "15ah",
         "Capacidade (Wh)": "720WH",
-        "Autonomia conservadora (km)": "35km",
+        "Autonomia conservadora (km)": "Até 50 km",
         "Autonomia máxima estimada (km)": "50"
       },
       "Estrutura e conforto": {
-        "Carga máxima suportada (kg)": "160",
+        "Carga máxima suportada (kg)": "160 kg",
         "Peso do veículo (kg)": "50kg",
         "Tipo de freios": "Diant: Hidráulico / Tras: Hidráulico",
         "Suspensão": "Dupla dianteira e traseira",
-        "Aro / Pneu": "Aro 20"
+        "Aro / Pneu": "Fat Tire 20x4.0 todo terreno",
+        "Carga máxima (kg)": "160 kg"
       },
       "Uso e comercial": {
         "Diferencial": "Conjunto robusto para pisos variados, com cinco níveis de assistência, câmbio Shimano e freios hidráulicos, unindo força e versatilidade.",
