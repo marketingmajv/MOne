@@ -115,6 +115,15 @@
             <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
           </div>
 
+          <button type="button"
+                  class="cat-pill"
+                  :class="{ 'active': currentFilter === 'mais_vendidos' }"
+                  @click="currentFilter = (currentFilter === 'mais_vendidos' ? 'all' : 'mais_vendidos')"
+                  style="white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+                  :style="currentFilter === 'mais_vendidos' ? 'background: rgba(229, 169, 59, 0.2); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.6);' : 'background: rgba(255,255,255,0.05); color: var(--text, #f8fafc); border: 1px solid rgba(255,255,255,0.12);'">
+            <span>⭐ Mais Vendidos</span>
+          </button>
+
           <div class="sort-select-box">
             <label for="sortBySelect" class="sr-only">Ordenação</label>
             <select id="sortBySelect" x-model="sortBy" class="filter-select">
@@ -154,6 +163,9 @@
           
           <!-- Badges -->
           <div class="card-badges">
+            <template x-if="item.is_best_seller">
+              <span class="badge-stock badge-best-seller">⭐ Mais Vendido</span>
+            </template>
             <template x-if="getDiscountPercent(item) > 0">
               <span class="badge-discount" x-text="'-' + getDiscountPercent(item) + '% OFF'"></span>
             </template>
@@ -434,6 +446,7 @@
       return {
         searchQuery: '',
         activeCategory: 'all',
+        currentFilter: 'all',
         sortBy: 'stock_desc',
         items: OUTLET_ITEMS_DATA,
         modalOpen: false,
@@ -451,12 +464,17 @@
             
             const matchesCat = this.activeCategory === 'all' || 
               item.category.toLowerCase().includes(this.activeCategory.toLowerCase());
+
+            const matchesFilter = this.currentFilter !== 'mais_vendidos' || !!item.is_best_seller;
             
-            return matchesQuery && matchesCat;
+            return matchesQuery && matchesCat && matchesFilter;
           });
 
           if (this.sortBy === 'stock_desc') {
             result.sort((a, b) => {
+              const bestA = a.is_best_seller ? 1 : 0;
+              const bestB = b.is_best_seller ? 1 : 0;
+              if (bestB !== bestA) return bestB - bestA;
               const diffStock = (parseInt(b.stock_qty) || 0) - (parseInt(a.stock_qty) || 0);
               if (diffStock !== 0) return diffStock;
               return (parseFloat(a.price_outlet) || 0) - (parseFloat(b.price_outlet) || 0);
@@ -477,11 +495,12 @@
         clearFilters() {
           this.searchQuery = '';
           this.activeCategory = 'all';
+          this.currentFilter = 'all';
           this.sortBy = 'stock_desc';
         },
 
         hasActiveFilters() {
-          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.sortBy !== 'stock_desc';
+          return this.searchQuery.trim() !== '' || this.activeCategory !== 'all' || this.currentFilter !== 'all' || this.sortBy !== 'stock_desc';
         },
 
         selectedColorObj: null,

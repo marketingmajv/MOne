@@ -189,6 +189,8 @@ function openOutletNewModal() {
   document.getElementById('outlet_form_installment_18').value = '';
   document.getElementById('outlet_form_stock_qty').value = '1';
   document.getElementById('outlet_form_show_on_demand').checked = false;
+  const bestEl = document.getElementById('outlet_form_is_best_seller');
+  if (bestEl) bestEl.checked = false;
   document.getElementById('outlet_form_show_color_prices').checked = true;
   document.getElementById('outlet_form_color').value = '';
   document.getElementById('outlet_form_description').value = '';
@@ -215,6 +217,8 @@ function openOutletEditModal(id) {
   document.getElementById('outlet_form_installment_18').value = (item.installment_18 !== null && item.installment_18 !== undefined) ? item.installment_18 : '';
   document.getElementById('outlet_form_stock_qty').value = (item.stock_qty !== null && item.stock_qty !== undefined) ? item.stock_qty : 1;
   document.getElementById('outlet_form_show_on_demand').checked = !!item.show_on_demand;
+  const bestEl = document.getElementById('outlet_form_is_best_seller');
+  if (bestEl) bestEl.checked = !!item.is_best_seller;
   document.getElementById('outlet_form_show_color_prices').checked = (item.show_color_prices !== false);
   document.getElementById('outlet_form_color').value = item.color || '';
   document.getElementById('outlet_form_description').value = item.description || '';
@@ -419,6 +423,28 @@ async function toggleOutletOnDemand(itemId, btn) {
   }
 }
 
+async function toggleOutletBestSeller(itemId, btn) {
+  try {
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+    const res = await fetch(`/admin/outlet/toggle-best-seller/${itemId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.textContent = data.is_best_seller ? '⭐ Mais Vendido' : '☆ Padrão';
+      btn.style.background = data.is_best_seller ? 'rgba(0, 204, 136, 0.15)' : 'rgba(148, 163, 184, 0.1)';
+      btn.style.color = data.is_best_seller ? '#059669' : 'var(--muted)';
+      btn.style.borderColor = data.is_best_seller ? 'rgba(0, 204, 136, 0.35)' : 'rgba(148, 163, 184, 0.25)';
+      btn.style.fontWeight = data.is_best_seller ? '700' : '600';
+      const item = (window.OUTLET_ITEMS_LIST || []).find(i => i.id === itemId);
+      if (item) item.is_best_seller = !!data.is_best_seller;
+    }
+  } catch (err) {
+    console.error('Erro ao alternar Mais Vendido:', err);
+  }
+}
+
 function maskPhoneInput(val) {
   if (!val) return '';
   let d = val.replace(/\D/g, '');
@@ -445,7 +471,7 @@ Object.assign(window, {
   openOutletNewModal, openNewOutletModal: openOutletNewModal,
   openOutletEditModal, editOutletItem: openOutletEditModal,
   setAsCoverPhoto, removePhotoFromGallery, handleOutletGalleryUpload,
-  validateOutletFormPayload, toggleOutletOnDemand, maskPhoneInput, outletAdmin,
+  validateOutletFormPayload, toggleOutletOnDemand, toggleOutletBestSeller, maskPhoneInput, outletAdmin,
   toggleColorVariationActive, setMainColorVariation,
   updateColorVariationField, updateColorVariationPrice,
   addOutletColorPriceRow, removeColorVariationRow

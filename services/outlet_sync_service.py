@@ -214,6 +214,7 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
 
         show_on_demand_val = bool(existing.get("show_on_demand")) if existing else False
         show_color_prices_val = True if (not existing or existing.get("show_color_prices") is None) else bool(existing.get("show_color_prices"))
+        is_best_seller_val = bool(existing.get("is_best_seller")) if existing else False
 
         item_dict = {
             "slug": slug,
@@ -229,6 +230,7 @@ def sync_outlet_from_csv(csv_content_or_path: Optional[str] = None) -> Dict[str,
             "stock_qty": grp["total_qty"],
             "show_on_demand": show_on_demand_val,
             "show_color_prices": show_color_prices_val,
+            "is_best_seller": is_best_seller_val,
             "location": ", ".join(grp["locations"]),
             "badge": badge,
             "specs_json": specs,

@@ -249,6 +249,7 @@ def save_item():
             "status": request.form.get("status") or (existing.get("status") if existing else "active"),
             "show_on_demand": request.form.get("show_on_demand") in ["1", "true", "on", True],
             "show_color_prices": request.form.get("show_color_prices") in ["1", "true", "on", True],
+            "is_best_seller": request.form.get("is_best_seller") in ["1", "true", "on", True],
             "sort_order": request.form.get("sort_order") if request.form.get("sort_order") is not None else (existing.get("sort_order", 0) if existing else 0),
             "notes": request.form.get("notes") if request.form.get("notes") is not None else (existing.get("notes") if existing else ""),
         }
@@ -294,6 +295,20 @@ def toggle_on_demand(item_id):
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"success": True, "show_on_demand": new_val})
     flash("Disponibilidade sob encomenda atualizada com sucesso!", "success")
+    return redirect(url_for("outlet.admin_outlet"))
+
+
+@outlet_bp.route("/admin/outlet/toggle-best-seller/<int:item_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def toggle_best_seller(item_id):
+    """Alterna o destaque de Mais Vendido do produto no catálogo Outlet."""
+    from services.outlet_service import toggle_outlet_best_seller
+    new_val = toggle_outlet_best_seller(item_id)
+    audit("toggle_outlet_best_seller", f"Item Outlet ID={item_id} is_best_seller alterado para {new_val}")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "is_best_seller": new_val})
+    flash("Destaque Mais Vendido atualizado com sucesso!", "success")
     return redirect(url_for("outlet.admin_outlet"))
 
 
