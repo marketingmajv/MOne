@@ -30,8 +30,7 @@ static_dir = (api_static_dir if api_static_dir.exists() else (BASE_DIR / "static
 app = Flask(
     __name__,
     template_folder=str(BASE_DIR / "templates"),
-    static_folder=str(static_dir),
-    static_url_path="/static",
+    static_folder=None,
 )
 
 tpl_search_dirs = [str(BASE_DIR / "templates")]
@@ -138,7 +137,7 @@ def serve_public_images(filename):
     return redirect(f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{filename}")
 
 
-@app.route('/static/<path:filename>')
+@app.route('/static/<path:filename>', endpoint='static')
 def custom_static(filename):
     base = Path(__file__).resolve().parent
     cwd = Path.cwd()
@@ -154,6 +153,9 @@ def custom_static(filename):
     for c in candidates:
         if c.is_file():
             return send_from_directory(str(c.parent), c.name)
+    # Fallback seguro para GitHub Raw caso o arquivo esteja commitado mas não empacotado no bundle serverless efêmero
+    if any(filename.startswith(p) for p in ("uploads/", "images/", "img/", "css/", "js/")):
+        return redirect(f"https://raw.githubusercontent.com/marketingmajv/MOne/main/static/{filename}")
     return jsonify({
         "error": "Static file not found",
         "requested": filename,

@@ -12,6 +12,7 @@
           "static/css/**",
           "static/js/**",
           "static/images/**",
+          "static/uploads/**",
           "static/*.css",
           "static/*.js",
           "static/*.png",
