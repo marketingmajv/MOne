@@ -22,6 +22,22 @@
     </div>
 
     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button type="button"
+              class="btn"
+              onclick="triggerAiProductDetection()"
+              style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 800; display: flex; align-items: center; gap: 6px;"
+              title="Vasculha as planilhas conectadas atrás de produtos inéditos com Gemini AI">
+        <span>🤖 Detectar Novos Produtos (IA)</span>
+      </button>
+
+      <button type="button"
+              class="btn"
+              onclick="openProductSourcesModal()"
+              style="background: rgba(255, 255, 255, 0.05); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155); font-weight: 700; display: flex; align-items: center; gap: 6px;"
+              title="Visualizar e gerenciar planilhas integradas">
+        <span>⚡ Fontes de Dados</span>
+      </button>
+
       <form action="{{ url_for('product_hub.sync_all') }}" method="POST" onsubmit="return confirm('Deseja redistribuir todas as Fichas Técnicas Ouro e Copys para Atacado e Outlet? Os preços e estoques existentes serão 100% preservados!')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn" style="background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.4); font-weight: 800; display: flex; align-items: center; gap: 6px;">
@@ -118,6 +134,9 @@
               <span style="color: var(--muted, #94a3b8);">{{ p.category }}</span>
               <span style="color: var(--line, #334155);">•</span>
               <code style="color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 1px 5px; border-radius: 4px;">{{ p.slug }}</code>
+              {% if p.status == 'inactive' %}
+              <span style="font-size: 0.68rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: rgba(229,169,59,0.2); color: #e5a93b; border: 1px solid rgba(229,169,59,0.35);" title="Produto cadastrado de forma oculta">🟡 OCULTO</span>
+              {% endif %}
             </div>
           </td>
           <td style="padding: 12px 16px;">
@@ -179,11 +198,17 @@
   <!-- Modal Central Mestre de Edição e Criação de Produto (3 Abas: Identificação/Mídia, Ficha Ouro, Copys) -->
   {% include "components/master_product_modal.html" %}
 
+  <!-- Modal Inteligente de Revisão e Aprovação de Novos Produtos Detectados -->
+  {% include "components/new_product_ai_modal.html" %}
+
+  <!-- Modal de Fontes de Dados Conectadas -->
+  {% include "components/product_sources_modal.html" %}
+
 </div>
 
 <script>
   window.MASTER_PRODUCTS_LIST = {{ products|tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/product-hub.js') }}?v=20261109_v8"></script>
+<script src="{{ url_for('static', filename='js/product-hub.js') }}?v=20261109_v10"></script>
 {% endblock %}
 

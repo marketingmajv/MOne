@@ -74,8 +74,8 @@ def propagate_product_to_channels(
                 if "color_prices" in curr_specs:
                     merged_specs["color_prices"] = curr_specs["color_prices"]
 
-                update_fields = ["specs_json = ?", "updated_at = CURRENT_TIMESTAMP"]
-                params = [json.dumps(merged_specs, ensure_ascii=False)]
+                update_fields = ["name = ?", "specs_json = ?", "status = ?", "updated_at = CURRENT_TIMESTAMP"]
+                params = [prod["name"], json.dumps(merged_specs, ensure_ascii=False), prod.get("status", "inactive")]
 
                 if copy_ou:
                     update_fields.append("description = ?")
@@ -85,12 +85,29 @@ def propagate_product_to_channels(
                     update_fields.append("image_main = ?")
                     params.append(img_main)
 
-                # Mantém a galeria individual do Outlet preservada (Opção 1)
-                # Não sobrescreve images_gallery para manter as fotos cadastradas no canal
-
                 params.append(ou_id)
                 run_exec(conn, f"UPDATE outlet_items SET {', '.join(update_fields)} WHERE id = ?", tuple(params))
                 channels_updated.append("Outlet")
+            else:
+                # Cria novo item no Outlet Varejo se não existir
+                run_exec(conn, """
+                    INSERT INTO outlet_items (slug, name, category, price_original, price_outlet, specs_json, description, image_main, images_gallery, status, stock_qty, location)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    slug,
+                    prod["name"],
+                    prod.get("category") or "Mobilidade Elétrica",
+                    prod.get("outlet_price_original") or 0,
+                    prod.get("outlet_price_outlet") or 0,
+                    json.dumps(specs, ensure_ascii=False),
+                    copy_ou,
+                    img_main,
+                    gallery_str,
+                    prod.get("status", "inactive"),
+                    prod.get("outlet_stock_qty") or 0,
+                    "GALPÃO MAJ NOVO"
+                ))
+                channels_updated.append("Outlet (Novo)")
 
         # 2. Propagação para o MAJ Atacado CNPJ B2B
         if prod.get("sync_atacado") is not False:
@@ -98,8 +115,8 @@ def propagate_product_to_channels(
             at_row = run_exec(conn, "SELECT id, specs_json FROM atacado_items WHERE slug = ? OR slug = ? OR name = ?", (at_slug, slug, prod["name"])).fetchone()
             if at_row:
                 at_id = at_row["id"] if isinstance(at_row, dict) else at_row[0]
-                update_fields = ["specs_json = ?", "updated_at = CURRENT_TIMESTAMP"]
-                params = [json.dumps(specs, ensure_ascii=False)]
+                update_fields = ["name = ?", "specs_json = ?", "status = ?", "updated_at = CURRENT_TIMESTAMP"]
+                params = [prod["name"], json.dumps(specs, ensure_ascii=False), prod.get("status", "inactive")]
 
                 if copy_at:
                     update_fields.append("description = ?")
@@ -109,12 +126,31 @@ def propagate_product_to_channels(
                     update_fields.append("image_main = ?")
                     params.append(img_main)
 
-                # Mantém a galeria individual do Atacado preservada (Opção 1)
-                # Não sobrescreve images_gallery para manter as fotos cadastradas no canal
-
                 params.append(at_id)
                 run_exec(conn, f"UPDATE atacado_items SET {', '.join(update_fields)} WHERE id = ?", tuple(params))
                 channels_updated.append("Atacado B2B")
+            else:
+                # Cria novo item no Atacado B2B se não existir
+                run_exec(conn, """
+                    INSERT INTO atacado_items (slug, name, category, price_original, price_outlet, price_atacado_plus, specs_json, description, image_main, images_gallery, status, stock_qty, badge, location)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    at_slug,
+                    prod["name"],
+                    prod.get("category") or "Atacado CNPJ",
+                    prod.get("atacado_price_original") or 0,
+                    prod.get("atacado_price") or 0,
+                    prod.get("atacado_price_plus") or 0,
+                    json.dumps(specs, ensure_ascii=False),
+                    copy_at,
+                    img_main,
+                    gallery_str,
+                    prod.get("status", "inactive"),
+                    prod.get("atacado_stock_qty") or 0,
+                    "EXCLUSIVO CNPJ",
+                    "GALPÃO M-ONE / GALPÃO MAJ NOVO"
+                ))
+                channels_updated.append("Atacado B2B (Novo)")
 
         try:
             conn.commit()

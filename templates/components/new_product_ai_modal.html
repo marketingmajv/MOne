@@ -1,0 +1,409 @@
+{#
+  M-One New Product AI Modal Component (templates/components/new_product_ai_modal.html)
+  Modal de Revisão e Aprovação com IA para Novos Produtos detectados em Planilhas.
+  Estruturado com Alpine.js e <template x-teleport="body">.
+#}
+
+<style>
+  /* Proteção absoluta contra travamento de exibição: respeita display: none do Alpine */
+  #newProductAiModal[style*="display: none"],
+  #newProductAiModal[style*="display:none"],
+  .modal-ai-overlay[style*="display: none"],
+  .modal-ai-overlay[style*="display:none"] {
+    display: none !important;
+  }
+
+  .modal-ai-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 16px;
+    margin: 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  .modal-ai-card {
+    background: var(--panel, #0f172a);
+    border: 1px solid var(--line, #334155);
+    border-radius: 16px;
+    width: min(880px, 95vw);
+    max-width: 880px;
+    height: min(88vh, 850px);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 !important;
+    margin: auto;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85);
+    position: relative;
+  }
+
+  .modal-ai-section-detected {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .modal-ai-scrollable-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding: 20px 24px;
+    gap: 16px;
+  }
+
+  /* Barra de rolagem visível e responsiva em Dark/Light */
+  .modal-ai-scrollable-body::-webkit-scrollbar {
+    width: 8px;
+  }
+  .modal-ai-scrollable-body::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 4px;
+  }
+  .modal-ai-scrollable-body::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 4px;
+    border: 2px solid rgba(15, 23, 42, 0.6);
+  }
+  .modal-ai-scrollable-body::-webkit-scrollbar-thumb:hover {
+    background: #00cc88;
+  }
+
+  .modal-ai-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--line, #334155);
+    background: var(--panel, #0f172a);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 10;
+    margin-top: auto;
+  }
+</style>
+
+<div x-data="newProductAiModalComponent()" x-cloak>
+  <template x-teleport="body">
+    <div id="newProductAiModal"
+         class="modal show modal-ai-overlay"
+         x-show="isOpen"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="if(isOpen) close()"
+         @click.self="close()">
+
+      <div class="modal-card large modal-ai-card">
+
+        <!-- Cabeçalho Principal (Fixo) -->
+        <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line, #334155); margin: 0; background: var(--panel, #0f172a); flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 204, 136, 0.15); border: 1px solid rgba(0, 204, 136, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+              🤖
+            </div>
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0;">
+                Detecção de Novos Produtos com IA
+              </h3>
+              <p style="font-size: 0.75rem; color: var(--muted, #94a3b8); margin: 2px 0 0 0;">
+                Varredura profunda na Base de Conhecimento e planilhas integradas.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" @click="close()" title="Fechar modal" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Conteúdo 1: Estado de Carregamento / Varredura -->
+        <template x-if="isScanning">
+          <div style="padding: 60px 24px; text-align: center; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; border: 3px solid rgba(0,204,136,0.2); border-top-color: #00cc88; animation: spin 1s linear infinite; margin-bottom: 18px;"></div>
+            <h4 style="color: var(--text, #f8fafc); font-size: 1.1rem; font-weight: 700; margin: 0 0 8px 0;">Vasculhando Planilhas com IA...</h4>
+            <p style="color: var(--muted, #94a3b8); font-size: 0.85rem; max-width: 460px; margin: 0;">
+              Lendo abas de engenharia, texto livre e cruzando com o catálogo atual para identificar modelos inéditos e sintetizar fichas canônicas.
+            </p>
+          </div>
+        </template>
+
+        <!-- Conteúdo 2: Nenhum produto novo detectado -->
+        <template x-if="!isScanning && detectedList.length === 0">
+          <div style="padding: 60px 24px; text-align: center; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="font-size: 2.8rem; margin-bottom: 12px;">✅</div>
+            <h4 style="color: var(--text, #f8fafc); font-size: 1.15rem; font-weight: 800; margin: 0 0 6px 0;">Catálogo 100% Sincronizado!</h4>
+            <p style="color: var(--muted, #94a3b8); font-size: 0.85rem; max-width: 480px; margin: 0 auto 20px;">
+              Nenhum produto novo não cadastrado foi encontrado nas planilhas ativas. Todos os modelos já estão cadastrados na Central de Produtos Mestre.
+            </p>
+            <button type="button" class="btn" @click="close()">Fechar</button>
+          </div>
+        </template>
+
+        <!-- Conteúdo 3: Produto(s) Novo(s) Detectado(s) -->
+        <template x-if="!isScanning && detectedList.length > 0">
+          <div class="modal-ai-section-detected">
+
+            <!-- Barra de Navegação entre Itens Detectados & Link de Auditoria (Fixo) -->
+            <div style="padding: 10px 20px; background: rgba(0, 204, 136, 0.08); border-bottom: 1px solid var(--line, #334155); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; flex-shrink: 0;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #00cc88; color: #000;">
+                  NOVO DETECTADO
+                </span>
+                <span style="font-size: 0.85rem; color: var(--text, #f8fafc); font-weight: 700;">
+                  Item <span x-text="currentIndex + 1"></span> de <span x-text="detectedList.length"></span>
+                </span>
+                <span style="font-size: 0.72rem; color: var(--muted, #94a3b8);" x-text="'(' + (currentProduct ? currentProduct.source_name : '') + ')'"></span>
+
+                <!-- Link Direto para a Planilha Fonte para Auditoria Pré-Cadastro -->
+                <template x-if="currentProduct && currentProduct.source_url">
+                  <a :href="currentProduct.source_url"
+                     target="_blank"
+                     rel="noopener"
+                     class="btn sm"
+                     style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700; padding: 3px 10px; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"
+                     title="Abrir planilha Google Sheets original em nova aba para conferência">
+                    <span>🔗 Auditar na Planilha Fonte ↗</span>
+                  </a>
+                </template>
+              </div>
+
+              <div style="display: flex; gap: 6px;" x-show="detectedList.length > 1">
+                <button type="button" class="btn sm" @click="prevProduct()" :disabled="currentIndex === 0">← Anterior</button>
+                <button type="button" class="btn sm" @click="nextProduct()" :disabled="currentIndex >= detectedList.length - 1">Próximo →</button>
+              </div>
+            </div>
+
+            <!-- Bloco Fixo: Título & Categoria do Modelo (Sempre Visível em Qualquer Aba - Fixo) -->
+            <div style="padding: 12px 20px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); display: grid; grid-template-columns: 2fr 1fr; gap: 14px; align-items: center; flex-shrink: 0;" x-show="currentProduct">
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
+                  <span>✏️ Título / Nome Oficial do Modelo (Editável):</span>
+                </label>
+                <input type="text"
+                       x-model="currentProduct.name"
+                       class="form-input"
+                       style="width: 100%; font-size: 0.95rem; font-weight: 800; background: var(--panel, #0f172a); border-color: rgba(56, 189, 248, 0.4);"
+                       placeholder="Nome Oficial do Modelo">
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted, #94a3b8); text-transform: uppercase; margin-bottom: 3px; display: block;">
+                  Categoria:
+                </label>
+                <input type="text"
+                       x-model="currentProduct.category"
+                       class="form-input"
+                       style="width: 100%; font-size: 0.85rem; background: var(--panel, #0f172a);"
+                       placeholder="Ex: Triciclo / Scooter / Bike">
+              </div>
+            </div>
+
+            <!-- Abas de Revisão (Fixo) -->
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 18px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); flex-shrink: 0;">
+              <button type="button"
+                      class="master-tab-btn"
+                      :class="{ 'active': activeTab === 'specs' }"
+                      @click="activeTab = 'specs'">
+                ⚙️ Ficha Técnica Ouro
+              </button>
+              <button type="button"
+                      class="master-tab-btn"
+                      :class="{ 'active': activeTab === 'ident' }"
+                      @click="activeTab = 'ident'">
+                📸 Identificação & Mídia
+              </button>
+              <button type="button"
+                      class="master-tab-btn"
+                      :class="{ 'active': activeTab === 'copys' }"
+                      @click="activeTab = 'copys'">
+                ✍️ Copys por Canal
+              </button>
+            </div>
+
+            <!-- Corpo com Rolagem do Produto Sendo Revisado (Scrollable Body) -->
+            <div class="modal-ai-scrollable-body" x-show="currentProduct">
+
+              <!-- ABA 1: Ficha Técnica Ouro -->
+              <div x-show="activeTab === 'specs'" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="padding: 10px 14px; border-radius: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); font-size: 0.75rem; color: #38bdf8;">
+                  ⚡ <strong>Ficha Sintetizada com IA Gemini:</strong> Extraída das especificações técnicas da planilha. Você pode ajustar qualquer valor antes de aprovar.
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Motor</label>
+                    <input type="text" x-model="currentProduct.specs['Motor']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Bateria</label>
+                    <input type="text" x-model="currentProduct.specs['Bateria']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Autonomia</label>
+                    <input type="text" x-model="currentProduct.specs['Autonomia']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Velocidade Máxima</label>
+                    <input type="text" x-model="currentProduct.specs['Velocidade']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Freios</label>
+                    <input type="text" x-model="currentProduct.specs['Freios']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Química da Bateria</label>
+                    <input type="text" x-model="currentProduct.specs['Química']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Carga Máxima</label>
+                    <input type="text" x-model="currentProduct.specs['Carga Máxima']" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Tempo de Recarga</label>
+                    <input type="text" x-model="currentProduct.specs['Tempo de Recarga']" class="form-input" style="width: 100%;">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size: 0.75rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 3px;">Principal Diferencial</label>
+                  <input type="text" x-model="currentProduct.specs['Diferencial']" class="form-input" style="width: 100%;">
+                </div>
+              </div>
+
+              <!-- ABA 2: Identificação & Mídia -->
+              <div x-show="activeTab === 'ident'" style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block;">Slug Canônico</label>
+                    <input type="text" x-model="currentProduct.slug" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block;">Marca</label>
+                    <input type="text" x-model="currentProduct.brand" class="form-input" style="width: 100%;">
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block;">SKU Sugerido</label>
+                    <input type="text" x-model="currentProduct.sku" class="form-input" style="width: 100%;">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block;">URL da Foto Principal</label>
+                    <input type="text" x-model="currentProduct.image_main" class="form-input" placeholder="/public/images/models/cutouts/..." style="width: 100%;">
+                    <small style="color: var(--muted); font-size: 0.72rem; margin-top: 4px; display: block;">Detectada automaticamente se existir localmente.</small>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; display: block;">Banner Widescreen</label>
+                    <input type="text" x-model="currentProduct.banner_widescreen" class="form-input" placeholder="/public/images/models/banners/..." style="width: 100%;">
+                  </div>
+                </div>
+
+                <!-- Preview de Imagem se houver -->
+                <div x-show="currentProduct.image_main" style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--line);">
+                  <img :src="currentProduct.image_main" style="width: 50px; height: 50px; object-fit: contain; border-radius: 6px; background: #000;" onerror="this.style.display='none'">
+                  <div>
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--text);">Foto Vinculada</div>
+                    <div style="font-size: 0.72rem; color: var(--muted);" x-text="currentProduct.image_main"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ABA 3: Copys por Canal -->
+              <div x-show="activeTab === 'copys'" style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: var(--text);">🏛️ Copy Showroom / Institucional</label>
+                    <span style="font-size: 0.7rem; color: var(--muted);">Estilo de vida, estética e conforto</span>
+                  </div>
+                  <textarea x-model="currentProduct.copy_showroom" class="form-input" rows="3" style="width: 100%; font-size: 0.82rem;"></textarea>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #00cc88;">💼 Copy Atacado B2B (Lojistas & Revenda)</label>
+                    <span style="font-size: 0.7rem; color: var(--muted);">Foco em margens, garantia e revenda CNPJ</span>
+                  </div>
+                  <textarea x-model="currentProduct.copy_atacado" class="form-input" rows="3" style="width: 100%; font-size: 0.82rem;"></textarea>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700; color: #e5a93b;">🏷️ Copy Outlet Varejo (Consumidor Final)</label>
+                    <span style="font-size: 0.7rem; color: var(--muted);">Economia, mobilidade urbana diária e recarga</span>
+                  </div>
+                  <textarea x-model="currentProduct.copy_outlet" class="form-input" rows="3" style="width: 100%; font-size: 0.82rem;"></textarea>
+                </div>
+              </div>
+
+              <!-- Opções de Distribuição e Status Inicial -->
+              <div style="padding: 14px 18px; border-radius: 10px; background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155); display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 0.75rem; font-weight: 800; color: var(--text); text-transform: uppercase;">Opções de Distribuição Inicial</span>
+                  <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: rgba(229, 169, 59, 0.2); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.4);">
+                    🟡 Status Padrão: Oculto / Inativo
+                  </span>
+                </div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text); cursor: pointer;">
+                    <input type="checkbox" x-model="syncAtacado" style="accent-color: #00cc88; width: 16px; height: 16px;">
+                    <span>Distribuir para <strong>Atacado B2B</strong></span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text); cursor: pointer;">
+                    <input type="checkbox" x-model="syncOutlet" style="accent-color: #e5a93b; width: 16px; height: 16px;">
+                    <span>Distribuir para <strong>Outlet Varejo</strong></span>
+                  </label>
+                </div>
+                <small style="color: var(--muted); font-size: 0.72rem;">
+                  O produto nascerá <strong>oculto</strong> no catálogo público, permitindo à diretoria conferir preços e fotos antes da liberação oficial.
+                </small>
+              </div>
+
+            </div>
+
+            <!-- Rodapé Fixo do Modal com Botões de Ação -->
+            <div class="modal-ai-footer">
+              <button type="button" class="btn" @click="close()">Cancelar</button>
+
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button"
+                        class="btn primary"
+                        @click="approveCurrentProduct()"
+                        :disabled="isApproving"
+                        style="display: flex; align-items: center; gap: 8px; font-weight: 800; background: #00cc88; color: #000; border-color: #00cc88;">
+                  <span x-show="!isApproving">✨ Confirmar e Cadastrar Produto Mestre</span>
+                  <span x-show="isApproving">Salvando e Publicando (Oculto)...</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </template>
+
+      </div>
+    </div>
+  </template>
+</div>

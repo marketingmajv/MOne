@@ -535,12 +535,12 @@
       "capacidade_ah": "24ah",
       "capacidade_wh": "1440wh",
       "quimica_bateria": "Bateria de fosfato de ferro e lítio (LiFePO₄ / LFP), com química de maior estabilidade térmica, que contribui para mais segurança no uso. Deve ser utilizada e recarregada conforme as orientações da Maj.",
-      "carga_maxima_kg": "180",
+      "carga_maxima_kg": "180 kg",
       "peso_kg": "75kg",
       "freios": "Diant: Hidráulico / Tras: Tambor",
       "diferencial": "Praticidade urbana com boa autonomia, baú e posição de pilotagem natural, oferecendo equilíbrio entre conforto e facilidade de uso.",
       "pontos_fortes": "Bateria removível de 60 V e 24 Ah; motor de 1.000 W com pico registrado de 2.400 W; baú; posição natural; boa autonomia; estrutura consistente e peso inferior ao de várias scooters equivalentes.",
-      "descricao_livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios a disco dianteiro e traseiro a tambor"
+      "descricao_livre": "Modelo FLOW ONE para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
     },
     "sections": {
       "Identificação": {
@@ -550,8 +550,8 @@
         "Status": "Ativo"
       },
       "Desempenho": {
-        "Potência nominal (W)": "1000",
-        "Velocidade máxima (km/h)": "32",
+        "Potência nominal (W)": "1000W",
+        "Velocidade máxima (km/h)": "Até 32 km/h",
         "Modos de condução": "3 niveis",
         "Possui ré?": "Não"
       },
@@ -560,22 +560,23 @@
         "Voltagem (V)": "60v",
         "Capacidade (Ah)": "24ah",
         "Capacidade (Wh)": "1440wh",
-        "Autonomia conservadora (km)": "35km",
+        "Autonomia conservadora (km)": "Até 60 km",
         "Autonomia máxima estimada (km)": "60"
       },
       "Estrutura e conforto": {
-        "Carga máxima suportada (kg)": "180",
+        "Carga máxima suportada (kg)": "180 kg",
         "Peso do veículo (kg)": "75kg",
         "Tipo de freios": "Diant: Hidráulico / Tras: Tambor",
         "Suspensão": "Dupla dianteira e traseira",
-        "Aro / Pneu": "Aro 12"
+        "Aro / Pneu": "Aro 12",
+        "Carga máxima (kg)": "180 kg"
       },
       "Uso e comercial": {
         "Diferencial": "Praticidade urbana com boa autonomia, baú e posição de pilotagem natural, oferecendo equilíbrio entre conforto e facilidade de uso.",
         "Pontos fortes": "Bateria removível de 60 V e 24 Ah; motor de 1.000 W com pico registrado de 2.400 W; baú; posição natural; boa autonomia; estrutura consistente e peso inferior ao de várias scooters equivalentes."
       },
       "Texto livre": {
-        "Descrição livre": "Motor 1000W\r\n Até 32 km/h\r\n Autonomia de até 50 km*\r\n Suporta até 200 kg\r\n Freios a disco dianteiro e traseiro a tambor"
+        "Descrição livre": "Modelo FLOW ONE para revenda no atacado. Preços exclusivos para compras com CNPJ. Veículos completos com garantia oficial de fábrica MAJ Mobilidade."
       }
     },
     "descricao_livre": "Praticidade urbana com boa autonomia, baú e posição de pilotagem natural, oferecendo equilíbrio entre conforto e facilidade de uso."
@@ -903,6 +904,138 @@
       "potencia_nominal_w": "1000W Brushless",
       "velocidade_max_kmh": "Até 32 km/h",
       "autonomia_conservadora_km": "Até 50 km"
+    }
+  },
+  "liberty-plus-maj": {
+    "descricao_livre": "Descubra o novo padrão em mobilidade familiar com o Liberty Plus MAJ. Projetado para quem não abre mão de sofisticação, conforto e segurança, este triciclo elétrico une um design clássico com acabamento premium em tom creme a uma performance robusta. Equipado com motor de 1.000 W e avançada bateria LFP Phylion de 72V, ele oferece uma experiência de condução suave e estável para passeios e deslocamentos urbanos. Conta com assentos acolchoados ergonômicos, encosto traseiro com apoios de braço e prática cesta dianteira. Viva momentos inesquecíveis com quem você ama, com total elegância e zero emissões.",
+    "display_image": "/static/uploads/products/gal_1794599163_LIBERTY_PLUS_IA_OK.jpeg",
+    "metrics": {
+      "potencia_nominal_w": "1000W",
+      "autonomia_conservadora_km": "Aproximadamente 60 km (conservadora)",
+      "autonomia_maxima_km": "Aproximadamente 60 km (conservadora)",
+      "voltagem_v": "72V 32Ah (2304 Wh) Lítio-ferro-fosfato (LiFePO₄ / LFP) Phylion",
+      "carga_maxima_kg": "180 kg (sujeito a confirmação)",
+      "freios": "Acionamento manual e por pedal",
+      "diferencial": "Acabamento premium em tom creme, configuração familiar para dois adultos e uma criança, cesta metálica dianteira e alta estabilidade com três rodas.",
+      "velocidade_max_kmh": "32",
+      "capacidade_ah": "32",
+      "capacidade_wh": "2304",
+      "quimica_bateria": "Lítio-ferro-fosfato (LiFePO₄ / LFP), marca Phylion; química de boa estabilidade térmica. Seguir instruções de carga e manutenção.",
+      "peso_kg": "Não informado",
+      "descricao_livre": "O Liberty Plus MAJ é a adição ideal para o portfólio da sua concessionária voltada ao segmento de mobilidade familiar e urbana. Destacando-se pelo acabamento premium e apelo visual refinado, este triciclo elétrico atrai um público exigente que busca conforto e praticidade. Conta com especificações competitivas, incluindo motor de 1.000 W, bateria de lítio LFP Phylion de alta capacidade (72V 32Ah), autonomia média de 60 km, capacidade de carga de até 180 kg e garantia de 1 ano (conforme revisões). Excelente oportunidade de margem e diferenciação no mercado de veículos elétricos leves."
+    },
+    "slug": "liberty-plus-maj",
+    "modelo": "LIBERTY PLUS MAJ",
+    "categoria": "Triciclo",
+    "is_active": true,
+    "sections": {
+      "Identificação": {
+        "Marca": "MAJ",
+        "Versão / ano": "2026",
+        "Código interno": "Não informado",
+        "Status": "Revisar",
+        "Responsável": "Não informado",
+        "Última atualização": "2026-11-13"
+      },
+      "Desempenho": {
+        "Potência nominal (W)": "1000W",
+        "Velocidade máxima (km/h)": "32",
+        "Modos de condução": "3 níveis de velocidade",
+        "Possui ré?": "Sim",
+        "Inclinação recomendada (%)": "Não informado",
+        "Observações de desempenho": "Motor de 1.000 W; velocidade máxima informada de 32 km/h. Desempenho em aclives varia com carga, piso e inclinação; potência de pico não informada."
+      },
+      "Bateria e autonomia": {
+        "Química / tipo": "Lítio-ferro-fosfato (LiFePO₄ / LFP), marca Phylion; química de boa estabilidade térmica. Seguir instruções de carga e manutenção.",
+        "Voltagem (V)": "72V 32Ah (2304 Wh) Lítio-ferro-fosfato (LiFePO₄ / LFP) Phylion",
+        "Capacidade (Ah)": "32",
+        "Capacidade (Wh)": "2304",
+        "Bateria removível?": "Não informado",
+        "Autonomia conservadora (km)": "Aproximadamente 60 km (conservadora)",
+        "Autonomia máxima estimada (km)": "Aproximadamente 60 km (conservadora)",
+        "Tempo de recarga": "6 a 7 horas (descrição de referência; confirmar)",
+        "Carregador": "Não informado",
+        "Condições do teste": "Autonomia média informada de aproximadamente 60 km por recarga; não há ensaio padronizado declarado. Pode variar conforme peso dos ocupantes, velocidade, relevo, temperatura, pneus e bateria.",
+        "Fonte da informação": "Dados fornecidos pela MAJ (72 V, 32 Ah, LFP Phylion, 60 km); tempo de recarga extraído da descrição de referência do Triciclo Family, a confirmar."
+      },
+      "Estrutura e conforto": {
+        "Carga máxima (kg)": "180 kg (sujeito a confirmação)",
+        "Ocupantes homologados": "Não informado",
+        "Ocupantes recomendados": "2 adultos e 1 criança (configuração anunciada; validar ocupação legal)",
+        "Peso do veículo (kg)": "Não informado",
+        "Comprimento (cm)": "Não informado",
+        "Largura (cm)": "Não informado",
+        "Altura (cm)": "Não informado",
+        "Altura do assento (cm)": "Não informado",
+        "Porta-objetos / baú": "Cesta metálica dianteira; plataforma baixa",
+        "Conforto e ergonomia": "Acabamento premium em tom creme, assentos acolchoados, banco traseiro com encosto alto e braços laterais; proposta de conforto para uso familiar.",
+        "Observações estruturais": "Três rodas; banco traseiro com encosto e apoios laterais; assento adicional aparente; porta-objetos dianteiro. Capacidade de 180 kg proveniente de descrição de referência e sujeita a confirmação. Dimensões, carga e lotação homologada pendentes.",
+        "Carga máxima suportada (kg)": "180 kg (sujeito a confirmação)",
+        "Tipo de freios": "Acionamento manual e por pedal",
+        "Suspensão": "Dupla dianteira e traseira",
+        "Aro / Pneu": "Pneus sem câmara (descrição de referência; confirmar)"
+      },
+      "Segurança e componentes": {
+        "Freio dianteiro": "Acionamento manual e por pedal (tipo de freio a confirmar)",
+        "Freio traseiro": "Acionamento manual e por pedal (distribuição a confirmar)",
+        "Suspensão dianteira": "Não informado",
+        "Suspensão traseira": "Não informado",
+        "Pneu / aro": "Pneus sem câmara (descrição de referência; confirmar)",
+        "Calibragem ideal dianteira (PSI)": "Não informado",
+        "Calibragem ideal traseira (PSI)": "Não informado",
+        "Iluminação": "Farol frontal, lanternas e retrovisores visíveis; LED informado na descrição de referência",
+        "Alarme": "Sim (descrição de referência; confirmar)",
+        "Trava": "Sim (trava eletrônica, conforme descrição de referência; confirmar)",
+        "Câmbio / marchas": "3 níveis de velocidade",
+        "Itens de segurança adicionais": "Espelhos retrovisores; freios acionáveis na mão e no pé; encosto traseiro e apoios de braço.",
+        "Fonte técnica": "Foto MAJ + informações fornecidas + ficha de referência Zurbe T3 Super/Family; verificar configuração exata."
+      },
+      "Uso e comercial": {
+        "Ideal para": "Passeios, lazer, pequenas compras e deslocamentos urbanos familiares com conforto e estabilidade.",
+        "Não recomendado para": "Não indicado para exceder 180 kg de carga declarada (a confirmar), transportar criança sem medidas adequadas de segurança ou circular fora das regras aplicáveis.",
+        "Principal diferencial": "Acabamento premium; configuração para dois adultos e uma criança declarada; bateria LFP Phylion 72 V 32 Ah; autonomia média declarada de 60 km; freios com acionamento na mão e no pé; cesta dianteira.",
+        "Perfil do cliente": "Famílias e adultos que priorizam estabilidade, acomodação e conforto.",
+        "Subidas: limite e condições": "Avaliadas conforme carga, aclive e condições do piso.",
+        "Transporte de carga": "Até 180 kg (descrição de referência; confirmar)",
+        "Cores": "Creme/bege (foto)",
+        "Preço referência (R$)": "",
+        "Data do preço": "",
+        "Garantia do veículo": "Não informado",
+        "Garantia da bateria": "1 ano para bateria, motor e controladora, condicionado às revisões obrigatórias; confirmar termos por escrito.",
+        "Assistência técnica": "MAJ Mobilidade Elétrica",
+        "Peças disponíveis": "Consultar equipe",
+        "Prazo de entrega": "Consultar equipe",
+        "Exige CNH?": "Depende da classificação",
+        "Exige emplacamento?": "Depende da classificação",
+        "Observação legal / fonte": "Enquadramento como equipamento de mobilidade individual autopropelido declarado pelo fornecedor, pendente de conferência das dimensões (largura e entre-eixos), características construtivas e regras locais. Não afirmar dispensa de CNH/emplacamento antes da validação técnica. Resolução Contran 996/2023."
+      },
+      "Texto livre": {
+        "Descrição comercial livre": "Triciclo elétrico MAJ Liberty Plus com acabamento premium e visual clássico. Motor de 1.000 W, bateria de lítio LFP Phylion de 72 V e 32 Ah (2.304 Wh), velocidade máxima de 32 km/h e autonomia média informada de 60 km por recarga. Configuração anunciada para dois adultos e uma criança. Possui freios acionados pela mão e pelo pé, cesta metálica dianteira, espelhos, assentos confortáveis e encosto traseiro com apoios de braço.",
+        "Pontos fortes": "Conforto familiar, estrutura de três rodas, acabamento premium, bateria LFP Phylion de alta capacidade, cesta frontal, plataforma baixa, encosto e braços para ocupante traseiro.",
+        "Limitações": "A autonomia é estimada e varia com carga, topografia e condução. Confirmar dimensões, homologação da lotação, peso total admissível, tipo de freios, remoção da bateria e enquadramento legal antes de divulgação regulatória definitiva.",
+        "Comparação com outros modelos": "Opção familiar e de acabamento mais refinado em relação ao H1, com bateria informada de 72 V / 32 Ah; não apresentar comparativos de desempenho sem testes equivalentes.",
+        "Acessórios e opcionais": "Cesta metálica dianteira integrada; retrovisores; encosto traseiro e apoios laterais.",
+        "Observações da equipe": "Foto identifica Liberty Plus. A ficha de Zurbe T3 Super/Family foi usada apenas como referência para características compatíveis e ainda não validadas. Não tratar como documentação do fabricante MAJ. Confirmar ocupação legal para criança, peso e dimensões.",
+        "col_8": "",
+        "col_9": "",
+        "col_10": "",
+        "col_11": "",
+        "col_12": "",
+        "col_13": "",
+        "col_14": "",
+        "col_15": "",
+        "col_16": "",
+        "col_17": "",
+        "col_18": "",
+        "col_19": "",
+        "col_20": "",
+        "col_21": "",
+        "col_22": "",
+        "col_23": "",
+        "col_24": "",
+        "col_25": "",
+        "Descrição livre": "O Liberty Plus MAJ é a adição ideal para o portfólio da sua concessionária voltada ao segmento de mobilidade familiar e urbana. Destacando-se pelo acabamento premium e apelo visual refinado, este triciclo elétrico atrai um público exigente que busca conforto e praticidade. Conta com especificações competitivas, incluindo motor de 1.000 W, bateria de lítio LFP Phylion de alta capacidade (72V 32Ah), autonomia média de 60 km, capacidade de carga de até 180 kg e garantia de 1 ano (conforme revisões). Excelente oportunidade de margem e diferenciação no mercado de veículos elétricos leves."
+      }
     }
   }
 }

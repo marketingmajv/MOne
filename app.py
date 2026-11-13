@@ -25,7 +25,7 @@ from jinja2 import ChoiceLoader, FileSystemLoader
 
 BASE_DIR = Path(__file__).resolve().parent
 api_static_dir = BASE_DIR / "api" / "static"
-static_dir = api_static_dir if api_static_dir.exists() else (BASE_DIR / "static")
+static_dir = (api_static_dir if api_static_dir.exists() else (BASE_DIR / "static")) if os.environ.get("VERCEL") else (BASE_DIR / "static")
 
 app = Flask(
     __name__,

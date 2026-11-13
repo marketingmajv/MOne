@@ -14,6 +14,12 @@ from pathlib import Path
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from routes.helpers import audit, login_required, roles_required
+from services.product_ai_service import (
+    analyze_product_updates,
+    approve_and_register_new_product,
+    detect_new_products,
+    get_active_sheet_sources,
+)
 from services.product_hub_service import (
     ensure_master_products_schema,
     get_all_master_products,
@@ -189,7 +195,15 @@ def api_upload_gallery():
             continue
         try:
             safe_name = f"gal_{int(time.time())}_{secure_filename(f.filename)}"
-            f.save(upload_dir / safe_name)
+            dest = upload_dir / safe_name
+            f.save(dest)
+            api_up = base_dir / "api" / "static" / "uploads" / "products"
+            if api_up.exists():
+                try:
+                    import shutil
+                    shutil.copy2(dest, api_up / safe_name)
+                except Exception:
+                    pass
             saved_urls.append(f"/static/uploads/products/{safe_name}")
         except Exception:
             try:
@@ -253,4 +267,81 @@ def sync_all():
         flash(f"Erro ao sincronizar produtos: {e}", "danger")
 
     return redirect(url_for("product_hub.index"))
+
+
+# =========================================================================
+# ROTAS INTELIGENTES DE IA (DETECÇÃO & ATUALIZAÇÃO VIA PLANILHAS)
+# =========================================================================
+
+@product_hub_bp.route("/ai/sources", methods=["GET"])
+@login_required
+@roles_required("admin", "support", "stock")
+def ai_get_sources():
+    """Retorna a lista de planilhas conectadas para varredura de produtos."""
+    sources = get_active_sheet_sources()
+    return jsonify({"success": True, "sources": sources})
+
+
+@product_hub_bp.route("/ai/detect", methods=["POST"])
+@login_required
+@roles_required("admin", "support", "stock")
+def ai_detect_products():
+    """Varre planilhas ativas e detecta novos produtos usando Gemini AI."""
+    payload = request.get_json(silent=True) or {}
+    custom_sources = payload.get("custom_sources") or []
+    if isinstance(custom_sources, str) and custom_sources.strip():
+        custom_sources = [custom_sources.strip()]
+
+    try:
+        detected = detect_new_products(custom_sources=custom_sources)
+        audit("product_ai_detect", f"Varredura de IA concluída: {len(detected)} novo(s) produto(s) detectado(s)")
+        return jsonify({
+            "success": True,
+            "detected": detected,
+            "count": len(detected),
+            "sources": get_active_sheet_sources(),
+        })
+    except Exception as e:
+        logger.exception("Falha na detecção de novos produtos com IA: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@product_hub_bp.route("/ai/sync-from-sheets", methods=["POST"])
+@login_required
+@roles_required("admin", "support", "stock")
+def ai_sync_product_from_sheets():
+    """Analisa atualizações de um produto específico cruzando com as planilhas via IA."""
+    payload = request.get_json(silent=True) or {}
+    identifier = payload.get("product_id") or payload.get("slug")
+    if not identifier:
+        return jsonify({"success": False, "error": "ID ou Slug do produto não fornecido."}), 400
+
+    try:
+        result = analyze_product_updates(identifier)
+        audit("product_ai_sync_sheets", f"Auditoria IA de atualizações para produto {identifier}: {result.get('diff_summary', [])}")
+        return jsonify(result)
+    except Exception as e:
+        logger.exception("Erro ao analisar atualizações com IA: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@product_hub_bp.route("/ai/approve-new", methods=["POST"])
+@login_required
+@roles_required("admin", "support", "stock")
+def ai_approve_new_product():
+    """Aprova e cadastra oficialmente um novo produto mestre detectado pela IA."""
+    payload = request.get_json(silent=True) or {}
+    if not payload.get("name"):
+        return jsonify({"success": False, "error": "Nome do produto é obrigatório."}), 400
+
+    try:
+        res = approve_and_register_new_product(payload)
+        if res.get("success"):
+            audit("product_ai_approve_new", f"Novo produto mestre aprovado e cadastrado: {res.get('name')} (ID: {res.get('product_id')})")
+            return jsonify(res)
+        return jsonify(res), 400
+    except Exception as e:
+        logger.exception("Erro ao aprovar novo produto: %s", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
 

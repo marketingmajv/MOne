@@ -88,12 +88,36 @@
             </h3>
             <p style="font-size: 0.75rem; color: var(--muted, #94a3b8); margin: 4px 0 0 0;">Ficha técnica canônica unificada e copys contextuais para Atacado e Varejo.</p>
           </div>
-          <button type="button" class="modal-close-btn" @click="close()" title="Fechar modal" aria-label="Fechar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button type="button"
+                    x-show="isEditing"
+                    @click="syncCurrentProductWithAi()"
+                    :disabled="isSyncingAi"
+                    class="btn sm"
+                    style="background: rgba(229, 169, 59, 0.15); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.4); font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
+                    title="Vasculha as planilhas conectadas com IA atrás de atualizações deste modelo">
+              <span x-text="isSyncingAi ? '⏳ Buscando nas Planilhas...' : '✨ Atualizar com IA via Planilhas'"></span>
+            </button>
+            <button type="button" class="modal-close-btn" @click="close()" title="Fechar modal" aria-label="Fechar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Alerta de Atualização de IA com Sucesso -->
+        <div x-show="aiUpdateNotice" x-cloak style="background: rgba(0, 204, 136, 0.12); border-bottom: 1px solid rgba(0, 204, 136, 0.3); padding: 10px 20px; font-size: 0.8rem; color: #f8fafc; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+          <div>
+            <strong style="color: #00cc88;">✨ Campos Atualizados com IA a partir das Planilhas:</strong>
+            <ul style="margin: 4px 0 0 16px; padding: 0; color: var(--muted, #94a3b8); font-size: 0.74rem;">
+              <template x-for="item in aiDiffSummary" :key="item">
+                <li x-text="item"></li>
+              </template>
+            </ul>
+          </div>
+          <button type="button" @click="aiUpdateNotice = false" style="background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
         </div>
 
         <!-- Barra de 3 Abas Simétricas (CSS Grid Seguro com minmax(0, 1fr)) -->

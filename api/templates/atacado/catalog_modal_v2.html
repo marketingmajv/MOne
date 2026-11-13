@@ -124,7 +124,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem;">
                   <template x-for="(val, key) in selectedItem.specs_json" :key="key">
                     <div style="background: var(--bg-main); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-line);"
-                         x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco') && typeof val === 'string'">
+                         x-show="key !== 'stock_breakdown' && key !== 'color_prices' && !key.toLowerCase().includes('preço') && !key.toLowerCase().includes('preco') && typeof val === 'string' && key !== 'Autonomia' && key !== 'Autonomia Conservadora'">
                       <span style="color: var(--text-dim); display: block;" x-text="key"></span>
                       <strong style="color: var(--text-main);" x-text="val"></strong>
                     </div>

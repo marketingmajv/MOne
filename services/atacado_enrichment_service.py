@@ -429,7 +429,6 @@ def enrich_atacado_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             ("Capacidade (Ah)", canonical_specs.get("capacidade_ah")),
             ("Capacidade (Wh)", canonical_specs.get("capacidade_wh")),
             ("Química da Bateria", canonical_specs.get("quimica_bateria")),
-            ("Autonomia Conservadora", canonical_specs.get("autonomia_conservadora_km")),
             ("Autonomia Máxima", canonical_specs.get("autonomia_maxima_km")),
             ("Sistema de Freios", canonical_specs.get("freios")),
             ("Suspensão", canonical_specs.get("suspensao")),
@@ -440,6 +439,19 @@ def enrich_atacado_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         for label, val in default_spec_pairs:
             if val and label not in enriched_specs:
                 enriched_specs[label] = val
+
+        # Regra de Exibição Comercial: Manter apenas [Autonomia Máxima]
+        auto_val = (
+            enriched_specs.get("Autonomia Máxima")
+            or canonical_specs.get("autonomia_maxima_km")
+            or enriched_specs.get("Autonomia")
+            or enriched_specs.get("Autonomia Conservadora")
+        )
+        if auto_val:
+            enriched_specs["Autonomia Máxima"] = auto_val
+        enriched_specs.pop("Autonomia", None)
+        enriched_specs.pop("Autonomia Conservadora", None)
+
         item["specs_json"] = enriched_specs
 
         main_img = (item.get("image_main") or "").strip()

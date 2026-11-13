@@ -1,0 +1,87 @@
+{#
+  M-One Product Sources Modal Component (templates/components/product_sources_modal.html)
+  Modal para visualização e adição de fontes de planilhas de produtos.
+#}
+
+<div x-data="productSourcesModalComponent()" x-cloak>
+  <template x-teleport="body">
+    <div id="productSourcesModal"
+         class="modal show"
+         x-show="isOpen"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 16px; margin: 0; box-sizing: border-box;"
+         @keydown.escape.window="if(isOpen) close()"
+         @click.self="close()">
+
+      <div class="modal-card"
+           style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: min(680px, 95vw); max-width: 680px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; margin: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); position: relative;">
+
+        <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--line, #334155); margin: 0; background: var(--panel, #0f172a);">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text, #f8fafc); margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>⚡ Fontes de Dados Conectadas</span>
+            </h3>
+            <p style="font-size: 0.75rem; color: var(--muted, #94a3b8); margin: 2px 0 0 0;">
+              Planilhas que alimentam a detecção autônoma de novos produtos e atualizações.
+            </p>
+          </div>
+          <button type="button" class="modal-close-btn" @click="close()" title="Fechar modal" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div style="padding: 20px 24px; overflow-y: auto; flex: 1 1 0%; min-height: 0; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 0.82rem; color: var(--muted);">
+            O motor de IA varre as seguintes planilhas ativas:
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <template x-for="src in sources" :key="src.id">
+              <div style="padding: 12px 16px; border-radius: 10px; background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155); display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <div>
+                  <div style="font-weight: 700; color: var(--text); font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                    <span x-text="src.name"></span>
+                    <span x-show="src.type === 'official'" style="font-size: 0.68rem; padding: 2px 6px; border-radius: 999px; background: rgba(0,204,136,0.15); color: #00cc88; font-weight: 800;">OFICIAL</span>
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--muted); word-break: break-all; margin-top: 2px;" x-text="src.url"></div>
+                </div>
+                <a :href="src.url.replace('/export?format=xlsx', '')" target="_blank" rel="noopener" class="btn sm" style="white-space: nowrap;">
+                  Abrir Planilha ↗
+                </a>
+              </div>
+            </template>
+          </div>
+
+          <div style="margin-top: 10px; padding: 14px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3);">
+            <label style="font-size: 0.78rem; font-weight: 700; color: #38bdf8; display: block; margin-bottom: 6px;">
+              🔗 Adicionar Link de Nova Planilha Google Sheets para Varredura Rápida:
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" x-model="customUrl" placeholder="https://docs.google.com/spreadsheets/d/..." class="form-input" style="flex: 1; font-size: 0.82rem;">
+              <button type="button" class="btn primary sm" @click="scanWithCustomUrl()" style="white-space: nowrap;">
+                Varre Esta Planilha
+              </button>
+            </div>
+            <small style="color: var(--muted); font-size: 0.72rem; margin-top: 6px; display: block;">
+              A planilha deve estar compartilhada como "Qualquer pessoa com o link pode ver".
+            </small>
+          </div>
+        </div>
+
+        <div style="padding: 14px 24px; border-top: 1px solid var(--line, #334155); background: var(--panel, #0f172a); display: flex; justify-content: flex-end;">
+          <button type="button" class="btn" @click="close()">Fechar</button>
+        </div>
+
+      </div>
+    </div>
+  </template>
+</div>
+
