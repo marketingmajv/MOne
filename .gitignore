@@ -7,9 +7,13 @@ __pycache__/
 !.env.example
 m_one.db
 *.bak
-uploads/
+/uploads/
 !uploads/outlet/
 !uploads/outlet/**
+!static/uploads/
+!static/uploads/**
+!api/static/uploads/
+!api/static/uploads/**
 backups/
 *.zip
 scratch/
