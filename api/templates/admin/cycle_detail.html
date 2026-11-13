@@ -39,7 +39,9 @@
 
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
       {% if prev_cycle %}
-      <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=prev_cycle.id) }}" class="rc-btn" title="{{ prev_cycle.title }}">
+      <a :href="'{{ url_for('cycle_pages.cycle_detail', cycle_id=prev_cycle.id) }}?tab=' + activeTab"
+         href="{{ url_for('cycle_pages.cycle_detail', cycle_id=prev_cycle.id) }}?tab={{ active_tab }}"
+         class="rc-btn" title="{{ prev_cycle.title }}">
         ← Ciclo Anterior
       </a>
       {% endif %}
@@ -58,7 +60,9 @@
       </div>
 
       {% if next_cycle %}
-      <a href="{{ url_for('cycle_pages.cycle_detail', cycle_id=next_cycle.id) }}" class="rc-btn" title="{{ next_cycle.title }}">
+      <a :href="'{{ url_for('cycle_pages.cycle_detail', cycle_id=next_cycle.id) }}?tab=' + activeTab"
+         href="{{ url_for('cycle_pages.cycle_detail', cycle_id=next_cycle.id) }}?tab={{ active_tab }}"
+         class="rc-btn" title="{{ next_cycle.title }}">
         Próximo Ciclo →
       </a>
       {% endif %}
@@ -104,21 +108,19 @@
   </div>
 
   <!-- Sub-visões Limpas do Ciclo (2 Abas Focadas) -->
-  <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 10px; flex-wrap: wrap;">
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; flex-wrap: wrap;">
     <button type="button"
-            class="tab-btn rc-btn rc-btn-gold"
-            :class="{ 'is-active': activeTab === 'consolidation' }"
-            style="padding: 9px 16px;"
-            @click="activeTab = 'consolidation'">
-      📑 Análise Setorizada & Pauta (5 Setores)
+            class="rc-tab-btn-royal"
+            :class="{ 'is-active': activeTab === 'dashboard' }"
+            @click="activeTab = 'dashboard'; switchDossierTab('dashboard')">
+      📊 Entregas & Prazos dos 7 Colaboradores ({{ summary.total_submitted }}/{{ summary.counts.total }})
     </button>
 
     <button type="button"
-            class="tab-btn rc-btn rc-btn-gold"
-            :class="{ 'is-active': activeTab === 'dashboard' }"
-            style="padding: 9px 16px;"
-            @click="activeTab = 'dashboard'">
-      📊 Entregas & Prazos dos 7 Colaboradores ({{ summary.total_submitted }}/{{ summary.counts.total }})
+            class="rc-tab-btn-royal"
+            :class="{ 'is-active': activeTab === 'consolidation' }"
+            @click="activeTab = 'consolidation'; switchDossierTab('consolidation')">
+      📑 Análise Setorizada & Pauta (5 Setores)
     </button>
   </div>
 
@@ -131,12 +133,41 @@
 </div>
 
 <script>
+function switchDossierTab(tabName) {
+  if (!tabName) return;
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tabName);
+    window.history.replaceState(null, '', url.toString());
+  } catch (e) {
+    console.debug('Aviso ao sincronizar URL da aba:', e);
+  }
+  window.__ACTIVE_TAB__ = tabName;
+}
+
 function switchReportCycle(selectEl) {
   if (!selectEl) return;
   const cycleId = selectEl.value;
   if (!cycleId) return;
   const optText = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text.trim() : 'Ciclo';
-  const targetUrl = '/admin/plano/ciclo/' + cycleId;
+  
+  let currentTab = 'dashboard';
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab')) {
+      currentTab = urlParams.get('tab');
+    } else if (window.__ACTIVE_TAB__) {
+      currentTab = window.__ACTIVE_TAB__;
+    }
+    const rcRoot = document.querySelector('.rc-root');
+    if (rcRoot && rcRoot._x_dataStack && rcRoot._x_dataStack[0] && rcRoot._x_dataStack[0].activeTab) {
+      currentTab = rcRoot._x_dataStack[0].activeTab;
+    }
+  } catch (e) {
+    console.debug('Aviso ao ler aba ativa:', e);
+  }
+
+  const targetUrl = '/admin/plano/ciclo/' + encodeURIComponent(cycleId) + '?tab=' + encodeURIComponent(currentTab);
 
   if (window.MOnePreloader && typeof window.MOnePreloader.show === 'function') {
     window.MOnePreloader.show('Abrindo Dossiê de ' + optText + '...', 'DOSSIÊ', true);

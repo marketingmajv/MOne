@@ -173,7 +173,16 @@ function switchReportCycle(selectEl) {
   const cycleId = selectEl.value;
   if (!cycleId) return;
   const optText = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text.trim() : 'Ciclo';
-  const targetUrl = '/admin/plano/ciclo/' + encodeURIComponent(cycleId);
+  let currentTab = 'dashboard';
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab')) {
+      currentTab = urlParams.get('tab');
+    } else if (window.__ACTIVE_TAB__) {
+      currentTab = window.__ACTIVE_TAB__;
+    }
+  } catch (e) {}
+  const targetUrl = '/admin/plano/ciclo/' + encodeURIComponent(cycleId) + '?tab=' + encodeURIComponent(currentTab);
 
   // Ativa Preloader Centralizado com Tela Embaçada imediatamente
   if (window.MOnePreloader && typeof window.MOnePreloader.show === 'function') {

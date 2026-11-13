@@ -89,8 +89,8 @@ def cycle_detail(cycle_id: int):
     neighbors = get_cycle_neighbors(all_cycles, cycle_id)
     is_current_cycle = bool(all_cycles and int(all_cycles[0]["id"]) == int(cycle["id"]))
 
-    requested_tab = (request.args.get("tab") or "consolidation").strip()
-    active_tab = requested_tab if requested_tab in ("consolidation", "dashboard") else "consolidation"
+    requested_tab = (request.args.get("tab") or "dashboard").strip()
+    active_tab = requested_tab if requested_tab in ("consolidation", "dashboard") else "dashboard"
 
     summary = get_cycle_submissions_summary(cycle["id"])
     consolidation = get_monday_consolidation_briefing(cycle["id"])
