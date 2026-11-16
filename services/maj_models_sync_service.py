@@ -119,121 +119,18 @@ def set_model_active_status(slug: str, is_active: bool) -> bool:
     return True
 
 
-DEFAULT_MENU_CONFIG = {
-    "mode": "category",
-    "category_order": ["Scooter", "Bike"],
-    "order": [],
-    "category_items": {
-        "Scooter": [],
-        "Bike": []
-    }
-}
-
-
-def load_menu_config() -> Dict[str, Any]:
-    """Carrega a configuração completa de modo de menu e ordenação."""
-    for p in [ORDER_FILE, API_ORDER_FILE]:
-        if p.is_file():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, dict):
-                        cfg = dict(DEFAULT_MENU_CONFIG)
-                        cfg.update(data)
-                        return cfg
-                    elif isinstance(data, list):
-                        cfg = dict(DEFAULT_MENU_CONFIG)
-                        cfg["order"] = [str(s).strip().lower() for s in data if str(s).strip()]
-                        return cfg
-            except Exception as e:
-                logger.warning(f"Erro ao ler {p}: {e}")
-    return dict(DEFAULT_MENU_CONFIG)
-
-
-def load_models_order() -> List[str]:
-    """Carrega a lista de slugs ordenada (retrocompatibilidade)."""
-    return load_menu_config().get("order", [])
-
-
-def save_menu_config(config: Any) -> bool:
-    """Salva as configurações de modo de menu (categoria vs livre) e suas ordens."""
-    global _memory_cache, _last_sync_time
-    if isinstance(config, list):
-        cfg = dict(DEFAULT_MENU_CONFIG)
-        cfg["order"] = [str(s).strip().lower() for s in config if str(s).strip()]
-    elif isinstance(config, dict):
-        cfg = dict(DEFAULT_MENU_CONFIG)
-        cfg.update(config)
-        cfg["mode"] = "free" if config.get("mode") == "free" else "category"
-        if "category_order" in config and isinstance(config["category_order"], list):
-            cfg["category_order"] = [str(c).strip() for c in config["category_order"] if str(c).strip()]
-        if "order" in config and isinstance(config["order"], list):
-            cfg["order"] = [str(s).strip().lower() for s in config["order"] if str(s).strip()]
-    else:
-        return False
-
-    for p in [ORDER_FILE, API_ORDER_FILE]:
-        try:
-            p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"Erro ao salvar ordem/menu em {p}: {e}")
-            return False
-
-    _memory_cache = None
-    _last_sync_time = 0
-    sync_models_from_sheets(force=True)
-    return True
-
-
-def save_models_order(order_slugs: List[str]) -> bool:
-    """Salva a ordem customizada dos modelos."""
-    return save_menu_config(order_slugs)
-
-
-DEFAULT_KIOSK_SETTINGS = {
-    "enabled": True,
-    "interval_seconds": 30,
-    "auto_pause_seconds": 45,
-    "transition_effect": "slide_apple",
-}
-
-
-def load_kiosk_settings() -> Dict[str, Any]:
-    """Carrega as configurações do Modo TV / Kiosk da vitrine."""
-    for p in [KIOSK_FILE, API_KIOSK_FILE]:
-        if p.is_file():
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, dict):
-                        merged = dict(DEFAULT_KIOSK_SETTINGS)
-                        merged.update(data)
-                        return merged
-            except Exception as e:
-                logger.warning(f"Erro ao ler {p}: {e}")
-    return dict(DEFAULT_KIOSK_SETTINGS)
-
-
-def save_kiosk_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
-    """Salva as configurações do Modo TV / Kiosk da vitrine."""
-    curr = load_kiosk_settings()
-    curr.update({
-        "enabled": bool(settings.get("enabled", curr.get("enabled", True))),
-        "interval_seconds": max(5, min(300, int(settings.get("interval_seconds", curr.get("interval_seconds", 30))))),
-        "auto_pause_seconds": max(10, min(300, int(settings.get("auto_pause_seconds", curr.get("auto_pause_seconds", 45))))),
-        "transition_effect": str(settings.get("transition_effect", curr.get("transition_effect", "slide_apple"))),
-        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    })
-    for p in [KIOSK_FILE, API_KIOSK_FILE]:
-        try:
-            p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(curr, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"Erro ao salvar configurações do kiosk em {p}: {e}")
-    return curr
+# Importação e delegação modular do serviço de ordenação e menu (Soberania Supabase)
+from services.showroom_order_service import (
+    DEFAULT_MENU_CONFIG,
+    DEFAULT_KIOSK_SETTINGS,
+    load_menu_config,
+    load_models_order,
+    save_menu_config,
+    save_models_order,
+    load_kiosk_settings,
+    save_kiosk_settings,
+    apply_model_ordering,
+)
 
 
 def normalize_slug(name: str) -> str:
@@ -410,24 +307,11 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
         except Exception as oe:
             logger.warning(f"Erro ao mesclar overrides do showroom: {oe}")
 
-        # Ordenar por Modo de Menu (Categoria vs Livre/Aleatório)
+        # Ordenar por Modo de Menu (Categoria vs Livre/Aleatório) com Soberania Supabase
         menu_cfg = load_menu_config()
         mode = menu_cfg.get("mode", "category")
         cat_order_list = menu_cfg.get("category_order") or ["Scooter", "Bike"]
-        cat_order_map = {cat.lower(): idx + 1 for idx, cat in enumerate(cat_order_list)}
-        custom_order = menu_cfg.get("order", [])
-        order_map = {slug: idx for idx, slug in enumerate(custom_order)}
-
-        if mode == "free" and custom_order:
-            final_list.sort(key=lambda x: (order_map.get(x.get("slug", ""), 999), x.get("modelo", "")))
-        elif custom_order:
-            final_list.sort(key=lambda x: (
-                cat_order_map.get((x.get("categoria") or "").lower(), 99),
-                order_map.get(x.get("slug", ""), 900),
-                x.get("modelo", "")
-            ))
-        else:
-            final_list.sort(key=lambda x: (cat_order_map.get((x.get("categoria") or "").lower(), 99), x.get("modelo", "")))
+        final_list = apply_model_ordering(final_list, menu_cfg)
 
         active_models = [m for m in final_list if m.get("is_active", True)]
 
@@ -473,7 +357,7 @@ def sync_models_from_sheets(force: bool = False) -> Dict[str, Any]:
 
 
 def get_all_models(include_inactive: bool = False) -> List[Dict[str, Any]]:
-    """Retorna os modelos sincronizados aplicando sempre os overrides mais recentes do Supabase."""
+    """Retorna os modelos sincronizados aplicando sempre os overrides e ordenação mais recentes do Supabase."""
     import copy
     data = sync_models_from_sheets(force=False)
     base_list = copy.deepcopy(data.get("all_models") or data.get("models") or [])
@@ -482,6 +366,10 @@ def get_all_models(include_inactive: bool = False) -> List[Dict[str, Any]]:
         base_list = merge_showroom_overrides(base_list)
     except Exception as e:
         logger.debug("Aviso ao aplicar merge_showroom_overrides em get_all_models: %s", e)
+    try:
+        base_list = apply_model_ordering(base_list)
+    except Exception as oe:
+        logger.debug("Aviso ao aplicar apply_model_ordering em get_all_models: %s", oe)
     if include_inactive:
         return base_list
     return [m for m in base_list if m.get("is_active", True)]
