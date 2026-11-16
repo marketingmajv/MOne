@@ -1,17 +1,18 @@
 {# templates/showroom/seo_head_meta.html — SEO & GEO (Generative Engine Optimization) #}
 {% set base_domain = canonical_base or 'https://www.majmobilidade.com.br' %}
-{% if active_model %}
-  {% set model_display_name = active_model.modelo | replace(' MAJ', '') %}
+{% if is_model_specific and active_model %}
   {% set canonical_url = base_domain ~ '/modelos/' ~ active_model.slug %}
-  {% set seo_title = model_display_name ~ ' - Scooter Elétrica MAJ | Homologada CONTRAN 996 (Sem CNH)' %}
-  {% set seo_desc = active_model.modelo ~ ': motor de ' ~ (active_model.metrics.potencia_nominal_w or '1000W') ~ ', até ' ~ (active_model.metrics.autonomia_maxima_km or '50') ~ 'km de autonomia, bateria de lítio e velocidade de ' ~ (active_model.metrics.velocidade_max_kmh or '32 km/h') ~ '. Homologada conforme CONTRAN 996 (dispensa CNH e emplacamento). Conheça a MAJ Mobilidade Elétrica.' %}
+  {% set seo_title = active_model.modelo ~ ' | MAJ MOBILIDADE ELÉTRICA' %}
+  {% set seo_desc = active_model.modelo ~ ': motor de ' ~ (active_model.metrics.potencia_nominal_w or '1000W') ~ ', até ' ~ (active_model.metrics.autonomia_maxima_km or '50') ~ 'km de autonomia, bateria de lítio e velocidade de ' ~ (active_model.metrics.velocidade_max_kmh or '32 km/h') ~ '. Homologada conforme CONTRAN 996 (dispensa CNH e emplacamento). Conheça na MAJ.' %}
   {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
-  {% set abs_share_img = share_img if share_img.startswith('http') else (base_domain ~ share_img ~ '?v=20261116') %}
+  {% set abs_share_img = share_img if share_img.startswith('http') else (base_domain ~ share_img ~ '?v=20261116b') %}
 {% else %}
-  {% set canonical_url = base_domain ~ '/modelos' %}
-  {% set seo_title = 'MAJ Mobilidade Elétrica | Scooters e E-Bikes Homologadas no Brasil (Sem CNH)' %}
-  {% set seo_desc = 'Conheça a linha completa de scooters e bicicletas elétricas da MAJ Mobilidade. Tecnologia de ponta, motorização de alta performance, baterias de lítio e conformidade CONTRAN 996 (dispensa CNH). Compre no varejo ou atacado.' %}
-  {% set abs_share_img = base_domain ~ '/public/images/models/share/max-12.jpg?v=20261116' %}
+  {% set canonical_url = base_domain ~ '/' %}
+  {% set seo_title = 'MAJ MOBILIDADE ELÉTRICA | O Futuro da Mobilidade Urbana' %}
+  {% set seo_desc = 'Veículos elétricos sustentáveis, autopropelidos sem exigência de CNH ou IPVA. Baterias de lítio de alta autonomia e suporte em todo o Brasil.' %}
+  {% set first_model = (models[0] if models and models|length > 0 else active_model) %}
+  {% set first_img = (first_model.share_image if first_model and first_model.share_image else '/public/images/models/share/max-12.jpg') %}
+  {% set abs_share_img = first_img if first_img.startswith('http') else (base_domain ~ first_img ~ '?v=20261116b') %}
 {% endif %}
 
 <!-- Títulos Canônicos e Metadados Primários -->

@@ -317,6 +317,7 @@ def showroom_models_page(slug=None):
         models=models,
         active_model=active_model,
         initial_slug=slug or (active_model.get("slug") if active_model else None),
+        is_model_specific=bool(slug),
         kiosk_settings=kiosk_settings,
         cache_id=cache_id,
         promo_banner=promo_banner,
