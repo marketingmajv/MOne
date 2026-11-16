@@ -11,7 +11,7 @@
           "services/**",
           "static/css/**",
           "static/js/**",
-          "static/images/**",
+          "static/data/**",
           "static/uploads/**",
           "static/*.css",
           "static/*.js",
@@ -19,7 +19,8 @@
           "static/*.ico",
           "api/static/**",
           "api/templates/**",
-          "public/**",
+          "public/images/**",
+          "public/*.png",
           "uploads/outlet/**"
         ]
       }
