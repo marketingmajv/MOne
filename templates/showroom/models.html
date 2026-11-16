@@ -3,43 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  {% if active_model %}
-    {% set model_display_name = active_model.modelo | replace(' MAJ', '') %}
-    <title>Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica</title>
-    <meta name="title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
-    <meta property="og:title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
-    <meta name="twitter:title" content="Show-room {{ model_display_name }} | MAJ Mobilidade Elétrica">
-    <meta name="description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
-    <meta property="og:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
-    <meta name="twitter:description" content="Show-room {{ active_model.modelo }}. Potência de {{ active_model.metrics.potencia_nominal_w or 1000 }}W, até {{ active_model.metrics.autonomia_maxima_km or 50 }}km de autonomia e cockpit digital com telemetria avançada.">
-    {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
-    {% set abs_share_img = share_img if share_img.startswith('http') else ('https://m-one.majmobilidade.com.br' ~ share_img ~ '?v=20261020') %}
-    <meta property="og:image" content="{{ abs_share_img }}">
-    <meta property="og:image:secure_url" content="{{ abs_share_img }}">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="675">
-    <meta property="og:image:alt" content="Show-room {{ active_model.modelo }} • MAJ Mobilidade Elétrica">
-    <meta name="twitter:image" content="{{ abs_share_img }}">
-  {% else %}
-    <title>Show-room | MAJ Mobilidade Elétrica</title>
-    <meta name="title" content="Show-room | MAJ Mobilidade Elétrica">
-    <meta property="og:title" content="Show-room | MAJ Mobilidade Elétrica">
-    <meta name="twitter:title" content="Show-room | MAJ Mobilidade Elétrica">
-    <meta name="description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
-    <meta property="og:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
-    <meta name="twitter:description" content="Show-room oficial de Mobilidade Elétrica MAJ. Cockpit digital, engenharia e telemetria de alta performance.">
-    <meta property="og:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
-    <meta property="og:image:secure_url" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="675">
-    <meta name="twitter:image" content="https://m-one.majmobilidade.com.br/public/images/models/share/max-12.jpg?v=20261020">
-  {% endif %}
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="MAJ Mobilidade Elétrica">
-  <meta property="og:url" content="{{ request.url }}">
-  <meta name="twitter:card" content="summary_large_image">
+  <!-- SEO, OpenGraph e Schema.org JSON-LD (Google & IAs: ChatGPT, Gemini, Perplexity) -->
+  {% include "showroom/seo_head_meta.html" %}
   
   <!-- Favicon Oficial MAJ Mobilidade Elétrica -->
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
@@ -345,7 +310,28 @@
           </div>
 
           <div class="hud-specs-grid" id="hudSpecsGrid">
-            <!-- Especificações técnicas detalhadas renderizadas via showroom.js -->
+            <!-- SSR Pre-renderizado para Googlebot e IAs (hidratado dinamicamente via showroom.js) -->
+            {% if active_model and active_model.sections and active_model.sections.get('Desempenho') %}
+              {% for label, val in active_model.sections['Desempenho'].items() %}
+                <div class="hud-spec-card">
+                  <span class="hud-spec-lbl">{{ label }}</span>
+                  <span class="hud-spec-val">{{ val }}</span>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="hud-spec-card">
+                <span class="hud-spec-lbl">Potência Nominal</span>
+                <span class="hud-spec-val">{{ (active_model.metrics.potencia_nominal_w if active_model and active_model.metrics else '1000W') }}</span>
+              </div>
+              <div class="hud-spec-card">
+                <span class="hud-spec-lbl">Velocidade Máxima</span>
+                <span class="hud-spec-val">{{ (active_model.metrics.velocidade_max_kmh if active_model and active_model.metrics else '32 km/h') }}</span>
+              </div>
+              <div class="hud-spec-card">
+                <span class="hud-spec-lbl">Autonomia</span>
+                <span class="hud-spec-val">Até {{ (active_model.metrics.autonomia_maxima_km if active_model and active_model.metrics else '50') }} km</span>
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -461,6 +447,9 @@
         </table>
       </div>
     </section>
+
+    <!-- 9. Seção de Autoridade Institucional, FAQ CONTRAN 996 & Rodapé SEO -->
+    {% include "showroom/seo_faq_section.html" %}
   </main>
 
   <!-- WhatsApp Flutuante com Mensagem Dinâmica do Modelo -->

@@ -1,0 +1,212 @@
+{# templates/showroom/seo_head_meta.html — SEO & GEO (Generative Engine Optimization) #}
+{% set base_domain = canonical_base or 'https://www.majmobilidade.com.br' %}
+{% if active_model %}
+  {% set model_display_name = active_model.modelo | replace(' MAJ', '') %}
+  {% set canonical_url = base_domain ~ '/modelos/' ~ active_model.slug %}
+  {% set seo_title = model_display_name ~ ' - Scooter Elétrica MAJ | Homologada CONTRAN 996 (Sem CNH)' %}
+  {% set seo_desc = active_model.modelo ~ ': motor de ' ~ (active_model.metrics.potencia_nominal_w or '1000W') ~ ', até ' ~ (active_model.metrics.autonomia_maxima_km or '50') ~ 'km de autonomia, bateria de lítio e velocidade de ' ~ (active_model.metrics.velocidade_max_kmh or '32 km/h') ~ '. Homologada conforme CONTRAN 996 (dispensa CNH e emplacamento). Conheça a MAJ Mobilidade Elétrica.' %}
+  {% set share_img = active_model.share_image or ('/public/images/models/share/' ~ active_model.slug ~ '.jpg') %}
+  {% set abs_share_img = share_img if share_img.startswith('http') else (base_domain ~ share_img ~ '?v=20261116') %}
+{% else %}
+  {% set canonical_url = base_domain ~ '/modelos' %}
+  {% set seo_title = 'MAJ Mobilidade Elétrica | Scooters e E-Bikes Homologadas no Brasil (Sem CNH)' %}
+  {% set seo_desc = 'Conheça a linha completa de scooters e bicicletas elétricas da MAJ Mobilidade. Tecnologia de ponta, motorização de alta performance, baterias de lítio e conformidade CONTRAN 996 (dispensa CNH). Compre no varejo ou atacado.' %}
+  {% set abs_share_img = base_domain ~ '/public/images/models/share/max-12.jpg?v=20261116' %}
+{% endif %}
+
+<!-- Títulos Canônicos e Metadados Primários -->
+<title>{{ seo_title }}</title>
+<meta name="title" content="{{ seo_title }}">
+<meta name="description" content="{{ seo_desc }}">
+<meta name="keywords" content="scooter elétrica, scooter sem cnh, maj mobilidade, {% if active_model %}{{ active_model.modelo }}, {% endif %}moto elétrica brasil, bicicleta elétrica, e-bike urbana, contran 996, scooter homologada sem placa, mobilidade sustentável, fábrica de scooters elétricas">
+<link rel="canonical" href="{{ canonical_url }}">
+
+<!-- Indexação de Motores de Busca e IAs -->
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="author" content="MAJ Mobilidade Elétrica">
+<meta name="publisher" content="MAJ Mobilidade Elétrica">
+
+<!-- Metatags Geográficas (Espírito Santo / Brasil) -->
+<meta name="geo.region" content="BR-ES">
+<meta name="geo.placename" content="Serra, Espírito Santo, Brasil">
+<meta name="geo.position" content="-20.1286;-40.3078">
+<meta name="ICBM" content="-20.1286, -40.3078">
+
+<!-- Open Graph / Facebook / WhatsApp -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="MAJ Mobilidade Elétrica">
+<meta property="og:title" content="{{ seo_title }}">
+<meta property="og:description" content="{{ seo_desc }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ abs_share_img }}">
+<meta property="og:image:secure_url" content="{{ abs_share_img }}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta property="og:image:alt" content="{{ seo_title }}">
+
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ seo_title }}">
+<meta name="twitter:description" content="{{ seo_desc }}">
+<meta name="twitter:image" content="{{ abs_share_img }}">
+
+<!-- Dados Estruturados Schema.org JSON-LD para Google & IAs (ChatGPT Search, Gemini, Perplexity) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "{{ base_domain }}/#organization",
+      "name": "MAJ Mobilidade Elétrica",
+      "alternateName": ["MAJ Mobilidade", "MAJ E-Scooters Brasil", "MAJ"],
+      "url": "{{ base_domain }}",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "{{ base_domain }}/static/img/maj-logo-official.png",
+        "caption": "Logo Oficial MAJ Mobilidade Elétrica"
+      },
+      "description": "Fabricante e distribuidora brasileira de scooters elétricas, e-bikes e veículos autopropelidos homologados conforme CONTRAN 996 (sem CNH).",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "BR",
+        "addressRegion": "ES"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+55-27-99605-1538",
+        "contactType": "customer service",
+        "areaServed": "BR",
+        "availableLanguage": "Portuguese"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "{{ base_domain }}/#website",
+      "url": "{{ base_domain }}",
+      "name": "MAJ Mobilidade Elétrica",
+      "publisher": {
+        "@id": "{{ base_domain }}/#organization"
+      },
+      "inLanguage": "pt-BR"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "{{ canonical_url }}#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Início",
+          "item": "{{ base_domain }}"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Modelos",
+          "item": "{{ base_domain }}/modelos"
+        }{% if active_model %},
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "{{ active_model.modelo }}",
+          "item": "{{ canonical_url }}"
+        }
+        {% endif %}
+      ]
+    }{% if active_model %},
+    {
+      "@type": "Product",
+      "@id": "{{ canonical_url }}#product",
+      "name": "{{ active_model.modelo }}",
+      "description": "{{ seo_desc }}",
+      "image": ["{{ abs_share_img }}"],
+      "brand": {
+        "@type": "Brand",
+        "name": "MAJ Mobilidade"
+      },
+      "category": "{{ 'Bicicletas Elétricas' if active_model.categoria == 'Bike' else 'Scooters Elétricas' }}",
+      "offers": {
+        "@type": "Offer",
+        "url": "{{ canonical_url }}",
+        "priceCurrency": "BRL",
+        "availability": "https://schema.org/InStock",
+        "seller": {
+          "@id": "{{ base_domain }}/#organization"
+        }
+      },
+      "additionalProperty": [
+        {
+          "@type": "PropertyValue",
+          "name": "Potência Nominal",
+          "value": "{{ active_model.metrics.potencia_nominal_w or '1000W' }}"
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Velocidade Máxima Homologada",
+          "value": "{{ active_model.metrics.velocidade_max_kmh or 'Até 32 km/h' }}"
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Autonomia Estimada",
+          "value": "Até {{ active_model.metrics.autonomia_maxima_km or '50' }} km"
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Capacidade de Bateria",
+          "value": "{{ active_model.metrics.voltagem_v or '60V' }} {{ active_model.metrics.capacidade_ah or '20Ah' }} ({{ active_model.metrics.capacidade_wh or '1200Wh' }})"
+        },
+        {
+          "@type": "PropertyValue",
+          "name": "Regulamentação e CNH",
+          "value": "Dispensa CNH e emplacamento conforme a Resolução CONTRAN nº 996/2023"
+        }
+      ]
+    }
+    {% endif %},
+    {
+      "@type": "FAQPage",
+      "@id": "{{ canonical_url }}#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "A scooter elétrica MAJ precisa de habilitação (CNH) ou emplacamento?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Não. Os modelos da MAJ com velocidade máxima de até 32 km/h e especificações técnicas homologadas enquadram-se na Resolução CONTRAN nº 996/2023 como equipamentos autopropelidos ou bicicletas elétricas, sendo 100% isentos de CNH, emplacamento e IPVA em todo o território nacional."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Qual é a autonomia e velocidade máxima dos veículos MAJ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A velocidade máxima dos modelos homologados para dispensa de CNH é de 32 km/h. A autonomia varia entre 35 km e 80 km por carga completa dependendo do modelo, capacidade da bateria de lítio, peso do condutor e relevo da rota."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Como recarregar a bateria de uma scooter elétrica MAJ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Todas as scooters e e-bikes MAJ utilizam carregadores inteligentes bivolt (110V/220V). Basta conectar o carregador em qualquer tomada residencial comum. O tempo de recarga completa varia de 4 a 8 horas."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Onde comprar scooters MAJ no atacado ou varejo?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A MAJ atende lojistas e revendedores em condições de atacado B2B através do portal /atacado e consultores especializados. Para consumidores finais, há o canal /outlet com lotes de pronta entrega e atendimento no WhatsApp oficial."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+

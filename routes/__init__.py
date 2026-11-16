@@ -44,6 +44,7 @@ from routes.support_routes import support_bp
 from routes.product_hub_routes import product_hub_bp
 from routes.internal_analysis_routes import internal_analysis_bp
 from routes.cycle_pages_routes import cycle_pages_bp
+from routes.seo_routes import seo_bp
 
 ALL_BLUEPRINTS = [
     auth_bp,
@@ -87,6 +88,7 @@ ALL_BLUEPRINTS = [
     prospector_bp,
     radar_bp,
     maintenance_bp,
+    seo_bp,
 ]
 
 

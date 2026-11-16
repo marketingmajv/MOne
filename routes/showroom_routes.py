@@ -311,6 +311,7 @@ def showroom_models_page(slug=None):
     kiosk_settings = load_kiosk_settings()
     promo_banner = load_promo_banner_settings()
     global_image_mode = get_global_image_mode()
+    canonical_base = "https://www.majmobilidade.com.br"
     return render_template(
         "showroom/models.html",
         models=models,
@@ -320,4 +321,5 @@ def showroom_models_page(slug=None):
         cache_id=cache_id,
         promo_banner=promo_banner,
         global_image_mode=global_image_mode,
+        canonical_base=canonical_base,
     )

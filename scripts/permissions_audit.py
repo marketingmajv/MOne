@@ -33,6 +33,7 @@ EXEMPT_BLUEPRINTS: Set[str] = {
     "atacado",           # /atacado (catálogo B2B para lojistas)
     "showroom",          # /show-room (modo TV e vitrine)
     "custom_catalog",    # /c/<slug> (catálogos externos para clientes)
+    "seo",               # /robots.txt, /sitemap.xml, /llms.txt (público)
 
     # Webhooks, Integrações de Mensageria e APIs externas públicas
     "webhook",           # /webhook/* (recebimento de terceiros)

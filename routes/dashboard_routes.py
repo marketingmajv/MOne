@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from pathlib import Path
-from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory
+from flask import Blueprint, abort, jsonify, render_template, request, send_from_directory, session
 
 from database import db
 from routes.helpers import UPLOAD_DIR, current_user, login_required, roles_required, user_has_permission
@@ -19,6 +19,24 @@ dashboard_bp = Blueprint("dashboard", __name__)
 
 
 @dashboard_bp.route("/")
+def root_index():
+    """Roteamento inteligente da raiz do domínio.
+    - Se for domínio institucional (majmobilidade.com.br / www.majmobilidade.com.br)
+      ou visitante/rastreador não autenticado: serve diretamente o Showroom Institucional (HTTP 200).
+    - Se for usuário autenticado no sistema operacional M-One: exibe o painel operacional.
+    """
+    host = request.host.lower() if request else ""
+    is_institutional = ("majmobilidade.com.br" in host and not host.startswith("m-one"))
+    
+    if session.get("user_id") and not is_institutional:
+        me = current_user()
+        data = get_dashboard_operational_data(me)
+        return render_template("dashboard.html", me=me, **data)
+    
+    from routes.showroom_routes import showroom_models_page
+    return showroom_models_page()
+
+
 @dashboard_bp.route("/dashboard")
 @dashboard_bp.route("/dashboar")
 @login_required
