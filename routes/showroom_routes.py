@@ -73,6 +73,8 @@ def api_get_model(slug):
 
 @showroom_bp.route("/api/models/<slug>/status", methods=["POST"])
 @showroom_bp.route("/api/models/<slug>/toggle-active", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
 def api_set_model_status(slug):
     """Ativa ou inativa um modelo específico no catálogo e persiste no banco/overrides."""
     body = request.get_json(silent=True) or {}
@@ -100,6 +102,8 @@ def api_set_model_status(slug):
 
 
 @showroom_bp.route("/api/models/order", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
 def api_save_models_order():
     """Salva a nova ordem e modo de exibição dos modelos (menu por categoria vs livre)."""
     body = request.get_json(silent=True) or {}
@@ -116,6 +120,8 @@ def api_save_models_order():
 
 
 @showroom_bp.route("/api/models/sync", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
 def api_sync_models():
     """Endpoint para forçar sincronização com o Google Sheets."""
     data = sync_models_from_sheets(force=True)

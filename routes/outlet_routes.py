@@ -436,6 +436,14 @@ def cron_sync_outlet():
     Executa a mesma rotina de sincronização do botão 'Sync CSV',
     atualizando estoques e preços sem resetar o banco de dados.
     """
+    cron_secret = os.environ.get("CRON_SECRET")
+    if cron_secret:
+        auth_header = request.headers.get("Authorization", "")
+        from routes.helpers import current_user
+        u = current_user()
+        is_admin = bool(u and u.get("role") in ("admin", "support"))
+        if auth_header != f"Bearer {cron_secret}" and not is_admin:
+            return jsonify({"status": "error", "message": "Não autorizado"}), 401
     try:
         from services.outlet_service import sync_outlet_from_csv
         result = sync_outlet_from_csv()

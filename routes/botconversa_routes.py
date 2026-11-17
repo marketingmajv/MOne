@@ -10,6 +10,7 @@ import logging
 import os
 from flask import Blueprint, jsonify, request, send_file
 
+from routes.helpers import login_required, roles_required
 from services.botconversa_service import (
     generate_cross_funnel_diagnosis,
     get_botconversa_config,
@@ -23,6 +24,8 @@ botconversa_bp = Blueprint("botconversa", __name__, url_prefix="/api/botconversa
 
 
 @botconversa_bp.route("/status", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
 def get_status():
     """Retorna o status consolidado da conexão BotConversa e das campanhas."""
     cfg = get_botconversa_config()
@@ -39,6 +42,8 @@ def get_status():
 
 
 @botconversa_bp.route("/config", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
 def update_config():
     """Salva a chave de API e configurações do BotConversa."""
     data = request.get_json(silent=True) or {}
@@ -62,6 +67,8 @@ def update_config():
 
 
 @botconversa_bp.route("/diagnosis", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
 def get_diagnosis():
     """Retorna o diagnóstico estruturado do funil Meta Ads + BotConversa."""
     days = int(request.args.get("days", 7))
@@ -74,6 +81,8 @@ def get_diagnosis():
 
 
 @botconversa_bp.route("/generate-pdf", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
 def generate_pdf():
     """Aciona o gerador de PDF ReportLab sob demanda e retorna os metadados do documento gerado."""
     days = int(request.args.get("days", 7))
@@ -94,6 +103,8 @@ def generate_pdf():
 
 
 @botconversa_bp.route("/download-pdf", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
 def download_pdf():
     """Disponibiliza o download do PDF executivo gerado."""
     filename = request.args.get("file")
