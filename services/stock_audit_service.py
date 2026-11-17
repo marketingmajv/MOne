@@ -12,22 +12,33 @@ from database import db
 from services.stock_sync_service import ensure_stock_audit_schema
 
 
-def _get_expected_units(conn, location_scope: str) -> List[Dict[str, Any]]:
-    """Retorna unidades fisicamente esperadas na conferência do galpão (available, separated, unreleased)."""
+def _get_expected_units(
+    conn, location_scope: str, detected_tabs: Optional[List[str]] = None
+) -> List[Dict[str, Any]]:
+    """Retorna unidades fisicamente esperadas na conferência (por aba detectada no modo Automático, ou por galpão)."""
     params: List[Any] = []
     where = ["st.status IN ('available', 'separated', 'unreleased')"]
-    if location_scope and location_scope != "Todos":
+    scope = (location_scope or "Automático").strip()
+
+    if scope == "Automático":
+        if not detected_tabs:
+            return []
+        placeholders = ", ".join(["%s"] * len(detected_tabs))
+        where.append(f"COALESCE(NULLIF(TRIM(st.source_tab), ''), st.location) IN ({placeholders})")
+        params.extend(detected_tabs)
+    elif scope != "Todos":
         where.append("UPPER(TRIM(st.location)) = UPPER(TRIM(%s))")
-        params.append(location_scope)
+        params.append(scope)
 
     rows = conn.execute(
         f"""
         SELECT st.id, st.chassis, st.color, st.motor_no, st.status, st.location,
+               COALESCE(NULLIF(TRIM(st.source_tab), ''), st.location) AS source_tab,
                st.separated_order_number, p.name AS product_name
         FROM stock_units st
         JOIN products p ON p.id = st.product_id
         WHERE {' AND '.join(where)}
-        ORDER BY p.name, st.color, st.chassis
+        ORDER BY source_tab, p.name, st.color, st.chassis
         """,
         params,
     ).fetchall()
@@ -45,9 +56,9 @@ def get_active_audit() -> Optional[Dict[str, Any]]:
 
 
 def start_stock_audit(location_scope: str, user_id: Optional[int], user_name: str) -> Dict[str, Any]:
-    """Inicia uma nova sessão de conferência física para o galpão selecionado."""
+    """Inicia uma nova sessão de conferência física (padrão Automático: detecta abas conforme bipado)."""
     ensure_stock_audit_schema()
-    scope = (location_scope or "Todos").strip()
+    scope = (location_scope or "Automático").strip()
     with db() as conn:
         expected = _get_expected_units(conn, scope)
         expected_count = len(expected)
@@ -119,12 +130,13 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
             (chassis,),
         ).fetchone()
 
-        scope = audit_row["location_scope"] or "Todos"
+        scope = audit_row["location_scope"] or "Automático"
         if not unit:
             scan_result = "unknown"
             unit_id = None
             unit_status = None
             unit_loc = None
+            tab_snap = None
             order_snap = None
             prod_snap = "Não Cadastrado"
             color_snap = None
@@ -133,28 +145,29 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
             unit_id = unit["id"]
             unit_status = unit["status"]
             unit_loc = unit["location"]
+            tab_snap = (unit.get("source_tab") or unit_loc or "Geral").strip()
             order_snap = unit.get("separated_order_number")
             prod_snap = unit["product_name"]
             color_snap = unit["color"]
 
             if unit_status == "separated":
                 scan_result = "alert_separated"
-                msg = f"⚠️ ATENÇÃO: {chassis} ({prod_snap}) está SEPARADO PARA VENDA (Pedido #{order_snap or 'S/N'})!"
+                msg = f"⚠️ ATENÇÃO: {chassis} ({prod_snap}) está SEPARADO PARA VENDA (Pedido #{order_snap or 'S/N'})! [Aba: {tab_snap}]"
             elif unit_status == "sold":
                 scan_result = "alert_sold"
-                msg = f"🔴 DIVERGÊNCIA: {chassis} ({prod_snap}) consta como VENDIDO no sistema!"
+                msg = f"🔴 DIVERGÊNCIA: {chassis} ({prod_snap}) consta como VENDIDO! [Aba: {tab_snap}]"
             elif unit_status == "assembled":
                 scan_result = "alert_assembled"
-                msg = f"🛠️ {chassis} ({prod_snap}) constava como MONTADO e foi bipado no estoque."
-            elif scope != "Todos" and (unit_loc or "").strip().upper() != scope.strip().upper():
+                msg = f"🛠️ {chassis} ({prod_snap}) constava como MONTADO e foi bipado. [Aba: {tab_snap}]"
+            elif scope not in ("Todos", "Automático") and (unit_loc or "").strip().upper() != scope.strip().upper():
                 scan_result = "alert_other_location"
                 msg = f"📍 ALERTA LOCAL: {chassis} pertence a '{unit_loc}', mas a conferência é de '{scope}'."
             else:
                 scan_result = "ok"
                 if unit_status == "unreleased":
-                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'}) — Liberado para Disponível!"
+                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'}) — Liberado! [Aba: {tab_snap}]"
                 else:
-                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'})"
+                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'}) [Aba: {tab_snap}]"
 
             if scan_result == "ok" and unit_status == "unreleased":
                 conn.execute(
@@ -175,15 +188,15 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
                     INSERT INTO stock_audit_items (
                         audit_id, chassis, stock_unit_id, scan_result,
                         unit_status_at_scan, unit_location_at_scan, order_number_snapshot,
-                        product_name_snapshot, color_snapshot, scanned_by
+                        product_name_snapshot, color_snapshot, source_tab_snapshot, scanned_by
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING *
                     """,
                     (
                         audit_id, chassis, unit_id, scan_result,
                         unit_status, unit_loc, order_snap,
-                        prod_snap, color_snap, user_id,
+                        prod_snap, color_snap, tab_snap, user_id,
                     ),
                 ).fetchone()
             )
@@ -193,14 +206,14 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
                 INSERT INTO stock_audit_items (
                     audit_id, chassis, stock_unit_id, scan_result,
                     unit_status_at_scan, unit_location_at_scan, order_number_snapshot,
-                    product_name_snapshot, color_snapshot, scanned_by
+                    product_name_snapshot, color_snapshot, source_tab_snapshot, scanned_by
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     audit_id, chassis, unit_id, scan_result,
                     unit_status, unit_loc, order_snap,
-                    prod_snap, color_snap, user_id,
+                    prod_snap, color_snap, tab_snap, user_id,
                 ),
             )
             inserted_item = dict(
@@ -224,13 +237,17 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
         )
         conn.commit()
 
+    summary = get_audit_summary(audit_id) or {}
     return {
         "ok": True,
         "duplicate": False,
         "item": inserted_item,
         "message": msg,
-        "scanned_count": counts["total_scanned"] or 0,
-        "alerts_count": counts["total_alerts"] or 0,
+        "scanned_count": summary.get("scanned_count", counts["total_scanned"] or 0),
+        "expected_count": summary.get("expected_count", 0),
+        "missing_count": summary.get("missing_count", 0),
+        "alerts_count": summary.get("alerts_count", counts["total_alerts"] or 0),
+        "tab_breakdown": summary.get("tab_breakdown", []),
     }
 
 
@@ -250,15 +267,44 @@ def get_audit_summary(audit_id: int) -> Optional[Dict[str, Any]]:
         scanned_items = [dict(r) for r in scanned_rows]
         scanned_set = {r["chassis"].strip().upper() for r in scanned_items}
 
-        expected_units = _get_expected_units(conn, audit_dict["location_scope"])
+        detected_tabs = sorted(
+            {
+                (r.get("source_tab_snapshot") or "").strip()
+                for r in scanned_items
+                if (r.get("source_tab_snapshot") or "").strip()
+            }
+        )
+        expected_units = _get_expected_units(
+            conn,
+            audit_dict["location_scope"],
+            detected_tabs=detected_tabs if audit_dict["location_scope"] == "Automático" else None,
+        )
         missing_units = [u for u in expected_units if u["chassis"].strip().upper() not in scanned_set]
         alerts = [i for i in scanned_items if i["scan_result"] != "ok"]
+
+        tab_stats: Dict[str, Dict[str, int]] = {}
+        for it in scanned_items:
+            t = (it.get("source_tab_snapshot") or "").strip() or "Não Cadastrado / Outros"
+            slot = tab_stats.setdefault(t, {"scanned": 0, "missing": 0, "alerts": 0})
+            slot["scanned"] += 1
+            if it["scan_result"] != "ok":
+                slot["alerts"] += 1
+        for m in missing_units:
+            t = (m.get("source_tab") or m.get("location") or "Geral").strip()
+            slot = tab_stats.setdefault(t, {"scanned": 0, "missing": 0, "alerts": 0})
+            slot["missing"] += 1
+
+        tab_breakdown = [
+            {"tab": k, **v} for k, v in sorted(tab_stats.items(), key=lambda kv: kv[0])
+        ]
 
         return {
             "audit": audit_dict,
             "scanned_items": scanned_items,
             "alerts": alerts,
             "missing_units": missing_units,
+            "detected_tabs": detected_tabs,
+            "tab_breakdown": tab_breakdown,
             "expected_count": len(expected_units),
             "scanned_count": len(scanned_items),
             "missing_count": len(missing_units),

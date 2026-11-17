@@ -60,7 +60,7 @@ def audit_state():
 @permission_required("stock")
 def audit_start():
     data = request.get_json(silent=True) or request.form or {}
-    location_scope = data.get("location_scope", "Todos")
+    location_scope = data.get("location_scope", "Automático")
     existing = get_active_audit()
     if existing:
         summary = get_audit_summary(existing["id"])

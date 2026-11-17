@@ -6,18 +6,18 @@ da planilha Google Sheets (COLVIX) respeitando a regra anti-reset.
 
 from __future__ import annotations
 
-import csv
 import io
 import logging
 import urllib.request
 from typing import Any, Dict, List
+
+import openpyxl
 
 from database import db
 
 logger = logging.getLogger(__name__)
 
 COLVIX_SHEET_ID = "16csh8zLt8OjRER-3TnDrpq34sQX5J17sue4Cuq8txSY"
-COLVIX_GIDS = ["1364652365", "1136023792", "112393779"]
 
 _schema_ensured = False
 
@@ -40,6 +40,7 @@ def ensure_stock_audit_schema(force: bool = False) -> None:
                 "ALTER TABLE stock_units ADD COLUMN IF NOT EXISTS separated_by BIGINT",
                 "ALTER TABLE stock_units ADD COLUMN IF NOT EXISTS last_audited_at TIMESTAMP",
                 "ALTER TABLE stock_units ADD COLUMN IF NOT EXISTS last_audited_by BIGINT",
+                "ALTER TABLE stock_units ADD COLUMN IF NOT EXISTS source_tab TEXT",
                 "ALTER TABLE sales ADD COLUMN IF NOT EXISTS transfer_nf_1 TEXT",
                 "ALTER TABLE sales ADD COLUMN IF NOT EXISTS transfer_nf_2 TEXT",
             ]
@@ -80,11 +81,16 @@ def ensure_stock_audit_schema(force: bool = False) -> None:
                     order_number_snapshot TEXT,
                     product_name_snapshot TEXT,
                     color_snapshot TEXT,
+                    source_tab_snapshot TEXT,
                     scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     scanned_by BIGINT
                 )
                 """
             )
+            try:
+                conn.execute("ALTER TABLE stock_audit_items ADD COLUMN IF NOT EXISTS source_tab_snapshot TEXT")
+            except Exception:
+                pass
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_stock_audit_items_audit ON stock_audit_items(audit_id)"
             )
@@ -102,6 +108,7 @@ def ensure_stock_audit_schema(force: bool = False) -> None:
                 ("separated_by", "INTEGER"),
                 ("last_audited_at", "TIMESTAMP"),
                 ("last_audited_by", "INTEGER"),
+                ("source_tab", "TEXT"),
             ]:
                 if col not in existing_su:
                     conn.execute(f"ALTER TABLE stock_units ADD COLUMN {col} {typ}")
@@ -144,6 +151,7 @@ def ensure_stock_audit_schema(force: bool = False) -> None:
                     order_number_snapshot TEXT,
                     product_name_snapshot TEXT,
                     color_snapshot TEXT,
+                    source_tab_snapshot TEXT,
                     scanned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     scanned_by INTEGER
                 )
@@ -197,9 +205,21 @@ def _find_or_create_product_id(conn, model_name: str, product_cache: Dict[str, i
     return pid
 
 
+def _infer_tab_location_and_status(sheet_name: str) -> tuple[str, str]:
+    up = (sheet_name or "").strip().upper()
+    if "MONTADA" in up:
+        return "Galpão MAJ", "assembled"
+    if "SHOW ROOM" in up or "SHOWROOM" in up:
+        return "Showroom", "assembled"
+    if "CAIXA" in up:
+        return "Galpão MAJ", "available"
+    return "COLVIX", "available"
+
+
 def sync_colvix_sheets_to_stock() -> Dict[str, Any]:
     """
-    Sincroniza chassis da planilha COLVIX (3 abas) para stock_units.
+    Sincroniza chassis de TODAS as abas da planilha Google Sheets (COLVIX, Garo, Galpão MAJ, etc.)
+    via export XLSX para stock_units.
     Regra Anti-Reset: apenas INSERE chassis novos e nunca sobrescreve status,
     conferências, separações ou vendas já registradas no M-One.
     """
@@ -207,73 +227,90 @@ def sync_colvix_sheets_to_stock() -> Dict[str, Any]:
     inserted = 0
     skipped_existing = 0
     errors: List[str] = []
+    tabs_processed: List[str] = []
     product_cache: Dict[str, int] = {}
 
+    xlsx_url = f"https://docs.google.com/spreadsheets/d/{COLVIX_SHEET_ID}/export?format=xlsx"
+    try:
+        req = urllib.request.Request(xlsx_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            wb = openpyxl.load_workbook(io.BytesIO(resp.read()), data_only=True)
+    except Exception as ex:
+        return {"ok": False, "inserted": 0, "skipped_existing": 0, "errors": [f"Download XLSX: {ex}"]}
+
     with db() as conn:
-        existing_rows = conn.execute("SELECT UPPER(TRIM(chassis)) AS ch FROM stock_units").fetchall()
+        existing_rows = conn.execute("SELECT UPPER(TRIM(chassis)) AS ch, source_tab FROM stock_units").fetchall()
         existing_chassis = {r["ch"] for r in existing_rows if r.get("ch")}
+        existing_no_tab = {r["ch"] for r in existing_rows if r.get("ch") and not (r.get("source_tab") or "").strip()}
 
-        for gid in COLVIX_GIDS:
-            url = f"https://docs.google.com/spreadsheets/d/{COLVIX_SHEET_ID}/export?format=csv&gid={gid}"
-            try:
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=12) as resp:
-                    content = resp.read().decode("utf-8", errors="ignore")
-            except Exception as ex:
-                errors.append(f"GID {gid}: {ex}")
-                continue
-
-            rows = list(csv.reader(io.StringIO(content)))
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            rows = [
+                [("" if c is None else str(c).strip()) for c in r]
+                for r in ws.iter_rows(values_only=True)
+            ]
             header_idx = -1
             col_map: Dict[str, int] = {}
             for idx, r in enumerate(rows[:20]):
-                norm = [c.strip().lower() for c in r]
-                if any("chassi" in c for c in norm) and any("modelo" in c for c in norm):
+                norm = [c.lower() for c in r]
+                has_chassi_col = any(("chassi" in c and len(c) <= 25) for c in norm)
+                has_meta_col = any(k in c for c in norm for k in ("modelo", "motor", "produto", "cor"))
+                if has_chassi_col and has_meta_col:
                     header_idx = idx
                     for c_i, col_name in enumerate(norm):
-                        if "chassi" in col_name:
+                        if "chassi" in col_name and "chassis" not in col_map:
                             col_map["chassis"] = c_i
-                        elif "modelo" in col_name:
+                        elif ("modelo" in col_name or "produto" in col_name or "nome do produto" in col_name) and "model" not in col_map:
                             col_map["model"] = c_i
-                        elif col_name == "cor":
+                        elif (col_name == "cor" or "color" in col_name) and "color" not in col_map:
                             col_map["color"] = c_i
-                        elif "motor" in col_name:
+                        elif "motor" in col_name and "motor" not in col_map:
                             col_map["motor"] = c_i
-                        elif "cliente" in col_name:
+                        elif "cliente" in col_name and "customer" not in col_map:
                             col_map["customer"] = c_i
-                        elif "nf de venda" in col_name:
+                        elif "nf de venda" in col_name and "nf_venda" not in col_map:
                             col_map["nf_venda"] = c_i
                     break
 
             if header_idx < 0 or "chassis" not in col_map:
-                errors.append(f"GID {gid}: cabeçalho de Chassi/Modelo não localizado.")
                 continue
+
+            tabs_processed.append(sheet_name)
+            tab_loc, tab_default_status = _infer_tab_location_and_status(sheet_name)
 
             for r in rows[header_idx + 1 :]:
                 ch_idx = col_map["chassis"]
                 if ch_idx >= len(r):
                     continue
                 chassis = r[ch_idx].strip().upper()
-                if not chassis or len(chassis) < 6:
+                if not chassis or len(chassis) < 6 or " " in chassis:
                     continue
 
                 if chassis in existing_chassis:
+                    if chassis in existing_no_tab:
+                        conn.execute(
+                            "UPDATE stock_units SET source_tab = %s WHERE UPPER(TRIM(chassis)) = %s",
+                            (sheet_name, chassis),
+                        )
+                        existing_no_tab.discard(chassis)
                     skipped_existing += 1
                     continue
 
-                model_name = r[col_map["model"]].strip() if col_map.get("model") is not None and col_map["model"] < len(r) else "OUTROS"
+                model_name = r[col_map["model"]].strip() if col_map.get("model") is not None and col_map["model"] < len(r) else ""
+                if not model_name:
+                    model_name = "TRICICLO GARO" if "garo" in sheet_name.lower() else "OUTROS"
                 color = r[col_map["color"]].strip() if col_map.get("color") is not None and col_map["color"] < len(r) else ""
                 motor_no = r[col_map["motor"]].strip() if col_map.get("motor") is not None and col_map["motor"] < len(r) else ""
                 customer = r[col_map["customer"]].strip() if col_map.get("customer") is not None and col_map["customer"] < len(r) else ""
                 nf_venda = r[col_map["nf_venda"]].strip() if col_map.get("nf_venda") is not None and col_map["nf_venda"] < len(r) else ""
 
-                initial_status = "sold" if (customer or nf_venda) else "available"
+                initial_status = "sold" if (customer or nf_venda) else tab_default_status
                 pid = _find_or_create_product_id(conn, model_name, product_cache)
 
                 conn.execute(
                     """
-                    INSERT INTO stock_units (chassis, motor_no, product_id, color, status, location, notes)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO stock_units (chassis, motor_no, product_id, color, status, location, source_tab, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         chassis,
@@ -281,8 +318,9 @@ def sync_colvix_sheets_to_stock() -> Dict[str, Any]:
                         pid,
                         color or None,
                         initial_status,
-                        "COLVIX",
-                        f"Sincronizado COLVIX (gid={gid})" + (f" | Cliente: {customer}" if customer else ""),
+                        tab_loc,
+                        sheet_name,
+                        f"Sincronizado aba '{sheet_name}'" + (f" | Cliente: {customer}" if customer else ""),
                     ),
                 )
                 existing_chassis.add(chassis)
@@ -291,8 +329,9 @@ def sync_colvix_sheets_to_stock() -> Dict[str, Any]:
         conn.commit()
 
     return {
-        "ok": len(errors) == 0 or inserted > 0,
+        "ok": True,
         "inserted": inserted,
         "skipped_existing": skipped_existing,
+        "tabs_processed": tabs_processed,
         "errors": errors,
     }

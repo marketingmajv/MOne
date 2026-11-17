@@ -107,18 +107,48 @@ def build_stock_audit_pdf(summary: Dict[str, Any]) -> io.BytesIO:
     )
     elements.extend([kpi_table, Spacer(1, 8)])
 
+    # 1b. Resumo por Aba / Contêiner Detectado
+    tab_breakdown = summary.get("tab_breakdown") or []
+    if tab_breakdown:
+        elements.append(Paragraph(f"📁 Abas / Contêineres Identificados ({len(tab_breakdown)})", section_style))
+        tab_rows = [["Aba / Contêiner / Local", "Bipados", "Não Bipados", "Alertas"]]
+        for tb in tab_breakdown:
+            tab_rows.append([
+                str(tb.get("tab") or "Geral")[:45],
+                str(tb.get("scanned", 0)),
+                str(tb.get("missing", 0)),
+                str(tb.get("alerts", 0)),
+            ])
+        t_tabs = Table(tab_rows, colWidths=[88 * mm, 30 * mm, 32 * mm, 32 * mm], repeatRows=1)
+        t_tabs.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#334155")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 8),
+                    ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                    ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cbd5e1")),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        elements.extend([t_tabs, Spacer(1, 8)])
+
     # 2. Alertas Críticos (Separados para venda bipados, vendidos, outro galpão, desconhecidos)
     alerts = summary.get("alerts") or []
     elements.append(Paragraph(f"⚠️ Alertas Críticos na Bipagem ({len(alerts)})", section_style))
     if alerts:
-        alert_rows = [["Chassi", "Modelo / Cor", "Ocorrência", "Pedido / Local"]]
+        alert_rows = [["Chassi", "Modelo / Cor", "Ocorrência", "Aba / Pedido"]]
         for a in alerts:
             occ = SCAN_RESULT_LABELS.get(a.get("scan_result"), a.get("scan_result") or "")
             det = []
+            if a.get("source_tab_snapshot"):
+                det.append(str(a["source_tab_snapshot"])[:22])
             if a.get("order_number_snapshot"):
-                det.append(f"Pedido #{a['order_number_snapshot']}")
-            if a.get("unit_location_at_scan"):
-                det.append(str(a["unit_location_at_scan"]))
+                det.append(f"Ped. #{a['order_number_snapshot']}")
             alert_rows.append(
                 [
                     a.get("chassis", ""),
@@ -164,21 +194,22 @@ def build_stock_audit_pdf(summary: Dict[str, Any]) -> io.BytesIO:
     if missing:
         grouped = defaultdict(list)
         for m in missing:
-            grouped[m.get("product_name") or "Sem Modelo"].append(m)
+            tab_lbl = (m.get("source_tab") or m.get("location") or "Geral").strip()
+            grouped[(tab_lbl, m.get("product_name") or "Sem Modelo")].append(m)
 
-        missing_rows = [["Modelo", "Chassi", "Cor / Status", "Motivo / Investigação"]]
-        for model_name in sorted(grouped.keys()):
-            for u in grouped[model_name]:
+        missing_rows = [["Aba / Modelo", "Chassi", "Cor / Status", "Motivo / Investigação"]]
+        for tab_lbl, model_name in sorted(grouped.keys()):
+            for u in grouped[(tab_lbl, model_name)]:
                 st_label = "Separado" if u.get("status") == "separated" else "Disponível"
                 missing_rows.append(
                     [
-                        model_name[:24],
+                        f"{tab_lbl[:22]}\n{model_name[:22]}",
                         u.get("chassis", ""),
                         f"{u.get('color') or '—'} ({st_label})",
                         "[ ] S/ Venda  [ ] Montado  [ ] Pulado",
                     ]
                 )
-        t_missing = Table(missing_rows, colWidths=[38 * mm, 44 * mm, 40 * mm, 60 * mm], repeatRows=1)
+        t_missing = Table(missing_rows, colWidths=[42 * mm, 42 * mm, 38 * mm, 60 * mm], repeatRows=1)
         t_missing.setStyle(
             TableStyle(
                 [

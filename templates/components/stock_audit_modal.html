@@ -5,19 +5,22 @@
         <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line, #334155);">
           <div>
             <h3 style="margin: 0; color: var(--text, #f8fafc); font-size: 1.05rem;">📡 Conferência Física por Bipagem</h3>
-            <small style="color: var(--muted, #94a3b8); font-size: 0.78rem;">Bipe continuamente os chassis; o campo limpa automaticamente para o próximo bip.</small>
+            <small style="color: var(--muted, #94a3b8); font-size: 0.78rem;">Detecção automática de aba/contêiner ao bipar; o campo limpa sozinho para o próximo bip.</small>
           </div>
-          <button type="button" class="modal-close-btn" @click="closeAuditModal()" title="Fechar" aria-label="Fechar">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn sm" @click="showHistory = !showHistory" x-text="showHistory ? '🔫 Voltar à Bipagem' : '📑 Histórico / Galpão'"></button>
+            <button type="button" class="modal-close-btn" @click="closeAuditModal()" title="Fechar" aria-label="Fechar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
+          </div>
         </div>
 
         <div style="padding: 18px 20px; overflow-y: auto; flex: 1;">
-          <!-- Caso NÃO haja conferência ativa -->
-          <template x-if="!activeSummary">
+          <!-- Caso NÃO haja conferência ativa OU usuário clicou em Histórico -->
+          <template x-if="!activeSummary || showHistory">
             <div>
               <div style="background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155); border-radius: 12px; padding: 16px; margin-bottom: 18px;">
                 <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 6px;">📍 Selecione o Galpão / Local para Conferência</label>
@@ -76,11 +79,11 @@
           </template>
 
           <!-- Caso HAJA conferência ativa -->
-          <template x-if="activeSummary">
+          <template x-if="activeSummary && !showHistory">
             <div>
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px;">
                 <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
-                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Galpão Alvo</div>
+                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Modo / Escopo</div>
                   <div style="font-size: 0.95rem; font-weight: 800; color: var(--text, #f8fafc);" x-text="activeSummary.audit.location_scope"></div>
                 </div>
                 <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
@@ -96,6 +99,15 @@
                   <div style="font-size: 1.05rem; font-weight: 800; color: #ef4444;" x-text="activeSummary.alerts_count"></div>
                 </div>
               </div>
+
+              <!-- Abas / Contêineres detectados automaticamente -->
+              <template x-if="(activeSummary.tab_breakdown || []).length > 0">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+                  <template x-for="tb in activeSummary.tab_breakdown" :key="tb.tab">
+                    <span style="font-size: 0.73rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(56,189,248,0.14); border: 1px solid rgba(56,189,248,0.35); color: #38bdf8;" x-text="`📁 ${tb.tab}: ${tb.scanned} bip. / ${tb.missing} falt.`"></span>
+                  </template>
+                </div>
+              </template>
 
               <!-- Campo de Bipagem Contínua -->
               <form @submit.prevent="submitScan()" style="margin-bottom: 12px;">
@@ -115,7 +127,7 @@
               <!-- Feedback imediato do último bip -->
               <template x-if="lastFeedback">
                 <div style="padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; font-weight: 700;"
-                     :style="lastFeedback.type === 'ok' ? 'background: rgba(0,204,136,0.14); border: 1px solid rgba(0,204,136,0.4); color: #00cc88;' : 'background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;'"
+                     :style="lastFeedback.type === 'ok' ? 'background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.4); color: #059669;' : 'background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #dc2626;'"
                      x-text="lastFeedback.text">
                 </div>
               </template>
@@ -127,6 +139,7 @@
                     <tr style="background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); text-align: left;">
                       <th style="padding: 8px 10px;">Chassi</th>
                       <th style="padding: 8px 10px;">Modelo / Cor</th>
+                      <th style="padding: 8px 10px;">Aba / Contêiner</th>
                       <th style="padding: 8px 10px;">Resultado</th>
                     </tr>
                   </thead>
@@ -135,6 +148,7 @@
                       <tr style="border-top: 1px solid var(--line, #334155); color: var(--text, #f8fafc);">
                         <td class="mono" style="padding: 7px 10px; font-weight: 700;" x-text="it.chassis"></td>
                         <td style="padding: 7px 10px;" x-text="`${it.product_name_snapshot || '—'} (${it.color_snapshot || '—'})`"></td>
+                        <td style="padding: 7px 10px; font-size: 0.74rem; color: #38bdf8;" x-text="it.source_tab_snapshot || '—'"></td>
                         <td style="padding: 7px 10px;">
                           <span x-text="resultLabel(it.scan_result)" :style="it.scan_result === 'ok' ? 'color:#00cc88;' : 'color:#f59e0b;font-weight:700;'"></span>
                         </td>
