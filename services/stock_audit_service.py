@@ -151,12 +151,21 @@ def scan_chassis_in_audit(audit_id: int, chassis_raw: str, user_id: Optional[int
                 msg = f"📍 ALERTA LOCAL: {chassis} pertence a '{unit_loc}', mas a conferência é de '{scope}'."
             else:
                 scan_result = "ok"
-                msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'})"
+                if unit_status == "unreleased":
+                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'}) — Liberado para Disponível!"
+                else:
+                    msg = f"✅ {chassis} • {prod_snap} ({color_snap or 'S/Cor'})"
 
-            conn.execute(
-                "UPDATE stock_units SET last_audited_at = CURRENT_TIMESTAMP, last_audited_by = %s WHERE id = %s",
-                (user_id, unit_id),
-            )
+            if scan_result == "ok" and unit_status == "unreleased":
+                conn.execute(
+                    "UPDATE stock_units SET status = 'available', last_audited_at = CURRENT_TIMESTAMP, last_audited_by = %s WHERE id = %s",
+                    (user_id, unit_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE stock_units SET last_audited_at = CURRENT_TIMESTAMP, last_audited_by = %s WHERE id = %s",
+                    (user_id, unit_id),
+                )
 
         is_pg = type(conn).__name__ == "PGConnWrapper"
         if is_pg:
