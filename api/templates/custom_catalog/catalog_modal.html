@@ -27,7 +27,8 @@
               <div class="modal-main-image">
                 <img :src="activeImage || selectedItem.image_main || selectedItem.image_url || selectedItem.photo_url || '/static/logo.png'" 
                      :alt="selectedItem.name" 
-                     decoding="async">
+                     decoding="async"
+                     @error="if ($el.src !== (selectedItem.image_main || '/static/logo.png')) $el.src = selectedItem.image_main || '/static/logo.png'">
               </div>
               
               <!-- Régua de Miniaturas Interativa -->
@@ -36,7 +37,7 @@
                   <div class="thumb-item" 
                        :class="{'active': activeImage === img}"
                        @click="activeImage = img">
-                    <img :src="img" alt="Foto miniatura" decoding="async" loading="lazy">
+                    <img :src="img" alt="Foto miniatura" decoding="async" loading="lazy" @error="$el.closest('.thumb-item') ? $el.closest('.thumb-item').style.display='none' : null">
                   </div>
                 </template>
               </div>

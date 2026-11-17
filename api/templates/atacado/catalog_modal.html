@@ -17,14 +17,14 @@
           <!-- Coluna Visual / Galeria -->
           <div class="modal-gallery-col">
             <div class="modal-main-image">
-              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async">
+              <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async" @error="if ($el.src !== (selectedItem.image_main || '/static/logo.png')) $el.src = selectedItem.image_main || '/static/logo.png'">
             </div>
             <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
               <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
                 <div class="thumb-item" 
                      :class="{'active': activeImage === img}"
                      @click="activeImage = img">
-                  <img :src="img" alt="Foto" decoding="async" loading="lazy">
+                  <img :src="img" alt="Foto" decoding="async" loading="lazy" @error="$el.closest('.thumb-item') ? $el.closest('.thumb-item').style.display='none' : null">
                 </div>
               </template>
             </div>

@@ -5,6 +5,7 @@
 {% block top_actions %}
   <a href="{{ url_for('freight') }}" class="btn secondary flex items-center gap-1"><span>🚚</span> Consultar Frete</a>
   <a href="{{ url_for('export_sales') }}" class="btn">Exportar CSV</a>
+  <button type="button" class="btn accent" x-data @click="$dispatch('open-chassis-sales')">🔑 Baixa / Separação por Chassi</button>
   <button class="btn primary" onclick="openModal('newSale')">+ Registrar venda</button>
 {% endblock %}
 {% block content %}
@@ -473,11 +474,13 @@
     </form>
   </div>
 </div>
+{% include 'components/chassis_sales_modal.html' %}
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/sales-documents.js') }}?v=20260910"></script>
 <script src="{{ url_for('static', filename='js/sales-ai.js') }}?v=20260910"></script>
 <script src="{{ url_for('static', filename='js/sales.js') }}?v=20260910"></script>
+<script src="{{ url_for('static', filename='js/chassis-sales.js') }}"></script>
 {% endblock %}
 

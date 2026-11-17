@@ -78,6 +78,24 @@ def api_support_badges():
     return jsonify({"success": True, **data}), 200
 
 
+@support_bp.route("/api/suporte/banner-toggle", methods=["POST"])
+@login_required
+def api_support_banner_toggle():
+    """Ativa ou desativa a exibição do banner global de suporte nas janelas."""
+    me = current_user()
+    if not is_fauzer_user(me):
+        return jsonify({"success": False, "error": "Acesso restrito."}), 403
+    from services.support_items_service import get_support_banner_enabled, set_support_banner_enabled
+
+    payload = request.get_json(silent=True) or {}
+    if "enabled" in payload:
+        next_val = bool(payload["enabled"])
+    else:
+        next_val = not get_support_banner_enabled(me["id"])
+    saved = set_support_banner_enabled(me["id"], next_val)
+    return jsonify({"success": True, "banner_enabled": saved}), 200
+
+
 @support_bp.route("/api/suporte/upload", methods=["POST"])
 @login_required
 def api_support_upload():

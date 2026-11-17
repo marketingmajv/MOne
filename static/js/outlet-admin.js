@@ -275,7 +275,7 @@ function renderGalleryPreview() {
     const card = document.createElement('div');
     card.style.cssText = `position:relative;border-radius:8px;overflow:hidden;border:2px solid ${isMain ? '#00cc88' : 'var(--line,#334155)'};background:rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;padding:4px;`;
     card.innerHTML = `
-      <img src="${imgUrl}" style="width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center;border-radius:6px;" onerror="this.src='/static/logo.png'">
+      <img src="${imgUrl}" style="width:100%;aspect-ratio:4/5;object-fit:cover;object-position:center;border-radius:6px;" onerror="this.src='/static/logo.png'; if(!this.parentElement.querySelector('.broken-badge')){this.parentElement.style.border='2px solid #ef4444'; const b=document.createElement('span'); b.className='broken-badge'; b.textContent='⚠️ Quebrada'; b.style.cssText='position:absolute;top:6px;right:6px;background:#ef4444;color:#fff;font-weight:800;font-size:0.65rem;padding:2px 6px;border-radius:4px;'; this.parentElement.appendChild(b);}">
       ${isMain ? '<span style="position:absolute;top:6px;left:6px;background:#00cc88;color:#000;font-weight:800;font-size:0.65rem;padding:2px 6px;border-radius:4px;">⭐ CAPA</span>' : ''}
       <div style="display:flex;gap:4px;width:100%;margin-top:4px;">
         ${!isMain ? `<button type="button" class="btn sm" onclick="setAsCoverPhoto(${index})" style="flex:1;padding:2px;font-size:0.65rem;background:rgba(0,204,136,0.15);color:#00cc88;border:1px solid rgba(0,204,136,0.3);">Capa</button>` : ''}

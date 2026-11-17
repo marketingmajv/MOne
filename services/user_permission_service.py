@@ -152,7 +152,14 @@ ALL_PERMISSIONS = {
         "default_roles": ["admin", "support", "stock", "finance"],
     },
 
-    # ---------------- FINANCEIRO & FISCAL (3) ----------------
+    # ---------------- FINANCEIRO & FISCAL (4) ----------------
+    "chassis_sales": {
+        "category": "financeiro",
+        "label": "Baixa & Separação por Chassi",
+        "icon": "🔑",
+        "description": "Bipagem de chassi para baixa de NF-e de venda, transferências e separação de pedidos",
+        "default_roles": ["admin", "support", "finance", "sales"],
+    },
     "payments": {
         "category": "financeiro",
         "label": "Pagamentos & Quitações",

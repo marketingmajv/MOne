@@ -22,6 +22,7 @@
       Resolvidos
     </a>
   </div>
+  <button type="button" id="supportBannerToggleBtn" data-enabled="{{ 'true' if badges.banner_enabled else 'false' }}" onclick="toggleSupportBannerPref(this)" class="btn secondary" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;font-size:12px;font-weight:700;border-color:{{ '#10b981' if badges.banner_enabled else 'var(--line)' }};color:{{ '#10b981' if badges.banner_enabled else 'var(--muted)' }};" title="Ativar ou desativar o banner vermelho de alerta nas demais janelas">{{ '🔔 Banner: Ativo' if badges.banner_enabled else '🔕 Banner: Oculto' }}</button>
   <a href="/suporte" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
     👁️ Visão do Usuário
   </a>
@@ -31,7 +32,7 @@
 <script id="supportModulesData" type="application/json">
 {{ available_modules|tojson|safe }}
 </script>
-<script src="{{ url_for('static', filename='js/support-ticket.js') }}?v=20261104_05"></script>
+<script src="{{ url_for('static', filename='js/support-ticket.js') }}?v=20261117_01"></script>
 
 <div x-data="supportTicketApp({
   isStaff: true,

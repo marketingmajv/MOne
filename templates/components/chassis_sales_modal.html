@@ -1,0 +1,131 @@
+<div x-data="chassisSalesApp()" @open-chassis-sales.window="openModal()">
+  <template x-teleport="body">
+    <div class="modal show" x-show="open" x-cloak style="background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9999;">
+      <div class="modal-card" style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; max-width: 640px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line, #334155);">
+          <div>
+            <h3 style="margin: 0; color: var(--text, #f8fafc); font-size: 1.05rem;">🔑 Baixa & Separação por Chassi</h3>
+            <small style="color: var(--muted, #94a3b8); font-size: 0.78rem;">Bipe o chassi para faturar a venda (NF / Transf.) ou separar pedido.</small>
+          </div>
+          <button type="button" class="modal-close-btn" @click="closeModal()" title="Fechar" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+          <template x-if="feedback">
+            <div style="padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; font-size: 0.84rem; font-weight: 700;"
+                 :style="feedback.type === 'ok' ? 'background: rgba(0,204,136,0.14); border: 1px solid rgba(0,204,136,0.4); color: #00cc88;' : 'background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;'"
+                 x-text="feedback.text">
+            </div>
+          </template>
+
+          <!-- Busca Suspensa: SOME automaticamente quando um chassi é selecionado/bipado -->
+          <div x-show="!selectedUnit">
+            <form @submit.prevent="doSearch(true)">
+              <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 6px;">🔫 Pesquisar ou Bipar Chassi</label>
+              <div style="display: flex; gap: 8px;">
+                <input id="marisa_chassis_search_input"
+                       type="text"
+                       x-model="searchQuery"
+                       @input.debounce.250ms="doSearch(false)"
+                       class="form-input mono"
+                       placeholder="Bipe ou digite o chassi..."
+                       autocomplete="off"
+                       style="flex: 1; font-size: 1rem; padding: 10px 14px; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 2px solid #38bdf8; border-radius: 10px;">
+                <button type="submit" class="btn primary">Localizar</button>
+              </div>
+            </form>
+
+            <!-- Dropdown suspenso de resultados -->
+            <div x-show="candidates.length > 0" style="margin-top: 8px; border: 1px solid var(--line, #334155); border-radius: 10px; background: var(--panel2, #1e293b); max-height: 240px; overflow-y: auto;">
+              <template x-for="c in candidates" :key="c.id">
+                <div @click="selectUnit(c)"
+                     style="padding: 10px 14px; border-bottom: 1px solid var(--line, #334155); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div class="mono" style="font-weight: 800; color: var(--text, #f8fafc); font-size: 0.9rem;" x-text="c.chassis"></div>
+                    <div style="font-size: 0.78rem; color: var(--muted, #94a3b8);" x-text="`${c.product_name} • ${c.color || 'S/Cor'} • ${c.location}`"></div>
+                  </div>
+                  <span style="font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: rgba(56,189,248,0.15); color: #38bdf8;" x-text="c.status"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Formulário após bipar (Busca recolhida) -->
+          <template x-if="selectedUnit">
+            <div>
+              <div style="background: var(--panel2, #1e293b); border: 1px solid #00cc88; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div>
+                  <div class="mono" style="font-size: 1rem; font-weight: 800; color: #00cc88;" x-text="selectedUnit.chassis"></div>
+                  <div style="font-size: 0.84rem; color: var(--text, #f8fafc); font-weight: 700;" x-text="`${selectedUnit.product_name} • Cor: ${selectedUnit.color || 'Não informada'}`"></div>
+                  <div style="font-size: 0.75rem; color: var(--muted, #94a3b8);" x-text="`Local: ${selectedUnit.location} | Status atual: ${selectedUnit.status}`"></div>
+                </div>
+                <button type="button" class="btn sm" @click="resetToSearch()">Trocar Chassi</button>
+              </div>
+
+              <!-- Seletor de Operação -->
+              <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <button type="button" class="btn" :class="actionMode === 'checkout' ? 'primary' : ''" style="flex: 1;" @click="actionMode = 'checkout'">🧾 Faturar / Baixar Venda</button>
+                <button type="button" class="btn" :class="actionMode === 'separate' ? 'primary' : ''" style="flex: 1;" @click="actionMode = 'separate'">📦 Separar para Venda</button>
+              </div>
+
+              <form @submit.prevent="submitAction()">
+                <!-- Modo Faturar Venda -->
+                <div x-show="actionMode === 'checkout'" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">NF-e Transferência 1 (se houver)</label>
+                    <input type="text" x-model="form.transfer_nf_1" class="form-input" placeholder="Ex: 000020" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">NF-e Transferência 2 (se houver)</label>
+                    <input type="text" x-model="form.transfer_nf_2" class="form-input" placeholder="Opcional" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">NF-e de Venda *</label>
+                    <input type="text" x-model="form.invoice_number" :required="actionMode === 'checkout'" class="form-input" placeholder="Ex: 000030" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">Valor Total da Venda (R$) *</label>
+                    <input type="text" x-model="form.total_value" :required="actionMode === 'checkout'" class="form-input" placeholder="Ex: 4990.00" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div style="grid-column: span 2;">
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">Cliente *</label>
+                    <input type="text" x-model="form.customer" :required="actionMode === 'checkout'" class="form-input" placeholder="Nome / Razão Social do Cliente" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">Nº Pedido (Opcional)</label>
+                    <input type="text" x-model="form.order_number" class="form-input" placeholder="Ex: PED-1042" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.76rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">Data da Venda</label>
+                    <input type="date" x-model="form.sold_at" class="form-input" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                  </div>
+                </div>
+
+                <!-- Modo Separar para Venda -->
+                <div x-show="actionMode === 'separate'">
+                  <div style="padding: 10px 12px; border-radius: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); color: #fcd34d; font-size: 0.78rem; margin-bottom: 12px;">
+                    ⚠️ Ao marcar como <strong>Separada para Venda</strong>, caso o conferente bipe este chassi no galpão, o relatório PDF exibirá um alerta imediato com o Nº do Pedido.
+                  </div>
+                  <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 4px;">Número do Pedido *</label>
+                  <input type="text" x-model="form.order_number" :required="actionMode === 'separate'" class="form-input" placeholder="Ex: 10428" style="width: 100%; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                  <button type="button" class="btn" @click="closeModal()">Cancelar</button>
+                  <button type="submit" class="btn primary" :disabled="saving">
+                    <span x-text="saving ? '⏳ Salvando...' : (actionMode === 'separate' ? '📦 Confirmar Separação' : '✅ Confirmar Baixa da Venda')"></span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>

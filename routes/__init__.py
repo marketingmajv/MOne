@@ -7,6 +7,8 @@ from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.sales_routes import sales_bp
 from routes.stock_routes import stock_bp
+from routes.stock_audit_routes import stock_audit_bp
+from routes.stock_chassis_sales_routes import stock_chassis_sales_bp
 from routes.freight_routes import freight_bp
 from routes.finance_routes import finance_bp
 from routes.webhook_routes import webhook_bp
@@ -57,6 +59,8 @@ ALL_BLUEPRINTS = [
     employee_alignment_bp,
     sales_bp,
     stock_bp,
+    stock_audit_bp,
+    stock_chassis_sales_bp,
     freight_bp,
     freight_data_source_bp,
     finance_bp,

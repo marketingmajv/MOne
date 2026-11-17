@@ -239,3 +239,4 @@ def apply_model_ordering(models_list: List[Dict[str, Any]], menu_cfg: Optional[D
         ))
 
     return models_list
+

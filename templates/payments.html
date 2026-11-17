@@ -6,6 +6,7 @@
 {% block top_actions %}
   {% if me.role in ['admin', 'finance', 'support'] %}
     <a href="{{ url_for('export_payments') }}" class="btn">Exportar CSV</a>
+    <button type="button" class="btn accent" x-data @click="$dispatch('open-chassis-sales')">🔑 Baixa / Separação por Chassi</button>
     <button class="btn primary" onclick="openModal('newPayment')">+ Registros de pagamento</button>
   {% endif %}
 {% endblock %}
@@ -362,4 +363,6 @@ async function runAiReceiptAnalysis() {
   }
 }
 </script>
+{% include 'components/chassis_sales_modal.html' %}
+<script src="{{ url_for('static', filename='js/chassis-sales.js') }}"></script>
 {% endblock %}

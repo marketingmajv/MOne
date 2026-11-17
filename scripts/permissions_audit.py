@@ -57,6 +57,8 @@ EXEMPT_BLUEPRINTS: Set[str] = {
 BLUEPRINT_TO_PERMISSION_MAP: Dict[str, str] = {
     "sales": "sales",
     "stock": "stock",
+    "stock_audit": "stock",
+    "stock_chassis_sales": "chassis_sales",
     "freight": "freight",
     "products": "products",
     "finance": "payments",

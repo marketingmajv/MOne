@@ -230,3 +230,65 @@ def toggle_ticket_item(ticket_id: int, item_id: int, completed: Optional[bool] =
             "completed_items": done,
             "all_completed": (total > 0 and done == total),
         }
+
+
+def _ensure_preferences_table(conn, pg: bool) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS support_preferences (
+            user_id BIGINT PRIMARY KEY,
+            banner_enabled BOOLEAN DEFAULT TRUE,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+        if pg
+        else """
+        CREATE TABLE IF NOT EXISTS support_preferences (
+            user_id INTEGER PRIMARY KEY,
+            banner_enabled INTEGER DEFAULT 1,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def get_support_banner_enabled(user_id: int) -> bool:
+    """Retorna se o banner global de chamados urgentes está ativo para o usuário."""
+    with db() as conn:
+        pg = _is_pg(conn)
+        _ensure_preferences_table(conn, pg)
+        sql = "SELECT banner_enabled FROM support_preferences WHERE user_id = %s" if pg else "SELECT banner_enabled FROM support_preferences WHERE user_id = ?"
+        row = conn.execute(sql, (user_id,)).fetchone()
+        if not row:
+            return True
+        val = row["banner_enabled"] if (isinstance(row, dict) or hasattr(row, "keys")) else row[0]
+        return bool(val)
+
+
+def set_support_banner_enabled(user_id: int, enabled: bool) -> bool:
+    """Persiste preferência de exibição do banner de suporte nas janelas."""
+    with db() as conn:
+        pg = _is_pg(conn)
+        _ensure_preferences_table(conn, pg)
+        if pg:
+            conn.execute(
+                """
+                INSERT INTO support_preferences (user_id, banner_enabled, updated_at)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE
+                SET banner_enabled = EXCLUDED.banner_enabled, updated_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, bool(enabled)),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO support_preferences (user_id, banner_enabled, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE
+                SET banner_enabled = excluded.banner_enabled, updated_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, 1 if enabled else 0),
+            )
+        conn.commit()
+    return bool(enabled)

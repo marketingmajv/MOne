@@ -13,6 +13,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 
 from database import db
 from routes.helpers import audit, login_required, roles_required
+from services.stock_sync_service import ensure_stock_audit_schema, get_stock_locations
 
 stock_bp = Blueprint("stock", __name__)
 
@@ -20,8 +21,10 @@ stock_bp = Blueprint("stock", __name__)
 @stock_bp.route("/stock")
 @login_required
 def stock():
+    ensure_stock_audit_schema()
     q = request.args.get("q", "").strip()
     status = request.args.get("status", "all")
+    location = request.args.get("location", "all").strip()
     params = []
     where = ["1=1"]
     if q:
@@ -31,6 +34,9 @@ def stock():
     if status and status != "all":
         where.append("st.status = %s")
         params.append(status)
+    if location and location != "all":
+        where.append("UPPER(TRIM(st.location)) = UPPER(TRIM(%s))")
+        params.append(location)
     with db() as conn:
         rows = conn.execute(
             f"""
@@ -51,7 +57,7 @@ def stock():
         status_counts_raw = conn.execute(
             "SELECT status, count(*) as count FROM stock_units GROUP BY status"
         ).fetchall()
-        status_counts = {"all": 0, "available": 0, "unreleased": 0, "sold": 0}
+        status_counts = {"all": 0, "available": 0, "separated": 0, "assembled": 0, "unreleased": 0, "sold": 0}
         for sc in status_counts_raw:
             st_key = sc.get("status")
             cnt = sc.get("count", 0)
@@ -64,6 +70,8 @@ def stock():
         units=rows,
         q=q,
         status=status,
+        location=location,
+        locations=get_stock_locations(),
         products=products_list,
         status_counts=status_counts,
     )

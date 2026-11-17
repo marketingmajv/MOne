@@ -498,9 +498,12 @@ def get_support_badges(user: Dict[str, Any]) -> Dict[str, Any]:
             if latest_urgent and isinstance(latest_urgent.get("created_at"), datetime):
                 latest_urgent["created_at"] = latest_urgent["created_at"].strftime("%d/%m %H:%M")
 
+            from services.support_items_service import get_support_banner_enabled
+            banner_on = get_support_banner_enabled(user_id)
             return {
                 "badge_count": pending_count,
-                "has_urgent_pending": pending_count > 0,
+                "banner_enabled": banner_on,
+                "has_urgent_pending": (pending_count > 0 and banner_on),
                 "latest_urgent": latest_urgent,
             }
         else:

@@ -1,0 +1,159 @@
+<div x-data="stockAuditApp()" @open-stock-audit.window="openAuditModal()">
+  <template x-teleport="body">
+    <div class="modal show" x-show="open" x-cloak style="background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 9999;">
+      <div class="modal-card" style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-head" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line, #334155);">
+          <div>
+            <h3 style="margin: 0; color: var(--text, #f8fafc); font-size: 1.05rem;">📡 Conferência Física por Bipagem</h3>
+            <small style="color: var(--muted, #94a3b8); font-size: 0.78rem;">Bipe continuamente os chassis; o campo limpa automaticamente para o próximo bip.</small>
+          </div>
+          <button type="button" class="modal-close-btn" @click="closeAuditModal()" title="Fechar" aria-label="Fechar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+          <!-- Caso NÃO haja conferência ativa -->
+          <template x-if="!activeSummary">
+            <div>
+              <div style="background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155); border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 6px;">📍 Selecione o Galpão / Local para Conferência</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <select x-model="locationScope" class="form-input" style="flex: 1; min-width: 200px; background: var(--panel, #0f172a); color: var(--text, #f8fafc); border: 1px solid var(--line, #334155);">
+                    <template x-for="loc in locations" :key="loc">
+                      <option :value="loc" x-text="loc"></option>
+                    </template>
+                    <option value="Todos">Todos os Galpões (Geral)</option>
+                  </select>
+                  <button type="button" class="btn primary" @click="startAudit()" :disabled="loading">
+                    <span x-text="loading ? '⏳ Iniciando...' : '🚀 Iniciar Conferência'"></span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 style="margin: 0 0 10px 0; font-size: 0.88rem; color: var(--text, #f8fafc);">📑 Histórico Recente de Conferências</h4>
+                <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--line, #334155); border-radius: 10px;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                    <thead>
+                      <tr style="background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); text-align: left;">
+                        <th style="padding: 8px 10px;">#</th>
+                        <th style="padding: 8px 10px;">Galpão</th>
+                        <th style="padding: 8px 10px;">Data</th>
+                        <th style="padding: 8px 10px;">Bipados / Esper.</th>
+                        <th style="padding: 8px 10px;">Alertas</th>
+                        <th style="padding: 8px 10px; text-align: right;">Relatório</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="ra in recentAudits" :key="ra.id">
+                        <tr style="border-top: 1px solid var(--line, #334155); color: var(--text, #f8fafc);">
+                          <td style="padding: 8px 10px;" x-text="'#' + ra.id"></td>
+                          <td style="padding: 8px 10px;" x-text="ra.location_scope"></td>
+                          <td style="padding: 8px 10px;" x-text="String(ra.started_at || '').slice(0, 16)"></td>
+                          <td style="padding: 8px 10px;" x-text="`${ra.scanned_count || 0} / ${ra.expected_count || 0}`"></td>
+                          <td style="padding: 8px 10px;">
+                            <span x-text="ra.alerts_count || 0" :style="(ra.alerts_count || 0) > 0 ? 'color:#f59e0b;font-weight:700;' : 'color:#94a3b8;'"></span>
+                          </td>
+                          <td style="padding: 8px 10px; text-align: right;">
+                            <a :href="`/stock/audit/${ra.id}/pdf`" target="_blank" class="btn sm" style="text-decoration: none;">📄 PDF</a>
+                          </td>
+                        </tr>
+                      </template>
+                      <template x-if="recentAudits.length === 0">
+                        <tr>
+                          <td colspan="6" style="padding: 16px; text-align: center; color: var(--muted, #94a3b8);">Nenhuma conferência registrada ainda.</td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Caso HAJA conferência ativa -->
+          <template x-if="activeSummary">
+            <div>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+                <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Galpão Alvo</div>
+                  <div style="font-size: 0.95rem; font-weight: 800; color: var(--text, #f8fafc);" x-text="activeSummary.audit.location_scope"></div>
+                </div>
+                <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Bipados</div>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: #00cc88;" x-text="`${activeSummary.scanned_count} / ${activeSummary.expected_count}`"></div>
+                </div>
+                <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Faltam Bipar</div>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: #f59e0b;" x-text="activeSummary.missing_count"></div>
+                </div>
+                <div style="background: var(--panel2, #1e293b); padding: 10px; border-radius: 10px; border: 1px solid var(--line, #334155);">
+                  <div style="font-size: 0.72rem; color: var(--muted, #94a3b8);">Alertas</div>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: #ef4444;" x-text="activeSummary.alerts_count"></div>
+                </div>
+              </div>
+
+              <!-- Campo de Bipagem Contínua -->
+              <form @submit.prevent="submitScan()" style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text, #f8fafc); margin-bottom: 6px;">🔫 Pesquisar / Bipar Chassi (Enter automático do leitor)</label>
+                <div style="display: flex; gap: 8px;">
+                  <input id="stock_audit_scan_input"
+                         type="text"
+                         x-model="scanInput"
+                         class="form-input mono"
+                         placeholder="Bipe o código de barras do chassi aqui..."
+                         autocomplete="off"
+                         style="flex: 1; font-size: 1rem; padding: 10px 14px; background: var(--panel2, #1e293b); color: var(--text, #f8fafc); border: 2px solid #00cc88; border-radius: 10px;">
+                  <button type="submit" class="btn primary">Registrar Bip</button>
+                </div>
+              </form>
+
+              <!-- Feedback imediato do último bip -->
+              <template x-if="lastFeedback">
+                <div style="padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; font-weight: 700;"
+                     :style="lastFeedback.type === 'ok' ? 'background: rgba(0,204,136,0.14); border: 1px solid rgba(0,204,136,0.4); color: #00cc88;' : 'background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5;'"
+                     x-text="lastFeedback.text">
+                </div>
+              </template>
+
+              <!-- Lista em tempo real dos últimos bipados -->
+              <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--line, #334155); border-radius: 10px; margin-bottom: 14px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                  <thead>
+                    <tr style="background: var(--panel2, #1e293b); color: var(--muted, #94a3b8); text-align: left;">
+                      <th style="padding: 8px 10px;">Chassi</th>
+                      <th style="padding: 8px 10px;">Modelo / Cor</th>
+                      <th style="padding: 8px 10px;">Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="it in activeSummary.scanned_items" :key="it.id">
+                      <tr style="border-top: 1px solid var(--line, #334155); color: var(--text, #f8fafc);">
+                        <td class="mono" style="padding: 7px 10px; font-weight: 700;" x-text="it.chassis"></td>
+                        <td style="padding: 7px 10px;" x-text="`${it.product_name_snapshot || '—'} (${it.color_snapshot || '—'})`"></td>
+                        <td style="padding: 7px 10px;">
+                          <span x-text="resultLabel(it.scan_result)" :style="it.scan_result === 'ok' ? 'color:#00cc88;' : 'color:#f59e0b;font-weight:700;'"></span>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn" @click="closeAuditModal()">Continuar Depois</button>
+                <button type="button" class="btn primary" @click="finishAudit()" :disabled="finishing">
+                  <span x-text="finishing ? '⏳ Gerando PDF...' : '✅ Finalizar Conferência e Gerar PDF'"></span>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
