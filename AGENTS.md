@@ -173,3 +173,10 @@ Sempre que o agente apresentar opções, alternativas, cenários ou caminhos de 
 1. **O agente DEVE OBRIGATORIAMENTE indicar e destacar com clareza a Opção Recomendada**.
 2. A opção recomendada deve vir sempre destacada como **(Recomendada)** ou posicionada em primeiro lugar, acompanhada de justificativa técnica e operacional objetiva (por que é a mais rápida, segura, eficiente ou alinhada com as melhores práticas de negócio da MAJ).
 3. O agente deve assumir uma postura consultiva sênior e assertiva, facilitando a tomada de decisão do usuário e direcionando para a melhor execução prática imediata.
+
+---
+
+## Diretriz de Escopo: Status Beta Restrito (`beta_feature_flag`)
+Sempre que iniciar a **fase de escopo ou planejamento de uma nova funcionalidade/melhoria** (incluindo `/grill-me`, `/plan` ou pedidos de nova feature), **ANTES de implementar**:
+1. O agente **DEVE perguntar ao usuário** se a nova implementação deve entrar em **🧪 Beta Restrito (Recomendada)** — visível apenas para `@jam` e `@fauzer`, com delegação exclusiva para testadores em `/users` via `super_admin_only: True` — ou em **🚀 Liberação Geral Imediata**.
+2. Quando o modo **Beta Restrito** for escolhido (ou quando o usuário pedir para promover uma feature de Beta para Geral), o agente deve ler e seguir integralmente a skill `.agents/skills/beta_feature_flag/SKILL.md`.
