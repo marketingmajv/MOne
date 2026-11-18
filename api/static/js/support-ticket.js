@@ -69,6 +69,7 @@ window.supportTicketApp = function(initialConfig = {}) {
       const map = {
         pendente: '⏳ Pendente',
         em_andamento: '⚡ Em Andamento',
+        aguardando_conferencia: '⏸️ Aguardando Conferência',
         resolvido: '✅ Resolvido',
         cancelado: '❌ Cancelado',
       };

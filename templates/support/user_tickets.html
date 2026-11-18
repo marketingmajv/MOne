@@ -241,6 +241,8 @@
                   <span style="background:#ffb703;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">⏳ Pendente</span>
                 {% elif t.status == 'em_andamento' %}
                   <span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">⚡ Em Andamento</span>
+                {% elif t.status == 'aguardando_conferencia' %}
+                  <span style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">⏸️ Aguard. Conferência</span>
                 {% elif t.status == 'resolvido' %}
                   <span style="background:#10b981;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;">✅ Resolvido</span>
                 {% else %}
@@ -278,7 +280,7 @@
             <span style="font-family:monospace;font-size:1.1rem;font-weight:800;color:#059669;" x-text="activeTicket?.ticket_code || 'Carregando...'"></span>
             <template x-if="activeTicket">
               <span style="font-size:0.74rem;padding:3px 9px;border-radius:6px;font-weight:800;"
-                    :style="activeTicket.status === 'resolvido' ? 'background:#10b981;color:#000;' : (activeTicket.status === 'em_andamento' ? 'background:#3b82f6;color:#fff;' : 'background:#ffb703;color:#000;')"
+                    :style="activeTicket.status === 'resolvido' ? 'background:#10b981;color:#000;' : (activeTicket.status === 'em_andamento' ? 'background:#3b82f6;color:#fff;' : (activeTicket.status === 'aguardando_conferencia' ? 'background:#9333ea;color:#fff;' : 'background:#ffb703;color:#000;'))"
                     x-text="statusLabel(activeTicket.status)"></span>
             </template>
             <template x-for="m in (activeTicket?.modules || [])" :key="m.key">

@@ -217,11 +217,14 @@ def create_ticket(
     notify_whatsapp: bool = True,
     modules: Optional[List[Dict[str, str]]] = None,
     items: Optional[List[str]] = None,
+    initial_status: str = "pendente",
 ) -> Dict[str, Any]:
     """Abre um novo chamado com múltiplos setores e checklist de alterações."""
     ensure_support_schema()
     attachments = attachments or []
     items = items or []
+    allowed_statuses = {"pendente", "em_andamento", "aguardando_conferencia", "resolvido", "cancelado"}
+    status_val = initial_status if initial_status in allowed_statuses else "pendente"
     user_id = user["id"]
     user_name = user.get("name") or user.get("username") or "Colaborador"
 
@@ -240,13 +243,13 @@ def create_ticket(
 
         ins_t = """
         INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, modules_json, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id;
         """ if pg else """
         INSERT INTO support_tickets (ticket_code, user_id, module_key, module_label, title, description, urgency, status, modules_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
         """
-        params = (ticket_code, user_id, module_key, module_label, title.strip(), description.strip(), urgency, modules_json)
+        params = (ticket_code, user_id, module_key, module_label, title.strip(), description.strip(), urgency, status_val, modules_json)
         res = conn.execute(ins_t, params)
         if pg:
             ret_row = res.fetchone()
@@ -324,7 +327,8 @@ def list_all_tickets_for_admin(status_filter: Optional[str] = None) -> List[Dict
         ORDER BY 
             CASE WHEN t.status = 'pendente' THEN 1 
                  WHEN t.status = 'em_andamento' THEN 2 
-                 ELSE 3 END,
+                 WHEN t.status = 'aguardando_conferencia' THEN 3
+                 ELSE 4 END,
             t.updated_at DESC;
         """
         rows = conn.execute(sql, tuple(params)).fetchall()
