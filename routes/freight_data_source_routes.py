@@ -73,10 +73,12 @@ def quick_edit_product_specs(pid: int):
         wi_cm = float(request.form.get("width_cm") or 0)
         h_cm = float(request.form.get("height_cm") or 0)
         w_price = float(request.form.get("wholesale_price") or 0)
+        r_price_raw = request.form.get("retail_price")
+        r_price = float(r_price_raw) if r_price_raw not in (None, "") else None
 
         with db() as conn:
-            update_product_specs(conn, pid, w_kg, l_cm, wi_cm, h_cm, w_price)
-            audit("freight.product_specs_updated", f"id={pid}; w={w_kg}; {wi_cm}x{h_cm}x{l_cm}; w_price={w_price}")
+            update_product_specs(conn, pid, w_kg, l_cm, wi_cm, h_cm, w_price, r_price)
+            audit("freight.product_specs_updated", f"id={pid}; w={w_kg}; {wi_cm}x{h_cm}x{l_cm}; w_price={w_price}; r_price={r_price}")
             flash("Medidas e preço do veículo atualizados com sucesso!", "success")
     except Exception as e:
         logger.error("Erro ao atualizar especificações do produto %s: %s", pid, e)

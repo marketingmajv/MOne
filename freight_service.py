@@ -289,6 +289,8 @@ def ensure_freight_tables(conn):
                 conn.conn.rollback()
             except Exception:
                 pass
+    from services.freight_pricing_mode_service import ensure_freight_quotes_pricing_mode
+    ensure_freight_quotes_pricing_mode(conn)
     _freight_tables_ensured = True
 
 
@@ -719,12 +721,17 @@ def parse_freight_table_with_gemini(file_path: str, carrier_name: str) -> dict:
         return {"is_valid": False, "issues": [f"Falha ao interpretar resposta da IA: {str(e)}"], "rates": []}
 
 
-def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None, selected_carrier_ids: list = None) -> dict:
+def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: float = 0.0, declared_value: float = 0.0, product_id: int = None, cep_orig: str = None, selected_carrier_ids: list = None, pricing_mode: str = "atacado") -> dict:
     """
     Calcula as opções de frete disponíveis em todas as transportadoras ativas.
-    Suporta múltiplos itens e quantidades por modelo.
-    Regra de Seguro MAJ: O valor considerado para seguro é estritamente 1/3 do valor de atacado.
+    Suporta múltiplos itens, quantidades por modelo e regimes 'atacado' (1/3) ou 'varejo' (NF cheia).
     """
+    from services.freight_pricing_mode_service import (
+        normalize_pricing_mode,
+        resolve_freight_items_and_insurance,
+    )
+
+    mode = normalize_pricing_mode(pricing_mode)
     clean_dest = clean_cep(cep_dest)
     if len(clean_dest) != 8:
         return {"success": False, "message": "CEP de destino inválido (deve conter 8 dígitos)."}
@@ -736,88 +743,24 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
     uf_dest = via_cep.get("uf", "").upper()
     city_dest = via_cep.get("city", "")
 
-    # 2. Processar lista de itens
-    total_weight = 0.0
-    total_insurance_value = 0.0
-    item_descriptions = []
-    processed_items = []
-    total_volumes_count = 0
-    total_volume_m3 = 0.0
-
-    # Compatibilidade caso venha 1 unico produto
-    if not items or not isinstance(items, list):
-        items = []
-        if product_id or weight_kg > 0 or declared_value > 0:
-            items.append({
-                "product_id": product_id,
-                "qty": 1,
-                "weight_kg": weight_kg,
-                "declared_value": declared_value
-            })
-
-    for it in items:
-        p_id = it.get("product_id")
-        qty = int(it.get("qty", 1) or 1)
-        w = float(it.get("weight_kg", 0) or 0)
-        l = float(it.get("length_cm", 0) or 0)
-        w_dim = float(it.get("width_cm", 0) or 0)
-        h = float(it.get("height_cm", 0) or 0)
-        d_val = float(it.get("declared_value", 0) or 0)
-        w_price = 0.0
-        p_name = it.get("name") or ""
-
-        if p_id and db_conn:
-            try:
-                cur = db_conn.execute("SELECT id, name, wholesale_price FROM products WHERE id = %s", (int(p_id),))
-                p = cur.fetchone()
-                if p:
-                    p_dict = dict(p) if hasattr(p, "keys") else p
-                    p_name = p_dict["name"] if isinstance(p_dict, dict) else p_dict[1]
-                    w_price = float(p_dict["wholesale_price"] if isinstance(p_dict, dict) else (p_dict[2] or 0))
-            except Exception as e:
-                print("[Freight Service] Erro ao buscar produto:", e)
-                if hasattr(db_conn, "rollback"):
-                    try:
-                        db_conn.rollback()
-                    except Exception:
-                        pass
-
-        # Regra da MAJ: 1/3 do valor de atacado para seguro
-        if w_price > 0:
-            item_insurance = (w_price / 3.0)
-        elif d_val > 0:
-            item_insurance = (d_val / 3.0)
-        else:
-            item_insurance = 0.0
-
-        vol_unit_m3 = (l * w_dim * h) / 1000000.0 if (l > 0 and w_dim > 0 and h > 0) else 0.0
-
-        processed_items.append({
-            "product_id": p_id,
-            "name": p_name or "Produto MAJ",
-            "qty": qty,
-            "weight_kg": w,
-            "length_cm": l,
-            "width_cm": w_dim,
-            "height_cm": h,
-            "volume_m3": round(vol_unit_m3, 4),
-            "total_volume_m3": round(vol_unit_m3 * qty, 4)
-        })
-
-        total_weight += (w * qty)
-        total_insurance_value += (item_insurance * qty)
-        total_volumes_count += qty
-        total_volume_m3 += (vol_unit_m3 * qty)
-
-        if p_name:
-            item_descriptions.append(f"{qty}x {p_name}")
-        elif w > 0:
-            item_descriptions.append(f"{qty}x Carga ({w}kg)")
+    # 2. Processar lista de itens e base de seguro conforme regime (atacado 1/3 ou varejo cheio)
+    (
+        processed_items,
+        item_descriptions,
+        total_weight,
+        total_insurance_value,
+        total_volumes_count,
+        total_volume_m3,
+    ) = resolve_freight_items_and_insurance(
+        db_conn=db_conn,
+        items=items,
+        pricing_mode=mode,
+        weight_kg=weight_kg,
+        declared_value=declared_value,
+        product_id=product_id,
+    )
 
     product_summary = ", ".join(item_descriptions) if item_descriptions else "Carga Geral"
-
-    if weight_kg > 0 and total_weight == 0:
-        total_weight = weight_kg
 
     # 3. Buscar todas as regras de frete ativas
     if not db_conn:
@@ -880,6 +823,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
     if not options:
         return {
             "success": True,
+            "pricing_mode": mode,
             "cep_dest": format_cep(clean_dest),
             "uf": uf_dest,
             "city": city_dest,
@@ -912,6 +856,7 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
     return {
         "success": True,
+        "pricing_mode": mode,
         "cep_dest": format_cep(clean_dest),
         "uf": uf_dest,
         "city": city_dest,

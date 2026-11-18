@@ -21,6 +21,11 @@ from services.freight_data_source_service import (
     get_products_with_specs,
 )
 from services.freight_parser_service import clean_int, clean_numeric, parse_freight_table_unified
+from services.freight_pricing_mode_service import (
+    ensure_freight_quotes_pricing_mode,
+    normalize_pricing_mode,
+    save_freight_quote_record,
+)
 
 freight_bp = Blueprint("freight", __name__)
 
@@ -32,6 +37,7 @@ def freight():
     me = current_user()
     with db() as conn:
         freight_service.ensure_freight_tables(conn)
+        ensure_freight_quotes_pricing_mode(conn)
 
         products_source = get_products_data_source(conn)
         products, specs_stats = get_products_with_specs(conn)
@@ -126,9 +132,11 @@ def freight_calculate():
         cep_orig = data.get("cep_orig", "").strip() or freight_service.DEFAULT_MAJ_CEP
         items = data.get("items", [])
         selected_carrier_ids = data.get("selected_carrier_ids") or None
+        pricing_mode = normalize_pricing_mode(data.get("pricing_mode"))
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
+            ensure_freight_quotes_pricing_mode(conn)
             res = freight_service.calculate_freight(
                 db_conn=conn,
                 cep_dest=cep_dest,
@@ -138,32 +146,27 @@ def freight_calculate():
                 product_id=product_id,
                 cep_orig=cep_orig,
                 selected_carrier_ids=selected_carrier_ids,
+                pricing_mode=pricing_mode,
             )
 
             if res.get("success"):
-                quote_number = f"COT-{datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100, 999)}"
-                items_json = json.dumps(items, ensure_ascii=False)
-                carrier_results_json = json.dumps(res.get("options", []), ensure_ascii=False)
-                best_opt = res.get("best_option") or {}
-
-                conn.execute(
-                    """INSERT INTO freight_quotes(
-                        quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
-                        contact_person, full_address, cep_dest, cep_orig, items_summary,
-                        carrier_results_json, selected_carrier, selected_price, status, created_by
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'cotado', %s)""",
-                    (
-                        quote_number, customer_name, cpf_cnpj, company_name, contact_phone,
-                        contact_person, full_address, cep_dest, cep_orig, items_json,
-                        carrier_results_json,
-                        best_opt.get("carrier_name", ""),
-                        best_opt.get("final_cost", 0),
-                        session.get("user_id")
-                    )
+                quote_number = save_freight_quote_record(
+                    conn,
+                    customer_name=customer_name,
+                    cpf_cnpj=cpf_cnpj,
+                    company_name=company_name,
+                    contact_phone=contact_phone,
+                    contact_person=contact_person,
+                    full_address=full_address,
+                    cep_dest=cep_dest,
+                    cep_orig=cep_orig,
+                    items=items,
+                    res=res,
+                    pricing_mode=pricing_mode,
+                    user_id=session.get("user_id"),
                 )
-                conn.commit()
                 res["quote_number"] = quote_number
-                audit("freight.calculated", f"quote={quote_number}; customer={customer_name}; cep={cep_dest}")
+                audit("freight.calculated", f"quote={quote_number}; mode={pricing_mode}; customer={customer_name}; cep={cep_dest}")
 
             return jsonify(res)
     except Exception as e:

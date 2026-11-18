@@ -417,7 +417,7 @@ function renderFreightResultsEverywhere() {
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--muted); margin-top: 4px;">
               <span>Peso Físico: <strong style="color: var(--text);">${Number(data.total_weight_kg || 0).toFixed(1).replace('.', ',')} kg</strong></span>
-              <span>Base Seguro (1/3): <strong style="color: var(--accent);">R$ ${Number(data.insurance_base_value || 0).toFixed(2).replace('.', ',')}</strong></span>
+              <span>${data.pricing_mode === 'varejo' ? 'Base Seguro (Varejo):' : 'Base Seguro (1/3):'} <strong style="color: var(--accent);">R$ ${Number(data.insurance_base_value || 0).toFixed(2).replace('.', ',')}</strong></span>
             </div>
           </div>
         </div>
@@ -465,6 +465,9 @@ function openFreightModal(data) {
     const wVal = parseFloat(data.total_weight_kg) || 0;
     wSum.innerText = `${wVal.toFixed(1).replace('.', ',')} kg físicos`;
   }
+
+  const iLbl = document.getElementById("modalInsuranceLabel");
+  if (iLbl) iLbl.innerText = data.pricing_mode === "varejo" ? "Base Seguro (Varejo Cheio)" : "Base Seguro (1/3 Atacado)";
 
   const iSum = document.getElementById("modalInsuranceSummary");
   if (iSum) {

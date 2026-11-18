@@ -223,6 +223,7 @@
             <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Volume Real</th>
             <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Peso Cubado (@ 300)</th>
             <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: right;">Atacado</th>
+            <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: right;">Varejo (Cheio)</th>
             <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: right;">1/3 Atacado (Seguro)</th>
             <th style="padding: 12px 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Status</th>
             <th style="padding: 12px 16px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.5px; text-align: center;">Ações</th>
@@ -282,6 +283,11 @@
               R$ {{ "%.2f"|format(p.wholesale_price)|replace('.', ',') }}
             </td>
 
+            <!-- Varejo (Cheio) -->
+            <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: #38bdf8;">
+              R$ {{ "%.2f"|format(p.retail_price or 0)|replace('.', ',') }}
+            </td>
+
             <!-- 1/3 Atacado -->
             <td style="padding: 12px 14px; text-align: right; font-family: monospace; font-weight: 700; color: #10b981;">
               R$ {{ "%.2f"|format(p.one_third_wholesale)|replace('.', ',') }}
@@ -303,7 +309,7 @@
             <!-- Ações -->
             <td style="padding: 12px 16px; text-align: center;">
               <button type="button" class="btn secondary sm" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;"
-                      onclick="openEditProductSpecModal({{ p.id }}, '{{ p.name }}', {{ p.weight_kg }}, {{ p.length_cm }}, {{ p.width_cm }}, {{ p.height_cm }}, {{ p.wholesale_price }})"
+                      onclick="openEditProductSpecModal({{ p.id }}, {{ p.name|tojson }}, {{ p.weight_kg }}, {{ p.length_cm }}, {{ p.width_cm }}, {{ p.height_cm }}, {{ p.wholesale_price }}, {{ p.retail_price or 0 }})"
                       title="Editar medidas e preço deste modelo">
                 ✏️ <span>Ajustar</span>
               </button>
@@ -323,18 +329,27 @@
 <div id="modalEditProductSpec" class="modal" style="display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); padding: 16px;">
   <div style="background: var(--card); border: 1px solid var(--line); border-radius: 16px; width: 100%; max-width: 440px; padding: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 18px; margin: auto;">
     
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); pb: 12px; padding-bottom: 12px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
       <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text);" id="modalEditProductTitle">Ajustar Medidas da Caixa</h3>
-      <button type="button" onclick="closeEditProductSpecModal()" style="background: transparent; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer;">×</button>
+      <button type="button" onclick="closeEditProductSpecModal()" class="modal-close-btn" title="Fechar modal" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
 
     <form method="post" id="formEditProductSpec" action="" style="display: flex; flex-direction: column; gap: 14px;">
       <input type="hidden" name="product_id" id="modalEditProductId">
 
-      <div>
-        <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Preço de Atacado (R$)</label>
-        <input type="number" step="0.01" name="wholesale_price" id="modalEditProductWholesale" required
-               class="form-input" style="width: 100%; font-family: monospace; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Preço Atacado (R$)</label>
+          <input type="number" step="0.01" name="wholesale_price" id="modalEditProductWholesale" required
+                 class="form-input" style="width: 100%; font-family: monospace; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.74rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Preço Varejo (R$)</label>
+          <input type="number" step="0.01" name="retail_price" id="modalEditProductRetail"
+                 class="form-input" style="width: 100%; font-family: monospace; font-size: 0.85rem; border-radius: 8px; height: 38px;">
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -400,7 +415,7 @@
     }
   }
 
-  function openEditProductSpecModal(id, name, weight, length, width, height, wholesale) {
+  function openEditProductSpecModal(id, name, weight, length, width, height, wholesale, retail) {
     document.getElementById("modalEditProductId").value = id;
     document.getElementById("modalEditProductTitle").textContent = "Ajustar Medidas: " + name;
     document.getElementById("modalEditProductWeight").value = weight || "";
@@ -408,6 +423,8 @@
     document.getElementById("modalEditProductWidth").value = width || "";
     document.getElementById("modalEditProductHeight").value = height || "";
     document.getElementById("modalEditProductWholesale").value = wholesale || "";
+    const retInput = document.getElementById("modalEditProductRetail");
+    if (retInput) retInput.value = retail || "";
     document.getElementById("formEditProductSpec").action = `/freight/products/${id}/quick-edit`;
     
     const modal = document.getElementById("modalEditProductSpec");

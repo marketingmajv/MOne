@@ -64,6 +64,7 @@ def get_products_with_specs(conn) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]
         wi_cm = float(p.get("width_cm") or 0)
         h_cm = float(p.get("height_cm") or 0)
         w_price = float(p.get("wholesale_price") or 0)
+        r_price = float(p.get("retail_price") or 0)
 
         vol_m3 = round((l_cm * wi_cm * h_cm) / 1_000_000.0, 4) if (l_cm and wi_cm and h_cm) else 0.0
         cubed_kg = round(vol_m3 * 300.0, 2)
@@ -79,6 +80,7 @@ def get_products_with_specs(conn) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]
             "volume_m3": vol_m3,
             "cubed_kg": cubed_kg,
             "wholesale_price": w_price,
+            "retail_price": r_price,
             "one_third_wholesale": round(w_price / 3.0, 2),
             "has_specs": has_specs,
         })
@@ -258,25 +260,29 @@ def sync_products_sheets(conn, custom_url: Optional[str] = None) -> Dict[str, An
     }
 
 
-def update_product_specs(conn, pid: int, weight_kg: float, length_cm: float, width_cm: float, height_cm: float, wholesale_price: Optional[float] = None) -> bool:
-    """Atualização manual rápida de dimensões e peso de um produto."""
+def update_product_specs(
+    conn,
+    pid: int,
+    weight_kg: float,
+    length_cm: float,
+    width_cm: float,
+    height_cm: float,
+    wholesale_price: Optional[float] = None,
+    retail_price: Optional[float] = None,
+) -> bool:
+    """Atualização manual rápida de dimensões, peso e preços de um produto."""
+    set_clauses = ["weight_kg = %s", "length_cm = %s", "width_cm = %s", "height_cm = %s"]
+    params: list[Any] = [weight_kg, length_cm, width_cm, height_cm]
+
     if wholesale_price is not None and wholesale_price > 0:
-        conn.execute(
-            """
-            UPDATE products
-            SET weight_kg = %s, length_cm = %s, width_cm = %s, height_cm = %s, wholesale_price = %s
-            WHERE id = %s
-            """,
-            (weight_kg, length_cm, width_cm, height_cm, wholesale_price, pid)
-        )
-    else:
-        conn.execute(
-            """
-            UPDATE products
-            SET weight_kg = %s, length_cm = %s, width_cm = %s, height_cm = %s
-            WHERE id = %s
-            """,
-            (weight_kg, length_cm, width_cm, height_cm, pid)
-        )
+        set_clauses.append("wholesale_price = %s")
+        params.append(wholesale_price)
+
+    if retail_price is not None and retail_price > 0:
+        set_clauses.append("retail_price = %s")
+        params.append(retail_price)
+
+    params.append(pid)
+    conn.execute(f"UPDATE products SET {', '.join(set_clauses)} WHERE id = %s", tuple(params))
     conn.commit()
     return True

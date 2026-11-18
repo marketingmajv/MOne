@@ -174,8 +174,8 @@ function exportFreightPDF(selectedIdx = null, includeComparison = null) {
           <div class="section-title">Resumo da Carga & Seguro</div>
           <strong>Total de Volumes:</strong> ${totalVolCount || 1} volume(s)<br>
           <strong>Peso Total Físico:</strong> ${data.total_weight_kg.toFixed(1).replace('.', ',')} kg<br>
-          <strong>Base de Seguro (1/3 Atacado):</strong> R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}<br>
-          <strong>Regra:</strong> 1/3 do valor de atacado dos produtos
+          <strong>Base de Seguro (${data.pricing_mode === 'varejo' ? 'NF Integral' : 'Averbada'}):</strong> R$ ${data.insurance_base_value.toFixed(2).replace('.', ',')}<br>
+          <strong>Modalidade:</strong> ${data.pricing_mode === 'varejo' ? 'Varejo (Nota Fiscal integral)' : 'Atacado — Seguro regulamentar incluso'}
         </div>
       </div>
 
@@ -228,7 +228,7 @@ function exportFreightPDF(selectedIdx = null, includeComparison = null) {
   pdfWin.document.close();
 }
 
-function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier, price, createdAt, itemsRaw = "") {
+function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier, price, createdAt, itemsRaw = "", pricingMode = "atacado") {
   let items = [];
   if (itemsRaw) {
     try {
@@ -340,7 +340,7 @@ function exportArchivedQuotePDF(refNum, customerName, cepDest, address, carrier,
         <div>
           <div class="section-title">Resumo da Carga & Seguro</div>
           <strong>Total de Volumes:</strong> ${totalVolCount || 1} volume(s)<br>
-          <strong>Regra de Seguro:</strong> 1/3 do valor de atacado dos produtos
+          <strong>Modalidade:</strong> ${pricingMode === 'varejo' ? 'Varejo (Nota Fiscal integral)' : 'Atacado — Seguro regulamentar incluso'}
         </div>
       </div>
 
@@ -441,7 +441,9 @@ function copyWhatsAppMessage() {
     });
   }
 
-  text += `\n_Origem Vitória/ES. Seguro de 1/3 do valor de atacado já incluso na cotação._`;
+  text += data.pricing_mode === "varejo"
+    ? `\n_Origem Vitória/ES. Seguro de transporte regulamentar (NF integral) já incluso na cotação._`
+    : `\n_Origem Vitória/ES. Seguro de transporte regulamentar já incluso na cotação._`;
 
   navigator.clipboard.writeText(text).then(() => {
     alert(`Cotação copiada com sucesso (${includeComp ? `${activeIndices.length} opções selecionadas` : 'apenas a opção escolhida'})! Já pode colar no WhatsApp.`);

@@ -4,9 +4,62 @@
 
 let lastFreightCalculationResult = null;
 let itemRowCounter = 0;
+let currentPricingMode = "atacado";
+
+function getProductBaseInvoiceValue(opt, mode = currentPricingMode) {
+  if (!opt || !opt.value) return 0;
+  if (mode === "varejo") {
+    return parseFloat(opt.getAttribute("data-retail") || 0) || 0;
+  }
+  return parseFloat(opt.getAttribute("data-onethird") || 0) || 0;
+}
+
+function setFreightPricingMode(mode) {
+  currentPricingMode = (mode === "varejo") ? "varejo" : "atacado";
+  const hidden = document.getElementById("freight_pricing_mode");
+  if (hidden) hidden.value = currentPricingMode;
+
+  const btnAtac = document.getElementById("btnPricingModeAtacado");
+  const btnVar = document.getElementById("btnPricingModeVarejo");
+  const activeCls = "px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-[var(--brand-emerald)] text-[#052e16] shadow-xs";
+  const activeVarCls = "px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-[var(--brand-blue)] text-white shadow-xs";
+  const inactiveCls = "px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
+  if (btnAtac) btnAtac.className = currentPricingMode === "atacado" ? activeCls : inactiveCls;
+  if (btnVar) btnVar.className = currentPricingMode === "varejo" ? activeVarCls : inactiveCls;
+
+  const helper = document.getElementById("pricingModeHelperText");
+  if (helper) {
+    helper.innerText = currentPricingMode === "varejo"
+      ? "Varejo B2C: seguro calculado sobre 100% do preço de varejo (nota fiscal cheia)."
+      : "Atacado B2B: seguro calculado sobre 1/3 do preço de atacado.";
+  }
+
+  const sumLabel = document.getElementById("summaryInsuranceLabel");
+  const sumSub = document.getElementById("summaryInsuranceSublabel");
+  if (sumLabel) sumLabel.innerText = currentPricingMode === "varejo" ? "Base Seguro (Varejo)" : "Base Seguro (1/3 Atacado)";
+  if (sumSub) sumSub.innerText = currentPricingMode === "varejo" ? "NF cheia (Varejo)" : "Valor averbado (Atacado)";
+
+  const rows = document.querySelectorAll("#productRowsContainer > .product-item-card");
+  rows.forEach((row) => {
+    const lbl = row.querySelector(".product-invoice-label");
+    if (lbl) lbl.innerText = currentPricingMode === "varejo" ? "NF Varejo (R$)" : "1/3 Atacado (R$)";
+    if (row.dataset.invoiceOverridden !== "1") {
+      const sel = row.querySelector(".product-select");
+      const opt = sel ? sel.options[sel.selectedIndex] : null;
+      const inp = row.querySelector(".product-invoice-input");
+      if (inp) {
+        const val = getProductBaseInvoiceValue(opt, currentPricingMode);
+        inp.value = val > 0 ? val.toFixed(2) : "";
+      }
+    }
+  });
+  updateTotalsSummary();
+}
+window.setFreightPricingMode = setFreightPricingMode;
 
 document.addEventListener("DOMContentLoaded", () => {
   addProductRow();
+  setFreightPricingMode("atacado");
 });
 
 function resetFreightForm() {
@@ -24,6 +77,7 @@ function resetFreightForm() {
   const container = document.getElementById("productRowsContainer");
   if (container) container.innerHTML = "";
   itemRowCounter = 0; addProductRow();
+  setFreightPricingMode("atacado");
   document.getElementById("freightEmptyState")?.classList.remove("hidden");
   const optionsList = document.getElementById("freightOptionsList");
   if (optionsList) { optionsList.classList.add("hidden"); optionsList.innerHTML = ""; }
@@ -39,13 +93,16 @@ function addProductRow() {
   let optionsHtml = `<option value="">-- Selecione o Veículo / Modelo --</option>`;
   productsCatalog.forEach(p => {
     const oneThird = p.one_third_wholesale || 0;
-    optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-wholesale="${p.wholesale_price}" data-onethird="${oneThird}" data-weight="${p.weight_kg}" data-l="${p.length_cm}" data-w="${p.width_cm}" data-h="${p.height_cm}">${p.name} (1/3 Atacado: R$ ${oneThird.toFixed(2).replace('.', ',')})</option>`;
+    const retailPrice = p.retail_price || 0;
+    optionsHtml += `<option value="${p.id}" data-name="${p.name}" data-wholesale="${p.wholesale_price}" data-retail="${retailPrice}" data-onethird="${oneThird}" data-weight="${p.weight_kg}" data-l="${p.length_cm}" data-w="${p.width_cm}" data-h="${p.height_cm}">${p.name} (Atac 1/3: R$ ${oneThird.toFixed(2).replace('.', ',')} | Varejo: R$ ${retailPrice.toFixed(2).replace('.', ',')})</option>`;
   });
 
   const rowId = `productRow_${itemRowCounter}`;
   const card = document.createElement("div");
   card.id = rowId;
+  card.dataset.invoiceOverridden = "0";
   card.className = "bg-[var(--surface-subtle)] border border-[var(--border-subtle)] rounded-2xl p-4 space-y-3 product-item-card shadow-xs transition-all";
+  const invoiceLabelText = currentPricingMode === "varejo" ? "NF Varejo (R$)" : "1/3 Atacado (R$)";
 
   card.innerHTML = `
     <div class="flex items-end justify-between gap-3">
@@ -84,9 +141,9 @@ function addProductRow() {
         <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">Altura (cm)</label>
         <input type="number" value="" placeholder="A" class="product-height form-input w-full text-center text-xs py-1.5 min-w-0 rounded-xl" onchange="updateTotalsSummary()">
       </div>
-      <div class="min-w-0 col-span-2 sm:col-span-1 text-right">
-        <label class="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">1/3 Atacado</label>
-        <span class="product-onethird-display text-xs font-bold text-[var(--brand-blue)] block py-1">R$ 0,00</span>
+      <div class="min-w-0 col-span-2 sm:col-span-1">
+        <label class="product-invoice-label block text-[10px] font-semibold text-[var(--brand-blue)] mb-1">${invoiceLabelText}</label>
+        <input type="number" step="0.01" min="0" value="" placeholder="0,00" title="Base de seguro unitária (editável para preço promocional/Outlet)" class="product-invoice-input form-input w-full text-right text-xs font-bold py-1.5 min-w-0 rounded-xl" oninput="onItemInvoiceManualEdit('${rowId}')" onchange="onItemInvoiceManualEdit('${rowId}')">
       </div>
     </div>
   `;
@@ -106,14 +163,23 @@ function removeProductRow(rowId) {
   updateTotalsSummary();
 }
 
+function onItemInvoiceManualEdit(rowId) {
+  const row = document.getElementById(rowId);
+  if (row) row.dataset.invoiceOverridden = "1";
+  updateTotalsSummary();
+}
+window.onItemInvoiceManualEdit = onItemInvoiceManualEdit;
+
 function onProductSelectChange(rowId) {
   const row = document.getElementById(rowId);
   if (!row) return;
   const select = row.querySelector(".product-select");
   const opt = select.options[select.selectedIndex];
   const hasVal = opt && opt.value;
-  const oneThird = hasVal ? parseFloat(opt.getAttribute("data-onethird") || 0) : 0;
-  row.querySelector(".product-onethird-display").innerText = `R$ ${oneThird.toFixed(2).replace('.', ',')}`;
+  row.dataset.invoiceOverridden = "0";
+  const baseVal = getProductBaseInvoiceValue(opt, currentPricingMode);
+  const invInput = row.querySelector(".product-invoice-input");
+  if (invInput) invInput.value = baseVal > 0 ? baseVal.toFixed(2) : "";
   row.querySelector(".product-weight").value = (hasVal && opt.getAttribute("data-weight") !== null) ? opt.getAttribute("data-weight") : "";
   row.querySelector(".product-length").value = (hasVal && opt.getAttribute("data-l") !== null) ? opt.getAttribute("data-l") : "";
   row.querySelector(".product-width").value = (hasVal && opt.getAttribute("data-w") !== null) ? opt.getAttribute("data-w") : "";
@@ -125,18 +191,16 @@ function updateTotalsSummary() {
   const rows = document.querySelectorAll("#productRowsContainer > .product-item-card");
   let totalQty = 0, totalPhysicalWeight = 0, totalCubicWeight = 0, totalInsurance = 0;
   rows.forEach(row => {
-    const sel = row.querySelector(".product-select");
-    const opt = sel ? sel.options[sel.selectedIndex] : null;
     const qty = intVal(row.querySelector(".product-qty")?.value, 1);
     const w = floatVal(row.querySelector(".product-weight")?.value, 0);
     const l = floatVal(row.querySelector(".product-length")?.value, 0);
     const wid = floatVal(row.querySelector(".product-width")?.value, 0);
     const h = floatVal(row.querySelector(".product-height")?.value, 0);
-    const oneThird = parseFloat(opt ? opt.getAttribute("data-onethird") || 0 : 0);
+    const unitInv = floatVal(row.querySelector(".product-invoice-input")?.value, 0);
     totalQty += qty;
     totalPhysicalWeight += (w * qty);
     totalCubicWeight += (((l * wid * h) / 6000.0) * qty);
-    totalInsurance += (oneThird * qty);
+    totalInsurance += (unitInv * qty);
   });
   const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
   setEl("summaryTotalQty", totalQty);
@@ -242,6 +306,9 @@ async function runFreightCalculation() {
     const w = floatVal(wInput.value, 0);
     const h = floatVal(hInput.value, 0);
     const productName = selectedOpt.getAttribute("data-name") || (selectedOpt.text ? selectedOpt.text.split("(")[0].trim() : "");
+    const invInput = row.querySelector(".product-invoice-input");
+    const invoiceVal = floatVal(invInput?.value, 0);
+    const invoiceOverridden = row.dataset.invoiceOverridden === "1";
 
     if (productId || weight > 0) {
       items.push({
@@ -251,7 +318,9 @@ async function runFreightCalculation() {
         weight_kg: weight,
         length_cm: l,
         width_cm: w,
-        height_cm: h
+        height_cm: h,
+        invoice_value: invoiceVal,
+        invoice_overridden: invoiceOverridden
       });
     }
   });
@@ -287,7 +356,7 @@ async function runFreightCalculation() {
         </div>
         <h3 class="text-sm font-extrabold text-[var(--text-primary)] tracking-tight">Simulando Melhores Rotas de Frete</h3>
         <p class="text-xs text-[var(--text-secondary)] mt-1.5 max-w-[300px]">
-          Consultando tabelas ativas, peso cúbico e regra obrigatória de seguro de 1/3 do atacado...
+          ${currentPricingMode === "varejo" ? "Consultando tabelas ativas, peso cúbico e seguro sobre Nota Fiscal cheia (Varejo)..." : "Consultando tabelas ativas, peso cúbico e regra de seguro de 1/3 do atacado..."}
         </p>
         <div class="w-48 progress-track mt-5">
           <div class="progress-fill progress-indeterminate" style="width: 100%;"></div>
@@ -310,12 +379,13 @@ async function runFreightCalculation() {
         cep_dest, cep_orig, items, 
         customer_name, company_name, cpf_cnpj, 
         contact_phone, contact_person, full_address,
-        selected_carrier_ids
+        selected_carrier_ids,
+        pricing_mode: currentPricingMode
       })
     });
     
     const data = await resp.json();
-    window.lastFreightCalculationResult = lastFreightCalculationResult = { ...data, items: data.items || items, customer_name, cep_dest };
+    window.lastFreightCalculationResult = lastFreightCalculationResult = { ...data, pricing_mode: data.pricing_mode || currentPricingMode, items: data.items || items, customer_name, cep_dest };
 
     if (!data.success) {
       optionsList.innerHTML = `
