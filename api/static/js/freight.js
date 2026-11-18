@@ -61,12 +61,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function resetFreightForm() {
   document.getElementById("freightCalcForm")?.reset();
-  const selCarriers = document.getElementById("selected_carrier_ids");
-  if (selCarriers) {
-    Array.from(selCarriers.options).forEach(o => { o.selected = (o.value === "ALL"); });
-    _lastCarrierAllSelected = true;
-    onCarrierFilterChange(selCarriers);
-  }
+  const allCb = document.getElementById("carrierOptAll");
+  const specCbs = document.querySelectorAll(".carrier-option-cb");
+  if (allCb) allCb.checked = true;
+  specCbs.forEach(cb => { cb.checked = false; });
+  updateCarrierDropdownSummary();
+  closeCarrierDropdown();
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   setVal("customer_name", ""); setVal("cep_dest", "");
   if (window.DEFAULT_FREIGHT_CEP) setVal("cep_orig", window.DEFAULT_FREIGHT_CEP);
@@ -209,45 +209,72 @@ function updateTotalsSummary() {
 const intVal = (v, def=0) => { const p = parseInt(v); return isNaN(p) ? def : p; };
 const floatVal = (v, def=0.0) => { const p = parseFloat(v); return isNaN(p) ? def : p; };
 
-let _lastCarrierAllSelected = true;
-function onCarrierFilterChange(sel) {
-  if (!sel) return;
-  const opts = Array.from(sel.options);
-  const allOpt = opts.find(o => o.value === "ALL");
-  const specOpts = opts.filter(o => o.value !== "ALL");
-  const selectedSpecs = specOpts.filter(o => o.selected);
+function toggleCarrierDropdown(ev) {
+  if (ev) ev.stopPropagation();
+  const menu = document.getElementById("carrierDropdownMenu");
+  const btn = document.getElementById("carrierDropdownBtn");
+  if (!menu || !btn) return;
+  const isHidden = menu.classList.contains("hidden");
+  menu.classList.toggle("hidden", !isHidden);
+  btn.setAttribute("aria-expanded", isHidden ? "true" : "false");
+}
+window.toggleCarrierDropdown = toggleCarrierDropdown;
 
-  if (allOpt && allOpt.selected && selectedSpecs.length > 0) {
-    if (_lastCarrierAllSelected) {
-      allOpt.selected = false;
-      _lastCarrierAllSelected = false;
-    } else {
-      specOpts.forEach(o => { o.selected = false; });
-      allOpt.selected = true;
-      _lastCarrierAllSelected = true;
-    }
-  } else if (allOpt && !allOpt.selected && selectedSpecs.length === 0) {
-    allOpt.selected = true;
-    _lastCarrierAllSelected = true;
-  } else {
-    _lastCarrierAllSelected = !!(allOpt && allOpt.selected);
+function closeCarrierDropdown() {
+  const menu = document.getElementById("carrierDropdownMenu");
+  const btn = document.getElementById("carrierDropdownBtn");
+  if (menu) menu.classList.add("hidden");
+  if (btn) btn.setAttribute("aria-expanded", "false");
+}
+
+document.addEventListener("click", (ev) => {
+  const wrap = document.getElementById("carrierDropdownWrap");
+  if (wrap && !wrap.contains(ev.target)) {
+    closeCarrierDropdown();
   }
+});
 
+function updateCarrierDropdownSummary() {
+  const specCbs = Array.from(document.querySelectorAll(".carrier-option-cb"));
+  const checked = specCbs.filter(cb => cb.checked);
   const badge = document.getElementById("carrierFilterCounterBadge");
-  if (badge) {
-    const activeSpecs = specOpts.filter(o => o.selected);
-    badge.innerText = activeSpecs.length > 0
-      ? `${activeSpecs.length} selecionada(s)`
-      : `Todas (${specOpts.length})`;
+  const label = document.getElementById("carrierDropdownLabel");
+
+  if (checked.length === 0) {
+    if (badge) badge.innerText = `Todas (${specCbs.length})`;
+    if (label) label.innerText = `🌐 Todas as Ativas (${specCbs.length})`;
+  } else {
+    const names = checked.map(cb => cb.getAttribute("data-name") || "").filter(Boolean);
+    if (badge) badge.innerText = `${checked.length} selecionada(s)`;
+    if (label) {
+      label.innerText = checked.length === 1
+        ? `🚚 ${names[0]}`
+        : `🚚 ${checked.length} selecionada(s): ${names.join(", ")}`;
+    }
   }
 }
-window.onCarrierFilterChange = onCarrierFilterChange;
+
+function onCarrierCheckboxChange(cb) {
+  const allCb = document.getElementById("carrierOptAll");
+  const specCbs = Array.from(document.querySelectorAll(".carrier-option-cb"));
+  if (cb && cb.value === "ALL") {
+    if (cb.checked) {
+      specCbs.forEach(item => { item.checked = false; });
+    } else if (specCbs.every(item => !item.checked)) {
+      cb.checked = true;
+    }
+  } else {
+    const anyChecked = specCbs.some(item => item.checked);
+    if (allCb) allCb.checked = !anyChecked;
+  }
+  updateCarrierDropdownSummary();
+}
+window.onCarrierCheckboxChange = onCarrierCheckboxChange;
 
 function getSelectedCarrierIds() {
-  const sel = document.getElementById("selected_carrier_ids");
-  if (!sel) return null;
-  const vals = Array.from(sel.selectedOptions).map(o => o.value).filter(v => v && v !== "ALL");
-  return vals.length > 0 ? vals.map(v => parseInt(v, 10)).filter(n => !isNaN(n)) : null;
+  const checked = Array.from(document.querySelectorAll(".carrier-option-cb:checked"));
+  const vals = checked.map(cb => parseInt(cb.value, 10)).filter(n => !isNaN(n));
+  return vals.length > 0 ? vals : null;
 }
 
 async function lookupViaCEP(cepVal) {

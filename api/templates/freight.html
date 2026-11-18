@@ -113,16 +113,27 @@
 
             <div class="min-w-0">
               <div class="flex items-center justify-between mb-1.5">
-                <label for="selected_carrier_ids" class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Transportadoras na Cotação</label>
+                <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Transportadoras na Cotação</label>
                 <span id="carrierFilterCounterBadge" class="text-[10px] font-bold text-[var(--brand-emerald)]">Todas ({{ carriers|length }})</span>
               </div>
-              <select id="selected_carrier_ids" multiple size="3" onchange="onCarrierFilterChange(this)" class="form-input w-full px-3 py-1.5 text-xs rounded-xl" style="min-height: 74px;">
-                <option value="ALL" selected>🌐 Todas as Ativas (Automático)</option>
-                {% for c in carriers %}
-                <option value="{{ c.id }}">🚚 {{ c.name }}</option>
-                {% endfor %}
-              </select>
-              <small class="text-[10px] text-[var(--text-muted)] block mt-1">Clique em uma transportadora (ou Ctrl/Cmd p/ várias)</small>
+              <div class="carrier-dropdown-wrap" id="carrierDropdownWrap">
+                <button type="button" id="carrierDropdownBtn" class="carrier-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleCarrierDropdown(event)">
+                  <span id="carrierDropdownLabel" class="truncate" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🌐 Todas as Ativas ({{ carriers|length }})</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.7;"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="carrierDropdownMenu" class="carrier-dropdown-menu hidden" role="listbox" aria-multiselectable="true">
+                  <label class="carrier-dropdown-item" style="border-bottom:1px solid var(--border-subtle);margin-bottom:4px;padding-bottom:9px;font-weight:700;">
+                    <input type="checkbox" id="carrierOptAll" value="ALL" checked onchange="onCarrierCheckboxChange(this)">
+                    <span>🌐 Todas as Ativas (Automático)</span>
+                  </label>
+                  {% for c in carriers %}
+                  <label class="carrier-dropdown-item">
+                    <input type="checkbox" class="carrier-option-cb" value="{{ c.id }}" data-name="{{ c.name }}" onchange="onCarrierCheckboxChange(this)">
+                    <span>🚚 {{ c.name }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -298,9 +309,9 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261118_v7"></script>
-<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261118_v7"></script>
-<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261118_v7"></script>
+<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261118_v8"></script>
+<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261118_v8"></script>
+<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261118_v8"></script>
 
 <script>
   window.productsCatalog = {{ products|tojson }};

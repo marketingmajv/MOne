@@ -1182,7 +1182,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
 }
 
 /* Action Buttons & Interactive Controls Standard */
-.btn, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn), input[type="submit"], input[type="button"] {
+.btn, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn):not(.freight-pricing-btn):not(.carrier-dropdown-trigger), input[type="submit"], input[type="button"] {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -1202,7 +1202,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
   border: 1px solid #334155;
 }
 
-.btn:hover, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn):hover, input[type="submit"]:hover, input[type="button"]:hover {
+.btn:hover, button:not(.link-btn):not(.menu-btn):not(.tab-btn):not(.modal-head button):not(.theme-toggle-btn):not(.freight-pricing-btn):not(.carrier-dropdown-trigger):hover, input[type="submit"]:hover, input[type="button"]:hover {
   background-color: #334155;
   color: #FFFFFF;
   border-color: #475569;
@@ -2370,6 +2370,80 @@ button[onclick="resetFreightForm()"]:hover {
     padding: 7px 8px !important;
     font-size: 11.5px !important;
   }
+}
+
+/* Carrier Multi-Select Dropdown */
+.carrier-dropdown-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.carrier-dropdown-trigger {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.carrier-dropdown-trigger:hover,
+.carrier-dropdown-trigger[aria-expanded="true"] {
+  border-color: var(--brand-emerald);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+}
+
+.carrier-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 80;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.carrier-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin: 0;
+  transition: background-color 0.12s ease;
+}
+
+.carrier-dropdown-item:hover {
+  background-color: var(--surface-subtle);
+}
+
+.carrier-dropdown-item input[type="checkbox"] {
+  width: 15px !important;
+  height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  accent-color: var(--brand-emerald);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* Focus-visible Acessível para todos os botões de frete */
