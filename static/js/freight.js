@@ -21,11 +21,8 @@ function setFreightPricingMode(mode) {
 
   const btnAtac = document.getElementById("btnPricingModeAtacado");
   const btnVar = document.getElementById("btnPricingModeVarejo");
-  const activeCls = "px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-[var(--brand-emerald)] text-[#052e16] shadow-xs";
-  const activeVarCls = "px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-[var(--brand-blue)] text-white shadow-xs";
-  const inactiveCls = "px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]";
-  if (btnAtac) btnAtac.className = currentPricingMode === "atacado" ? activeCls : inactiveCls;
-  if (btnVar) btnVar.className = currentPricingMode === "varejo" ? activeVarCls : inactiveCls;
+  if (btnAtac) btnAtac.className = currentPricingMode === "atacado" ? "freight-pricing-btn active-atacado" : "freight-pricing-btn";
+  if (btnVar) btnVar.className = currentPricingMode === "varejo" ? "freight-pricing-btn active-varejo" : "freight-pricing-btn";
 
   const helper = document.getElementById("pricingModeHelperText");
   if (helper) {

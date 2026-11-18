@@ -46,15 +46,15 @@
         <!-- CARD INDEPENDENTE 1: IDENTIFICAÇÃO DO CLIENTE & DESTINO -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm space-y-5 transition-all">
           
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
-            <div class="flex items-center gap-3">
-              <span class="w-7 h-7 rounded-full bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 font-black text-xs flex items-center justify-center shadow-xs">1</span>
-              <div>
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-7 h-7 rounded-full bg-blue-500/10 text-[var(--brand-blue)] border border-blue-500/25 font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">1</span>
+              <div class="min-w-0">
                 <h2 class="text-sm font-bold text-[var(--text-primary)]">Identificação do Cliente & Destino</h2>
                 <p class="text-[11px] text-[var(--text-muted)]">Destinatário da cotação e dados para emissão</p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] font-medium">
                 <span>Origem:</span>
                 <strong class="text-[var(--text-primary)]">{{ default_cep }} (Vitória/ES)</strong>
@@ -66,7 +66,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="freight-fields-grid">
             <div>
               <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Cliente / Razão Social</label>
               <input type="text" id="customer_name" placeholder="Ex: Luciano Fabre" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
@@ -104,14 +104,14 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-            <div class="lg:col-span-2">
+          <div class="freight-address-carriers-grid">
+            <div class="min-w-0">
               <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Endereço Completo para Envio (Rua, Nº, Bairro, Cidade/UF)</label>
               <input type="text" id="full_address" placeholder="Ex: Av. Vitória, 1500, Bento Ferreira, Vitória/ES" class="form-input w-full px-3.5 py-2.5 text-xs rounded-xl">
               <input type="hidden" id="cep_orig" value="{{ default_cep }}">
             </div>
 
-            <div>
+            <div class="min-w-0">
               <div class="flex items-center justify-between mb-1.5">
                 <label for="selected_carrier_ids" class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Transportadoras na Cotação</label>
                 <span id="carrierFilterCounterBadge" class="text-[10px] font-bold text-[var(--brand-emerald)]">Todas ({{ carriers|length }})</span>
@@ -128,11 +128,11 @@
 
           {% if can_freight_retail %}
           <!-- MODALIDADE DA COTAÇÃO (ATACADO 1/3 vs VAREJO NF CHEIA - FEATURE FLAG BETA) -->
-          <div class="pt-3 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
+          <div class="freight-pricing-bar">
+            <div class="min-w-0" style="flex: 1 1 260px;">
               <div class="flex items-center gap-2 flex-wrap">
                 <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Modalidade da Nota / Base de Seguro</label>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">🧪 Beta Restrito</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold" style="background: rgba(245, 158, 11, 0.14); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.35);">🧪 Beta Restrito</span>
                 {% if me and (me.username or '')|lower in ['jam', 'fauzer'] %}
                 <a href="{{ url_for('users') }}" class="text-[10px] font-bold text-[var(--brand-blue)] hover:underline" title="Liberar ou remover este teste para um colaborador em Usuários & Permissões">👥 Delegar testador</a>
                 {% endif %}
@@ -142,12 +142,12 @@
               </small>
             </div>
             <input type="hidden" id="freight_pricing_mode" value="atacado">
-            <div class="inline-flex p-1 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-subtle)] gap-1 self-start sm:self-auto" role="group" aria-label="Modalidade de preço para seguro">
-              <button type="button" id="btnPricingModeAtacado" onclick="setFreightPricingMode('atacado')" class="px-3.5 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-[var(--brand-emerald)] text-[#052e16] shadow-xs">
-                🏢 Atacado (1/3)
+            <div class="freight-pricing-toggle" role="group" aria-label="Modalidade de preço para seguro">
+              <button type="button" id="btnPricingModeAtacado" onclick="setFreightPricingMode('atacado')" class="freight-pricing-btn active-atacado">
+                <span>🏢</span><span>Atacado (1/3)</span>
               </button>
-              <button type="button" id="btnPricingModeVarejo" onclick="setFreightPricingMode('varejo')" class="px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                🛍️ Varejo (NF Cheia)
+              <button type="button" id="btnPricingModeVarejo" onclick="setFreightPricingMode('varejo')" class="freight-pricing-btn">
+                <span>🛍️</span><span>Varejo (NF Cheia)</span>
               </button>
             </div>
           </div>
@@ -298,9 +298,9 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261118_v6"></script>
-<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261118_v6"></script>
-<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261118_v6"></script>
+<script src="{{ url_for('static', filename='js/freight-modal.js') }}?v=20261118_v7"></script>
+<script src="{{ url_for('static', filename='js/freight.js') }}?v=20261118_v7"></script>
+<script src="{{ url_for('static', filename='js/freight-quotes.js') }}?v=20261118_v7"></script>
 
 <script>
   window.productsCatalog = {{ products|tojson }};
