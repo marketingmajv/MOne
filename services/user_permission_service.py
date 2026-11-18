@@ -226,6 +226,14 @@ ALL_PERMISSIONS = {
         "description": "Gestão de chamados, suporte a erros, pedidos de alteração e atendimento",
         "default_roles": ["admin", "support"],
     },
+    "support_sidebar_sectors": {
+        "category": "governanca",
+        "label": "Suporte: Seletor Estilo Sidebar (Beta)",
+        "icon": "🧪",
+        "description": "Libera o seletor de setores organizado por categorias da Sidebar no Suporte (delegação exclusiva Jam/Fauzer)",
+        "default_roles": ["super_admin"],
+        "super_admin_only": True,
+    },
 
     # ---------------- INTEGRAÇÕES & SISTEMA (5) ----------------
     "data_sources": {

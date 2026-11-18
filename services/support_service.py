@@ -261,14 +261,15 @@ def create_ticket(
 
         msg_text = description.strip() or f"Chamado aberto: {title.strip()}"
         att_json = json.dumps(attachments, ensure_ascii=False)
+        initial_read_by_staff = bool(is_fauzer_user(user) or status_val == "aguardando_conferencia")
         ins_m = """
         INSERT INTO support_ticket_messages (ticket_id, sender_id, is_staff, message_text, attachments, created_at, read_by_user, read_by_staff)
-        VALUES (%s, %s, FALSE, %s, %s, CURRENT_TIMESTAMP, TRUE, FALSE);
+        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, TRUE, %s);
         """ if pg else """
         INSERT INTO support_ticket_messages (ticket_id, sender_id, is_staff, message_text, attachments, created_at, read_by_user, read_by_staff)
-        VALUES (?, ?, 0, ?, ?, CURRENT_TIMESTAMP, 1, 0);
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 1, ?);
         """
-        conn.execute(ins_m, (ticket_id, user_id, msg_text, att_json))
+        conn.execute(ins_m, (ticket_id, user_id, bool(is_fauzer_user(user)), msg_text, att_json, initial_read_by_staff if pg else int(initial_read_by_staff)))
         conn.commit()
 
     if notify_whatsapp and not is_fauzer_user(user):
@@ -320,7 +321,7 @@ def list_all_tickets_for_admin(status_filter: Optional[str] = None) -> List[Dict
         sql = f"""
         SELECT t.*, u.name AS user_name, u.username, u.role AS user_role, u.phone AS user_phone,
                (SELECT COUNT(*) FROM support_ticket_messages m WHERE m.ticket_id = t.id) AS total_messages,
-               (SELECT COUNT(*) FROM support_ticket_messages m WHERE m.ticket_id = t.id AND m.is_staff = FALSE AND m.read_by_staff = FALSE) AS unread_user_messages
+               (SELECT COUNT(*) FROM support_ticket_messages m WHERE m.ticket_id = t.id AND m.is_staff = FALSE AND m.read_by_staff = FALSE AND LOWER(u.username) <> 'fauzer') AS unread_user_messages
         FROM support_tickets t
         JOIN users u ON t.user_id = u.id
         {where_str}

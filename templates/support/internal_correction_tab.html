@@ -1,0 +1,130 @@
+<!-- Sub-Aba Executiva: Nova Correção Interna em 2 Colunas (Substitui o modal denso) -->
+<div x-show="adminTab === 'create'" x-cloak class="card" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;">
+  <style>
+    .support-create-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 43%) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .support-create-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-bottom:16px;margin-bottom:20px;border-bottom:1px solid var(--line);">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:42px;height:42px;border-radius:12px;background:rgba(0,229,153,0.12);border:1px solid rgba(0,229,153,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🛠️</div>
+      <div>
+        <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:var(--text);">Nova Correção Interna</h3>
+        <p style="margin:2px 0 0;font-size:0.84rem;color:var(--muted);">Selecione os setores na árvore estilo Sidebar à esquerda e detalhe as entregas à direita.</p>
+      </div>
+    </div>
+    <button type="button" @click="closeInternalCorrectionModal()" class="btn secondary" style="padding:7px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">
+      ← Voltar para Fila
+    </button>
+  </div>
+
+  <div x-show="errorMessage" x-cloak style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;padding:10px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;margin-bottom:16px;">
+    <span x-text="errorMessage"></span>
+  </div>
+  <div x-show="successMessage" x-cloak style="background:rgba(16,185,129,0.15);border:1px solid #10b981;color:#6ee7b7;padding:10px 14px;border-radius:10px;font-size:0.85rem;font-weight:600;margin-bottom:16px;">
+    <span x-text="successMessage"></span>
+  </div>
+
+  <form @submit.prevent="submitInternalCorrection">
+    <div class="support-create-grid">
+      <!-- COLUNA ESQUERDA: ÁRVORE DE SETORES ESTILO SIDEBAR -->
+      <div style="background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        {% set selector_tall = true %}
+        {% include 'support/_module_selector.html' %}
+      </div>
+
+      <!-- COLUNA DIREITA: DETALHES, CHECKLIST, OBSERVAÇÕES E PRINTS -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+          <div>
+            <label class="form-label" style="display:block;font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:6px;">
+              Título da Demanda / Correção <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" x-model="ticketTitle" class="form-input" placeholder="Ex: Ajuste de estoque / Atualização em lote" style="width:100%;height:40px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.88rem;" required />
+          </div>
+          <div>
+            <label class="form-label" style="display:block;font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:6px;">
+              Prioridade
+            </label>
+            <select x-model="ticketUrgency" class="form-input" style="width:100%;height:40px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:0.88rem;">
+              <option value="urgente" selected>🚨 Urgente</option>
+              <option value="alta">⚡ Alta</option>
+              <option value="media">📅 Média</option>
+              <option value="baixa">☕ Baixa</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+            <div>
+              <span style="font-size:0.84rem;font-weight:800;color:var(--text);display:block;">📋 Sub-Tarefas / Alterações (Checklist)</span>
+              <span style="font-size:0.75rem;color:var(--muted);">Desdobre a entrega em itens individuais para marcar durante a execução.</span>
+            </div>
+            <button type="button" @click="addTicketItem()" class="btn" style="background:rgba(0,229,153,0.15);border:1px solid #00e599;color:#00e599;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;">
+              ➕ Adicionar Item
+            </button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <template x-for="(item, idx) in ticketItems" :key="idx">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.78rem;color:#00e599;font-family:monospace;font-weight:700;min-width:65px;" x-text="'Item ' + (idx + 1) + ':'"></span>
+                <input type="text" x-model="ticketItems[idx]" class="form-input" :placeholder="'Ex: Ajustar modelo ' + (idx === 0 ? 'V20' : (idx === 1 ? 'V80' : 'Sport 701SH'))" style="flex:1;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:0.85rem;" />
+                <button type="button" x-show="ticketItems.length > 1" @click="removeTicketItem(idx)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">✕</button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" style="display:block;font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:6px;">
+            Observações Gerais (Opcional)
+          </label>
+          <textarea x-model="ticketDescription" rows="3" class="form-input" placeholder="Detalhes técnicos, contexto operacional ou arquivos envolvidos..." style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:0.86rem;resize:vertical;"></textarea>
+        </div>
+
+        <div>
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:6px;">
+            <span>📸 Prints / Evidências</span>
+            <span style="font-size:0.75rem;color:#00e599;font-weight:700;">Cole direto com Ctrl+V</span>
+          </label>
+          <div @dragover.prevent @drop="handleDrop($event, false)"
+               style="border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;background:var(--panel2);cursor:pointer;"
+               onclick="document.getElementById('internalTicketFileInput').click()">
+            <input type="file" id="internalTicketFileInput" accept="image/*" multiple style="display:none;" @change="handleFileInput($event, false)" />
+            <div style="font-size:22px;margin-bottom:4px;">📋</div>
+            <div style="font-size:0.86rem;font-weight:600;color:var(--text);">Clique aqui, arraste ou cole o print com Ctrl+V</div>
+          </div>
+
+          <div x-show="uploadedAttachments.length > 0" x-cloak style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+            <template x-for="(att, idx) in uploadedAttachments" :key="idx">
+              <div style="position:relative;width:76px;height:76px;border-radius:8px;overflow:hidden;border:1px solid var(--line);">
+                <img :src="att" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in;" @click="openLightbox(att)" alt="Print Anexo" />
+                <button type="button" @click.stop="removeAttachment(idx, false)" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.8);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;">✕</button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--line);">
+          <button type="button" class="btn secondary" @click="closeInternalCorrectionModal()" style="padding:9px 18px;border-radius:8px;">
+            Cancelar
+          </button>
+          <button type="submit" class="btn primary" :disabled="isSubmitting" style="min-width:220px;min-height:42px;font-weight:800;padding:9px 22px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+            <span x-show="!isSubmitting">Cadastrar Correção 🚀</span>
+            <span x-show="isSubmitting" x-cloak style="display:none;">Salvando...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

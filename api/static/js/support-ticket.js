@@ -6,19 +6,21 @@
  */
 
 window.supportTicketApp = function(initialConfig = {}) {
-  let modules = initialConfig.availableModules || [];
+  let modules = initialConfig.availableModules || [], moduleGroups = [];
   if (!modules || modules.length === 0) {
     const el = document.getElementById('supportModulesData');
-    if (el) {
-      try { modules = JSON.parse(el.textContent); } catch (e) {}
-    }
+    if (el) { try { modules = JSON.parse(el.textContent); } catch (e) {} }
   }
+  const gEl = document.getElementById('supportModuleGroupsData');
+  if (gEl) { try { moduleGroups = JSON.parse(gEl.textContent); } catch (e) {} }
   return {
     isStaff: initialConfig.isStaff || false,
     currentUserId: initialConfig.currentUserId || null,
     availableModules: modules,
+    availableModuleGroups: moduleGroups,
     selectedModuleKey: '',
     selectedModuleKeys: ['atacado'],
+    moduleSearch: '',
     ticketItems: [''],
     ticketTitle: '',
     ticketDescription: '',
@@ -46,6 +48,9 @@ window.supportTicketApp = function(initialConfig = {}) {
     hiddenTicketIds: [],
     isUrgentBannerDismissed: false,
     isInternalModalOpen: false,
+    adminTab: 'queue',
+    queueStatusFilter: initialConfig.initialStatus || 'abertos',
+    queueSearch: '',
 
     getCsrfToken() {
       return document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || '';
@@ -86,6 +91,25 @@ window.supportTicketApp = function(initialConfig = {}) {
       this.selectedModuleKey = this.selectedModuleKeys[0] || '';
     },
     isModuleSelected(key) { return this.selectedModuleKeys.includes(key); },
+    groupMatches(gid) {
+      const q = (this.moduleSearch || '').trim().toLowerCase();
+      if (!q) return true;
+      const g = this.availableModuleGroups.find(x => x.id === gid);
+      return g ? (g.label.toLowerCase().includes(q) || g.modules.some(m => m.label.toLowerCase().includes(q))) : true;
+    },
+    modMatches(gid, key) {
+      const q = (this.moduleSearch || '').trim().toLowerCase();
+      if (!q) return true;
+      const g = this.availableModuleGroups.find(x => x.id === gid);
+      if (!g) return true;
+      if (g.label.toLowerCase().includes(q)) return true;
+      const m = g.modules.find(x => x.key === key);
+      return m ? m.label.toLowerCase().includes(q) : false;
+    },
+    countGroupSelected(gid) {
+      const g = this.availableModuleGroups.find(x => x.id === gid);
+      return g ? g.modules.filter(m => this.selectedModuleKeys.includes(m.key)).length : 0;
+    },
     addTicketItem() { this.ticketItems.push(''); },
     removeTicketItem(idx) { if (this.ticketItems.length > 1) this.ticketItems.splice(idx, 1); },
 
@@ -365,10 +389,19 @@ window.supportTicketApp = function(initialConfig = {}) {
       try { sessionStorage.removeItem('m_one_urgent_banner_dismissed'); } catch (e) {}
     },
     isTicketHidden(id) { return this.hiddenTicketIds.includes(id); },
+    ticketMatchesQueue(id, status, searchBlob) {
+      if (this.hiddenTicketIds.includes(id)) return false;
+      const f = this.queueStatusFilter || 'abertos';
+      if (f === 'abertos' && !['pendente', 'em_andamento', 'aguardando_conferencia'].includes(status)) return false;
+      if (!['todos', 'abertos'].includes(f) && status !== f) return false;
+      const q = (this.queueSearch || '').trim().toLowerCase();
+      return !q || String(searchBlob || '').toLowerCase().includes(q);
+    },
     getVisibleCount(total) { return Math.max(0, total - this.hiddenTicketIds.length); },
 
     openInternalCorrectionModal() {
       this.selectedModuleKeys = ['atacado'];
+      this.moduleSearch = '';
       this.ticketItems = [''];
       this.ticketTitle = '';
       this.ticketDescription = '';
@@ -376,9 +409,13 @@ window.supportTicketApp = function(initialConfig = {}) {
       this.uploadedAttachments = [];
       this.errorMessage = '';
       this.successMessage = '';
-      this.isInternalModalOpen = true;
+      this.adminTab = 'create';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    closeInternalCorrectionModal() { this.isInternalModalOpen = false; },
+    closeInternalCorrectionModal() {
+      this.adminTab = 'queue';
+      this.isInternalModalOpen = false;
+    },
 
     async submitInternalCorrection() {
       const validItems = this.ticketItems.map(t => t.trim()).filter(Boolean);
@@ -450,34 +487,4 @@ window.supportTicketApp = function(initialConfig = {}) {
       }, 45000);
     }
   };
-};
-
-window.toggleSupportBannerPref = async function (btn) {
-  if (!btn) return;
-  const current = btn.dataset.enabled === 'true';
-  const next = !current;
-  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || '';
-  btn.disabled = true;
-  try {
-    const res = await fetch('/api/suporte/banner-toggle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-      body: JSON.stringify({ enabled: next, csrf_token: csrf }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      const enabled = !!data.banner_enabled;
-      btn.dataset.enabled = enabled ? 'true' : 'false';
-      btn.innerHTML = enabled ? '🔔 Banner: Ativo' : '🔕 Banner: Oculto';
-      btn.style.borderColor = enabled ? '#10b981' : 'var(--line)';
-      btn.style.color = enabled ? '#10b981' : 'var(--muted)';
-      try { sessionStorage.removeItem('mone_support_badges_cache'); } catch (e) {}
-    } else {
-      alert(data.error || 'Não foi possível alterar a preferência do banner.');
-    }
-  } catch (e) {
-    console.error('Erro ao alternar banner:', e);
-  } finally {
-    btn.disabled = false;
-  }
 };

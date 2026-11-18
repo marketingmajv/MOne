@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import logging
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
-from routes.helpers import current_user, login_required, roles_required
-from services.support_items_service import toggle_ticket_item
+from routes.helpers import current_user, login_required, roles_required, user_has_permission
+from services.support_items_service import get_available_module_groups_for_user, toggle_ticket_item
 from services.support_service import (
     SUPPORT_UPLOAD_DIR,
     add_ticket_reply,
@@ -38,11 +38,15 @@ def support_user_page():
         return redirect(url_for("login"))
     tickets = list_tickets_for_user(me["id"])
     available_modules = get_available_modules_for_user(me)
+    available_module_groups = get_available_module_groups_for_user(me)
+    can_sidebar_sectors = user_has_permission(me, "support_sidebar_sectors")
     return render_template(
         "support/user_tickets.html",
         me=me,
         tickets=tickets,
         available_modules=available_modules,
+        available_module_groups=available_module_groups,
+        can_sidebar_sectors=can_sidebar_sectors,
     )
 
 
@@ -55,17 +59,30 @@ def support_admin_page():
         return redirect(url_for("login"))
     if not is_fauzer_user(me):
         return redirect(url_for("support.support_user_page"))
-    status_filter = request.args.get("status", "todos")
-    tickets = list_all_tickets_for_admin(status_filter=status_filter)
+    status_filter = request.args.get("status", "abertos")
+    tickets = list_all_tickets_for_admin(status_filter="todos")
+    status_counts = {
+        "todos": len(tickets),
+        "abertos": sum(1 for t in tickets if t.get("status") in ("pendente", "em_andamento", "aguardando_conferencia")),
+        "pendente": sum(1 for t in tickets if t.get("status") == "pendente"),
+        "em_andamento": sum(1 for t in tickets if t.get("status") == "em_andamento"),
+        "aguardando_conferencia": sum(1 for t in tickets if t.get("status") == "aguardando_conferencia"),
+        "resolvido": sum(1 for t in tickets if t.get("status") == "resolvido"),
+    }
     badges = get_support_badges(me)
     available_modules = get_available_modules_for_user(me)
+    available_module_groups = get_available_module_groups_for_user(me)
+    can_sidebar_sectors = user_has_permission(me, "support_sidebar_sectors")
     return render_template(
         "support/admin_tickets.html",
         me=me,
         tickets=tickets,
         current_status=status_filter,
+        status_counts=status_counts,
         badges=badges,
         available_modules=available_modules,
+        available_module_groups=available_module_groups,
+        can_sidebar_sectors=can_sidebar_sectors,
     )
 
 

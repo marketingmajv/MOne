@@ -1,0 +1,80 @@
+{# Componente compartilhado: Seletor de Setores Afetados (Beta Restrito: Estilo Sidebar | Legado: Pílulas planas) #}
+<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:0.82rem;font-weight:700;color:var(--text);">🏢 Setores Afetados <span style="color:#ef4444;">*</span></span>
+      {% if can_sidebar_sectors %}
+        <span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,0.14);color:#f59e0b;border:1px solid rgba(245,158,11,0.35);">🧪 Beta Restrito</span>
+        {% if me and (me.username or '')|lower in ['jam', 'fauzer'] %}
+          <a href="{{ url_for('users') }}" style="font-size:0.74rem;font-weight:700;color:#38bdf8;text-decoration:none;" title="Delegar teste em Usuários & Permissões">👥 Delegar testador</a>
+        {% endif %}
+      {% endif %}
+    </div>
+    <span style="font-size:0.75rem;color:#00e599;font-weight:800;" x-text="selectedModuleKeys.length + ' selecionado(s)'"></span>
+  </div>
+
+  {% if can_sidebar_sectors %}
+    <!-- Filtro rápido estilo Sidebar -->
+    <div style="position:relative;margin-bottom:8px;">
+      <input type="text"
+             x-model="moduleSearch"
+             class="form-input"
+             placeholder="🔍 Filtrar setor ou categoria (ex: estoque, frete, atacado, bling)..."
+             style="width:100%;height:36px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 36px 0 12px;font-size:0.82rem;">
+      <button type="button"
+              x-show="moduleSearch.trim().length > 0"
+              x-cloak
+              @click="moduleSearch = ''"
+              title="Limpar filtro"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent !important;border:none !important;min-height:24px !important;height:24px !important;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px !important;box-shadow:none !important;">✕</button>
+    </div>
+
+    <!-- Árvore de Categorias Estilo Sidebar -->
+    <div style="max-height:{{ '560px' if selector_tall else '280px' }};overflow-y:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:12px;">
+      {% for grp in available_module_groups %}
+        <div x-data="{ open: true }"
+             x-show="groupMatches('{{ grp.id }}')"
+             style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button type="button"
+                  @click="open = !open"
+                  style="display:flex;align-items:center;gap:8px;width:100%;background:transparent !important;border:none !important;min-height:24px !important;height:auto !important;padding:2px 0 !important;box-shadow:none !important;cursor:pointer;text-align:left;">
+            <span style="font-size:10px;color:#38bdf8;transition:transform 0.15s;display:inline-block;" :style="(open || moduleSearch.trim().length > 0) ? 'transform:rotate(90deg);' : ''">▶</span>
+            <span style="font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#38bdf8;white-space:nowrap;">{{ grp.label }}</span>
+            <span style="flex:1;height:1px;background:rgba(56,189,248,0.22);"></span>
+            <span x-show="countGroupSelected('{{ grp.id }}') > 0"
+                  x-cloak
+                  style="font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;background:rgba(0,229,153,0.16);color:#00e599;border:1px solid rgba(0,229,153,0.35);white-space:nowrap;"
+                  x-text="countGroupSelected('{{ grp.id }}') + ' ✓'"></span>
+          </button>
+
+          <div x-show="open || moduleSearch.trim().length > 0"
+               style="display:flex;flex-wrap:wrap;gap:6px;padding-left:10px;">
+            {% for mod in grp.modules %}
+            <button type="button"
+                    x-show="modMatches('{{ grp.id }}', '{{ mod.key }}')"
+                    @click="toggleModuleKey('{{ mod.key }}')"
+                    :style="isModuleSelected('{{ mod.key }}') ? 'background:rgba(0,229,153,0.18) !important;border:1px solid #00e599 !important;color:#00e599 !important;font-weight:700;' : 'background:var(--panel) !important;border:1px solid var(--line) !important;color:var(--muted) !important;'"
+                    style="min-height:30px !important;height:auto !important;padding:5px 11px !important;border-radius:10px;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all 0.12s ease;box-shadow:none !important;">
+              <span x-show="isModuleSelected('{{ mod.key }}')">✓</span>
+              <span>{{ mod.label }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <!-- Modo Legado (usuários fora do Beta Restrito) -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      {% for mod in available_modules %}
+      <button type="button"
+              @click="toggleModuleKey('{{ mod.key }}')"
+              :style="isModuleSelected('{{ mod.key }}') ? 'background:rgba(0,229,153,0.18);border:1px solid #00e599;color:#00e599;font-weight:700;' : 'background:var(--panel2);border:1px solid var(--line);color:var(--muted);'"
+              style="min-height:30px !important;height:auto !important;padding:5px 11px !important;border-radius:14px;font-size:0.76rem;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:none !important;">
+        <span x-show="isModuleSelected('{{ mod.key }}')">✓</span>
+        <span>{{ mod.label }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

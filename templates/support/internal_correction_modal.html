@@ -1,7 +1,7 @@
   <!-- Modal Executivo: Cadastro de Correção Interna (Teleportado para body) -->
   <template x-teleport="body">
     <div x-show="isInternalModalOpen" x-cloak @click.self="closeInternalCorrectionModal()" class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
-      <div class="modal-card" @click.stop style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
+      <div class="modal-card" @click.stop style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
         
         <div class="modal-head" style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -27,22 +27,7 @@
             <span x-text="successMessage"></span>
           </div>
 
-          <div>
-            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;">
-              <span>Setores Afetados <span style="color:#ef4444;">*</span></span>
-              <span style="font-size:0.75rem;color:#00e599;" x-text="selectedModuleKeys.length + ' selecionado(s)'"></span>
-            </label>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              {% for mod in available_modules %}
-              <button type="button" @click="toggleModuleKey('{{ mod.key }}')"
-                      :style="isModuleSelected('{{ mod.key }}') ? 'background:rgba(0,229,153,0.18);border:1px solid #00e599;color:#00e599;font-weight:700;' : 'background:var(--panel2);border:1px solid var(--line);color:var(--muted);'"
-                      style="padding:4px 10px;border-radius:14px;font-size:0.75rem;cursor:pointer;">
-                <span x-show="isModuleSelected('{{ mod.key }}')">✓</span>
-                <span>{{ mod.label }}</span>
-              </button>
-              {% endfor %}
-            </div>
-          </div>
+          {% include 'support/_module_selector.html' %}
 
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
             <div>

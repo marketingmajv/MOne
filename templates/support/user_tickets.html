@@ -19,7 +19,10 @@
 <script id="supportModulesData" type="application/json">
 {{ available_modules|tojson|safe }}
 </script>
-<script src="{{ url_for('static', filename='js/support-ticket.js') }}?v=20261104_audit"></script>
+<script id="supportModuleGroupsData" type="application/json">
+{{ available_module_groups|tojson|safe }}
+</script>
+<script src="{{ url_for('static', filename='js/support-ticket.js') }}?v=20261118_sidebar_beta_v2"></script>
 
 <div x-data="supportTicketApp({
   isStaff: false,
@@ -49,23 +52,7 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;">
         <!-- Módulos / Setores Afetados -->
         <div style="grid-column: 1 / -1;">
-          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:8px;">
-            <span>🏢 Áreas / Setores a Corrigir <span style="color:#ef4444;">*</span> <span style="font-weight:400;color:var(--muted);">(Clique para marcar um ou mais setores)</span></span>
-            <span style="font-size:0.75rem;color:#059669;font-weight:700;" x-text="selectedModuleKeys.length + ' setor(es) selecionado(s)'"></span>
-          </label>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            {% for mod in available_modules %}
-            <button type="button"
-                    @click="toggleModuleKey('{{ mod.key }}')"
-                    :style="isModuleSelected('{{ mod.key }}') 
-                      ? 'background:rgba(0,204,136,0.18);border:1px solid #00cc88;color:#059669;font-weight:800;' 
-                      : 'background:var(--panel2);border:1px solid var(--line);color:var(--muted);'"
-                    style="padding:7px 14px;border-radius:20px;font-size:0.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s ease;">
-              <span x-show="isModuleSelected('{{ mod.key }}')">✓</span>
-              <span>{{ mod.label }}</span>
-            </button>
-            {% endfor %}
-          </div>
+          {% include 'support/_module_selector.html' %}
         </div>
 
         <div style="grid-column: 1 / -1; display:grid; grid-template-columns: 2fr 1fr; gap:14px;">

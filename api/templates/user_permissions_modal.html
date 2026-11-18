@@ -60,6 +60,38 @@
         </div>
         {% endif %}
 
+        {% if (me.username or '')|lower in ['jam', 'fauzer'] %}
+        <div class="perm-category-card" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid rgba(245, 158, 11, 0.22);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">🧪</span>
+              <div>
+                <strong style="color: #fbbf24; font-size: 0.88rem; letter-spacing: -0.01em;">Recursos em Beta Restrito (Testes Controlados)</strong>
+                <small style="display: block; color: var(--muted, #94a3b8); font-size: 0.72rem; line-height: 1.2;">Delegação exclusiva @jam / @fauzer para liberar testes antes do lançamento geral</small>
+              </div>
+            </div>
+            <button type="button" style="font-size: 0.7rem; font-weight: 500; padding: 3px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.14); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); cursor: pointer;" onclick="toggleCategoryPerms('permsForm_{{ u.id }}', 'beta')">
+              Inverter Beta
+            </button>
+          </div>
+          {% for p_key, p_meta in all_permissions.items() if p_meta.get('super_admin_only') %}
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer; padding: 8px 10px; border-radius: 8px; margin: 0; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(245,158,11,0.08)'" onmouseout="this.style.background='transparent'">
+            <span style="display: flex; align-items: center; gap: 10px; max-width: 82%;">
+              <span style="font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0;">{{ p_meta.icon }}</span>
+              <div>
+                <strong style="color: var(--text, #f8fafc); display: block; font-size: 0.85rem; line-height: 1.25;">{{ p_meta.label }}</strong>
+                <small style="color: var(--muted, #94a3b8); font-size: 0.73rem; line-height: 1.25; display: block;">{{ p_meta.description }}</small>
+              </div>
+            </span>
+            <div class="toggle-switch">
+              <input type="checkbox" name="perm_{{ p_key }}" data-cat="beta" data-key="{{ p_key }}" value="1" {% if eff_perms.get(p_key) %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        {% endif %}
+
         {% for cat in permissions_categories %}
         <div class="perm-category-card" style="background: var(--surface-subtle, rgba(255,255,255,0.02)); border: 1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
           
@@ -78,8 +110,7 @@
           </div>
 
           <!-- Permission Rows -->
-          {% for p_key, p_meta in all_permissions.items() if p_meta.category == cat.id %}
-          {% if not p_meta.get('super_admin_only') or (me.username or '')|lower in ['jam', 'fauzer'] %}
+          {% for p_key, p_meta in all_permissions.items() if p_meta.category == cat.id and not p_meta.get('super_admin_only') %}
           <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer; padding: 8px 10px; border-radius: 8px; margin: 0; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
             <span style="display: flex; align-items: center; gap: 10px; max-width: 82%;">
               <span style="font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0;">{{ p_meta.icon }}</span>
@@ -93,7 +124,6 @@
               <span class="toggle-slider"></span>
             </div>
           </label>
-          {% endif %}
           {% endfor %}
 
         </div>

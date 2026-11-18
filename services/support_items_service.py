@@ -67,45 +67,107 @@ def ensure_support_items_schema() -> None:
         _items_schema_ensured = True
 
 
+def get_available_module_groups_for_user(user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Retorna os setores elegíveis agrupados exatamente conforme as categorias da Sidebar."""
+    role = str((user or {}).get("role") or "").lower()
+
+    def _allowed(perm_key: str) -> bool:
+        return role in ("admin", "support") or user_has_permission_check(user, perm_key)
+
+    raw_groups = [
+        {
+            "id": "principal",
+            "label": "ACESSO RÁPIDO",
+            "modules": [
+                {"key": "dashboard", "label": "🏠 Visão Geral", "public": True},
+                {"key": "copilot", "label": "⚡ Copilot IA Assistente", "perm": "copilot"},
+                {"key": "employee_portal", "label": "📝 Meu Relatório Semanal", "public": True},
+            ],
+        },
+        {
+            "id": "comercial",
+            "label": "COMERCIAL & VENDAS",
+            "modules": [
+                {"key": "vendas", "label": "💼 Vendas & Pedidos", "perm": "sales"},
+                {"key": "custom_catalog", "label": "📋 Catálogos Personalizados (/c/<slug>)", "public": True},
+                {"key": "outlet", "label": "🏷️ Outlet MAJ (/outlet)", "public": True},
+                {"key": "atacado", "label": "🏢 MAJ Atacado CNPJ (/atacado)", "public": True},
+                {"key": "showroom", "label": "🛵 Modelos & Showroom (/show-room)", "public": True},
+                {"key": "product_hub", "label": "📦 Central de Produtos", "perm": "product_hub"},
+                {"key": "radar", "label": "📡 Radar de Mercado", "perm": "radar"},
+                {"key": "prospector", "label": "🎯 Prospecção Contínua", "perm": "prospector"},
+            ],
+        },
+        {
+            "id": "logistica",
+            "label": "LOGÍSTICA & ESTOQUE",
+            "modules": [
+                {"key": "stock", "label": "📦 Estoque & Chassis", "perm": "stock"},
+                {"key": "freight", "label": "🚚 Fretes & Expedição", "perm": "freight"},
+                {"key": "imports", "label": "🚢 Importações China", "perm": "imports"},
+                {"key": "products", "label": "📋 Produtos & Fichas", "perm": "products"},
+            ],
+        },
+        {
+            "id": "financeiro",
+            "label": "FINANCEIRO & FISCAL",
+            "modules": [
+                {"key": "payments", "label": "💳 Pagamentos & Quitações", "perm": "payments"},
+                {"key": "fiscal_pricing", "label": "⚖️ Precificação Fiscal", "perm": "fiscal"},
+                {"key": "mpay", "label": "💵 M-Pay Comprovantes", "perm": "mpay"},
+            ],
+        },
+        {
+            "id": "governanca",
+            "label": "GOVERNANÇA & EQUIPE",
+            "modules": [
+                {"key": "document_center", "label": "📁 Central de Docs", "perm": "document_center"},
+                {"key": "implementation_plan", "label": "📊 Gestão Interna", "perm": "implementation_plan"},
+                {"key": "users", "label": "👥 Usuários & Permissões", "perm": "users"},
+                {"key": "audit_logs", "label": "🛡️ Auditoria", "perm": "audit_logs"},
+            ],
+        },
+        {
+            "id": "sistema",
+            "label": "INTEGRAÇÕES & SISTEMA",
+            "modules": [
+                {"key": "data_sources", "label": "⚡ Fontes de Dados (24/7)", "perm": "data_sources"},
+                {"key": "connections", "label": "🔌 Conexões & APIs", "perm": "connections"},
+                {"key": "bling", "label": "🔄 Bling ERP", "perm": "bling"},
+                {"key": "backups", "label": "💾 Backups Físicos", "perm": "backups"},
+                {"key": "infra", "label": "📡 Infra & Vercel", "perm": "infra"},
+            ],
+        },
+        {
+            "id": "geral",
+            "label": "GERAL & SUGESTÕES",
+            "modules": [
+                {"key": "geral_login", "label": "🔑 Acesso, Login e Senha", "public": True},
+                {"key": "geral_visual", "label": "🎨 Interface, Visual e Telas", "public": True},
+                {"key": "sugestao", "label": "💡 Sugestão de Novo Recurso / Melhoria", "public": True},
+                {"key": "outro", "label": "❓ Outro Assunto", "public": True},
+            ],
+        },
+    ]
+
+    groups: List[Dict[str, Any]] = []
+    for grp in raw_groups:
+        items = [
+            {"key": m["key"], "label": m["label"]}
+            for m in grp["modules"]
+            if m.get("public") or (m.get("perm") and _allowed(m["perm"]))
+        ]
+        if items:
+            groups.append({"id": grp["id"], "label": grp["label"], "modules": items})
+    return groups
+
+
 def get_available_modules_for_user(user: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Retorna os módulos operacionais elegíveis para o usuário abrir chamados."""
-    public_modules = [
-        {"key": "atacado", "label": "🏢 MAJ Atacado CNPJ (/atacado)"},
-        {"key": "outlet", "label": "🏷️ Outlet MAJ (/outlet)"},
-        {"key": "showroom", "label": "🛵 Modelos & Showroom (/show-room)"},
-        {"key": "custom_catalog", "label": "📋 Catálogos Personalizados (/c/<slug>)"},
-    ]
-
-    operational_catalog = [
-        ("vendas", "💼 Vendas & Pedidos"),
-        ("stock", "📦 Estoque & Pátio de Chassis"),
-        ("freight", "🚚 Fretes & Expedição"),
-        ("imports", "🚢 Importações & Faturas China"),
-        ("finance", "💰 Financeiro & Contas"),
-        ("fiscal_pricing", "⚖️ Fiscal & Precificação"),
-        ("mpay", "💳 M-Pay Cobranças"),
-        ("copilot", "⚡ Copilot IA Assistente"),
-        ("prospector", "🎯 Prospecção Contínua"),
-        ("radar", "📡 Radar de Mercado"),
-        ("users", "👥 Usuários & Permissões"),
-        ("employee_portal", "📝 Meu Relatório Semanal"),
-    ]
-
-    result: List[Dict[str, str]] = list(public_modules)
-    role = str(user.get("role") or "").lower()
-
-    for key, label in operational_catalog:
-        if role in ("admin", "support") or user_has_permission_check(user, key):
-            result.append({"key": key, "label": label})
-
-    general_modules = [
-        {"key": "geral_login", "label": "🔑 Acesso, Login e Senha"},
-        {"key": "geral_visual", "label": "🎨 Interface, Visual e Telas"},
-        {"key": "sugestao", "label": "💡 Sugestão de Novo Recurso / Melhoria"},
-        {"key": "outro", "label": "❓ Outro Assunto"},
-    ]
-    result.extend(general_modules)
-    return result
+    """Retorna a lista plana dos módulos operacionais elegíveis para o usuário abrir chamados."""
+    flat: List[Dict[str, str]] = []
+    for grp in get_available_module_groups_for_user(user):
+        flat.extend(grp["modules"])
+    return flat
 
 
 def parse_ticket_modules(ticket: Dict[str, Any]) -> List[Dict[str, str]]:
