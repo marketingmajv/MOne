@@ -2,7 +2,7 @@
 
 {% block title %}Consulta de Fretes & Transportadoras — M-One{% endblock %}
 {% block page_title %}Consulta de Fretes & Transportadoras{% endblock %}
-{% block page_subtitle %}Simulação instantânea multi-produtos com dimensões, peso e seguro Atacado (1/3) ou Varejo (NF Cheia){% endblock %}
+{% block page_subtitle %}{% if can_freight_retail %}Simulação instantânea multi-produtos com dimensões, peso e seguro Atacado (1/3) ou Varejo (NF Cheia){% else %}Simulação instantânea multi-produtos com dimensões, peso e seguro automático (1/3){% endif %}{% endblock %}
 {% block top_actions %}
   <span class="pill" style="background: rgba(0, 229, 153, 0.12); color: var(--accent); border: 1px solid rgba(0, 229, 153, 0.25); font-weight: 700; font-size: 0.75rem; padding: 5px 12px; border-radius: 99px;">
     🟢 {{ carriers|length }} Transportadoras Ativas • Origem Vitória/ES
@@ -126,10 +126,17 @@
             </div>
           </div>
 
-          <!-- MODALIDADE DA COTAÇÃO (ATACADO 1/3 vs VAREJO NF CHEIA) -->
+          {% if can_freight_retail %}
+          <!-- MODALIDADE DA COTAÇÃO (ATACADO 1/3 vs VAREJO NF CHEIA - FEATURE FLAG BETA) -->
           <div class="pt-3 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Modalidade da Nota / Base de Seguro</label>
+              <div class="flex items-center gap-2 flex-wrap">
+                <label class="block text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Modalidade da Nota / Base de Seguro</label>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-400 border border-amber-500/30">🧪 Beta Restrito</span>
+                {% if me and (me.username or '')|lower in ['jam', 'fauzer'] %}
+                <a href="{{ url_for('users') }}" class="text-[10px] font-bold text-[var(--brand-blue)] hover:underline" title="Liberar ou remover este teste para um colaborador em Usuários & Permissões">👥 Delegar testador</a>
+                {% endif %}
+              </div>
               <small id="pricingModeHelperText" class="text-[11px] text-[var(--text-muted)] block mt-0.5">
                 Atacado B2B: seguro calculado sobre 1/3 do preço de atacado.
               </small>
@@ -144,6 +151,9 @@
               </button>
             </div>
           </div>
+          {% else %}
+          <input type="hidden" id="freight_pricing_mode" value="atacado">
+          {% endif %}
 
         </div>
 
@@ -155,7 +165,7 @@
               <span class="w-7 h-7 rounded-full bg-emerald-500/10 text-[var(--brand-emerald)] border border-emerald-500/25 font-black text-xs flex items-center justify-center shadow-xs">2</span>
               <div>
                 <h2 class="text-sm font-bold text-[var(--text-primary)]">Itens & Especificações da Carga</h2>
-                <p class="text-[11px] text-[var(--text-muted)]">Veículos, dimensões e base de seguro automática ou editável (Atacado 1/3 ou Varejo)</p>
+                <p class="text-[11px] text-[var(--text-muted)]">{% if can_freight_retail %}Veículos, dimensões e base de seguro automática ou editável (Atacado 1/3 ou Varejo){% else %}Veículos, dimensões e base de seguro automática (1/3 do valor) ou editável{% endif %}</p>
               </div>
             </div>
             <button type="button" onclick="addProductRow()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-[var(--brand-emerald)] border border-emerald-500/25 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs">
@@ -251,7 +261,7 @@
           </p>
           <div class="mt-4 flex items-center gap-2 text-[11px] text-[var(--text-muted)] bg-[var(--surface-card)] px-3 py-1.5 rounded-full border border-[var(--border-subtle)]">
             <span class="w-2 h-2 rounded-full bg-[var(--brand-emerald)]"></span>
-            <span>Seguro calculado conforme modalidade (Atacado 1/3 ou Varejo NF Cheia)</span>
+            <span>{% if can_freight_retail %}Seguro calculado conforme modalidade (Atacado 1/3 ou Varejo NF Cheia){% else %}Seguro calculado sobre 1/3 do valor da nota{% endif %}</span>
           </div>
         </div>
 

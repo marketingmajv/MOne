@@ -4,6 +4,7 @@ from database import db
 from routes.helpers import (
     login_required,
     roles_required,
+    current_user,
     hash_password,
     audit
 )
@@ -14,8 +15,10 @@ user_bp = Blueprint("user", __name__)
 from services.user_permission_service import (
     ALL_PERMISSIONS,
     PERMISSIONS_CATEGORIES,
+    SUPER_ADMINS,
     get_user_effective_permissions,
     get_role_preset,
+    parse_custom_permissions,
 )
 
 
@@ -130,10 +133,17 @@ def delete_user(uid):
 @login_required
 @roles_required("admin")
 def update_user_permissions(uid):
-    perms = {}
-    for perm_key in ALL_PERMISSIONS:
-        perms[perm_key] = bool(request.form.get(f"perm_{perm_key}"))
+    me = current_user() or {}
+    is_super_admin = str(me.get("username") or "").strip().lower() in SUPER_ADMINS
     with db() as conn:
+        target_row = conn.execute("SELECT custom_permissions FROM users WHERE id = %s", (uid,)).fetchone()
+        existing_perms = parse_custom_permissions(target_row["custom_permissions"] if target_row else None)
+        perms = {}
+        for perm_key, meta in ALL_PERMISSIONS.items():
+            if meta.get("super_admin_only") and not is_super_admin:
+                perms[perm_key] = bool(existing_perms.get(perm_key, False))
+            else:
+                perms[perm_key] = bool(request.form.get(f"perm_{perm_key}"))
         conn.execute(
             "UPDATE users SET custom_permissions = %s WHERE id = %s",
             (json.dumps(perms), uid)

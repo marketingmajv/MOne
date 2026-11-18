@@ -22,6 +22,16 @@ def normalize_pricing_mode(mode: str | None) -> str:
     return "varejo" if raw == "varejo" else "atacado"
 
 
+def resolve_authorized_pricing_mode(user: dict[str, Any] | None, raw_mode: str | None) -> tuple[str, bool]:
+    """Valida a feature flag RBAC 'freight_retail_mode' e retorna (modo_autorizado, can_retail)."""
+    from services.user_permission_service import user_has_permission_check
+
+    can_retail = user_has_permission_check(user, "freight_retail_mode")
+    if not can_retail:
+        return "atacado", False
+    return normalize_pricing_mode(raw_mode), True
+
+
 def ensure_freight_quotes_pricing_mode(conn) -> None:
     """Garante coluna retrocompatível pricing_mode em freight_quotes (SQLite e PostgreSQL)."""
     global _pricing_mode_col_ensured

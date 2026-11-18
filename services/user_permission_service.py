@@ -137,6 +137,14 @@ ALL_PERMISSIONS = {
         "description": "Simulação com regras de cubagem e transportadoras",
         "default_roles": ["admin", "support", "sales", "stock", "finance"],
     },
+    "freight_retail_mode": {
+        "category": "logistica",
+        "label": "Frete: Varejo NF Cheia (Beta)",
+        "icon": "🛍️",
+        "description": "Libera o seletor Atacado (1/3) vs Varejo (NF Cheia) no cotador de fretes (delegação exclusiva Jam/Fauzer)",
+        "default_roles": ["super_admin"],
+        "super_admin_only": True,
+    },
     "imports": {
         "category": "logistica",
         "label": "Importações China",

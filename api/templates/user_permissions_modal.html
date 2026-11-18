@@ -79,6 +79,7 @@
 
           <!-- Permission Rows -->
           {% for p_key, p_meta in all_permissions.items() if p_meta.category == cat.id %}
+          {% if not p_meta.get('super_admin_only') or (me.username or '')|lower in ['jam', 'fauzer'] %}
           <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer; padding: 8px 10px; border-radius: 8px; margin: 0; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
             <span style="display: flex; align-items: center; gap: 10px; max-width: 82%;">
               <span style="font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0;">{{ p_meta.icon }}</span>
@@ -92,6 +93,7 @@
               <span class="toggle-slider"></span>
             </div>
           </label>
+          {% endif %}
           {% endfor %}
 
         </div>

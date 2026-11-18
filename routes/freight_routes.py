@@ -23,7 +23,7 @@ from services.freight_data_source_service import (
 from services.freight_parser_service import clean_int, clean_numeric, parse_freight_table_unified
 from services.freight_pricing_mode_service import (
     ensure_freight_quotes_pricing_mode,
-    normalize_pricing_mode,
+    resolve_authorized_pricing_mode,
     save_freight_quote_record,
 )
 
@@ -91,9 +91,12 @@ def freight():
     if active_tab not in ["simulator", "carriers", "quotes", "data-sources"]:
         active_tab = "simulator"
 
+    _, can_freight_retail = resolve_authorized_pricing_mode(me, None)
+
     return render_template(
         "freight.html",
         me=me,
+        can_freight_retail=can_freight_retail,
         role_labels=ROLE_LABELS,
         products=products,
         tables=tables,
@@ -132,7 +135,7 @@ def freight_calculate():
         cep_orig = data.get("cep_orig", "").strip() or freight_service.DEFAULT_MAJ_CEP
         items = data.get("items", [])
         selected_carrier_ids = data.get("selected_carrier_ids") or None
-        pricing_mode = normalize_pricing_mode(data.get("pricing_mode"))
+        pricing_mode, _ = resolve_authorized_pricing_mode(current_user(), data.get("pricing_mode"))
 
         with db() as conn:
             freight_service.ensure_freight_tables(conn)
