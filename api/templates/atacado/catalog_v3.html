@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/atacado-v3.css') }}?v=20261030_mobile_hero">
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  {% include "components/meta_pixel.html" %}
 </head>
 <body x-data="atacadoV3App()">
 
@@ -324,6 +325,17 @@
     window.V3_SHOW_PRICES = {{ 'true' if show_prices else 'false' }};
   </script>
   <script src="{{ url_for('static', filename='js/atacado-v3.js') }}?v=20261029_1"></script>
+  <script>
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-whatsapp-header, .btn-buy-whatsapp, .btn-modal-whatsapp, .floating-whatsapp-widget');
+    if (btn && typeof fbq === 'function') {
+      fbq('track', 'Lead', {
+        content_name: 'Atacado WhatsApp',
+        content_category: 'B2B'
+      });
+    }
+  });
+  </script>
 </body>
 </html>
 
