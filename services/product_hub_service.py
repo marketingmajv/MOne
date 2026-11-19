@@ -67,11 +67,16 @@ def ensure_master_products_schema():
                 banner_widescreen TEXT,
                 sync_atacado BOOLEAN DEFAULT TRUE,
                 sync_outlet BOOLEAN DEFAULT TRUE,
+                sync_showroom BOOLEAN DEFAULT TRUE,
                 notes TEXT,
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        try:
+            conn.execute("ALTER TABLE master_products ADD COLUMN IF NOT EXISTS sync_showroom BOOLEAN DEFAULT TRUE")
+        except Exception:
+            pass
         conn.execute("CREATE INDEX IF NOT EXISTS idx_master_products_slug ON master_products(slug)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_master_products_status ON master_products(status)")
         try:
@@ -257,6 +262,9 @@ def get_all_master_products(search: Optional[str] = None, category: Optional[str
         result = []
         for r in rows:
             item = dict(r) if isinstance(r, dict) else r
+            item["sync_atacado"] = True if item.get("sync_atacado") is None else bool(item.get("sync_atacado"))
+            item["sync_outlet"] = True if item.get("sync_outlet") is None else bool(item.get("sync_outlet"))
+            item["sync_showroom"] = True if item.get("sync_showroom") is None else bool(item.get("sync_showroom"))
             sj = item.get("specs_json")
             if isinstance(sj, str):
                 try: item["specs_json"] = json.loads(sj)
@@ -354,7 +362,7 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                     slug = ?, name = ?, category = ?, brand = ?, sku = ?, status = ?,
                     specs_json = ?, copy_showroom = ?, copy_atacado = ?, copy_outlet = ?,
                     image_main = ?, images_gallery = ?, banner_widescreen = ?,
-                    sync_atacado = ?, sync_outlet = ?, updated_at = CURRENT_TIMESTAMP
+                    sync_atacado = ?, sync_outlet = ?, sync_showroom = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (
                 target_slug, data.get("name"), data.get("category", "Mobilidade Elétrica"),
@@ -362,6 +370,7 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                 specs_str, data.get("copy_showroom", ""), data.get("copy_atacado", ""), data.get("copy_outlet", ""),
                 data.get("image_main", ""), final_gal, data.get("banner_widescreen", ""),
                 bool(data.get("sync_atacado", True)), bool(data.get("sync_outlet", True)),
+                bool(data.get("sync_showroom", True)),
                 product_id
             ))
             res_id = product_id
@@ -371,15 +380,16 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                     slug, name, category, brand, sku, status,
                     specs_json, copy_showroom, copy_atacado, copy_outlet,
                     image_main, images_gallery, banner_widescreen,
-                    sync_atacado, sync_outlet
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    sync_atacado, sync_outlet, sync_showroom
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
             """, (
                 target_slug, data.get("name"), data.get("category", "Mobilidade Elétrica"),
                 data.get("brand", "MAJ"), data.get("sku", ""), data.get("status", "active"),
                 specs_str, data.get("copy_showroom", ""), data.get("copy_atacado", ""), data.get("copy_outlet", ""),
                 data.get("image_main", ""), gallery_str, data.get("banner_widescreen", ""),
-                bool(data.get("sync_atacado", True)), bool(data.get("sync_outlet", True))
+                bool(data.get("sync_atacado", True)), bool(data.get("sync_outlet", True)),
+                bool(data.get("sync_showroom", True))
             ))
             ret = cur.fetchone()
             res_id = ret["id"] if isinstance(ret, dict) else (ret[0] if ret else 0)

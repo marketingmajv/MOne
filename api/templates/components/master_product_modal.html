@@ -184,21 +184,31 @@
                 <select name="status" x-model="form.status" class="form-input" style="width: 100%;">
                   <option value="active">Ativo (Em linha)</option>
                   <option value="inactive">Inativo</option>
+                  <option value="discontinued">Descontinuado</option>
                 </select>
               </div>
             </div>
 
-            <!-- Canais Vinculados (Atacado & Outlet) -->
-            <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155);">
-              <span style="font-size: 0.78rem; font-weight: 800; color: var(--text);">🔗 Canais Conectados:</span>
-              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #00cc88; cursor: pointer;">
-                <input type="checkbox" name="sync_atacado" value="1" x-model="form.sync_atacado" style="width: 15px; height: 15px; accent-color: #00cc88;">
-                <span>💼 Sincronizar Atacado B2B</span>
-              </label>
-              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #e5a93b; cursor: pointer;">
-                <input type="checkbox" name="sync_outlet" value="1" x-model="form.sync_outlet" style="width: 15px; height: 15px; accent-color: #e5a93b;">
-                <span>🏷️ Sincronizar Outlet Varejo</span>
-              </label>
+            <!-- Canais Destino (Hierarquia Central -> Canais) -->
+            <div style="padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155);">
+              <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+                <span style="font-size: 0.78rem; font-weight: 800; color: var(--text);">🔗 Para quais canais este produto vai:</span>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #00cc88; cursor: pointer;">
+                  <input type="checkbox" name="sync_atacado" value="1" x-model="form.sync_atacado" style="width: 15px; height: 15px; accent-color: #00cc88;">
+                  <span>💼 Atacado B2B</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #e5a93b; cursor: pointer;">
+                  <input type="checkbox" name="sync_outlet" value="1" x-model="form.sync_outlet" style="width: 15px; height: 15px; accent-color: #e5a93b;">
+                  <span>🏷️ Varejo</span>
+                </label>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #38bdf8; cursor: pointer;">
+                  <input type="checkbox" name="sync_showroom" value="1" x-model="form.sync_showroom" style="width: 15px; height: 15px; accent-color: #38bdf8;">
+                  <span>🏛️ Showroom / Modelos</span>
+                </label>
+              </div>
+              <small style="display: block; margin-top: 6px; font-size: 0.71rem; color: var(--muted, #94a3b8);">
+                A Central controla em quais canais o produto estará ativo. Ao clicar ou salvar, os canais habilitados são atualizados preservando preços e estoques existentes.
+              </small>
             </div>
 
             <!-- Capa Principal e Banner Showroom com Preview Visual + Upload -->

@@ -34,6 +34,7 @@ from services.showroom_crud_service import (
     load_model_overrides,
     save_model_overrides,
 )
+from services.product_hierarchy_guard import filter_channel_items, is_allowed_in_channel, validate_channel_write
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,8 @@ def api_list_models():
         sync_models_from_sheets(force=True)
 
     models = get_all_models(include_inactive=include_inactive)
+    if not include_inactive:
+        models = filter_channel_items("showroom", models)
     categories = list(dict.fromkeys(m["categoria"] for m in models if m.get("categoria")))
     menu_cfg = load_menu_config()
 
@@ -66,7 +69,7 @@ def api_list_models():
 def api_get_model(slug):
     """Retorna dados detalhados e seções técnicas de um modelo específico."""
     model = get_model_by_slug(slug)
-    if not model:
+    if not model or not is_allowed_in_channel("showroom", slug=slug, name=model.get("modelo", "")):
         return jsonify({"error": "Modelo não encontrado", "slug": slug}), 404
     return jsonify(model), 200
 
@@ -213,6 +216,17 @@ def api_save_model():
             data = request.get_json(silent=True) or {}
         else:
             data = request.form.to_dict() or request.get_json(silent=True) or {}
+
+        target_slug = (data.get("slug") or "").strip().lower()
+        is_create = not bool(target_slug and get_model_full_for_edit(target_slug))
+        ok_hier, msg_hier = validate_channel_write(
+            "showroom",
+            slug=target_slug,
+            name=data.get("modelo") or "",
+            is_create=is_create,
+        )
+        if not ok_hier:
+            return jsonify({"error": msg_hier}), 403
 
         result = save_showroom_model(data, banner_atemporal=banner_atemp, banner_promocional=banner_promo)
         return jsonify(result), 200

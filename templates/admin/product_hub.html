@@ -60,6 +60,15 @@
     </div>
   </div>
 
+  <!-- Banner de Hierarquia dos Canais -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 18px; border-radius: 10px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.28);">
+    <div style="font-size: 0.82rem; color: var(--text, #f8fafc); line-height: 1.45;">
+      <strong style="color: #38bdf8;">🏛️ Hierarquia de Canais (Topo):</strong>
+      A Central de Produtos controla <strong>em quais canais cada produto está ativo</strong> (<strong>Showroom</strong>, <strong>Atacado</strong>, <strong>Varejo</strong>).
+      Nenhum produto nasce ou vaza sem passar por aqui — clique nos botões abaixo para ativar ou desativar o produto direto nos canais.
+    </div>
+  </div>
+
   <!-- KPIs Executivos do Catálogo Ouro -->
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
     <div style="padding: 16px 18px; border-radius: 12px; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155);">
@@ -104,21 +113,69 @@
     </form>
   </div>
 
-  <!-- Tabela dos 21 Produtos Mestre -->
-  <div style="border-radius: 14px; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);">
+  <style>
+    .hub-chan-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px dashed var(--line, #334155);
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--muted, #64748b);
+      opacity: 0.55;
+      white-space: nowrap;
+    }
+    .hub-chan-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .hub-chan-btn[data-active="1"] { opacity: 1; border-style: solid; }
+    .hub-chan-btn[data-active="1"][data-channel="showroom"] {
+      background: rgba(14, 165, 233, 0.16);
+      color: #0ea5e9;
+      border-color: rgba(14, 165, 233, 0.55);
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+    }
+    .hub-chan-btn[data-active="1"][data-channel="atacado"] {
+      background: rgba(16, 185, 129, 0.16);
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.55);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+    }
+    .hub-chan-btn[data-active="1"][data-channel="outlet"] {
+      background: rgba(245, 158, 11, 0.18);
+      color: #d97706;
+      border-color: rgba(245, 158, 11, 0.55);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+    }
+  </style>
+
+  <!-- Abas: Em Linha vs Descontinuados -->
+  <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--line, #334155); padding-bottom: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+    <button type="button" id="tabBtnLine" onclick="switchHubTab('em_linha')" class="btn sm primary" style="font-weight: 800;">
+      📦 Em Linha (<span id="hubLineCount">0</span>)
+    </button>
+    <button type="button" id="tabBtnDisc" onclick="switchHubTab('descontinuados')" class="btn sm" style="font-weight: 800; color: var(--muted, #94a3b8);">
+      🚫 Descontinuados (<span id="hubDiscCount">0</span>)
+    </button>
+  </div>
+
+  <!-- Tabela dos Produtos Mestre -->
+  <div style="border-radius: 14px; background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); overflow-x: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);">
     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
       <thead>
         <tr style="border-bottom: 1px solid var(--line, #334155); background: rgba(255,255,255,0.02);">
-          <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8); width: 60px;">Foto</th>
+          <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8); width: 68px;">Foto</th>
           <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8);">Modelo / Identificação</th>
-          <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8);">Ficha Técnica Canônica (Ouro)</th>
-          <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8);">Canais Ativos</th>
+          <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8);">Canais Ativos na Central (Clique para Ligar/Desligar)</th>
           <th style="padding: 14px 16px; font-weight: 700; color: var(--muted, #94a3b8); text-align: right;">Ações</th>
         </tr>
       </thead>
       <tbody>
         {% for p in products %}
-        <tr style="border-bottom: 1px solid var(--line, #334155); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+        <tr data-hub-row="{{ p.id }}" data-discontinued="{{ '1' if p.status == 'discontinued' else '0' }}" style="border-bottom: 1px solid var(--line, #334155); transition: background 0.15s ease; {{ 'display: none;' if p.status == 'discontinued' else '' }}" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
           <td style="padding: 12px 16px;">
             <div style="width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--line, #334155); display: flex; align-items: center; justify-content: center;">
               {% if p.image_main %}
@@ -140,40 +197,31 @@
             </div>
           </td>
           <td style="padding: 12px 16px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-              {% if p.specs_json.get('Motor') %}
-              <span style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; background: rgba(229, 169, 59, 0.12); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.25);">
-                ⚡ {{ p.specs_json.get('Motor') }}
-              </span>
-              {% endif %}
-              {% if p.specs_json.get('Bateria') %}
-              <span style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; background: rgba(0, 204, 136, 0.12); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.25);">
-                🔋 {{ p.specs_json.get('Bateria') }}
-              </span>
-              {% endif %}
-              {% if p.specs_json.get('Autonomia') %}
-              <span style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25);">
-                🚀 {{ p.specs_json.get('Autonomia') }}
-              </span>
-              {% endif %}
-              {% if p.specs_json.get('Freios') %}
-              <span style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.25);">
-                🛑 {{ p.specs_json.get('Freios') }}
-              </span>
-              {% endif %}
-            </div>
-          </td>
-          <td style="padding: 12px 16px;">
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <span title="Showroom" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid var(--line);">
-                🏛️ Showroom
-              </span>
-              <span title="Atacado B2B" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; {{ 'background: rgba(0,204,136,0.15); color: #00cc88; border: 1px solid rgba(0,204,136,0.3);' if p.sync_atacado else 'opacity: 0.35;' }}">
-                💼 Atacado
-              </span>
-              <span title="Outlet Varejo" style="font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; {{ 'background: rgba(229,169,59,0.15); color: #e5a93b; border: 1px solid rgba(229,169,59,0.3);' if p.sync_outlet else 'opacity: 0.35;' }}">
-                🏷️ Outlet
-              </span>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button type="button"
+                      class="hub-chan-btn"
+                      data-channel="showroom"
+                      data-active="{{ '1' if p.sync_showroom else '0' }}"
+                      onclick="toggleHubChannel(this, {{ p.id }}, 'showroom')"
+                      title="{{ 'Showroom liberado — clique para bloquear' if p.sync_showroom else 'Showroom bloqueado — clique para liberar' }}">
+                <span>🏛️ Showroom</span>
+              </button>
+              <button type="button"
+                      class="hub-chan-btn"
+                      data-channel="atacado"
+                      data-active="{{ '1' if p.sync_atacado else '0' }}"
+                      onclick="toggleHubChannel(this, {{ p.id }}, 'atacado')"
+                      title="{{ 'Atacado liberado — clique para bloquear' if p.sync_atacado else 'Atacado bloqueado — clique para liberar' }}">
+                <span>💼 Atacado</span>
+              </button>
+              <button type="button"
+                      class="hub-chan-btn"
+                      data-channel="outlet"
+                      data-active="{{ '1' if p.sync_outlet else '0' }}"
+                      onclick="toggleHubChannel(this, {{ p.id }}, 'outlet')"
+                      title="{{ 'Varejo liberado — clique para bloquear' if p.sync_outlet else 'Varejo bloqueado — clique para liberar' }}">
+                <span>🏷️ Varejo</span>
+              </button>
             </div>
           </td>
           <td style="padding: 12px 16px; text-align: right;">
@@ -183,10 +231,19 @@
               </button>
               <form action="{{ url_for('product_hub.sync_single', product_id=p.id) }}" method="POST" style="display: inline-block;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn sm" style="color: #00cc88; border-color: rgba(0,204,136,0.3);" title="Redistribuir ficha e copy deste modelo para Atacado e Outlet">
+                <button type="submit" class="btn sm" style="color: #00cc88; border-color: rgba(0,204,136,0.3);" title="Redistribuir ficha e copy deste modelo para Atacado, Varejo e Showroom">
                   ⚡ Sincronizar
                 </button>
               </form>
+              {% if p.status == 'discontinued' %}
+              <button type="button" class="btn sm" onclick="toggleHubDiscontinued({{ p.id }}, false)" style="color: #38bdf8; border-color: rgba(56,189,248,0.35);" title="Reativar produto para a aba Em Linha">
+                ♻️ Reativar
+              </button>
+              {% else %}
+              <button type="button" class="btn sm" onclick="toggleHubDiscontinued({{ p.id }}, true)" style="color: #f87171; border-color: rgba(248,113,113,0.35);" title="Mover para Descontinuados e desligar dos 3 canais">
+                🚫 Descontinuar
+              </button>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -208,6 +265,82 @@
 
 <script>
   window.MASTER_PRODUCTS_LIST = {{ products|tojson }};
+  async function toggleHubChannel(btn, productId, channel) {
+    if (btn.disabled) return;
+    const prev = btn.getAttribute('data-active') === '1';
+    const next = !prev;
+    btn.disabled = true;
+    btn.setAttribute('data-active', next ? '1' : '0');
+    try {
+      const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+      const resp = await fetch(`/admin/central-produtos/api/toggle-channel/${productId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+        body: JSON.stringify({ channel, enabled: next })
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.success) {
+        btn.setAttribute('data-active', prev ? '1' : '0');
+        alert(data.error || 'Falha ao atualizar canal.');
+        return;
+      }
+      const item = (window.MASTER_PRODUCTS_LIST || []).find(p => Number(p.id) === Number(productId));
+      if (item) {
+        if (channel === 'showroom') item.sync_showroom = data.enabled;
+        if (channel === 'atacado') item.sync_atacado = data.enabled;
+        if (channel === 'outlet') item.sync_outlet = data.enabled;
+      }
+    } catch (err) {
+      btn.setAttribute('data-active', prev ? '1' : '0');
+      alert('Erro de rede ao alternar canal.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  let currentHubTab = 'em_linha';
+  function refreshHubTabs() {
+    const rows = document.querySelectorAll('tr[data-hub-row]');
+    let lineCnt = 0, discCnt = 0;
+    rows.forEach(tr => {
+      const isDisc = tr.getAttribute('data-discontinued') === '1';
+      if (isDisc) discCnt++; else lineCnt++;
+      tr.style.display = ((currentHubTab === 'descontinuados') === isDisc) ? '' : 'none';
+    });
+    const lc = document.getElementById('hubLineCount');
+    const dc = document.getElementById('hubDiscCount');
+    if (lc) lc.textContent = lineCnt;
+    if (dc) dc.textContent = discCnt;
+    const bLine = document.getElementById('tabBtnLine');
+    const bDisc = document.getElementById('tabBtnDisc');
+    if (bLine && bDisc) {
+      bLine.classList.toggle('primary', currentHubTab === 'em_linha');
+      bDisc.classList.toggle('primary', currentHubTab === 'descontinuados');
+    }
+  }
+  function switchHubTab(tab) {
+    currentHubTab = tab;
+    refreshHubTabs();
+  }
+  async function toggleHubDiscontinued(productId, discontinued) {
+    const msg = discontinued
+      ? 'Mover este produto para Descontinuados e desligá-lo dos 3 canais?'
+      : 'Reativar este produto para a aba Em Linha?';
+    if (!confirm(msg)) return;
+    const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+    const resp = await fetch(`/admin/central-produtos/api/discontinue/${productId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+      body: JSON.stringify({ discontinued })
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.success) {
+      alert(data.error || 'Falha ao atualizar status.');
+      return;
+    }
+    window.location.reload();
+  }
+  document.addEventListener('DOMContentLoaded', refreshHubTabs);
 </script>
 <script src="{{ url_for('static', filename='js/product-hub.js') }}?v=20261109_v10"></script>
 {% endblock %}

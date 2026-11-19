@@ -113,6 +113,11 @@ def save_product():
             if has_sync_flags
             else True
         )
+        sync_showroom = (
+            request.form.get("sync_showroom") in ["1", "true", "on", True]
+            if has_sync_flags
+            else True
+        )
 
         data = {
             "name": request.form.get("name", "").strip(),
@@ -130,6 +135,7 @@ def save_product():
             "banner_widescreen": request.form.get("banner_widescreen", "").strip(),
             "sync_atacado": sync_atacado,
             "sync_outlet": sync_outlet,
+            "sync_showroom": sync_showroom,
             # Dados Comerciais do Outlet (Aba 4)
             "outlet_price_outlet": request.form.get("outlet_price_outlet"),
             "outlet_price_original": request.form.get("outlet_price_original"),
@@ -241,6 +247,54 @@ def sync_single(product_id: int):
         flash(f"Erro ao propagar produto: {e}", "danger")
 
     return redirect(url_for("product_hub.index"))
+
+
+from services.product_hierarchy_guard import set_master_product_discontinued, toggle_master_product_channel
+
+
+@product_hub_bp.route("/api/toggle-channel/<int:product_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support", "stock")
+def api_toggle_channel(product_id: int):
+    """Liga ou desliga um canal permitido (showroom, atacado, outlet) em 1 clique na Central."""
+    body = request.get_json(silent=True) or {}
+    channel = (body.get("channel") or "").strip().lower()
+    enabled = body.get("enabled")
+    if enabled is not None:
+        enabled = bool(enabled)
+    try:
+        res = toggle_master_product_channel(product_id=product_id, channel=channel, enabled=enabled)
+        audit(
+            "toggle_master_channel",
+            f"Produto ID={product_id} ({res['name']}): canal {channel} -> {'LIBERADO' if res['enabled'] else 'BLOQUEADO'}",
+        )
+        return jsonify(res), 200
+    except ValueError as ve:
+        return jsonify({"success": False, "error": str(ve)}), 400
+    except Exception as e:
+        logger.exception("Erro ao alternar canal do produto %s: %s", product_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@product_hub_bp.route("/api/discontinue/<int:product_id>", methods=["POST"])
+@login_required
+@roles_required("admin", "support", "stock")
+def api_discontinue_product(product_id: int):
+    """Move um produto para Descontinuados (desligando canais) ou Reativa para Em Linha."""
+    body = request.get_json(silent=True) or {}
+    discontinued = bool(body.get("discontinued", True))
+    try:
+        res = set_master_product_discontinued(product_id=product_id, discontinued=discontinued)
+        audit(
+            "discontinue_master_product",
+            f"Produto ID={product_id} ({res['name']}): status -> {res['status']}",
+        )
+        return jsonify(res), 200
+    except ValueError as ve:
+        return jsonify({"success": False, "error": str(ve)}), 400
+    except Exception as e:
+        logger.exception("Erro ao alterar status descontinuado do produto %s: %s", product_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @product_hub_bp.route("/sync-all", methods=["POST"])

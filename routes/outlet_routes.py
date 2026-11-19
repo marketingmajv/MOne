@@ -34,6 +34,7 @@ from services.outlet_service import (
     set_outlet_setting,
     slugify,
 )
+from services.product_hierarchy_guard import filter_channel_items, validate_channel_write
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,10 @@ def catalog():
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = get_all_outlet_items(status="active", search=search if search else None, only_available=True)
+    items = filter_channel_items(
+        "outlet",
+        get_all_outlet_items(status="active", search=search if search else None, only_available=True),
+    )
     
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
@@ -273,6 +277,16 @@ def save_item():
                         data["image_main"] = f"data:{mime};base64,{b64_str}"
                     except Exception as b64_err:
                         logger.error("Erro ao converter arquivo para Base64 Data URL: %s", b64_err)
+
+        ok_hier, msg_hier = validate_channel_write(
+            "outlet",
+            slug=data.get("slug") or "",
+            name=data.get("name") or "",
+            is_create=not bool(item_id),
+        )
+        if not ok_hier:
+            flash(msg_hier, "warning")
+            return redirect(url_for("outlet.admin_outlet"))
 
         saved_id = save_outlet_item(data, item_id=item_id)
         audit("save_outlet_item", f"Item Outlet ID={saved_id} ({data['name']}) salvo com sucesso")

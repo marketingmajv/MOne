@@ -22,6 +22,7 @@ from services.atacado_service import (
     sync_atacado_catalog,
     slugify,
 )
+from services.product_hierarchy_guard import filter_channel_items, validate_channel_write
 from services.atacado_enrichment_service import (
     enrich_atacado_items,
     extract_canonical_tech_specs,
@@ -52,7 +53,7 @@ except Exception as e:
 def _render_atacado_v3_catalog(show_prices: bool = True):
     """Renderiza a Versão Oficial V3 do Catálogo Atacado B2B (com ou sem preços)."""
     ensure_atacado_schema()
-    items = enrich_atacado_items(get_all_atacado_items(status="active", only_available=True))
+    items = enrich_atacado_items(filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True)))
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     
@@ -105,7 +106,7 @@ def _render_atacado_v1_catalog(show_prices: bool = True):
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = get_all_atacado_items(status="active", search=search if search else None, only_available=True)
+    items = filter_channel_items("atacado", get_all_atacado_items(status="active", search=search if search else None, only_available=True))
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
 
@@ -207,7 +208,7 @@ def catalog_v2():
     if not request.args.get("preview") and request.path != "/atacado/v2-preview":
         return redirect(url_for("atacado.catalog"), code=302)
     ensure_atacado_schema()
-    items = enrich_atacado_items([i for i in get_all_atacado_items(status="active", only_available=True) if float(i.get("price_outlet") or 0) > 0])
+    items = enrich_atacado_items([i for i in filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True)) if float(i.get("price_outlet") or 0) > 0])
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     return render_template(
         "atacado/catalog_v2.html", items=items,
@@ -361,6 +362,18 @@ def admin_atacado_save():
             "status": request.form.get("status") or (existing_item.get("status") if existing_item else "active"),
             "notes": request.form.get("notes")
         }
+
+        ok_hier, msg_hier = validate_channel_write(
+            "atacado",
+            slug=data.get("slug") or "",
+            name=data.get("name") or "",
+            is_create=not bool(item_id),
+        )
+        if not ok_hier:
+            if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"success": False, "error": msg_hier}), 403
+            flash(msg_hier, "warning")
+            return redirect(url_for("atacado.admin_atacado"))
 
         saved_id = save_atacado_item(data, item_id=item_id)
         audit("save_atacado_item", f"Item Atacado ID={saved_id} ({data['name']}) salvo e sincronizado com base canônica")

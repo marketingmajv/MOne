@@ -74,8 +74,8 @@ def propagate_product_to_channels(
                 if "color_prices" in curr_specs:
                     merged_specs["color_prices"] = curr_specs["color_prices"]
 
-                update_fields = ["name = ?", "specs_json = ?", "status = ?", "updated_at = CURRENT_TIMESTAMP"]
-                params = [prod["name"], json.dumps(merged_specs, ensure_ascii=False), prod.get("status", "inactive")]
+                update_fields = ["name = ?", "specs_json = ?", "updated_at = CURRENT_TIMESTAMP"]
+                params = [prod["name"], json.dumps(merged_specs, ensure_ascii=False)]
 
                 if copy_ou:
                     update_fields.append("description = ?")
@@ -103,7 +103,7 @@ def propagate_product_to_channels(
                     copy_ou,
                     img_main,
                     gallery_str,
-                    prod.get("status", "inactive"),
+                    "inactive",
                     prod.get("outlet_stock_qty") or 0,
                     "GALPÃO MAJ NOVO"
                 ))
@@ -115,8 +115,8 @@ def propagate_product_to_channels(
             at_row = run_exec(conn, "SELECT id, specs_json FROM atacado_items WHERE slug = ? OR slug = ? OR name = ?", (at_slug, slug, prod["name"])).fetchone()
             if at_row:
                 at_id = at_row["id"] if isinstance(at_row, dict) else at_row[0]
-                update_fields = ["name = ?", "specs_json = ?", "status = ?", "updated_at = CURRENT_TIMESTAMP"]
-                params = [prod["name"], json.dumps(specs, ensure_ascii=False), prod.get("status", "inactive")]
+                update_fields = ["name = ?", "specs_json = ?", "updated_at = CURRENT_TIMESTAMP"]
+                params = [prod["name"], json.dumps(specs, ensure_ascii=False)]
 
                 if copy_at:
                     update_fields.append("description = ?")
@@ -145,7 +145,7 @@ def propagate_product_to_channels(
                     copy_at,
                     img_main,
                     gallery_str,
-                    prod.get("status", "inactive"),
+                    "inactive",
                     prod.get("atacado_stock_qty") or 0,
                     "EXCLUSIVO CNPJ",
                     "GALPÃO M-ONE / GALPÃO MAJ NOVO"
@@ -158,7 +158,7 @@ def propagate_product_to_channels(
             pass
 
     # 3. Propagação para o Showroom & Modelos
-    if sync_showroom:
+    if sync_showroom and (prod.get("sync_showroom") is not False):
         try:
             from services.showroom_crud_service import load_model_overrides, save_model_overrides
             overrides = load_model_overrides()

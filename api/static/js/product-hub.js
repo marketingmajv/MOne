@@ -14,15 +14,7 @@ function getCsrfToken() {
 }
 
 function masterProductModalComponent() {
-  const STANDARD_KEYS = [
-    'Motor',
-    'Velocidade Máxima',
-    'Autonomia',
-    'Bateria',
-    'Carga Máxima',
-    'Freios',
-    'Diferencial'
-  ];
+  const STANDARD_KEYS = ['Motor', 'Velocidade Máxima', 'Autonomia', 'Bateria', 'Carga Máxima', 'Freios', 'Diferencial'];
 
   return {
     isOpen: false,
@@ -49,6 +41,7 @@ function masterProductModalComponent() {
       copy_showroom: '',
       sync_atacado: true,
       sync_outlet: true,
+      sync_showroom: true,
       propagate_now: true
     },
     specs: {
@@ -90,6 +83,7 @@ function masterProductModalComponent() {
         copy_showroom: '',
         sync_atacado: true,
         sync_outlet: true,
+        sync_showroom: true,
         propagate_now: true
       };
       this.specs = {
@@ -133,6 +127,7 @@ function masterProductModalComponent() {
         copy_showroom: p.copy_showroom || '',
         sync_atacado: p.sync_atacado !== false,
         sync_outlet: p.sync_outlet !== false,
+        sync_showroom: p.sync_showroom !== false,
         propagate_now: true
       };
 
