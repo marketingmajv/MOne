@@ -170,6 +170,12 @@ def favicon():
     return custom_static('favicon.ico')
 
 
+@app.route('/healthz')
+def healthz():
+    """Healthcheck leve (sem consulta ao banco) para Render e monitores keep-alive."""
+    return jsonify({"ok": True}), 200
+
+
 @app.context_processor
 def inject_globals():
     u = current_user()
