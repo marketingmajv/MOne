@@ -106,6 +106,8 @@ def validate_csrf():
 def apply_security_and_cache_headers(response):
     if request.path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/public/images/") or request.path.startswith("/images/"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
     elif not response.headers.get("Cache-Control"):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
