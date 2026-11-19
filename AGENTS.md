@@ -44,13 +44,14 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
    - Verificar arquivos alterados ou pendentes (`git status -sb`).
    - Fazer `git add .` dos arquivos alterados na sessão (respeitando `.gitignore`).
    - Criar commit objetivo descrevendo as alterações da sessão.
-   - Executar `git push origin main` para acionar o deploy automático na Vercel.
+   - Executar `git push origin main` para acionar o Auto-Deploy no Render (`srv-dbvfcv9srm7s73caldn0`).
 
 3. **Passo 03 — Relatório de Publicação e Smoke Test Online**:
    - Resumo da varredura preditiva (status das 7 etapas).
    - Detalhes do commit enviado e lista de arquivos atualizados.
-   - Executar Smoke Test ao vivo com `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 no ar.
-   - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br`
+   - Confirmar `status: live` do último deploy na API do Render (`srv-dbvfcv9srm7s73caldn0`, via `RENDER_API_KEY` do `.env`) após o build (~1–2 min).
+   - Executar Smoke Test ao vivo com `curl -sI https://m-one.majmobilidade.com.br/healthz`, `/outlet` e `/login` para confirmar HTTP 200 no ar.
+   - Link de produção oficial atualizado: `https://m-one.majmobilidade.com.br` (fallback: `https://mone-sdyq.onrender.com`)
 
 ---
 
@@ -180,3 +181,4 @@ Sempre que o agente apresentar opções, alternativas, cenários ou caminhos de 
 Sempre que iniciar a **fase de escopo ou planejamento de uma nova funcionalidade/melhoria** (incluindo `/grill-me`, `/plan` ou pedidos de nova feature), **ANTES de implementar**:
 1. O agente **DEVE perguntar ao usuário** se a nova implementação deve entrar em **🧪 Beta Restrito (Recomendada)** — visível apenas para `@jam` e `@fauzer`, com delegação exclusiva para testadores em `/users` via `super_admin_only: True` — ou em **🚀 Liberação Geral Imediata**.
 2. Quando o modo **Beta Restrito** for escolhido (ou quando o usuário pedir para promover uma feature de Beta para Geral), o agente deve ler e seguir integralmente a skill `.agents/skills/beta_feature_flag/SKILL.md`.
+3. Toda vez que o usuário solicitar **documentar um escopo para implementação futura**, além do arquivo em `docs/`, o agente **DEVE registrar automaticamente um chamado no Painel de Suporte** (`/admin/suporte`) com `status='pendente'`, `urgency='normal'`, `notify_whatsapp=False`, checklist das fases e o bloco **`=== PROMPT PARA IMPLEMENTAÇÃO (COPIAR E COLAR) ===`** conforme a Seção 4 de `.agents/skills/beta_feature_flag/SKILL.md`.

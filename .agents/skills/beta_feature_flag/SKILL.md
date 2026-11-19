@@ -77,3 +77,29 @@ Quando o usuário pedir para **"liberar para todos"**, **"sair do beta"** ou **"
    - Verificar no PostgreSQL quais usuários têm `"<chave>": false` em `custom_permissions` e decidir com o usuário: remover a chave (para herdar `default_roles`) ou atualizar para `true` nos cargos elegíveis.
 4. **Validar & Publicar:**
    - Rodar `scripts/permissions_audit.py` e `scripts/validate.py` e publicar via protocolo `deploy`.
+
+---
+
+## 4. Regra de Documentação para Implementação Futura (Registro no Painel de Suporte)
+
+Sempre que o usuário solicitar **documentar um escopo para implementação futura** (ex.: *"Documente para implementarmos depois..."*), além de gerar a especificação técnica em `docs/ESPECIFICACAO_<TEMA>.md`, o agente **DEVE obrigatoriamente** registrar um chamado no **Painel de Suporte** (`/admin/suporte`) usando `create_ticket` (`services/support_service.py`):
+
+1. **Parâmetros obrigatórios do chamado:**
+   - **Solicitante:** usuário `@fauzer` (ou o super-admin solicitante)
+   - **`initial_status`:** `"pendente"`
+   - **`urgency`:** `"normal"`
+   - **`notify_whatsapp`:** `False` *(não disparar WhatsApp automático para demandas planejadas)*
+   - **`module_key` / `module_label`:** área/módulo correspondente à funcionalidade
+   - **`items`:** checklist objetivo das fases de implementação
+2. **Estrutura obrigatória da `description` (para copiar e implementar):**
+   - **Resumo executivo:** objetivo da feature, caminho do arquivo `docs/ESPECIFICACAO_<TEMA>.md` e estratégia definida (`Beta Restrito` ou `Liberação Geral`).
+   - **Bloco destacado pronto para copiar e colar:**
+     ```text
+     === PROMPT PARA IMPLEMENTAÇÃO (COPIAR E COLAR) ===
+     Implemente o escopo documentado em docs/ESPECIFICACAO_<TEMA>.md seguindo integralmente:
+     1. Modo de lançamento: <Beta Restrito (super_admin_only: True) | Liberação Geral> (skill beta_feature_flag).
+     2. Arquitetura, arquivos-alvo, limiares e regras de negócio definidos na especificação.
+     3. Anti-monólito (< 500 linhas por arquivo) e validações obrigatórias (ux_audit.py, permissions_audit.py e validate.py).
+     === FIM DO PROMPT ===
+     ```
+3. **Confirmação na resposta:** informar ao usuário o código do chamado criado (`SUP-YYYY-XXXX`) junto com o link `file://` da especificação.

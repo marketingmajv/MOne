@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: Protocolo DEPLOY de validação, encerramento e publicação do M-One em produção. Executa varredura de integridade (sintaxe, tipagem, templates e rotas), faz git commit e git push para o repositório oficial na Vercel e gera relatório de publicação. Ativado sempre que o usuário digitar [deploy] ou deploy.
+description: Protocolo DEPLOY de validação, encerramento e publicação do M-One em produção. Executa varredura de integridade (sintaxe, tipagem, templates e rotas), faz git commit e git push para o repositório oficial com Auto-Deploy no Render, valida o status live e gera relatório de publicação. Ativado sempre que o usuário digitar [deploy] ou deploy.
 ---
 
 # Protocolo DEPLOY — Encerramento e Publicação M-One
@@ -28,19 +28,19 @@ Executar rotina de verificação profunda para identificar erros de dependência
    - Executar `git add .`
    - Gerar commit claro e descritivo resumindo as melhorias/ajustes feitos na sessão (ex: `git commit -m "..."`).
 3. Se houver commits locais não enviados (ou commits criados agora):
-   - Executar `git push origin main`.
+   - Executar `git push origin main` (aciona o Auto-Deploy no Render — serviço `srv-dbvfcv9srm7s73caldn0`).
 4. Se o repositório já estiver 100% atualizado e sem alterações locais:
    - Registrar que não houve necessidade de push adicional.
 
-### Passo 03 — Relatório de Publicação e Smoke Test Online
-Apresentar ao usuário um relatório de encerramento contendo:
-1. **Resultado da Varredura Preditiva**:
-   - Dependências, sintaxe, templates, canais comerciais e DB: Aprovados.
-2. **Resumo do Envio Git**:
-   - Hash do commit enviado para a nuvem e lista de arquivos.
-3. **Smoke Test em Produção**:
-   - Testar rotas ao vivo via `curl -sI https://m-one.majmobilidade.com.br/outlet` e `/login` para confirmar HTTP 200 online.
-4. **Status de Produção e Links**:
-   - 🚀 **Link Oficial em Produção**: `https://m-one.majmobilidade.com.br`
-   - 🌐 **Status Vercel**: Compilação automática confirmada.
-   - 💻 **Ambiente Local**: Status do servidor local.
+### Passo 03 — Verificação de Build no Render, Relatório e Smoke Test Online
+1. **Confirmar Deploy `live` no Render**:
+   - Consultar o último deploy do serviço `srv-dbvfcv9srm7s73caldn0` via API do Render (`GET https://api.render.com/v1/services/srv-dbvfcv9srm7s73caldn0/deploys?limit=1` usando `RENDER_API_KEY` do `.env`) até confirmar `status: live` (ou aguardar a conclusão do build Python/Gunicorn, que leva ~1–2 min).
+2. **Smoke Test em Produção**:
+   - Testar rotas ao vivo via `curl -sI https://m-one.majmobilidade.com.br/healthz`, `/outlet` e `/login` (e `https://mone-sdyq.onrender.com/healthz` se necessário) para confirmar HTTP 200 online.
+3. **Relatório de Encerramento**:
+   - **Resultado da Varredura Preditiva**: Dependências, sintaxe, templates, UX/UI, RBAC, canais comerciais e DB: Aprovados.
+   - **Resumo do Envio Git**: Hash do commit enviado para a nuvem e lista de arquivos.
+   - **Status de Produção e Links**:
+     - 🚀 **Link Oficial em Produção**: `https://m-one.majmobilidade.com.br` (fallback: `https://mone-sdyq.onrender.com`)
+     - 🌐 **Status Render**: Deploy `live` confirmado (`srv-dbvfcv9srm7s73caldn0`).
+     - 💻 **Ambiente Local**: Status do servidor local.
