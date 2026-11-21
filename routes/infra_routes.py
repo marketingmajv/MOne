@@ -9,6 +9,11 @@ from __future__ import annotations
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from routes.helpers import audit, login_required, roles_required
+from services.supabase_monitor_service import (
+    check_and_trigger_supabase_alerts_if_needed,
+    fetch_supabase_health_metrics,
+    send_test_supabase_alert_whatsapp,
+)
 from services.vercel_service import (
     calculate_performance_report,
     check_and_trigger_alerts_if_needed,
@@ -24,15 +29,21 @@ infra_bp = Blueprint("infra", __name__)
 @login_required
 @roles_required("admin", "support")
 def infra_performance():
-    """Painel principal de monitoramento de desempenho e limites da Vercel."""
+    """Painel principal de monitoramento de desempenho e limites da Vercel e Supabase."""
     # Avalia se há necessidade de disparar alerta silencioso em segundo plano
     try:
         check_and_trigger_alerts_if_needed()
     except Exception as e:
-        print("[Infra Alert Background Check Error]:", e)
+        print("[Vercel Alert Background Check Error]:", e)
+
+    try:
+        check_and_trigger_supabase_alerts_if_needed()
+    except Exception as e:
+        print("[Supabase Alert Background Check Error]:", e)
 
     report = calculate_performance_report()
-    return render_template("infra_performance.html", report=report)
+    supabase_metrics = fetch_supabase_health_metrics()
+    return render_template("infra_performance.html", report=report, supabase=supabase_metrics)
 
 
 @infra_bp.route("/infra/config", methods=["POST"])
@@ -91,3 +102,47 @@ def api_infra_metrics():
     """Retorna dados de telemetria em tempo real para atualização assíncrona (HTMX/Alpine)."""
     report = calculate_performance_report()
     return jsonify(report)
+
+
+@infra_bp.route("/infra/test-supabase-alert", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def infra_test_supabase_alert():
+    """Dispara um teste imediato de alerta de monitoramento do Supabase via WhatsApp."""
+    target = request.form.get("target", "both").strip().lower()
+    cfg = get_infra_config()
+
+    sent_count = 0
+    errors = []
+
+    if target in ["jam", "both"] and cfg.get("phone_jam"):
+        res_jam = send_test_supabase_alert_whatsapp(cfg["phone_jam"], "Jam Penitenti")
+        if res_jam.get("success"):
+            sent_count += 1
+        else:
+            errors.append(f"Jam: {res_jam.get('error')}")
+
+    if target in ["fauzer", "both"] and cfg.get("phone_fauzer"):
+        res_fauzer = send_test_supabase_alert_whatsapp(cfg["phone_fauzer"], "Fauzer")
+        if res_fauzer.get("success"):
+            sent_count += 1
+        else:
+            errors.append(f"Fauzer: {res_fauzer.get('error')}")
+
+    if sent_count > 0:
+        flash(f"✅ Alerta de teste do Supabase enviado para {sent_count} destinatário(s) via WhatsApp!", "success")
+        audit("infra.test_supabase_alert_sent", f"sent_count={sent_count}")
+    else:
+        err_msg = "; ".join(errors) if errors else "Nenhum telefone configurado."
+        flash(f"⚠️ Falha ao disparar alerta de teste do Supabase: {err_msg}", "warning")
+
+    return redirect(url_for("infra.infra_performance"))
+
+
+@infra_bp.route("/api/infra/supabase-metrics", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def api_supabase_metrics():
+    """Retorna métricas em tempo real de saúde do Supabase."""
+    metrics = fetch_supabase_health_metrics(force_refresh=True)
+    return jsonify(metrics)

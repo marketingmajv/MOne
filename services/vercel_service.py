@@ -54,6 +54,8 @@ def save_infra_config(data: dict) -> bool:
     phone_jam = data.get("phone_jam", "").strip() or None
     phone_fauzer = data.get("phone_fauzer", "").strip() or None
     threshold = int(data.get("alert_threshold_pct") or 75)
+    supabase_plan = data.get("supabase_plan", "free").strip().lower()
+    supabase_disk_limit_mb = int(data.get("supabase_disk_limit_mb") or (500 if supabase_plan == "free" else 8192))
 
     with db() as conn:
         cfg = get_infra_config(conn)
@@ -67,15 +69,17 @@ def save_infra_config(data: dict) -> bool:
                        phone_jam = %s,
                        phone_fauzer = %s,
                        alert_threshold_pct = %s,
+                       supabase_plan = %s,
+                       supabase_disk_limit_mb = %s,
                        updated_at = CURRENT_TIMESTAMP
                    WHERE id = %s""",
-                (token, project_id, team_id, phone_jam, phone_fauzer, threshold, cfg_id)
+                (token, project_id, team_id, phone_jam, phone_fauzer, threshold, supabase_plan, supabase_disk_limit_mb, cfg_id)
             )
         else:
             conn.execute(
-                """INSERT INTO infra_config (vercel_api_token, vercel_project_id, vercel_team_id, phone_jam, phone_fauzer, alert_threshold_pct)
-                   VALUES (%s, %s, %s, %s, %s, %s)""",
-                (token, project_id, team_id, phone_jam, phone_fauzer, threshold)
+                """INSERT INTO infra_config (vercel_api_token, vercel_project_id, vercel_team_id, phone_jam, phone_fauzer, alert_threshold_pct, supabase_plan, supabase_disk_limit_mb)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                (token, project_id, team_id, phone_jam, phone_fauzer, threshold, supabase_plan, supabase_disk_limit_mb)
             )
         conn.commit()
     return True
