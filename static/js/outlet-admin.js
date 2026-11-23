@@ -300,6 +300,24 @@ function removePhotoFromGallery(index) {
 }
 
 function validateOutletFormPayload() {
+  const priceOutletEl = document.getElementById('outlet_form_price_outlet');
+  if (priceOutletEl) {
+    const parsedOut = parseCurrencyNum(priceOutletEl.value);
+    if (!parsedOut || parsedOut <= 0) {
+      alert('⚠️ Informe um Preço Outlet válido maior que zero (ex: 5499,00).');
+      priceOutletEl.focus();
+      return false;
+    }
+    priceOutletEl.value = parsedOut.toFixed(2);
+  }
+  ['outlet_form_price_original', 'outlet_form_installment_12', 'outlet_form_installment_18'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value.trim() !== '') {
+      const n = parseCurrencyNum(el.value);
+      el.value = n > 0 ? n.toFixed(2) : '';
+    }
+  });
+
   const statusDiv = document.getElementById('upload_status_badge');
   const mainInput = document.getElementById('outlet_form_image_main');
   const galleryInput = document.getElementById('outlet_form_images_gallery');

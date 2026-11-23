@@ -74,8 +74,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          style="position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 16px; margin: 0; box-sizing: border-box;"
-         @keydown.escape.window="if(isOpen) close()"
-         @click.self="close()">
+         @keydown.escape.window="if(isOpen) close()">
 
       <div class="modal-card large"
            style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: min(840px, 95vw); max-width: 840px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; margin: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); position: relative;">

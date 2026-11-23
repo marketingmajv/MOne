@@ -304,6 +304,25 @@ def get_outlet_item_by_id_or_slug(identifier: Any) -> Optional[Dict[str, Any]]:
         return item
 
 
+def _parse_decimal_input(val: Any) -> float:
+    """Normaliza entrada numérica BR/EN (ex: '5.499,00' ou '5499.00') para float."""
+    if val is None:
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).strip().replace("R$", "").replace(" ", "")
+    if not s:
+        return 0.0
+    if "," in s and "." in s:
+        s = s.replace(".", "").replace(",", ".")
+    elif "," in s:
+        s = s.replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+
 def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int:
     ensure_outlet_schema()
     with db() as conn:
@@ -312,16 +331,16 @@ def save_outlet_item(data: Dict[str, Any], item_id: Optional[int] = None) -> int
         category = (data.get("category") or "Mobilidade Elétrica").strip()
         condition = (data.get("condition") or "Na caixa").strip()
         color = (data.get("color") or "").strip()
-        price_orig = float(data.get("price_original") or 0)
-        price_out = float(data.get("price_outlet") or 0)
+        price_orig = _parse_decimal_input(data.get("price_original"))
+        price_out = _parse_decimal_input(data.get("price_outlet"))
         
         # Calculate discount
         discount = 0
         if price_orig > price_out and price_orig > 0:
             discount = int(round(((price_orig - price_out) / price_orig) * 100))
 
-        inst12 = float(data.get("installment_12") or 0)
-        inst18 = float(data.get("installment_18") or 0)
+        inst12 = _parse_decimal_input(data.get("installment_12"))
+        inst18 = _parse_decimal_input(data.get("installment_18"))
         if inst12 == 0 and price_out > 0:
             inst12 = round((price_out * 1.1013216) / 12, 2)
         if inst18 == 0 and price_out > 0:

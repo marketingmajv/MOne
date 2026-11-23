@@ -22,8 +22,7 @@
            x-transition:leave-start="opacity-100"
            x-transition:leave-end="opacity-0"
            style="position: fixed; inset: 0; z-index: 99998; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;"
-           @keydown.escape.window="if (isOpen) close()"
-           @click.self="close()">
+           @keydown.escape.window="if (isOpen) close()">
 
         <div class="modal-card"
              style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: 100%; max-width: 920px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); overflow: hidden;">

@@ -234,7 +234,7 @@
   </div>
 
   <!-- Modal de Criação / Edição Nativo M-One -->
-  <div class="modal" id="outletModal" onclick="if(event.target === this) closeOutletModal()">
+  <div class="modal" id="outletModal">
     <div class="modal-card">
       <div class="modal-head">
         <h3 id="outlet_modal_title">Novo Produto do Outlet</h3>
@@ -264,22 +264,22 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Preço Original ("De" R$)</label>
-            <input type="number" step="0.01" name="price_original" id="outlet_form_price_original" style="width: 100%;">
+            <input type="text" inputmode="decimal" name="price_original" id="outlet_form_price_original" placeholder="Ex: 8121,25" style="width: 100%;">
           </div>
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Preço Outlet ("Por" R$)</label>
-            <input type="number" step="0.01" name="price_outlet" id="outlet_form_price_outlet" required style="width: 100%;">
+            <input type="text" inputmode="decimal" name="price_outlet" id="outlet_form_price_outlet" required placeholder="Ex: 5499,00" style="width: 100%;">
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Parcela 12x (R$)</label>
-            <input type="number" step="0.01" name="installment_12" id="outlet_form_installment_12" style="width: 100%;">
+            <input type="text" inputmode="decimal" name="installment_12" id="outlet_form_installment_12" placeholder="Opcional" style="width: 100%;">
           </div>
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Parcela 18x (R$)</label>
-            <input type="number" step="0.01" name="installment_18" id="outlet_form_installment_18" style="width: 100%;">
+            <input type="text" inputmode="decimal" name="installment_18" id="outlet_form_installment_18" placeholder="Opcional" style="width: 100%;">
           </div>
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Estoque (Unid)</label>
