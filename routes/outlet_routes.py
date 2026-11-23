@@ -232,6 +232,15 @@ def save_item():
             except Exception as cp_err:
                 logger.warning("Aviso ao fazer parse de color_prices_json: %s", cp_err)
 
+        # Aviso destacado no catálogo e observação no WhatsApp por produto
+        for meta_key in ("catalog_notice", "whatsapp_note"):
+            if meta_key in request.form:
+                meta_val = (request.form.get(meta_key) or "").strip()
+                if meta_val:
+                    specs[meta_key] = meta_val
+                else:
+                    specs.pop(meta_key, None)
+
         data = {
             "name": request.form.get("name"),
             "slug": slugify(request.form.get("slug") or request.form.get("name")),

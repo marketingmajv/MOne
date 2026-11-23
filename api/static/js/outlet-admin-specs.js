@@ -155,13 +155,15 @@
     setVal('outlet_spec_carga', specs['Carga Máxima']);
     setVal('outlet_spec_freios', specs['Freios']);
     setVal('outlet_spec_diferencial', specs['Diferencial']);
+    setVal('outlet_form_catalog_notice', specs['catalog_notice']);
+    setVal('outlet_form_whatsapp_note', specs['whatsapp_note']);
 
     const container = document.getElementById('outlet_custom_specs_container');
     if (container) container.innerHTML = '';
 
     if (specs && typeof specs === 'object') {
       Object.entries(specs).forEach(([k, v]) => {
-        if (k === 'color_prices' || STANDARD_SPEC_KEYS.includes(k)) return;
+        if (k === 'color_prices' || k === 'catalog_notice' || k === 'whatsapp_note' || STANDARD_SPEC_KEYS.includes(k)) return;
         if (typeof v === 'string' && v.trim()) {
           addOutletCustomSpecRow(k, v);
         }

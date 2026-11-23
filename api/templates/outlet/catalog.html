@@ -201,7 +201,7 @@
 
             <!-- Chips de Ficha Técnica Rápida -->
             <div class="card-specs-mini">
-              <template x-if="item.color && !['m9-pro', 'flow-one'].includes(item.slug)">
+              <template x-if="item.color && !(item.specs_json && item.specs_json.catalog_notice)">
                 <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
               </template>
               <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
@@ -211,10 +211,8 @@
               </template>
             </div>
 
-            <template x-if="['m9-pro', 'flow-one'].includes(item.slug)">
-              <div style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;">
-                📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
-              </div>
+            <template x-if="item.specs_json && item.specs_json.catalog_notice">
+              <div style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;" x-text="item.specs_json.catalog_notice"></div>
             </template>
 
             <!-- Preços e Parcelamento -->
@@ -333,10 +331,8 @@
                 </template>
               </h2>
 
-              <template x-if="['m9-pro', 'flow-one'].includes(selectedItem.slug)">
-                <div style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;">
-                  📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
-                </div>
+              <template x-if="selectedItem.specs_json && selectedItem.specs_json.catalog_notice">
+                <div style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;" x-text="selectedItem.specs_json.catalog_notice"></div>
               </template>
               
               <!-- Box de Preço e Simulador de Parcelas -->
@@ -399,7 +395,7 @@
                       </div>
                     </template>
                   </template>
-                  <div class="spec-row" x-show="selectedItem.color && !['m9-pro', 'flow-one'].includes(selectedItem.slug)">
+                  <div class="spec-row" x-show="selectedItem.color && !(selectedItem.specs_json && selectedItem.specs_json.catalog_notice)">
                     <span class="spec-k">Cores disponíveis</span>
                     <span class="spec-v" x-text="selectedItem.color"></span>
                   </div>
@@ -598,7 +594,7 @@
 
         getActiveColorBadge() {
           if (!this.selectedItem) return '';
-          if (['m9-pro', 'flow-one'].includes(this.selectedItem.slug)) return '';
+          if (this.selectedItem.specs_json && this.selectedItem.specs_json.catalog_notice) return '';
           if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.colors) {
             let c = this.selectedColorObj.colors;
             if (c.toLowerCase().includes('cores padrão') || c.toLowerCase().includes('cores padrao')) {
@@ -676,8 +672,10 @@
           }
           const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
           let msg = template.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
-          if (['M9 PRO', 'FLOW ONE'].includes(String(model || '').trim().toUpperCase())) {
-            msg += ' (Obs: disponível na caixa, sem montagem — opção de montagem por R$ 300,00 à parte.)';
+          const itemObj = this.items.find(i => i.name === model);
+          const waNote = itemObj && itemObj.specs_json && itemObj.specs_json.whatsapp_note;
+          if (waNote) {
+            msg += ` (${waNote})`;
           }
           const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
           return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;

@@ -234,7 +234,7 @@
   </div>
 
   <!-- Modal de Criação / Edição Nativo M-One -->
-  <div class="modal" id="outletModal">
+  <div class="modal" id="outletModal" data-no-backdrop-close="true">
     <div class="modal-card">
       <div class="modal-head">
         <h3 id="outlet_modal_title">Novo Produto do Outlet</h3>
@@ -340,6 +340,19 @@
         <div style="margin-bottom: 12px;">
           <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px;">Resumo Geral de Cores (Ficha Técnica)</label>
           <input type="text" name="color" id="outlet_form_color" style="width: 100%;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; padding: 12px; border: 1px solid rgba(229, 169, 59, 0.35); border-radius: 10px; background: rgba(229, 169, 59, 0.05);">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: #e5a93b;">📦 Aviso Destacado no Card / Modal</label>
+            <input type="text" name="catalog_notice" id="outlet_form_catalog_notice" placeholder="Ex: 📦 Na caixa (sem montagem). Montagem opcional: R$ 300,00 à parte." style="width: 100%;">
+            <small class="muted" style="font-size: 0.7rem; display: block; margin-top: 3px;">Se preenchido, substitui a tag de cores (🎨) no catálogo.</small>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; color: #00cc88;">💬 Observação na Mensagem do WhatsApp</label>
+            <input type="text" name="whatsapp_note" id="outlet_form_whatsapp_note" placeholder="Ex: Obs: disponível na caixa, sem montagem — montagem R$ 300,00 à parte." style="width: 100%;">
+            <small class="muted" style="font-size: 0.7rem; display: block; margin-top: 3px;">Anexada ao final da mensagem automática deste produto.</small>
+          </div>
         </div>
 
         <!-- Seção Expansível de Ficha Técnica & Especificações -->
