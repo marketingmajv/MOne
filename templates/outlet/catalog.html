@@ -207,24 +207,22 @@
 
             <!-- Chips de Ficha Técnica Rápida -->
             <div class="card-specs-mini">
-              <template x-if="item.color && item.slug !== 'm9-pro'">
-                <template x-if="item.color && !['m9-pro', 'flow-one'].includes(item.slug)">
-                  <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
-                </template>
-                <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
-                  <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
-                    🏷️ <span x-text="getActiveColorPrices(item).length + ' opções de valor'"></span>
-                  </span>
-                </template>
+              <template x-if="item.color && !['m9-pro', 'flow-one'].includes(item.slug)">
+                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+              </template>
+              <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
+                <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
+                  🏷️ <span x-text="getActiveColorPrices(item).length + ' opções de valor'"></span>
+                </span>
+              </template>
             </div>
 
-            <template x-if="item.slug === 'm9-pro'">
-              <template x-if="['m9-pro', 'flow-one'].includes(item.slug)">
-                <div
-                  style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;">
-                  📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
-                </div>
-              </template>
+            <template x-if="['m9-pro', 'flow-one'].includes(item.slug)">
+              <div
+                style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;">
+                📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
+              </div>
+            </template>
 
               <!-- Preços e Parcelamento -->
               <div class="card-pricing">
@@ -344,13 +342,12 @@
                 </template>
               </h2>
 
-              <template x-if="selectedItem.slug === 'm9-pro'">
-                <template x-if="['m9-pro', 'flow-one'].includes(selectedItem.slug)">
-                  <div
-                    style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;">
-                    📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
-                  </div>
-                </template>
+              <template x-if="['m9-pro', 'flow-one'].includes(selectedItem.slug)">
+                <div
+                  style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;">
+                  📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
+                </div>
+              </template>
 
                 <!-- Box de Preço e Simulador de Parcelas -->
                 <div class="modal-pricing-box">
@@ -417,12 +414,10 @@
                         </div>
                       </template>
                     </template>
-                    <div class="spec-row" x-show="selectedItem.color && selectedItem.slug !== 'm9-pro'">
-                      <div class="spec-row"
-                        x-show="selectedItem.color && !['m9-pro', 'flow-one'].includes(selectedItem.slug)">
-                        <span class="spec-k">Cores disponíveis</span>
-                        <span class="spec-v" x-text="selectedItem.color"></span>
-                      </div>
+                    <div class="spec-row"
+                      x-show="selectedItem.color && !['m9-pro', 'flow-one'].includes(selectedItem.slug)">
+                      <span class="spec-k">Cores disponíveis</span>
+                      <span class="spec-v" x-text="selectedItem.color"></span>
                     </div>
                   </div>
 
@@ -707,19 +702,18 @@
           }
           const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
           let msg = template.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
-          if (String(model || '').trim().toUpperCase() === 'M9 PRO') {
-            if (['M9 PRO', 'FLOW ONE'].includes(String(model || '').trim().toUpperCase())) {
-              msg += ' (Obs: disponível na caixa, sem montagem — opção de montagem por R$ 300,00 à parte.)';
-            }
-            const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
-            return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-          },
-
-          getFloatingWhatsAppUrl() {
-            const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
-            const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
-            return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+          if (['M9 PRO', 'FLOW ONE'].includes(String(model || '').trim().toUpperCase())) {
+            msg += ' (Obs: disponível na caixa, sem montagem — opção de montagem por R$ 300,00 à parte.)';
           }
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        },
+
+        getFloatingWhatsAppUrl() {
+          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+          const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
+          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+        }
         };
       }
   </script>
