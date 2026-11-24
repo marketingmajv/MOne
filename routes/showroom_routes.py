@@ -24,6 +24,12 @@ from services.showroom_promo_service import (
     load_promo_banner_settings,
     save_promo_banner_settings,
 )
+from services.campaign_thumb_service import (
+    get_campaign_schedule,
+    save_campaign_schedule,
+    is_campaign_active_now,
+)
+from services.user_permission_service import user_has_permission_check
 from services.showroom_crud_service import (
     get_model_full_for_edit,
     save_showroom_model,
@@ -191,6 +197,42 @@ def api_toggle_promo_banner():
     }), 200
 
 
+@showroom_bp.route("/api/campaign/schedule", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def api_get_campaign_schedule():
+    """Retorna dados de agendamento e status da campanha promocional multicanal."""
+    schedule = get_campaign_schedule()
+    is_active, active_mode, _ = is_campaign_active_now(schedule)
+    return jsonify({
+        "status": "success",
+        "schedule": schedule,
+        "is_active": is_active,
+        "active_mode": active_mode,
+    }), 200
+
+
+@showroom_bp.route("/api/campaign/schedule", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_save_campaign_schedule():
+    """Salva agendamento da campanha promocional multicanal (Beta restrito a super_admin ou delegados)."""
+    me = current_user()
+    if not user_has_permission_check(me, "promo_thumb_automation"):
+        return jsonify({"error": "Acesso restrito ao Beta da Automação de Capas Promocionais."}), 403
+
+    body = request.get_json(silent=True) or {}
+    updated = save_campaign_schedule(body)
+    is_active, active_mode, _ = is_campaign_active_now(updated)
+    return jsonify({
+        "status": "success",
+        "message": "Configurações da campanha salvas com sucesso.",
+        "schedule": updated,
+        "is_active": is_active,
+        "active_mode": active_mode,
+    }), 200
+
+
 @showroom_bp.route("/api/models/<slug>/full", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
@@ -302,6 +344,8 @@ def admin_models_page():
     menu_config = load_menu_config()
     promo_banner = load_promo_banner_settings()
     global_image_mode = get_global_image_mode()
+    campaign_schedule = get_campaign_schedule()
+    can_promo_thumb = user_has_permission_check(me, "promo_thumb_automation")
     return render_template(
         "showroom/admin_models.html",
         me=me,
@@ -310,6 +354,8 @@ def admin_models_page():
         menu_config=menu_config,
         promo_banner=promo_banner,
         global_image_mode=global_image_mode,
+        campaign_schedule=campaign_schedule,
+        can_promo_thumb=can_promo_thumb,
     )
 
 

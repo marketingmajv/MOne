@@ -15,6 +15,15 @@
         <span style="font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(0, 204, 136, 0.15); color: #00cc88; border: 1px solid rgba(0, 204, 136, 0.35);">
           SINGLE SOURCE OF TRUTH
         </span>
+        {% if campaign_mode == 'promocional' %}
+          <span style="font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(255, 183, 3, 0.18); color: #ffb703; border: 1px solid rgba(255, 183, 3, 0.45);" title="Herança Automática do Showroom ativa: canais exibindo Capas Promocionais">
+            ⚡ CAPAS: PROMO (SHOWROOM ➔ CANAIS)
+          </span>
+        {% else %}
+          <span style="font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);" title="Herança Automática do Showroom ativa: canais exibindo Capas Atemporais">
+            🏛️ CAPAS: ATEMPORAL (SHOWROOM)
+          </span>
+        {% endif %}
       </div>
       <p style="font-size: 0.85rem; color: var(--muted, #94a3b8); margin: 6px 0 0 0;">
         Catálogo Ouro do M-One: Fichas técnicas de engenharia unificadas e redistribuição contextual para Atacado B2B e Varejo Outlet.

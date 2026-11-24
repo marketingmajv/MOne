@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,7 +19,8 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/outlet.css') }}">
   <!-- Alpine.js -->
   <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
@@ -35,6 +37,7 @@
   </script>
   {% include "components/meta_pixel.html" %}
 </head>
+
 <body x-data="outletApp()">
 
   <!-- Top Urgency Ribbon -->
@@ -56,7 +59,8 @@
   <header class="outlet-header">
     <div class="outlet-container header-inner">
       <div class="logo-box">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo" decoding="async">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="header-logo"
+          decoding="async">
         <div class="logo-text">
           <span class="brand-title">MAJ MOBILIDADE</span>
           <span class="brand-badge">CATÁLOGO OFICIAL DE OUTLET</span>
@@ -65,8 +69,12 @@
 
       <div class="header-actions">
         <a href="#catalogo" class="btn-scroll-catalog">Ver Catálogo</a>
-        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header" aria-label="Falar com Consultor no WhatsApp">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <a :href="getFloatingWhatsAppUrl()" target="_blank" class="btn-whatsapp-header"
+          aria-label="Falar com Consultor no WhatsApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+          </svg>
           <span class="btn-wa-text-full">Falar com Consultor</span>
           <span class="btn-wa-text-short">Consultor</span>
         </a>
@@ -111,17 +119,19 @@
       <div class="filters-wrapper">
         <div class="filters-top-bar">
           <div class="search-box">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <input type="text" x-model="searchQuery" placeholder="Buscar por modelo (ex: MAX 12, V20, Ride On)...">
-            <button type="button" class="btn-clear-search" x-show="searchQuery" @click="searchQuery = ''">&times;</button>
+            <button type="button" class="btn-clear-search" x-show="searchQuery"
+              @click="searchQuery = ''">&times;</button>
           </div>
 
-          <button type="button"
-                  class="cat-pill"
-                  :class="{ 'active': currentFilter === 'mais_vendidos' }"
-                  @click="currentFilter = (currentFilter === 'mais_vendidos' ? 'all' : 'mais_vendidos')"
-                  style="white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
-                  :style="currentFilter === 'mais_vendidos' ? 'background: rgba(229, 169, 59, 0.2); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.6);' : 'background: rgba(255,255,255,0.05); color: var(--text, #f8fafc); border: 1px solid rgba(255,255,255,0.12);'">
+          <button type="button" class="cat-pill" :class="{ 'active': currentFilter === 'mais_vendidos' }"
+            @click="currentFilter = (currentFilter === 'mais_vendidos' ? 'all' : 'mais_vendidos')"
+            style="white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
+            :style="currentFilter === 'mais_vendidos' ? 'background: rgba(229, 169, 59, 0.2); color: #e5a93b; border: 1px solid rgba(229, 169, 59, 0.6);' : 'background: rgba(255,255,255,0.05); color: var(--text, #f8fafc); border: 1px solid rgba(255,255,255,0.12);'">
             <span>⭐ Mais Vendidos</span>
           </button>
 
@@ -161,7 +171,7 @@
     <div class="products-grid" x-show="filteredItems().length > 0">
       <template x-for="item in filteredItems()" :key="item.id">
         <div class="product-card" x-transition:enter="fade-in">
-          
+
           <!-- Badges -->
           <div class="card-badges">
             <template x-if="item.is_best_seller">
@@ -183,12 +193,8 @@
 
           <!-- Imagem Principal -->
           <div class="card-image-box" @click="openModal(item.id)">
-            <img :src="item.image_main || '/static/logo.png'" 
-                 :alt="item.name" 
-                 loading="lazy"
-                 decoding="async"
-                 class="card-img"
-                 @error="$event.target.src='/static/logo.png'">
+            <img :src="item.image_main || '/static/logo.png'" :alt="item.name" loading="lazy" decoding="async"
+              class="card-img" @error="$event.target.src='/static/logo.png'">
             <div class="image-overlay-hover">
               <span>🔍 Ver Fotos e Ficha Técnica</span>
             </div>
@@ -201,56 +207,64 @@
 
             <!-- Chips de Ficha Técnica Rápida -->
             <div class="card-specs-mini">
-              <template x-if="item.color && !(item.specs_json && item.specs_json.catalog_notice)">
-                <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
-              </template>
-              <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
-                <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
-                  🏷️ <span x-text="getActiveColorPrices(item).length + ' opções de valor'"></span>
-                </span>
-              </template>
+              <template x-if="item.color && item.slug !== 'm9-pro'">
+                <template x-if="item.color && !['m9-pro', 'flow-one'].includes(item.slug)">
+                  <span class="spec-mini">🎨 <span x-text="item.color"></span></span>
+                </template>
+                <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
+                  <span class="spec-mini spec-variation-pill" @click.stop="openModal(item.id)">
+                    🏷️ <span x-text="getActiveColorPrices(item).length + ' opções de valor'"></span>
+                  </span>
+                </template>
             </div>
 
-            <template x-if="item.specs_json && item.specs_json.catalog_notice">
-              <div style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;" x-text="item.specs_json.catalog_notice"></div>
-            </template>
-
-            <!-- Preços e Parcelamento -->
-            <div class="card-pricing">
-              <template x-if="item.price_original && Number(item.price_original) > getItemDisplayPrice(item)">
-                <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
-              </template>
-
-              <div class="price-to">
-                <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
-                  <span class="price-starting-tag">A partir de</span>
-                </template>
-                <span class="currency">R$</span>
-                <span class="amount" x-text="formatPrice(getItemDisplayPrice(item))"></span>
-                <span class="payment-method">à vista</span>
-              </div>
-              <template x-if="getItemDisplayInst12(item) > 0">
-                <div class="price-installments">
-                  ou em <strong x-text="'12x de R$ ' + formatPrice(getItemDisplayInst12(item))"></strong>
+            <template x-if="item.slug === 'm9-pro'">
+              <template x-if="['m9-pro', 'flow-one'].includes(item.slug)">
+                <div
+                  style="margin: 6px 0 8px 0; padding: 7px 10px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.76rem; line-height: 1.35; color: #f8fafc;">
+                  📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
                 </div>
               </template>
-              <template x-if="getItemDisplayInst18(item) > 0">
-                <div class="price-installments-sub" x-text="'ou 18x de R$ ' + formatPrice(getItemDisplayInst18(item))"></div>
-              </template>
-            </div>
 
-            <!-- Botões de Ação -->
-            <div class="card-actions">
-              <a :href="getWhatsAppUrl(item.name, formatPrice(getItemDisplayPrice(item)))" 
-                 target="_blank" 
-                 class="btn-buy-whatsapp">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-                <span>Quero no WhatsApp</span>
-              </a>
-              <button type="button" class="btn-details" @click="openModal(item.id)">
-                Ver Ficha Completa
-              </button>
-            </div>
+              <!-- Preços e Parcelamento -->
+              <div class="card-pricing">
+                <template x-if="item.price_original && Number(item.price_original) > getItemDisplayPrice(item)">
+                  <div class="price-from" x-text="'De R$ ' + formatPrice(item.price_original)"></div>
+                </template>
+
+                <div class="price-to">
+                  <template x-if="item.show_color_prices !== false && getActiveColorPrices(item).length > 1">
+                    <span class="price-starting-tag">A partir de</span>
+                  </template>
+                  <span class="currency">R$</span>
+                  <span class="amount" x-text="formatPrice(getItemDisplayPrice(item))"></span>
+                  <span class="payment-method">à vista</span>
+                </div>
+                <template x-if="getItemDisplayInst12(item) > 0">
+                  <div class="price-installments">
+                    ou em <strong x-text="'12x de R$ ' + formatPrice(getItemDisplayInst12(item))"></strong>
+                  </div>
+                </template>
+                <template x-if="getItemDisplayInst18(item) > 0">
+                  <div class="price-installments-sub"
+                    x-text="'ou 18x de R$ ' + formatPrice(getItemDisplayInst18(item))"></div>
+                </template>
+              </div>
+
+              <!-- Botões de Ação -->
+              <div class="card-actions">
+                <a :href="getWhatsAppUrl(item.name, formatPrice(getItemDisplayPrice(item)))" target="_blank"
+                  class="btn-buy-whatsapp">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                      d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                  </svg>
+                  <span>Quero no WhatsApp</span>
+                </a>
+                <button type="button" class="btn-details" @click="openModal(item.id)">
+                  Ver Ficha Completa
+                </button>
+              </div>
           </div>
         </div>
       </template>
@@ -287,15 +301,13 @@
   </section>
 
   <!-- Modal Interativo de Ficha Técnica e Galeria -->
-  <div class="outlet-modal-backdrop" 
-       x-show="modalOpen" 
-       x-cloak 
-       @click.self="modalOpen = false"
-       @keydown.escape.window="modalOpen = false">
-    
+  <div class="outlet-modal-backdrop" x-show="modalOpen" x-cloak @click.self="modalOpen = false"
+    @keydown.escape.window="modalOpen = false">
+
     <div class="outlet-modal-box">
       <!-- Botão Fechar Fixo na Rolagem -->
-      <button type="button" class="modal-close-btn" @click="modalOpen = false" aria-label="Fechar Modal">&times;</button>
+      <button type="button" class="modal-close-btn" @click="modalOpen = false"
+        aria-label="Fechar Modal">&times;</button>
 
       <div class="modal-scroll-body">
         <template x-if="selectedItem">
@@ -303,14 +315,15 @@
             <!-- Coluna Visual / Galeria -->
             <div class="modal-gallery-col">
               <div class="modal-main-image">
-                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name" decoding="async" @error="if ($el.src !== (selectedItem.image_main || '/static/logo.png')) $el.src = selectedItem.image_main || '/static/logo.png'">
+                <img :src="activeImage || selectedItem.image_main || '/static/logo.png'" :alt="selectedItem.name"
+                  decoding="async"
+                  @error="if ($el.src !== (selectedItem.image_main || '/static/logo.png')) $el.src = selectedItem.image_main || '/static/logo.png'">
               </div>
               <div class="modal-thumbs" x-show="getItemGallery(selectedItem).length > 1">
                 <template x-for="(img, idx) in getItemGallery(selectedItem)" :key="idx">
-                  <div class="thumb-item" 
-                       :class="{'active': activeImage === img}"
-                       @click="activeImage = img">
-                    <img :src="img" alt="Foto" decoding="async" loading="lazy" @error="$el.closest('.thumb-item') ? $el.closest('.thumb-item').style.display='none' : null">
+                  <div class="thumb-item" :class="{'active': activeImage === img}" @click="activeImage = img">
+                    <img :src="img" alt="Foto" decoding="async" loading="lazy"
+                      @error="$el.closest('.thumb-item') ? $el.closest('.thumb-item').style.display='none' : null">
                   </div>
                 </template>
               </div>
@@ -331,102 +344,122 @@
                 </template>
               </h2>
 
-              <template x-if="selectedItem.specs_json && selectedItem.specs_json.catalog_notice">
-                <div style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;" x-text="selectedItem.specs_json.catalog_notice"></div>
-              </template>
-              
-              <!-- Box de Preço e Simulador de Parcelas -->
-              <div class="modal-pricing-box">
-                <!-- Seletor Interativo de Cores quando há variação de preço -->
-                <template x-if="selectedItem.show_color_prices !== false && getActiveColorPrices(selectedItem).length > 1">
-                  <div class="modal-color-prices-selector">
-                    <span class="selector-title">🎨 Escolha a Cor para ver o Preço:</span>
-                    <div class="color-options-grid">
-                      <template x-for="cp in getActiveColorPrices(selectedItem)" :key="cp.colors">
-                        <button type="button" 
-                                class="color-price-btn" 
-                                :class="{'active': selectedColorObj && selectedColorObj.colors === cp.colors}" 
-                                @click="selectColorObj(cp)">
-                          <span class="btn-color-name" x-text="cp.colors"></span>
-                          <strong class="btn-color-price" x-text="cp.price"></strong>
-                          <small class="btn-color-inst" x-text="'12x ' + cp.p12"></small>
-                        </button>
-                      </template>
-                    </div>
+              <template x-if="selectedItem.slug === 'm9-pro'">
+                <template x-if="['m9-pro', 'flow-one'].includes(selectedItem.slug)">
+                  <div
+                    style="margin: 8px 0 12px 0; padding: 9px 12px; border-radius: 8px; background: rgba(229, 169, 59, 0.12); border: 1px solid rgba(229, 169, 59, 0.38); font-size: 0.8rem; line-height: 1.4; color: #f8fafc;">
+                    📦 Na caixa (sem montagem). Montagem opcional: <strong>R$ 300,00 à parte</strong>.
                   </div>
                 </template>
 
-                <div class="price-to">
-                  <span class="currency">R$</span>
-                  <span class="amount" x-text="formatPrice(getActivePrice())"></span>
-                  <span class="payment-method">à vista no PIX</span>
-                </div>
-                
-                <!-- Seletor de Opções de Pagamento -->
-                <div class="payment-calculator-tabs">
-                  <span class="calc-label">Simular Pagamento:</span>
-                  <div class="calc-options">
-                    <button type="button" :class="{'active': selectedInstallment === 12}" @click="selectedInstallment = 12">12x</button>
-                    <button type="button" :class="{'active': selectedInstallment === 18}" @click="selectedInstallment = 18">18x</button>
-                  </div>
-                </div>
-
-                <div class="modal-installment-result" x-show="selectedInstallment === 12">
-                  12x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment12())"></strong> sem burocracia
-                </div>
-                <div class="modal-installment-result" x-show="selectedInstallment === 18">
-                  18x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment18())"></strong> no cartão
-                </div>
-
-                <div class="modal-stock-badge" :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'" x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'"></div>
-              </div>
-
-              <p class="modal-desc" x-text="selectedItem.description"></p>
-
-              <!-- Tabela de Ficha Técnica -->
-              <div class="modal-specs-section">
-                <h3>Ficha Técnica & Especificações</h3>
-                <div class="specs-table">
-                  <template x-for="(val, key) in selectedItem.specs_json" :key="key">
-                    <template x-if="key !== 'color_prices' && typeof val === 'string'">
-                      <div class="spec-row">
-                        <span class="spec-k" x-text="key"></span>
-                        <span class="spec-v" x-text="val"></span>
+                <!-- Box de Preço e Simulador de Parcelas -->
+                <div class="modal-pricing-box">
+                  <!-- Seletor Interativo de Cores quando há variação de preço -->
+                  <template
+                    x-if="selectedItem.show_color_prices !== false && getActiveColorPrices(selectedItem).length > 1">
+                    <div class="modal-color-prices-selector">
+                      <span class="selector-title">🎨 Escolha a Cor para ver o Preço:</span>
+                      <div class="color-options-grid">
+                        <template x-for="cp in getActiveColorPrices(selectedItem)" :key="cp.colors">
+                          <button type="button" class="color-price-btn"
+                            :class="{'active': selectedColorObj && selectedColorObj.colors === cp.colors}"
+                            @click="selectColorObj(cp)">
+                            <span class="btn-color-name" x-text="cp.colors"></span>
+                            <strong class="btn-color-price" x-text="cp.price"></strong>
+                            <small class="btn-color-inst" x-text="'12x ' + cp.p12"></small>
+                          </button>
+                        </template>
                       </div>
-                    </template>
+                    </div>
                   </template>
-                  <div class="spec-row" x-show="selectedItem.color && !(selectedItem.specs_json && selectedItem.specs_json.catalog_notice)">
-                    <span class="spec-k">Cores disponíveis</span>
-                    <span class="spec-v" x-text="selectedItem.color"></span>
+
+                  <div class="price-to">
+                    <span class="currency">R$</span>
+                    <span class="amount" x-text="formatPrice(getActivePrice())"></span>
+                    <span class="payment-method">à vista no PIX</span>
+                  </div>
+
+                  <!-- Seletor de Opções de Pagamento -->
+                  <div class="payment-calculator-tabs">
+                    <span class="calc-label">Simular Pagamento:</span>
+                    <div class="calc-options">
+                      <button type="button" :class="{'active': selectedInstallment === 12}"
+                        @click="selectedInstallment = 12">12x</button>
+                      <button type="button" :class="{'active': selectedInstallment === 18}"
+                        @click="selectedInstallment = 18">18x</button>
+                    </div>
+                  </div>
+
+                  <div class="modal-installment-result" x-show="selectedInstallment === 12">
+                    12x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment12())"></strong> sem burocracia
+                  </div>
+                  <div class="modal-installment-result" x-show="selectedInstallment === 18">
+                    18x de <strong x-text="'R$ ' + formatPrice(getActiveInstallment18())"></strong> no cartão
+                  </div>
+
+                  <div class="modal-stock-badge"
+                    :class="selectedItem.stock_qty > 0 ? 'badge-pronta-entrega' : 'badge-sob-encomenda'"
+                    x-text="selectedItem.stock_qty > 0 ? '⚡ Disponibilidade: Pronta Entrega' : '📦 Disponibilidade: Sob Encomenda'">
                   </div>
                 </div>
-              </div>
 
-              <!-- Botões de Ação no Modal (UX Refinada e Compacta) -->
-              <div class="modal-cta-box">
-                <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(getActivePrice()))" 
-                   target="_blank" 
-                   class="btn-modal-whatsapp"
-                   aria-label="Garantir Oferta no WhatsApp">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-                  <span>Garantir Oferta no WhatsApp</span>
-                </a>
-                <div class="modal-secure-note">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                  <span>Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+                <p class="modal-desc" x-text="selectedItem.description"></p>
+
+                <!-- Tabela de Ficha Técnica -->
+                <div class="modal-specs-section">
+                  <h3>Ficha Técnica & Especificações</h3>
+                  <div class="specs-table">
+                    <template x-for="(val, key) in selectedItem.specs_json" :key="key">
+                      <template x-if="key !== 'color_prices' && typeof val === 'string'">
+                        <div class="spec-row">
+                          <span class="spec-k" x-text="key"></span>
+                          <span class="spec-v" x-text="val"></span>
+                        </div>
+                      </template>
+                    </template>
+                    <div class="spec-row" x-show="selectedItem.color && selectedItem.slug !== 'm9-pro'">
+                      <div class="spec-row"
+                        x-show="selectedItem.color && !['m9-pro', 'flow-one'].includes(selectedItem.slug)">
+                        <span class="spec-k">Cores disponíveis</span>
+                        <span class="spec-v" x-text="selectedItem.color"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Botões de Ação no Modal (UX Refinada e Compacta) -->
+                  <div class="modal-cta-box">
+                    <a :href="getWhatsAppUrl(selectedItem.name, formatPrice(getActivePrice()))" target="_blank"
+                      class="btn-modal-whatsapp" aria-label="Garantir Oferta no WhatsApp">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                          d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                      </svg>
+                      <span>Garantir Oferta no WhatsApp</span>
+                    </a>
+                    <div class="modal-secure-note">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      <span>Atendimento oficial MAJ Mobilidade • Sem compromisso</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
             </div>
-          </div>
         </template>
       </div>
     </div>
   </div>
 
   <!-- Widget Flutuante de WhatsApp -->
-  <a :href="getFloatingWhatsAppUrl()" target="_blank" class="floating-whatsapp-widget" title="Falar com Consultor no WhatsApp">
+  <a :href="getFloatingWhatsAppUrl()" target="_blank" class="floating-whatsapp-widget"
+    title="Falar com Consultor no WhatsApp">
     <div class="widget-pulse"></div>
-    <svg width="38" height="38" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+    <svg width="38" height="38" viewBox="0 0 24 24" fill="currentColor">
+      <path
+        d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+    </svg>
     <span class="widget-tooltip">Consultor Online • Fale Conosco</span>
   </a>
 
@@ -434,7 +467,8 @@
   <footer class="outlet-footer">
     <div class="outlet-container footer-inner">
       <div class="footer-brand">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo" decoding="async" loading="lazy">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MAJ Mobilidade" class="footer-logo"
+          decoding="async" loading="lazy">
         <p>MAJ Mobilidade Elétrica • O Futuro em Movimento. Todos os direitos reservados.</p>
       </div>
       <div class="footer-links">
@@ -446,10 +480,10 @@
 
   <!-- Script Alpine.js para o Catálogo -->
   <script>
-    const OUTLET_ITEMS_DATA = {{ items|tojson }};
+    const OUTLET_ITEMS_DATA = {{ items| tojson }};
     const WA_NUMBER = "{{ whatsapp_number }}".replace(/\D/g, "");
-    const WA_PRODUCT_TEMPLATE = {{ whatsapp_message|tojson }};
-    const WA_FLOATING_TEMPLATE = {{ whatsapp_floating_message|tojson }};
+    const WA_PRODUCT_TEMPLATE = {{ whatsapp_message| tojson }};
+    const WA_FLOATING_TEMPLATE = {{ whatsapp_floating_message| tojson }};
 
     function outletApp() {
       return {
@@ -466,16 +500,16 @@
         filteredItems() {
           let result = this.items.filter(item => {
             const q = this.searchQuery.toLowerCase().trim();
-            const matchesQuery = !q || 
-              item.name.toLowerCase().includes(q) || 
-              item.category.toLowerCase().includes(q) || 
+            const matchesQuery = !q ||
+              item.name.toLowerCase().includes(q) ||
+              item.category.toLowerCase().includes(q) ||
               (item.color && item.color.toLowerCase().includes(q));
-            
-            const matchesCat = this.activeCategory === 'all' || 
+
+            const matchesCat = this.activeCategory === 'all' ||
               item.category.toLowerCase().includes(this.activeCategory.toLowerCase());
 
             const matchesFilter = this.currentFilter !== 'mais_vendidos' || !!item.is_best_seller;
-            
+
             return matchesQuery && matchesCat && matchesFilter;
           });
 
@@ -594,7 +628,8 @@
 
         getActiveColorBadge() {
           if (!this.selectedItem) return '';
-          if (this.selectedItem.specs_json && this.selectedItem.specs_json.catalog_notice) return '';
+          if (this.selectedItem.slug === 'm9-pro') return '';
+          if (['m9-pro', 'flow-one'].includes(this.selectedItem.slug)) return '';
           if (this.selectedItem.show_color_prices !== false && this.selectedColorObj && this.selectedColorObj.colors) {
             let c = this.selectedColorObj.colors;
             if (c.toLowerCase().includes('cores padrão') || c.toLowerCase().includes('cores padrao')) {
@@ -640,7 +675,7 @@
           if (!item) return [];
           let gal = item.images_gallery || [];
           if (typeof gal === 'string') {
-            try { gal = JSON.parse(gal); } catch(e) { gal = []; }
+            try { gal = JSON.parse(gal); } catch (e) { gal = []; }
           }
           if (!Array.isArray(gal)) gal = [];
           const all = [item.image_main, ...gal]
@@ -672,22 +707,22 @@
           }
           const template = WA_PRODUCT_TEMPLATE || 'Olá! Gostei do {model} na Black November MAJ Mobilidade por {price} e quero aproveitar a promoção. Ainda está disponível?';
           let msg = template.replace('{model}', activeName).replace('{price}', 'R$ ' + price);
-          const itemObj = this.items.find(i => i.name === model);
-          const waNote = itemObj && itemObj.specs_json && itemObj.specs_json.whatsapp_note;
-          if (waNote) {
-            msg += ` (${waNote})`;
-          }
-          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
-          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-        },
+          if (String(model || '').trim().toUpperCase() === 'M9 PRO') {
+            if (['M9 PRO', 'FLOW ONE'].includes(String(model || '').trim().toUpperCase())) {
+              msg += ' (Obs: disponível na caixa, sem montagem — opção de montagem por R$ 300,00 à parte.)';
+            }
+            const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+            return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+          },
 
-        getFloatingWhatsAppUrl() {
-          const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
-          const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
-          return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-        }
-      };
-    }
+          getFloatingWhatsAppUrl() {
+            const cleanPhone = (WA_NUMBER || '').replace(/\D/g, '');
+            const msg = WA_FLOATING_TEMPLATE || 'Olá! Estou navegando na Black November MAJ Mobilidade e gostaria de tirar algumas dúvidas com um consultor.';
+            return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+          }
+        };
+      }
   </script>
 </body>
+
 </html>

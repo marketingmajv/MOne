@@ -121,6 +121,14 @@ ALL_PERMISSIONS = {
         "description": "Disparos táticos de prospecção por cidade e gestão de lotes",
         "default_roles": ["admin", "support", "sales"],
     },
+    "promo_thumb_automation": {
+        "category": "comercial",
+        "label": "Automação de Thumbs & Capas (Beta)",
+        "icon": "🖼️",
+        "description": "Agendador 24/7 e herança de capas promocionais do Showroom para Atacado e Outlet",
+        "default_roles": ["super_admin"],
+        "super_admin_only": True,
+    },
 
     # ---------------- LOGÍSTICA & ESTOQUE (4) ----------------
     "stock": {

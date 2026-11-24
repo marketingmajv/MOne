@@ -11,15 +11,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from flask import (
-    Blueprint,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 from routes.helpers import audit, login_required, roles_required
@@ -35,6 +27,7 @@ from services.outlet_service import (
     slugify,
 )
 from services.product_hierarchy_guard import filter_channel_items, validate_channel_write
+from services.campaign_thumb_service import enrich_items_with_effective_thumbs
 
 
 logger = logging.getLogger(__name__)
@@ -64,9 +57,12 @@ def catalog():
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = filter_channel_items(
-        "outlet",
-        get_all_outlet_items(status="active", search=search if search else None, only_available=True),
+    items = enrich_items_with_effective_thumbs(
+        filter_channel_items(
+            "outlet",
+            get_all_outlet_items(status="active", search=search if search else None, only_available=True),
+        ),
+        channel="outlet",
     )
     
     if category and category != "all":
@@ -131,6 +127,7 @@ def product_detail(identifier):
             return jsonify({"success": False, "error": "Produto não encontrado"}), 404
         flash("Produto não encontrado no Outlet.", "warning")
         return redirect(url_for("outlet.catalog"))
+    item = enrich_items_with_effective_thumbs([item], channel="outlet")[0]
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("format") == "json":
         return jsonify({"success": True, "item": item})
@@ -151,7 +148,10 @@ def admin_outlet():
     status_filter = request.args.get("status", "all")
     search = request.args.get("q", "").strip()
 
-    items = get_all_outlet_items(status=status_filter if status_filter != "all" else None, search=search)
+    items = enrich_items_with_effective_thumbs(
+        get_all_outlet_items(status=status_filter if status_filter != "all" else None, search=search),
+        channel="outlet"
+    )
 
     # Estatísticas rápidas (Estoque ativo de pronta entrega)
     active_items = [i for i in items if i.get("status") == "active"] if status_filter == "all" else items

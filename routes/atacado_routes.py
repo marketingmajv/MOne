@@ -28,6 +28,7 @@ from services.atacado_enrichment_service import (
     extract_canonical_tech_specs,
     sync_atacado_to_canonical_model,
 )
+from services.campaign_thumb_service import enrich_items_with_effective_thumbs
 _enrich_atacado_v2_items = enrich_atacado_items
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,10 @@ except Exception as e:
 def _render_atacado_v3_catalog(show_prices: bool = True):
     """Renderiza a Versão Oficial V3 do Catálogo Atacado B2B (com ou sem preços)."""
     ensure_atacado_schema()
-    items = enrich_atacado_items(filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True)))
+    items = enrich_items_with_effective_thumbs(
+        enrich_atacado_items(filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True))),
+        channel="atacado"
+    )
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     whatsapp_number = re.sub(r"\D", "", str(raw_wa)) or "5527996051538"
     
@@ -106,7 +110,10 @@ def _render_atacado_v1_catalog(show_prices: bool = True):
     category = request.args.get("categoria", "").strip()
     search = request.args.get("busca", "").strip()
 
-    items = filter_channel_items("atacado", get_all_atacado_items(status="active", search=search if search else None, only_available=True))
+    items = enrich_items_with_effective_thumbs(
+        filter_channel_items("atacado", get_all_atacado_items(status="active", search=search if search else None, only_available=True)),
+        channel="atacado"
+    )
     if category and category != "all":
         items = [i for i in items if category.lower() in (i.get("category") or "").lower()]
 
@@ -208,7 +215,10 @@ def catalog_v2():
     if not request.args.get("preview") and request.path != "/atacado/v2-preview":
         return redirect(url_for("atacado.catalog"), code=302)
     ensure_atacado_schema()
-    items = enrich_atacado_items([i for i in filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True)) if float(i.get("price_outlet") or 0) > 0])
+    items = enrich_items_with_effective_thumbs(
+        enrich_atacado_items([i for i in filter_channel_items("atacado", get_all_atacado_items(status="active", only_available=True)) if float(i.get("price_outlet") or 0) > 0]),
+        channel="atacado"
+    )
     raw_wa = get_atacado_setting("whatsapp_number", "5527996051538")
     return render_template(
         "atacado/catalog_v2.html", items=items,
@@ -232,6 +242,7 @@ def product_detail(identifier):
             return jsonify({"success": False, "error": "Produto de atacado não encontrado"}), 404
         flash("Produto não encontrado no Atacado.", "warning")
         return redirect(url_for("atacado.catalog"))
+    item = enrich_items_with_effective_thumbs([item], channel="atacado")[0]
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("format") == "json":
         return jsonify({"success": True, "item": item})
@@ -253,7 +264,7 @@ def admin_atacado():
     search = request.args.get("q", "").strip()
 
     items = get_all_atacado_items(status=status_filter if status_filter != "all" else None, search=search)
-    items = enrich_atacado_items(items)
+    items = enrich_items_with_effective_thumbs(enrich_atacado_items(items), channel="atacado")
     
     total_qty = sum(int(i.get("stock_qty") or 0) for i in items)
     total_potential_revenue = sum(float(i.get("price_outlet") or 0) * int(i.get("stock_qty") or 0) for i in items)

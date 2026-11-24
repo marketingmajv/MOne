@@ -148,7 +148,7 @@ O sistema possui controle rigoroso de papéis (`roles`):
 
 ### 6.1. Variáveis de Ambiente Necessárias (`.env` e Vercel)
 ```env
-DATABASE_URL=postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres.ztbmnzwrpigcohwobrig:<SENHA_SUPABASE>@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require
 SECRET_KEY=maj-m-one-production-fixed-secret-key-2026-v1
 ```
 > ⚠️ **Nota Crítica sobre Supabase & Vercel**:  

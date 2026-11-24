@@ -28,6 +28,7 @@ from services.product_hub_service import (
     propagate_product_to_channels,
     save_master_product,
 )
+from services.campaign_thumb_service import is_campaign_active_now, get_campaign_schedule
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ def index():
         "resolved_conflicts": "3 / 3 (100%)",
     }
 
+    is_promo, active_mode, sched = is_campaign_active_now()
     return render_template(
         "admin/product_hub.html",
         products=products,
@@ -70,6 +72,8 @@ def index():
         current_category=category,
         search_query=search,
         kpis=kpis,
+        campaign_mode=active_mode,
+        campaign_schedule=sched,
     )
 
 

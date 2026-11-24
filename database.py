@@ -26,7 +26,7 @@ except (ImportError, ModuleNotFoundError):
 DEFAULT_DB_URL = (
     os.environ.get("DATABASE_URL")
     or os.environ.get("SUPABASE_DB_URL")
-    or "postgresql://postgres.ztbmnzwrpigcohwobrig:%40Jammajjam24@aws-0-us-west-2.pooler.supabase.com:6543/postgres?sslmode=require"
+    or ""
 )
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "m_one.db"
