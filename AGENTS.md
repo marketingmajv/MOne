@@ -36,9 +36,9 @@ O agente DEVE executar imediatamente o **Protocolo DEPLOY** em 3 etapas sequenci
 
 1. **Passo 01 — Varredura e Validação de Integridade do Código**:
    - Executar varredura profunda com o script `.venv/bin/python3 scripts/validate.py`.
-   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, integridade de templates Jinja2, **auditoria de UX/UI (modais centralizados e paleta de cores via `scripts/ux_audit.py`)**, canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`) e **auditoria de cobertura de permissões RBAC (`scripts/permissions_audit.py`)**.
+   - Auditar paridade estrita de dependências (AST Scan vs `requirements.txt`), sintaxe recursiva em todos os arquivos `.py`, integridade de templates Jinja2, **balanceamento de tags `<template>` e sintaxe JavaScript inline (`scripts/client_syntax_audit.py`)**, **auditoria de UX/UI (modais centralizados e paleta de cores via `scripts/ux_audit.py`)**, canais de venda comerciais (`/outlet`, `/atacado`, `/modelos`, `/login`) e **auditoria de cobertura de permissões RBAC (`scripts/permissions_audit.py`)**.
    - Checar integridade da conexão Supabase IPv4 Pooler.
-   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe, UX, rota comercial ou **módulo/função sem permissão cadastrada**, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
+   - **Trava de Segurança**: Se houver qualquer erro de dependência, sintaxe Python ou JavaScript, tag `<template>` desbalanceada, UX, rota comercial ou **módulo/função sem permissão cadastrada**, **interromper imediatamente**, relatar o erro e NÃO fazer o push.
 
 2. **Passo 02 — Git Commit e Push Automático**:
    - Verificar arquivos alterados ou pendentes (`git status -sb`).

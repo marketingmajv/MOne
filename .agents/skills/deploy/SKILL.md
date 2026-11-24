@@ -15,6 +15,7 @@ Executar rotina de verificação profunda para identificar erros de dependência
    - **Paridade Estrita de Dependências**: AST Scan em 100% dos arquivos Python contra `requirements.txt` (impede erro de pacotes não declarados).
    - **Compilação e Sintaxe Python Completa**: Compilação recursiva da raiz, `routes/`, `services/`, `scripts/` e `api/`.
    - **Validação de Templates Jinja2**: Parsing em todos os templates e subpastas.
+   - **Auditoria Client-Side e Sintaxe JS**: Balanceamento estrito de tags `<template>` e compilação de scripts JavaScript inline via Node.js (`scripts/client_syntax_audit.py`).
    - **Auditoria de UX/UI**: Modais centralizados, contraste dark-first e botão fechar (`scripts/ux_audit.py`).
    - **Teste Ativo de Canais Comerciais**: Valida `/outlet`, `/atacado`, `/modelos` e `/login` retornando HTTP 200.
    - **Verificação de Banco de Dados**: Valida DSN do Pooler IPv4 Supabase (`aws-0-us-west-2.pooler.supabase.com:6543`).

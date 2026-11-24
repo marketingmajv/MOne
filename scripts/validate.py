@@ -319,11 +319,22 @@ def check_permissions_coverage() -> bool:
         return False
 
 
+def check_client_syntax_and_templates() -> bool:
+    """Valida o balanceamento de tags <template> e a sintaxe de scripts JavaScript inline."""
+    try:
+        from scripts.client_syntax_audit import run_client_syntax_audit
+        return run_client_syntax_audit(verbose=True)
+    except Exception as e:
+        print(f"  ✗ ERRO na auditoria de sintaxe client-side e templates: {e}")
+        return False
+
+
 def validate_all() -> bool:
     steps = [
         check_dependency_parity,
         check_python_syntax,
         check_templates,
+        check_client_syntax_and_templates,
         check_ux_ui_integrity,
         check_and_sync_static_assets,
         check_flask_commercial_routes,
@@ -335,7 +346,7 @@ def validate_all() -> bool:
             print("\n❌ FALHA NA VALIDAÇÃO PRÉ-DEPLOY! Publicação interrompida por segurança.\n")
             return False
 
-    print("\n✅ TODAS AS 8 ETAPAS PREDITIVAS (ROTAS CRÍTICAS, UX/UI E ATIVOS) FORAM APROVADAS! Código 100% blindado para deploy.\n")
+    print("\n✅ TODAS AS 9 ETAPAS PREDITIVAS (ROTAS CRÍTICAS, UX/UI, SINTAXE JS/CLIENT-SIDE E ATIVOS) FORAM APROVADAS! Código 100% blindado para deploy.\n")
     return True
 
 
