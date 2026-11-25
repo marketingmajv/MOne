@@ -4,57 +4,245 @@
 {% block page_subtitle %}Telemetria de capacidade, consumo de cotas gratuitas e alertas preventivos no WhatsApp para Jam e Fauzer.{% endblock %}
 
 {% block content %}
-<!-- Main Migration Trigger Status Card (Vercel) -->
-<div class="panel" style="margin-bottom: 24px; padding: 22px; border-radius: 12px; background: {% if report.is_critical %}rgba(239, 68, 68, 0.12){% else %}rgba(34, 197, 94, 0.08){% endif %}; border: 1px solid {% if report.is_critical %}rgba(239, 68, 68, 0.4){% else %}rgba(34, 197, 94, 0.25){% endif %};">
+<!-- SECTION: RENDER CONTAINER LIVE TELEMETRY (BETA RESTRITO) -->
+<div class="panel" style="margin-bottom: 24px; padding: 22px; border-radius: 12px; background: {% if telemetry.is_stressed %}rgba(239, 68, 68, 0.12){% else %}rgba(34, 197, 94, 0.08){% endif %}; border: 1px solid {% if telemetry.is_stressed %}rgba(239, 68, 68, 0.4){% else %}rgba(34, 197, 94, 0.25){% endif %};">
   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
     <div>
-      <span class="badge" style="background: {% if report.is_critical %}#ef4444{% else %}#22c55e{% endif %}; color: #fff; font-weight: 800; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;">
-        {{ report.status_zone }}
-      </span>
-      <h2 style="margin: 10px 0 4px 0; font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">
-        Vercel Pico Atual: <span style="color: {% if report.is_critical %}#ef4444{% else %}#10b981{% endif %};">{{ report.max_pct }}%</span> da cota máxima
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span class="badge" style="background: {{ telemetry.status_color }}; color: #fff; font-weight: 800; font-size: 0.85rem; padding: 4px 10px; border-radius: 6px;">
+          {{ telemetry.status_label }}
+        </span>
+        {% if can_telemetry_beta %}
+          <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+            🧪 Beta Restrito
+          </span>
+          {% if (me.username or '')|lower in ['jam', 'fauzer'] %}
+            <a href="{{ url_for('users') }}" style="font-size: 0.78rem; color: #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              👥 Delegar testador em /users
+            </a>
+          {% endif %}
+        {% endif %}
+      </div>
+      <h2 style="margin: 4px 0 6px 0; font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">
+        Render Container 24/7: <span style="color: {{ telemetry.status_color }};">{{ telemetry.ram_used_mb }} MB</span> utilizados ({{ telemetry.ram_pct }}% do limite)
       </h2>
       <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
-        {% if report.is_critical %}
-          🚨 <b>Atenção Jam e Fauzer:</b> O consumo ultrapassou o limiar de <b>{{ report.threshold }}%</b>. Este é o gatilho oficial para migração para <b>Container Contínuo (Render / Docker)</b>.
+        {% if telemetry.is_stressed %}
+          🚨 <b>Atenção:</b> Servidor operando próximo ao limite do container Render Free (512 MB / 4 threads Gunicorn). O banner de aviso de alto tráfego é acionado automaticamente para os usuários.
         {% else %}
-          ✅ Operação da Vercel saudável dentro da cota gratuita. Alertas serão enviados no WhatsApp de Jam e Fauzer automaticamente ao atingir <b>{{ report.threshold }}%</b>.
+          ✅ Container com operação contínua e estável. Monitoramento em memória de latência, concorrência simultânea e alertas automáticos via WhatsApp configurados para <b>Fauzer</b>.
         {% endif %}
       </p>
     </div>
 
     <div style="text-align: right; background: var(--surface-subtle); padding: 12px 18px; border-radius: 8px; border: 1px solid var(--border-subtle);">
-      <small style="color: var(--text-muted); display: block; font-size: 0.78rem;">Origem dos Dados Vercel</small>
-      <strong style="color: var(--brand-blue); font-size: 0.95rem;">
-        {% if report.raw.source == 'vercel_api' %}🟢 Conectado à API Vercel{% else %}⚙️ Telemetria M-One{% endif %}
+      <small style="color: var(--text-muted); display: block; font-size: 0.78rem;">Origem da Telemetria</small>
+      <strong style="color: #38bdf8; font-size: 0.95rem;">
+        ⚡ Coletor em Memória (&lt; 0.05 ms)
       </strong>
-      {% if report.last_alert_sent_at %}
-        <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: #f59e0b;">Último alerta Vercel: {{ report.last_alert_sent_at }}</small>
+      <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);">
+        Threads: <b style="color: var(--text-primary);">{{ telemetry.in_flight_total }}/4 ativas</b> • RPM: <b style="color: #38bdf8;">{{ telemetry.rpm }}</b>
+      </small>
+    </div>
+  </div>
+</div>
+
+<!-- 4 Pulse Metrics Cards (Render Container) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 24px;">
+  <!-- RAM Usage Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+      <strong style="font-size: 0.88rem; color: var(--text-primary);">💾 Memória RAM Real (VmRSS)</strong>
+      <span style="font-size: 1.1rem; font-weight: 800; color: {% if telemetry.ram_pct >= 80 %}#ef4444{% elif telemetry.ram_pct >= 65 %}#f59e0b{% else %}#10b981{% endif %};">
+        {{ telemetry.ram_pct }}%
+      </span>
+    </div>
+    <div style="width: 100%; height: 7px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+      <div style="width: {{ telemetry.ram_pct }}%; height: 100%; background: {% if telemetry.ram_pct >= 80 %}#ef4444{% elif telemetry.ram_pct >= 65 %}#f59e0b{% else %}#10b981{% endif %}; transition: width 0.5s ease-in-out;"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+      <span>Uso: <b style="color: var(--text-primary);">{{ telemetry.ram_used_mb }} MB</b></span>
+      <span>Teto: {{ telemetry.ram_ceiling_mb }} MB</span>
+    </div>
+  </div>
+
+  <!-- In-Flight Concurrency Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+      <strong style="font-size: 0.88rem; color: var(--text-primary);">⚡ Concorrência In-Flight</strong>
+      <span style="font-size: 1.1rem; font-weight: 800; color: {% if telemetry.in_flight_total >= 4 %}#ef4444{% elif telemetry.in_flight_total >= 2 %}#f59e0b{% else %}#10b981{% endif %};">
+        {{ telemetry.in_flight_total }} / 4
+      </span>
+    </div>
+    <div style="width: 100%; height: 7px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+      <div style="width: {{ (telemetry.in_flight_total / 4 * 100)|int }}%; height: 100%; background: {% if telemetry.in_flight_total >= 4 %}#ef4444{% elif telemetry.in_flight_total >= 2 %}#f59e0b{% else %}#10b981{% endif %}; transition: width 0.5s ease-in-out;"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+      <span>Gunicorn Threads</span>
+      <span>Teto: 4 threads</span>
+    </div>
+  </div>
+
+  <!-- Latency p95 Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+      <strong style="font-size: 0.88rem; color: var(--text-primary);">⏱️ Latência (p95)</strong>
+      <span style="font-size: 1.1rem; font-weight: 800; color: {% if telemetry.p95_latency_ms >= 3000 %}#ef4444{% elif telemetry.p95_latency_ms >= 1200 %}#f59e0b{% else %}#10b981{% endif %};">
+        {{ telemetry.p95_latency_ms }} ms
+      </span>
+    </div>
+    <div style="width: 100%; height: 7px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+      <div style="width: {{ [100, (telemetry.p95_latency_ms / 3000 * 100)|int]|min }}%; height: 100%; background: {% if telemetry.p95_latency_ms >= 3000 %}#ef4444{% elif telemetry.p95_latency_ms >= 1200 %}#f59e0b{% else %}#10b981{% endif %}; transition: width 0.5s ease-in-out;"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+      <span>Média: <b style="color: var(--text-primary);">{{ telemetry.avg_latency_ms }} ms</b></span>
+      <span>Limiar: 3.000 ms</span>
+    </div>
+  </div>
+
+  <!-- Throughput & 5xx Errors Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+      <strong style="font-size: 0.88rem; color: var(--text-primary);">🚦 Taxa de Requisições / Erros</strong>
+      <span style="font-size: 1.1rem; font-weight: 800; color: {% if telemetry.errors_5xx > 0 %}#ef4444{% else %}#10b981{% endif %};">
+        {{ telemetry.rpm }} <span style="font-size: 0.8rem; font-weight: 400;">rpm</span>
+      </span>
+    </div>
+    <div style="width: 100%; height: 7px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+      <div style="width: 100%; height: 100%; background: {% if telemetry.errors_5xx > 0 %}#ef4444{% else %}#10b981{% endif %};"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+      <span>Amostras: <b style="color: var(--text-primary);">{{ telemetry.sample_count }}</b></span>
+      <span>Erros 5xx: <b style="color: {% if telemetry.errors_5xx > 0 %}#ef4444{% else %}#10b981{% endif %};">{{ telemetry.errors_5xx }}</b></span>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION: REAL-TIME CHART & ROUTE RANKING -->
+<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; margin-bottom: 24px;">
+  <!-- Chart Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary);">📈 Telemetria Contínua (Últimos 15 min)</h3>
+        <small style="color: var(--text-muted);">Evolução de latência e consumo de memória</small>
+      </div>
+      <span id="telemetryLivePulse" style="font-size: 0.75rem; color: #10b981; display: inline-flex; align-items: center; gap: 5px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Ao Vivo
+      </span>
+    </div>
+    <div style="height: 220px; position: relative;">
+      <canvas id="telemetryChart" data-p95="{{ telemetry.p95_latency_ms }}" data-avg="{{ telemetry.avg_latency_ms }}" data-ram="{{ telemetry.ram_pct }}"></canvas>
+    </div>
+  </div>
+
+  <!-- Route Congestion Ranking Card -->
+  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px;">
+    <div style="margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+      <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary);">🔥 Rotas Mais Concorridas & Lentas</h3>
+      <small style="color: var(--text-muted);">Identificação de gargalos localizados em endpoints</small>
+    </div>
+    <div style="max-height: 215px; overflow-y: auto;">
+      {% if telemetry.top_routes %}
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+          <thead>
+            <tr style="color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); text-align: left;">
+              <th style="padding: 6px 4px;">Rota / Endpoint</th>
+              <th style="padding: 6px 4px; text-align: center;">In-Flight</th>
+              <th style="padding: 6px 4px; text-align: right;">p95 (ms)</th>
+              <th style="padding: 6px 4px; text-align: right;">Média</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in telemetry.top_routes %}
+              <tr style="border-bottom: 1px dashed var(--border-subtle);">
+                <td style="padding: 6px 4px; color: var(--text-primary); font-family: monospace; font-size: 0.75rem;">
+                  {{ r.route }}
+                </td>
+                <td style="padding: 6px 4px; text-align: center;">
+                  {% if r.active_now > 0 %}
+                    <span class="badge" style="background: #ef4444; color: #fff; font-size: 0.7rem; padding: 2px 6px;">{{ r.active_now }} ativa(s)</span>
+                  {% else %}
+                    <span style="color: var(--text-muted);">0</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 6px 4px; text-align: right; font-weight: 700; color: {% if r.p95_ms >= 3000 %}#ef4444{% elif r.p95_ms >= 1000 %}#f59e0b{% else %}#10b981{% endif %};">
+                  {{ r.p95_ms }}
+                </td>
+                <td style="padding: 6px 4px; text-align: right; color: var(--text-muted);">
+                  {{ r.avg_ms }} ms
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin: 40px 0;">
+          Nenhuma amostra registrada ainda nesta janela.
+        </p>
       {% endif %}
     </div>
   </div>
 </div>
 
-<!-- 4 Quota Performance Progress Bars (Vercel) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 24px;">
-  {% for m in report.metrics %}
-  <div class="panel" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px;">
-    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
-      <strong style="font-size: 0.88rem; color: var(--text-primary);">{{ m.name }}</strong>
-      <span style="font-size: 1.1rem; font-weight: 800; color: {% if m.pct >= report.threshold %}#ef4444{% elif m.pct >= 50 %}#f59e0b{% else %}#10b981{% endif %};">
-        {{ m.pct }}%
-      </span>
+<!-- SECTION: INCIDENT HISTORY -->
+{% if incidents %}
+<div class="panel" style="margin-bottom: 24px; padding: 20px; border-radius: 10px; background: var(--surface-card); border: 1px solid var(--border-subtle);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+    <div>
+      <h3 style="margin: 0; font-size: 1.05rem; color: var(--text-primary);">🛡️ Histórico de Incidentes Críticos (Supabase Persistido)</h3>
+      <small style="color: var(--text-muted);">Registros gravados no banco apenas durante picos de estresse</small>
     </div>
-    <div style="width: 100%; height: 7px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-      <div style="width: {{ m.pct }}%; height: 100%; background: {% if m.pct >= report.threshold %}linear-gradient(90deg, #f97316, #ef4444){% elif m.pct >= 50 %}linear-gradient(90deg, #eab308, #f59e0b){% else %}linear-gradient(90deg, #10b981, #059669){% endif %}; transition: width 0.5s ease-in-out;"></div>
-    </div>
-    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
-      <span>Atual: <b style="color: var(--text-primary);">{{ m.current }}</b> {{ m.unit }}</span>
-      <span>Teto: {{ m.limit }} {{ m.unit }}</span>
-    </div>
+    <span class="badge" style="background: var(--surface-subtle); color: var(--text-muted); font-size: 0.75rem; padding: 3px 8px;">
+      Últimos {{ incidents|length }} incidentes
+    </span>
   </div>
-  {% endfor %}
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+      <thead>
+        <tr style="color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); text-align: left;">
+          <th style="padding: 8px;">Data / Hora</th>
+          <th style="padding: 8px;">Tipo</th>
+          <th style="padding: 8px;">Rota Ofensora</th>
+          <th style="padding: 8px; text-align: right;">Latência</th>
+          <th style="padding: 8px; text-align: right;">RAM Usada</th>
+          <th style="padding: 8px; text-align: center;">In-Flight</th>
+          <th style="padding: 8px; text-align: center;">Severidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inc in incidents %}
+          <tr style="border-bottom: 1px dashed var(--border-subtle);">
+            <td style="padding: 8px; color: var(--text-secondary); white-space: nowrap;">
+              {{ inc.created_at.strftime('%d/%m/%Y %H:%M:%S') if inc.created_at else '-' }}
+            </td>
+            <td style="padding: 8px; font-weight: 600; color: var(--text-primary);">
+              {{ inc.incident_type }}
+            </td>
+            <td style="padding: 8px; font-family: monospace; color: #38bdf8; font-size: 0.78rem;">
+              {{ inc.offensive_route or '-' }}
+            </td>
+            <td style="padding: 8px; text-align: right; font-weight: 700; color: {% if inc.p95_latency_ms and inc.p95_latency_ms >= 3000 %}#ef4444{% else %}#f59e0b{% endif %};">
+              {{ inc.p95_latency_ms }} ms
+            </td>
+            <td style="padding: 8px; text-align: right; color: var(--text-muted);">
+              {{ inc.ram_used_mb }} MB ({{ inc.ram_pct }}%)
+            </td>
+            <td style="padding: 8px; text-align: center; color: var(--text-primary);">
+              {{ inc.in_flight_peak }}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              <span class="badge" style="background: {% if inc.severity == 'critical' %}#ef4444{% else %}#f59e0b{% endif %}; color: #fff; font-size: 0.7rem; padding: 2px 6px;">
+                {{ inc.severity }}
+              </span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
+{% endif %}
 
 <!-- SECTION: SUPABASE HEALTH & CAPACITY -->
 <div class="panel" style="margin-bottom: 24px; padding: 22px; border-radius: 12px; background: {% if supabase.is_critical %}rgba(239, 68, 68, 0.12){% else %}rgba(16, 185, 129, 0.08){% endif %}; border: 1px solid {% if supabase.is_critical %}rgba(239, 68, 68, 0.4){% else %}rgba(16, 185, 129, 0.25){% endif %};">
@@ -212,29 +400,29 @@
       </form>
     </div>
 
-    <!-- Test Vercel Alert Button -->
+    <!-- Test Render Container Alert Button (Fauzer) -->
     <div>
-      <strong style="color: var(--brand-blue); font-size: 0.9rem; display: block; margin-bottom: 6px;">⚡ Teste de Alerta: Limites Vercel</strong>
+      <strong style="color: #38bdf8; font-size: 0.9rem; display: block; margin-bottom: 6px;">⚡ Teste de Alerta: Render Container</strong>
       <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
-        Testa o canal de notificação para as cotas de execução e bandwidth da Vercel.
+        Envia snapshot em tempo real do container Render (RAM, latência p95 e threads) diretamente para o WhatsApp de <b>Fauzer</b>.
       </p>
-      <form method="post" action="{{ url_for('infra.infra_test_alert') }}" style="display: flex; flex-direction: column; gap: 8px;">
-        <select name="target" style="padding: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); color: var(--text-primary); border-radius: 6px; font-size: 0.82rem;">
-          <option value="both">📲 Ambos (Jam Penitenti e Fauzer)</option>
-          <option value="jam">📲 Apenas Jam Penitenti</option>
-          <option value="fauzer">📲 Apenas Fauzer</option>
-        </select>
-        <button type="submit" class="btn accent" style="padding: 10px; font-weight: 700;">
-          Testar Alerta Vercel no WhatsApp ✈️
+      <form method="post" action="{{ url_for('infra.infra_test_render_alert') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn" style="width: 100%; padding: 10px; font-weight: 700; background: #0284c7; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+          Testar Alerta Render no WhatsApp de Fauzer 🚨
         </button>
       </form>
     </div>
 
     <div style="margin-top: 20px; padding: 12px; background: var(--surface-subtle); border-radius: 6px; border: 1px solid var(--border-subtle); font-size: 0.78rem; color: var(--text-secondary);">
-      <strong style="color: var(--brand-blue); display: block; margin-bottom: 4px;">Política de Cooldown:</strong>
-      Os alertas automáticos do Supabase e Vercel possuem intervalo mínimo de 24 horas por marco (75%, 85%, 95%) para evitar envios repetitivos.
+      <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">Política de Cooldown:</strong>
+      Os alertas automáticos do Render Container possuem intervalo mínimo de 15 minutos por incidente crítico para evitar mensagens repetitivas no WhatsApp.
     </div>
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/infra-telemetry.js', v='20261125_v1') }}"></script>
 {% endblock %}

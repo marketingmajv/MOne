@@ -75,7 +75,7 @@ def check_dependency_parity() -> bool:
         "decimal", "distutils", "email", "enum", "errno", "functools", "gc", "glob",
         "hashlib", "heapq", "html", "http", "importlib", "inspect", "io", "itertools",
         "json", "logging", "math", "mimetypes", "multiprocessing", "os", "pathlib",
-        "pkgutil", "platform", "py_compile", "random", "re", "secrets", "shutil",
+        "pkgutil", "platform", "py_compile", "random", "re", "resource", "secrets", "shutil",
         "signal", "socket", "sqlite3", "ssl", "stat", "string", "subprocess", "sys",
         "tempfile", "threading", "time", "traceback", "types", "typing", "unicodedata",
         "unittest", "urllib", "uuid", "warnings", "weakref", "xml", "zipfile", "__future__",

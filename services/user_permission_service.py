@@ -279,6 +279,14 @@ ALL_PERMISSIONS = {
         "description": "Telemetria de logs, tempo de resposta e integridade da nuvem",
         "default_roles": ["admin", "support"],
     },
+    "infra_telemetry_live": {
+        "category": "integracoes",
+        "label": "Telemetria Render em Tempo Real (Beta)",
+        "icon": "🧪",
+        "description": "Libera telemetria viva de RAM, concorrência e latência do Render no painel e banner (delegação exclusiva Jam/Fauzer)",
+        "default_roles": ["super_admin"],
+        "super_admin_only": True,
+    },
 }
 
 

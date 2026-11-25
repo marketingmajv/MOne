@@ -8,11 +8,16 @@ from __future__ import annotations
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
-from routes.helpers import audit, login_required, roles_required
+from routes.helpers import audit, current_user, login_required, roles_required, user_has_permission
 from services.supabase_monitor_service import (
     check_and_trigger_supabase_alerts_if_needed,
     fetch_supabase_health_metrics,
     send_test_supabase_alert_whatsapp,
+)
+from services.telemetry_service import (
+    fetch_recent_incidents,
+    send_test_render_alert_whatsapp,
+    telemetry,
 )
 from services.vercel_service import (
     calculate_performance_report,
@@ -29,7 +34,7 @@ infra_bp = Blueprint("infra", __name__)
 @login_required
 @roles_required("admin", "support")
 def infra_performance():
-    """Painel principal de monitoramento de desempenho e limites da Vercel e Supabase."""
+    """Painel principal de monitoramento de desempenho, telemetria do Render e Supabase."""
     # Avalia se há necessidade de disparar alerta silencioso em segundo plano
     try:
         check_and_trigger_alerts_if_needed()
@@ -43,7 +48,19 @@ def infra_performance():
 
     report = calculate_performance_report()
     supabase_metrics = fetch_supabase_health_metrics()
-    return render_template("infra_performance.html", report=report, supabase=supabase_metrics)
+    telemetry_snap = telemetry.get_snapshot()
+    incidents = fetch_recent_incidents(15)
+    me = current_user()
+    can_telemetry_beta = user_has_permission(me, "infra_telemetry_live")
+
+    return render_template(
+        "infra_performance.html",
+        report=report,
+        supabase=supabase_metrics,
+        telemetry=telemetry_snap,
+        incidents=incidents,
+        can_telemetry_beta=can_telemetry_beta,
+    )
 
 
 @infra_bp.route("/infra/config", methods=["POST"])
@@ -146,3 +163,30 @@ def api_supabase_metrics():
     """Retorna métricas em tempo real de saúde do Supabase."""
     metrics = fetch_supabase_health_metrics(force_refresh=True)
     return jsonify(metrics)
+
+
+@infra_bp.route("/api/infra/telemetry", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def api_infra_telemetry():
+    """Retorna dados de telemetria em tempo real do container Render para Chart.js e painel."""
+    snap = telemetry.get_snapshot()
+    incidents = fetch_recent_incidents(15)
+    return jsonify({"telemetry": snap, "incidents": incidents})
+
+
+@infra_bp.route("/infra/test-render-alert", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def infra_test_render_alert():
+    """Dispara um teste imediato de alerta de estresse do Render via WhatsApp exclusivo para Fauzer."""
+    cfg = get_infra_config()
+    phone_fauzer = cfg.get("phone_fauzer") or "+55 27 99999-9999"
+    try:
+        send_test_render_alert_whatsapp(phone_fauzer, "Fauzer")
+        flash("✅ Alerta de teste do Render enviado com sucesso para Fauzer via WhatsApp!", "success")
+        audit("infra.test_render_alert_sent", f"phone={phone_fauzer}")
+    except Exception as e:
+        flash(f"⚠️ Falha ao disparar alerta de teste do Render: {e}", "warning")
+    return redirect(url_for("infra.infra_performance"))
+

@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from flask import Flask, flash, jsonify, redirect, request, session, url_for, send_from_directory
+from flask import Flask, flash, g, jsonify, redirect, request, session, url_for, send_from_directory
 
 load_dotenv()
 load_dotenv(".env.local")
@@ -10,6 +10,7 @@ load_dotenv(".env.local")
 from database import init_db
 from routes import register_blueprints
 from services.version_service import get_version_info
+from services.telemetry_service import telemetry
 from routes.helpers import (
     UPLOAD_DIR,
     current_user,
@@ -60,6 +61,15 @@ def generate_csrf_token() -> str:
     if "_csrf_token" not in session:
         session["_csrf_token"] = secrets.token_hex(32)
     return session["_csrf_token"]
+
+
+@app.before_request
+def track_telemetry_start():
+    """Registra início da requisição no coletor de telemetria em memória (< 0.05 ms)."""
+    p = request.path
+    if not (p.startswith("/static/") or p.startswith("/public/") or p.startswith("/images/") or p in ["/healthz", "/favicon.ico"]):
+        endpoint_name = request.endpoint or p
+        g._telemetry_t0 = telemetry.start_request(endpoint_name)
 
 
 @app.before_request
@@ -119,7 +129,17 @@ def apply_security_and_cache_headers(response):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     if os.environ.get("VERCEL") or request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    if hasattr(g, "_telemetry_t0") and not getattr(g, "_telemetry_ended", False):
+        g._telemetry_ended = True
+        telemetry.end_request(request.endpoint or request.path, response.status_code, g._telemetry_t0)
     return response
+
+
+@app.teardown_request
+def track_telemetry_teardown(exc=None):
+    if hasattr(g, "_telemetry_t0") and not getattr(g, "_telemetry_ended", False):
+        g._telemetry_ended = True
+        telemetry.end_request(request.endpoint or request.path, 500 if exc else 200, g._telemetry_t0)
 
 
 @app.route('/images/<path:filename>')
@@ -192,6 +212,8 @@ def inject_globals():
         "app_version": get_version_info(),
         "is_impersonating": bool(orig_admin_id),
         "original_admin_id": orig_admin_id,
+        "is_high_load": telemetry.is_high_load(),
+        "can_telemetry_live": user_has_permission(u, "infra_telemetry_live") if u else False,
     }
 
 
