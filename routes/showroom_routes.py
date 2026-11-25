@@ -28,6 +28,8 @@ from services.campaign_thumb_service import (
     get_campaign_schedule,
     save_campaign_schedule,
     is_campaign_active_now,
+    get_channel_banner_modes,
+    set_channel_banner_mode,
 )
 from services.user_permission_service import user_has_permission_check
 from services.showroom_crud_service import (
@@ -332,8 +334,36 @@ def admin_models_export_xlsx():
     )
 
 
+@showroom_bp.route("/api/campaign/channel-mode", methods=["GET"])
+@login_required
+@roles_required("admin", "support")
+def api_get_channel_modes():
+    """Retorna os modos de banner ativos por canal ('showroom', 'atacado', 'outlet')."""
+    return jsonify({"status": "success", "modes": get_channel_banner_modes()}), 200
+
+
+@showroom_bp.route("/api/campaign/channel-mode", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def api_set_channel_mode():
+    """Altera o modo de banner de um canal específico ('showroom', 'atacado', 'outlet') ou todos ('all')."""
+    body = request.get_json(silent=True) or {}
+    channel = (body.get("channel") or "").strip().lower()
+    mode = (body.get("mode") or "").strip().lower()
+    if not channel or mode not in ("promocional", "atemporal"):
+        return jsonify({"error": "Parâmetros inválidos. Informe 'channel' e 'mode' ('promocional' ou 'atemporal')."}), 400
+
+    updated = set_channel_banner_mode(channel, mode)
+    return jsonify({
+        "status": "success",
+        "message": f"Modo do canal '{channel}' atualizado para '{mode}'.",
+        "modes": updated,
+    }), 200
+
+
 @showroom_bp.route("/admin/models", methods=["GET"])
 @showroom_bp.route("/admin/modelos", methods=["GET"])
+@showroom_bp.route("/admin/showroom/models", methods=["GET"])
 @login_required
 @roles_required("admin", "support")
 def admin_models_page():
@@ -345,6 +375,7 @@ def admin_models_page():
     promo_banner = load_promo_banner_settings()
     global_image_mode = get_global_image_mode()
     campaign_schedule = get_campaign_schedule()
+    channel_modes = get_channel_banner_modes()
     can_promo_thumb = user_has_permission_check(me, "promo_thumb_automation")
     return render_template(
         "showroom/admin_models.html",
@@ -355,6 +386,7 @@ def admin_models_page():
         promo_banner=promo_banner,
         global_image_mode=global_image_mode,
         campaign_schedule=campaign_schedule,
+        channel_modes=channel_modes,
         can_promo_thumb=can_promo_thumb,
     )
 

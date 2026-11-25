@@ -26,6 +26,82 @@ DEFAULT_CAMPAIGN_SETTINGS: Dict[str, Any] = {
     "updated_at": "",
 }
 
+DEFAULT_CHANNEL_BANNER_MODES: Dict[str, str] = {
+    "showroom": "atemporal",
+    "atacado": "atemporal",
+    "outlet": "atemporal",
+}
+
+
+def get_channel_banner_modes() -> Dict[str, str]:
+    """Carrega os modos de banners ativos por canal ('showroom', 'atacado', 'outlet')."""
+    ensure_showroom_settings_schema()
+    try:
+        with db() as conn:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            sql = "SELECT value FROM showroom_settings WHERE key = %s" if is_pg else "SELECT value FROM showroom_settings WHERE key = ?"
+            row = conn.execute(sql, ("channel_banner_modes",)).fetchone()
+            if row:
+                raw_val = row["value"] if isinstance(row, dict) else row[0]
+                if raw_val:
+                    data = json.loads(raw_val)
+                    if isinstance(data, dict):
+                        merged = dict(DEFAULT_CHANNEL_BANNER_MODES)
+                        for k in ("showroom", "atacado", "outlet"):
+                            if data.get(k) in ("promocional", "atemporal"):
+                                merged[k] = data[k]
+                        return merged
+    except Exception as e:
+        logger.warning("Aviso ao carregar channel_banner_modes do banco: %s", e)
+
+    # Fallback: herda do global_image_mode do showroom
+    try:
+        from services.showroom_crud_service import get_global_image_mode
+        leg_mode = get_global_image_mode()
+        if leg_mode in ("promocional", "atemporal"):
+            return {k: leg_mode for k in DEFAULT_CHANNEL_BANNER_MODES}
+    except Exception:
+        pass
+
+    return dict(DEFAULT_CHANNEL_BANNER_MODES)
+
+
+def set_channel_banner_mode(channel: str, mode: str) -> Dict[str, str]:
+    """Salva o modo ('promocional' ou 'atemporal') de um canal específico ou de todos ('all')."""
+    ensure_showroom_settings_schema()
+    clean_mode = "promocional" if mode == "promocional" else "atemporal"
+    current = get_channel_banner_modes()
+
+    target_chans = ["showroom", "atacado", "outlet"] if channel == "all" else [channel.lower()]
+    for ch in target_chans:
+        if ch in current:
+            current[ch] = clean_mode
+
+    # Sincroniza Showroom no showroom_crud_service se afetado
+    if "showroom" in target_chans:
+        try:
+            from services.showroom_crud_service import set_global_image_mode
+            set_global_image_mode(clean_mode)
+        except Exception as e:
+            logger.debug("Aviso ao sincronizar showroom_crud_service: %s", e)
+
+    val_str = json.dumps(current, ensure_ascii=False)
+    try:
+        with db() as conn:
+            is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
+            sql = (
+                "INSERT INTO showroom_settings (key, value, updated_at) VALUES (%s, %s, CURRENT_TIMESTAMP) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP"
+                if is_pg else
+                "INSERT OR REPLACE INTO showroom_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)"
+            )
+            conn.execute(sql, ("channel_banner_modes", val_str))
+            conn.commit()
+    except Exception as e:
+        logger.warning("Aviso ao salvar channel_banner_modes em showroom_settings: %s", e)
+
+    return current
+
 SLUG_ALIASES: Dict[str, str] = {
     "v8-mini-ultra": "v8-mini",
     "v8-mini": "v8-mini-ultra",
@@ -204,13 +280,20 @@ def enrich_items_with_effective_thumbs(
     """
     Enriquece a lista de produtos em memória com a thumb resolvida dinamicamente,
     sem alterar fisicamente o banco de dados nem quebrar templates legados.
+    Respeita o modo independente configurado para cada canal (showroom, atacado, outlet).
     """
     if not items:
         return items
 
     try:
         by_slug, by_norm = build_showroom_lookup()
-        _, active_mode, _ = is_campaign_active_now()
+        c_modes = get_channel_banner_modes()
+        chan_key = str(channel or "").strip().lower()
+
+        if chan_key in c_modes:
+            active_mode = c_modes[chan_key]
+        else:
+            _, active_mode, _ = is_campaign_active_now()
 
         for it in items:
             thumb_url, is_promo, is_inherited = resolve_effective_thumb(it, by_slug, by_norm, active_mode)

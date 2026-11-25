@@ -8,7 +8,7 @@ let currentMenuMode = window.SHOWROOM_ADMIN_CONFIG?.mode || 'category';
 let currentCategoryOrder = window.SHOWROOM_ADMIN_CONFIG?.categoryOrder || ['Scooter', 'Bike'];
 
 function switchMainTab(tabKey, updateUrl = true) {
-  const tabs = ['modelos', 'inativos', 'promo', 'tv'];
+  const tabs = ['modelos', 'banners', 'inativos', 'promo', 'tv'];
   if (!tabs.includes(tabKey)) tabKey = 'modelos';
 
   tabs.forEach(t => {
@@ -378,13 +378,118 @@ function showToast(msg, isSuccess) {
   setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
+function getCsrfToken() {
+  return document.querySelector('input[name="csrf_token"]')?.value ||
+         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+}
+
+async function setChannelBannerMode(channel, mode) {
+  const channelNames = {
+    showroom: 'Showroom',
+    atacado: 'Atacado B2B',
+    outlet: 'Outlet MAJ',
+    all: 'Todos os Canais'
+  };
+  const cName = channelNames[channel] || channel;
+  const isPromo = mode === 'promocional';
+  const labelMode = isPromo ? '⚡ Promocional' : '🏛️ Atemporal';
+
+  if (window.MOnePreloader) {
+    window.MOnePreloader.show(`Atualizando ${cName} para ${labelMode}...`, 'M-ONE CAMPANHAS', true);
+  }
+
+  const csrfToken = getCsrfToken();
+  try {
+    const res = await fetch('/api/campaign/channel-mode', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ channel, mode, csrf_token: csrfToken })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Falha ao atualizar modo do canal.');
+
+    if (data.modes) {
+      updateChannelCardsUI(data.modes);
+    }
+    showToast(`${cName} alterado para ${labelMode} com sucesso!`, true);
+  } catch (err) {
+    showToast('Erro: ' + err.message, false);
+  } finally {
+    if (window.MOnePreloader) window.MOnePreloader.hide();
+  }
+}
+
+function updateChannelCardsUI(modes) {
+  const channels = ['showroom', 'atacado', 'outlet'];
+  channels.forEach(ch => {
+    const curMode = modes[ch] || 'atemporal';
+    const isPromo = curMode === 'promocional';
+    const cap = ch.charAt(0).toUpperCase() + ch.slice(1);
+    const badge = document.getElementById(`badgeChannel${cap}`);
+    const btnAt = document.getElementById(`btn${cap}Atemporal`);
+    const btnPr = document.getElementById(`btn${cap}Promo`);
+
+    if (badge) {
+      badge.textContent = isPromo ? '⚡ PROMOCIONAL' : '🏛️ ATEMPORAL';
+      badge.style.background = isPromo ? 'rgba(255,183,3,0.18)' : 'rgba(0,229,153,0.18)';
+      badge.style.color = isPromo ? '#d97706' : '#059669';
+      badge.style.borderColor = isPromo ? 'rgba(255,183,3,0.4)' : 'rgba(0,229,153,0.4)';
+    }
+    if (btnAt) {
+      btnAt.style.background = !isPromo ? '#00e599' : 'var(--card)';
+      btnAt.style.color = !isPromo ? '#000' : 'var(--text-muted)';
+      btnAt.style.border = !isPromo ? '2px solid #00e599' : '1px dashed var(--line)';
+      btnAt.style.boxShadow = !isPromo ? '0 0 12px rgba(0,229,153,0.35)' : 'none';
+      btnAt.style.opacity = !isPromo ? '1' : '0.6';
+    }
+    if (btnPr) {
+      btnPr.style.background = isPromo ? '#ffb703' : 'var(--card)';
+      btnPr.style.color = isPromo ? '#000' : 'var(--text-muted)';
+      btnPr.style.border = isPromo ? '2px solid #ffb703' : '1px dashed var(--line)';
+      btnPr.style.boxShadow = isPromo ? '0 0 12px rgba(255,183,3,0.35)' : 'none';
+      btnPr.style.opacity = isPromo ? '1' : '0.6';
+    }
+  });
+}
+
+async function saveCampaignSchedule() {
+  const payload = {
+    campaign_name: (document.getElementById('campaignName').value || '').trim(),
+    start_at: document.getElementById('campaignStartAt').value,
+    end_at: document.getElementById('campaignEndAt').value,
+    schedule_enabled: document.getElementById('campaignScheduleEnabled').checked,
+    csrf_token: getCsrfToken()
+  };
+  try {
+    const res = await fetch('/api/campaign/schedule', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Falha ao salvar agendamento.');
+    showToast('Configurações da campanha salvas com sucesso!', true);
+    setTimeout(() => window.location.reload(), 1000);
+  } catch (err) {
+    showToast('Erro: ' + err.message, false);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initSortable();
   updatePositionBadges();
 
   const hash = (window.location.hash || '').replace('#', '').toLowerCase();
   const savedTab = localStorage.getItem('admin_models_active_tab');
-  const validTabs = ['modelos', 'inativos', 'promo', 'tv'];
+  const validTabs = ['modelos', 'banners', 'inativos', 'promo', 'tv'];
   const initialTab = validTabs.includes(hash) ? hash : (validTabs.includes(savedTab) ? savedTab : 'modelos');
   switchMainTab(initialTab, false);
 });

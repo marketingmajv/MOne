@@ -6,11 +6,11 @@
 
 {% block top_actions %}
   <div style="display:inline-flex;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;">
-    <button type="button" onclick="setGlobalImageMode('atemporal')" title="Mudar todos os veículos de uma vez para o Banner Atemporal"
+    <button type="button" onclick="setChannelBannerMode('all', 'atemporal')" title="Mudar todos os 3 canais para o Banner Atemporal"
             style="padding:7px 13px;font-size:11.5px;font-weight:800;border-radius:7px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 14px rgba(0,229,153,0.45);{% else %}background:transparent;color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
       {% if global_image_mode != 'promocional' %}✅ {% endif %}🏛️ Todos: Atemporal
     </button>
-    <button type="button" onclick="setGlobalImageMode('promocional')" title="Mudar todos os veículos de uma vez para o Banner Promocional"
+    <button type="button" onclick="setChannelBannerMode('all', 'promocional')" title="Mudar todos os 3 canais para o Banner Promocional"
             style="padding:7px 13px;font-size:11.5px;font-weight:800;border-radius:7px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 14px rgba(255,183,3,0.45);{% else %}background:transparent;color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
       {% if global_image_mode == 'promocional' %}✅ {% endif %}⚡ Todos: Promocional
     </button>
@@ -104,6 +104,8 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
 {% set active_models = models|selectattr('is_active')|list %}
 {% set inactive_models = models|rejectattr('is_active')|list %}
 
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
 <!-- ==============================================
      BARRA DE NAVEGAÇÃO SETORIZADA (TABS)
      ============================================== -->
@@ -114,6 +116,12 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
     <span class="showroom-tab-badge" id="tabActiveModelsBadge">{{ active_models|length }} ativos</span>
   </button>
 
+  <button type="button" id="tabNavBanners" class="showroom-tab-btn" onclick="switchMainTab('banners')">
+    <span style="font-size:16px;">⚡</span>
+    <span>Banners por Canal</span>
+    <span class="showroom-tab-badge" id="tabBannersStatusBadge">3 Canais</span>
+  </button>
+
   <button type="button" id="tabNavInativos" class="showroom-tab-btn" onclick="switchMainTab('inativos')">
     <span style="font-size:16px;">📦</span>
     <span>Modelos Inativos</span>
@@ -121,8 +129,8 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
   </button>
 
   <button type="button" id="tabNavPromo" class="showroom-tab-btn" onclick="switchMainTab('promo')">
-    <span style="font-size:16px;">⚡</span>
-    <span>Promoção Black November</span>
+    <span style="font-size:16px;">🎨</span>
+    <span>Faixas Black November</span>
     <span class="showroom-tab-badge" id="tabPromoStatusIndicator">
       {{ '🟢 Ativo' if promo_banner and promo_banner.enabled else '⚪ Oculto' }}
     </span>
@@ -208,86 +216,6 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
   {% endmacro %}
 
   <div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
-
-    <!-- Agendador 24/7 e Automação de Capas Multicanal (Beta Restrito) -->
-    <div style="margin-bottom:18px;padding:16px 20px;border-radius:12px;background:var(--card);border:1px solid rgba(0,229,153,0.35);box-shadow:0 4px 18px rgba(0,229,153,0.06);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">
-        <div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:20px;">⚡</span>
-            <strong style="font-size:15px;color:var(--text);">Automação 24/7 & Agendador de Capas (Showroom ➔ Outlet & Atacado)</strong>
-            <span class="badge" style="font-size:10.5px;padding:2px 8px;border-radius:100px;background:rgba(147,51,234,0.15);color:#a855f7;border:1px solid rgba(147,51,234,0.35);font-weight:700;">
-              🧪 Beta Restrito
-            </span>
-            {% if (me.username or '')|lower in ['jam', 'fauzer'] %}
-              <a href="{{ url_for('users') }}" class="btn sm" style="font-size:10.5px;padding:2px 8px;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-                👥 Delegar testador
-              </a>
-            {% endif %}
-            <span class="badge" id="schedActiveBadge" style="font-size:11px;padding:3px 9px;border-radius:100px;font-weight:700;{% if campaign_schedule and campaign_schedule.schedule_enabled %}background:rgba(0,229,153,0.15);color:#00e599;border:1px solid rgba(0,229,153,0.35);{% else %}background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.35);{% endif %}">
-              {{ '🟢 Agendamento 24/7 Ativo' if campaign_schedule and campaign_schedule.schedule_enabled else '⚪ Agendamento Desativado' }}
-            </span>
-          </div>
-          <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
-            Ao ativar o modo promocional, todos os veículos em <strong>/outlet</strong> e <strong>/atacado</strong> herdam automaticamente a Capa Promocional cadastrada no Showroom. Produtos sem capa promo mantêm a capa atemporal sem quebrar.
-          </p>
-        </div>
-        <div>
-          <button type="button" class="btn primary sm" onclick="saveCampaignSchedule()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;font-weight:700;">
-            💾 Salvar Agendamento
-          </button>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:12px;align-items:end;">
-        <div>
-          <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Nome da Campanha:</label>
-          <input type="text" id="campaignName" class="form-input" style="width:100%;font-size:12.5px;padding:6px 10px;" value="{{ campaign_schedule.campaign_name if campaign_schedule and campaign_schedule.campaign_name else 'Black November MAJ' }}" placeholder="Ex: Black November MAJ">
-        </div>
-
-        <div>
-          <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Data/Hora de Início:</label>
-          <input type="datetime-local" id="campaignStartAt" class="form-input" style="width:100%;font-size:12px;padding:6px 8px;" value="{{ campaign_schedule.start_at if campaign_schedule and campaign_schedule.start_at else '' }}">
-        </div>
-
-        <div>
-          <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Data/Hora de Término:</label>
-          <input type="datetime-local" id="campaignEndAt" class="form-input" style="width:100%;font-size:12px;padding:6px 8px;" value="{{ campaign_schedule.end_at if campaign_schedule and campaign_schedule.end_at else '' }}">
-        </div>
-
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;">
-          <input type="checkbox" id="campaignScheduleEnabled" {% if campaign_schedule and campaign_schedule.schedule_enabled %}checked{% endif %} style="width:18px;height:18px;cursor:pointer;">
-          <label for="campaignScheduleEnabled" style="font-size:12px;font-weight:700;color:var(--text);cursor:pointer;margin:0;">
-            Ativar Troca Automática 24/7 no Período
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chave Geral de Banners em Massa + Edição Individual -->
-    {% set promo_ready_count = (active_models|selectattr('promo_banner_image')|list)|length %}
-    {% set promo_active_count = (active_models|selectattr('effective_banner_type', 'equalto', 'promocional')|list)|length %}
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding:14px 18px;margin-bottom:18px;border-radius:12px;background:var(--bg);border:1px solid var(--line);">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <strong style="font-size:14px;color:var(--text);">🖼️ Chave Geral de Banners (Todos os Veículos Ativos)</strong>
-          <span class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;background:rgba(255,183,3,0.16);color:#ffb703;border:1px solid rgba(255,183,3,0.35);font-weight:700;">
-            ⚡ {{ promo_active_count }}/{{ active_models|length }} em Banner Promo ({{ promo_ready_count }}/{{ active_models|length }} com 2º banner cadastrado)
-          </span>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-          Altere todos os veículos ativos em 1 comando ou clique na tag <strong>🏛️ ATEMPORAL / ⚡ PROMO</strong> de cada veículo abaixo para alternar individualmente.
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <button type="button" onclick="setGlobalImageMode('atemporal')" class="btn sm" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-weight:800;border-radius:9px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 18px rgba(0,229,153,0.45);transform:scale(1.02);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
-          {% if global_image_mode != 'promocional' %}✅ {% endif %}🏛️ Mudar Todos para Banner Atemporal
-        </button>
-        <button type="button" onclick="setGlobalImageMode('promocional')" class="btn sm" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;font-weight:800;border-radius:9px;cursor:pointer;transition:all 0.2s ease;{% if global_image_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 18px rgba(255,183,3,0.45);transform:scale(1.02);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.55;{% endif %}">
-          {% if global_image_mode == 'promocional' %}✅ {% endif %}⚡ Mudar Todos para Banner Promocional
-        </button>
-      </div>
-    </div>
 
     <!-- Abas de Seleção de Modo do Menu (Categoria vs Livre) -->
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:14px;">
@@ -394,6 +322,13 @@ input:checked + .toggle-slider:before { transform:translateX(20px); }
 </div>
 
 <!-- ==============================================
+     SETOR BANNERS: BANNERS & CAMPANHAS POR CANAL
+     ============================================== -->
+<div id="sectorBanners" class="showroom-sector-pane" style="display:none;">
+  {% include "showroom/admin_channel_banners_panel.html" %}
+</div>
+
+<!-- ==============================================
      SETOR 2: PROMOÇÃO BLACK NOVEMBER MAJ
      ============================================== -->
 <div id="sectorPromo" class="showroom-sector-pane" style="display:none;">
@@ -413,50 +348,6 @@ window.SHOWROOM_ADMIN_CONFIG = {
   mode: '{{ menu_config.mode if menu_config and menu_config.mode else "category" }}',
   categoryOrder: {{ (menu_config.category_order if menu_config and menu_config.category_order else ['Scooter', 'Bike']) | tojson }}
 };
-
-async function saveCampaignSchedule() {
-  const payload = {
-    campaign_name: (document.getElementById('campaignName').value || '').trim(),
-    start_at: document.getElementById('campaignStartAt').value,
-    end_at: document.getElementById('campaignEndAt').value,
-    schedule_enabled: document.getElementById('campaignScheduleEnabled').checked
-  };
-  try {
-    const res = await fetch('/api/campaign/schedule', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Falha ao salvar agendamento.');
-    alert('Configurações da campanha salvas com sucesso!');
-    window.location.reload();
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-async function setGlobalImageMode(mode) {
-  if (window.MOnePreloader) {
-    window.MOnePreloader.show(
-      mode === 'promocional' ? 'Ativando Banners Promocionais em todo o Showroom...' : 'Ativando Banners Atemporais em todo o Showroom...',
-      'SHOWROOM MAJ',
-      true
-    );
-  }
-  try {
-    const res = await fetch('/api/models/global-image-mode', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode })
-    });
-    if (!res.ok) throw new Error('Falha ao alternar modo global de imagens.');
-    window.location.reload();
-  } catch (err) {
-    if (window.MOnePreloader) window.MOnePreloader.hide();
-    alert(err.message);
-  }
-}
 </script>
 <script src="/static/js/showroom-admin.js"></script>
 {% include "showroom/modal_model_form.html" %}

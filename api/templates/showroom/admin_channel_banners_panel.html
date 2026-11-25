@@ -1,0 +1,157 @@
+<!-- Painel de Gestão de Banners & Campanhas Multicanal (templates/showroom/admin_channel_banners_panel.html) -->
+<!-- Controle Independente por Canal Comercial: Showroom, Atacado e Outlet -->
+<div class="panel" style="padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+
+  <!-- Cabeçalho Executivo -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:16px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:24px;">⚡</span>
+        <strong style="font-size:16px;color:var(--text);">Banners & Campanhas por Canal Comercial</strong>
+        <span class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;background:rgba(147,51,234,0.15);color:#a855f7;border:1px solid rgba(147,51,234,0.35);font-weight:700;">
+          🧪 Beta Restrito
+        </span>
+        {% if (me.username or '')|lower in ['jam', 'fauzer'] %}
+          <a href="{{ url_for('users') }}" class="btn sm" style="font-size:11px;padding:3px 9px;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+            👥 Delegar testador
+          </a>
+        {% endif %}
+      </div>
+      <p style="margin:6px 0 0;font-size:12.5px;color:var(--text-muted);">
+        Alterne entre o <strong>Banner Atemporal</strong> (institucional limpo) e o <strong>Banner Promocional</strong> (Black November / Campanhas com tarja) de forma 100% independente para cada canal, reduzindo o processamento e garantindo autonomia comercial.
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button type="button" onclick="setChannelBannerMode('all', 'atemporal')" class="btn sm secondary" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-weight:700;">
+        🏛️ Todos: Atemporal
+      </button>
+      <button type="button" onclick="setChannelBannerMode('all', 'promocional')" class="btn sm secondary" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-weight:700;">
+        ⚡ Todos: Promocional
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid com os 3 Cards de Controle Independente por Canal -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:24px;">
+
+    <!-- CANAL 1: SHOWROOM -->
+    {% set show_mode = channel_modes.showroom if channel_modes and channel_modes.showroom else 'atemporal' %}
+    <div class="channel-card" id="cardChannelShowroom" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;gap:14px;transition:all 0.2s ease;">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">🛵</span>
+            <strong style="font-size:14px;color:var(--text);">Mostruário & Showroom</strong>
+          </div>
+          <span id="badgeChannelShowroom" class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;font-weight:800;{% if show_mode == 'promocional' %}background:rgba(255,183,3,0.18);color:#d97706;border:1px solid rgba(255,183,3,0.4);{% else %}background:rgba(0,229,153,0.18);color:#059669;border:1px solid rgba(0,229,153,0.4);{% endif %}">
+            {{ '⚡ PROMOCIONAL' if show_mode == 'promocional' else '🏛️ ATEMPORAL' }}
+          </span>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:0;">
+          Vitrine imersiva dos modelos (<code>/show-room</code>). Banners panorâmicos 16:9 na página inicial e nas páginas individuais de cada veículo.
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px;">
+        <button type="button" id="btnShowroomAtemporal" onclick="setChannelBannerMode('showroom', 'atemporal')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if show_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 12px rgba(0,229,153,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          🏛️ Atemporal
+        </button>
+        <button type="button" id="btnShowroomPromo" onclick="setChannelBannerMode('showroom', 'promocional')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if show_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 12px rgba(255,183,3,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          ⚡ Promocional
+        </button>
+      </div>
+    </div>
+
+    <!-- CANAL 2: ATACADO -->
+    {% set atacado_mode = channel_modes.atacado if channel_modes and channel_modes.atacado else 'atemporal' %}
+    <div class="channel-card" id="cardChannelAtacado" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;gap:14px;transition:all 0.2s ease;">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">🏢</span>
+            <strong style="font-size:14px;color:var(--text);">Catálogo Atacado B2B</strong>
+          </div>
+          <span id="badgeChannelAtacado" class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;font-weight:800;{% if atacado_mode == 'promocional' %}background:rgba(255,183,3,0.18);color:#d97706;border:1px solid rgba(255,183,3,0.4);{% else %}background:rgba(0,229,153,0.18);color:#059669;border:1px solid rgba(0,229,153,0.4);{% endif %}">
+            {{ '⚡ PROMOCIONAL' if atacado_mode == 'promocional' else '🏛️ ATEMPORAL' }}
+          </span>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:0;">
+          Portal comercial de lojistas e revenda com CNPJ (<code>/atacado</code>). Define a thumb dos cards de produtos do atacado.
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px;">
+        <button type="button" id="btnAtacadoAtemporal" onclick="setChannelBannerMode('atacado', 'atemporal')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if atacado_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 12px rgba(0,229,153,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          🏛️ Atemporal
+        </button>
+        <button type="button" id="btnAtacadoPromo" onclick="setChannelBannerMode('atacado', 'promocional')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if atacado_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 12px rgba(255,183,3,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          ⚡ Promocional
+        </button>
+      </div>
+    </div>
+
+    <!-- CANAL 3: OUTLET -->
+    {% set outlet_mode = channel_modes.outlet if channel_modes and channel_modes.outlet else 'atemporal' %}
+    <div class="channel-card" id="cardChannelOutlet" style="padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--bg);display:flex;flex-direction:column;justify-content:space-between;gap:14px;transition:all 0.2s ease;">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;">🏷️</span>
+            <strong style="font-size:14px;color:var(--text);">Catálogo Outlet MAJ</strong>
+          </div>
+          <span id="badgeChannelOutlet" class="badge" style="font-size:11px;padding:3px 9px;border-radius:100px;font-weight:800;{% if outlet_mode == 'promocional' %}background:rgba(255,183,3,0.18);color:#d97706;border:1px solid rgba(255,183,3,0.4);{% else %}background:rgba(0,229,153,0.18);color:#059669;border:1px solid rgba(0,229,153,0.4);{% endif %}">
+            {{ '⚡ PROMOCIONAL' if outlet_mode == 'promocional' else '🏛️ ATEMPORAL' }}
+          </span>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:0;">
+          Varejo e desova de lotes exclusivos (<code>/outlet</code>). Se o item tiver foto própria cadastrada no painel, a foto nativa prevalece.
+        </p>
+      </div>
+      <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:12px;">
+        <button type="button" id="btnOutletAtemporal" onclick="setChannelBannerMode('outlet', 'atemporal')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if outlet_mode != 'promocional' %}background:#00e599;color:#000;border:2px solid #00e599;box-shadow:0 0 12px rgba(0,229,153,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          🏛️ Atemporal
+        </button>
+        <button type="button" id="btnOutletPromo" onclick="setChannelBannerMode('outlet', 'promocional')" class="btn sm" style="flex:1;padding:8px 10px;font-size:11.5px;font-weight:800;border-radius:8px;{% if outlet_mode == 'promocional' %}background:#ffb703;color:#000;border:2px solid #ffb703;box-shadow:0 0 12px rgba(255,183,3,0.35);{% else %}background:var(--card);color:var(--text-muted);border:1px dashed var(--line);opacity:0.6;{% endif %}">
+          ⚡ Promocional
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Automação 24/7 & Agendador Automático -->
+  <div style="padding:16px 20px;border-radius:12px;background:var(--bg);border:1px solid rgba(0,229,153,0.35);box-shadow:0 4px 18px rgba(0,229,153,0.06);">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">🕒</span>
+        <strong style="font-size:14px;color:var(--text);">Agendamento Automático 24/7 (Troca por Data/Hora)</strong>
+        <span class="badge" id="schedActiveBadge" style="font-size:11px;padding:3px 9px;border-radius:100px;font-weight:700;{% if campaign_schedule and campaign_schedule.schedule_enabled %}background:rgba(0,229,153,0.15);color:#00e599;border:1px solid rgba(0,229,153,0.35);{% else %}background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.35);{% endif %}">
+          {{ '🟢 Agendamento 24/7 Ativo' if campaign_schedule and campaign_schedule.schedule_enabled else '⚪ Agendamento Desativado' }}
+        </span>
+      </div>
+      <button type="button" class="btn primary sm" onclick="saveCampaignSchedule()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;font-weight:700;">
+        💾 Salvar Agendamento
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:12px;align-items:end;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Nome da Campanha:</label>
+        <input type="text" id="campaignName" class="form-input" style="width:100%;font-size:12.5px;padding:6px 10px;" value="{{ campaign_schedule.campaign_name if campaign_schedule and campaign_schedule.campaign_name else 'Black November MAJ' }}" placeholder="Ex: Black November MAJ">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Data/Hora de Início:</label>
+        <input type="datetime-local" id="campaignStartAt" class="form-input" style="width:100%;font-size:12px;padding:6px 8px;" value="{{ campaign_schedule.start_at if campaign_schedule and campaign_schedule.start_at else '' }}">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text);display:block;margin-bottom:4px;">Data/Hora de Término:</label>
+        <input type="datetime-local" id="campaignEndAt" class="form-input" style="width:100%;font-size:12px;padding:6px 8px;" value="{{ campaign_schedule.end_at if campaign_schedule and campaign_schedule.end_at else '' }}">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;">
+        <input type="checkbox" id="campaignScheduleEnabled" {% if campaign_schedule and campaign_schedule.schedule_enabled %}checked{% endif %} style="width:18px;height:18px;cursor:pointer;">
+        <label for="campaignScheduleEnabled" style="font-size:12px;font-weight:700;color:var(--text);cursor:pointer;margin:0;">
+          Ativar Troca Automática no Período
+        </label>
+      </div>
+    </div>
+  </div>
+
+</div>
