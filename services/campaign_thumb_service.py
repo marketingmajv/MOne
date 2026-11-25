@@ -163,9 +163,9 @@ def resolve_effective_thumb(
 ) -> Tuple[str, bool, bool]:
     """
     Cascata Inteligente de Fallback:
-    1. Se Modo Promo -> Capa Promo do Showroom (se existir).
-    2. Fallback -> Capa Atemporal do Showroom (se existir).
-    3. Fallback -> Imagem nativa (image_main) do próprio canal.
+    1. Se Modo Promo -> Capa Promo do Showroom (se existir banner promocional dedicado).
+    2. Imagem nativa (image_main) cadastrada no canal (se existir).
+    3. Fallback inteligente -> Capa Atemporal do Showroom / Cutout (se existir e não houver foto nativa).
     Retorna: (url_resolvida, is_promo_thumb, is_inherited_from_showroom).
     """
     raw_slug = str(item.get("slug") or "").strip().lower()
@@ -179,12 +179,18 @@ def resolve_effective_thumb(
     native_img = str(item.get("image_main") or "").strip()
 
     if sh_model:
-        banner_atemp = str(sh_model.get("banner_image") or sh_model.get("cutout_image") or "").strip()
         banner_promo = str(sh_model.get("promo_banner_image") or "").strip()
+        banner_atemp = str(sh_model.get("banner_image") or sh_model.get("cutout_image") or "").strip()
 
+        # 1. Se estiver em campanha promocional ativa e o showroom tiver capa promocional dedicada
         if active_mode == "promocional" and banner_promo:
             return (banner_promo, True, True)
 
+        # 2. Se o item possui foto própria cadastrada/customizada no canal, respeita a foto nativa
+        if native_img:
+            return (native_img, False, False)
+
+        # 3. Fallback para showroom somente quando não houver imagem nativa
         if banner_atemp:
             return (banner_atemp, False, True)
 

@@ -17,19 +17,9 @@ function parseCurrencyNum(val) {
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : num;
 }
-
-function formatBrlString(numVal) {
-  const n = Number(numVal) || 0;
-  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function computeInstallment12(priceNum) {
-  return (!priceNum || priceNum <= 0) ? 0 : Math.round(((priceNum * 1.1013216) / 12) * 100) / 100;
-}
-
-function computeInstallment18(priceNum) {
-  return (!priceNum || priceNum <= 0) ? 0 : Math.round(((priceNum * 1.1437722) / 18) * 100) / 100;
-}
+const formatBrlString = n => 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const computeInstallment12 = p => (!p || p <= 0) ? 0 : Math.round(((p * 1.1013216) / 12) * 100) / 100;
+const computeInstallment18 = p => (!p || p <= 0) ? 0 : Math.round(((p * 1.1437722) / 18) * 100) / 100;
 
 function syncColorPricesHiddenInput() {
   const hidden = document.getElementById('outlet_form_color_prices_json');
@@ -237,7 +227,7 @@ function openOutletEditModal(id) {
   ensureMainColorVariation(false);
   renderColorPricesEditor();
 
-  CURRENT_IMAGE_MAIN = item.image_main || '';
+  CURRENT_IMAGE_MAIN = item.original_image_main || item.image_main || '';
   let gal = item.images_gallery || [];
   if (typeof gal === 'string') {
     try { gal = JSON.parse(gal); } catch (e) { gal = []; }
@@ -256,6 +246,9 @@ function renderGalleryPreview() {
   const container = document.getElementById('outlet_gallery_preview_container');
   const mainInput = document.getElementById('outlet_form_image_main');
   const galleryInput = document.getElementById('outlet_form_images_gallery');
+  if (CURRENT_GALLERY.length > 0 && (!CURRENT_IMAGE_MAIN || !CURRENT_GALLERY.includes(CURRENT_IMAGE_MAIN))) {
+    CURRENT_IMAGE_MAIN = CURRENT_GALLERY[0];
+  }
   if (mainInput) mainInput.value = CURRENT_IMAGE_MAIN;
   if (galleryInput) galleryInput.value = JSON.stringify(CURRENT_GALLERY);
   if (!container) return;
@@ -387,8 +380,13 @@ function handleOutletGalleryUpload(input) {
         canvas.height = height;
         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.50);
-        CURRENT_GALLERY.push(compressedDataUrl);
-        if (!CURRENT_IMAGE_MAIN) CURRENT_IMAGE_MAIN = compressedDataUrl;
+        if (totalFiles === 1) {
+          CURRENT_IMAGE_MAIN = compressedDataUrl;
+          CURRENT_GALLERY.unshift(compressedDataUrl);
+        } else {
+          CURRENT_GALLERY.push(compressedDataUrl);
+          if (!CURRENT_IMAGE_MAIN) CURRENT_IMAGE_MAIN = compressedDataUrl;
+        }
 
         processedCount++;
         if (processedCount === totalFiles) {
@@ -396,7 +394,9 @@ function handleOutletGalleryUpload(input) {
           const totalKb = Math.round(JSON.stringify(CURRENT_GALLERY).length / 1024);
           if (statusDiv) {
             statusDiv.style.color = '#00cc88';
-            statusDiv.textContent = `✓ ${CURRENT_GALLERY.length} foto(s) na galeria (Tamanho total: ~${totalKb} KB - Otimizado para Vercel)`;
+            statusDiv.textContent = totalFiles === 1
+              ? `✓ Foto definida como Capa Principal ⭐ (~${totalKb} KB)`
+              : `✓ ${CURRENT_GALLERY.length} foto(s) na galeria (~${totalKb} KB)`;
           }
           if (saveBtn) {
             saveBtn.disabled = false;
@@ -465,13 +465,12 @@ async function toggleOutletBestSeller(itemId, btn) {
 
 function maskPhoneInput(val) {
   if (!val) return '';
-  let d = val.replace(/\D/g, '');
+  const d = val.replace(/\D/g, '');
   if (!d) return '';
   if (d.length <= 2) return '+' + d;
   if (d.length <= 4) return '+' + d.slice(0, 2) + ' (' + d.slice(2);
   if (d.length <= 9) return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4);
-  if (d.length <= 13) return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4, d.length - 4) + '-' + d.slice(d.length - 4);
-  return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + d.slice(4, 9) + '-' + d.slice(9, 13);
+  return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + (d.length <= 13 ? d.slice(4, d.length - 4) + '-' + d.slice(d.length - 4) : d.slice(4, 9) + '-' + d.slice(9, 13));
 }
 
 function outletAdmin() {
