@@ -119,28 +119,35 @@
           <button type="button" @click="aiUpdateNotice = false" style="background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
         </div>
 
-        <!-- Barra de 3 Abas Simétricas (CSS Grid Seguro com minmax(0, 1fr)) -->
-        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 18px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); width: 100%; box-sizing: border-box;">
+        <!-- Barra de 4 Abas Simétricas (CSS Grid Seguro com minmax(0, 1fr)) -->
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 10px 18px; background: var(--panel2, #1e293b); border-bottom: 1px solid var(--line, #334155); width: 100%; box-sizing: border-box;">
           <button type="button"
                   class="master-tab-btn"
                   :class="{ 'active': activeTab === 'midia' }"
                   @click="activeTab = 'midia'"
                   title="Identificação e Mídia Canônica">
-            📸 1. Identificação & Mídia
+            📸 1. Mídia & Dados
           </button>
           <button type="button"
                   class="master-tab-btn"
                   :class="{ 'active': activeTab === 'specs' }"
                   @click="activeTab = 'specs'"
                   title="Ficha Técnica Canônica">
-            ⚙️ 2. Ficha Técnica Ouro
+            ⚙️ 2. Ficha Técnica
           </button>
           <button type="button"
                   class="master-tab-btn"
                   :class="{ 'active': activeTab === 'copys' }"
                   @click="activeTab = 'copys'"
                   title="Copys Contextuais por Canal">
-            ✍️ 3. Copys por Canal
+            ✍️ 3. Copys & Textos
+          </button>
+          <button type="button"
+                  class="master-tab-btn"
+                  :class="{ 'active': activeTab === 'cores' }"
+                  @click="activeTab = 'cores'"
+                  title="Cores & Variações">
+            🎨 4. Cores & Variações
           </button>
         </div>
 
@@ -149,6 +156,7 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="product_id" :value="form.id">
           <input type="hidden" name="specs_json" id="master_form_specs_json">
+          <input type="hidden" name="colors" :value="form.colors">
           <input type="hidden" name="return_to" value="{{ request.path }}">
           <input type="hidden" name="sync_flags_present" value="1">
 
@@ -348,6 +356,75 @@
                 🏛️ Copy Showroom (Conceito Institucional da Marca & Ergonomia)
               </label>
               <textarea name="copy_showroom" x-model="form.copy_showroom" rows="3" class="form-input" style="width: 100%;"></textarea>
+            </div>
+          </div>
+
+          <!-- ABA 4: CORES & VARIAÇÕES -->
+          <div x-show="activeTab === 'cores'">
+            <div style="padding: 12px 16px; border-radius: 10px; background: rgba(0, 204, 136, 0.08); border: 1px solid rgba(0, 204, 136, 0.25); margin-bottom: 16px; font-size: 0.8rem; color: var(--text);">
+              🎨 <strong>Gerenciador de Cores Oficiais</strong>: Cadastre as cores disponíveis para este modelo. Essas cores são sincronizadas automaticamente com o catálogo de <strong>Atacado B2B</strong> e exibidas no modal interno para os lojistas.
+            </div>
+
+            <!-- Campo de Inserção Rápida de Tags/Chips -->
+            <div style="background: var(--panel2, #1e293b); border: 1px solid var(--line, #334155); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+              <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text);">
+                Adicionar Nova Cor (ou cole cores separadas por vírgula):
+              </label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text"
+                       x-model="newColorInput"
+                       @keydown.enter.prevent="addColor()"
+                       placeholder="Ex: Bege com Vinho, Pérola, Verde..."
+                       class="form-input"
+                       style="flex: 1; font-size: 0.88rem;">
+                <button type="button"
+                        class="btn primary"
+                        @click="addColor()"
+                        style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                  <span>➕ Adicionar</span>
+                </button>
+              </div>
+              <small style="font-size: 0.72rem; color: var(--muted, #94a3b8); display: block; margin-top: 6px;">
+                Dica: Pressione <strong>Enter</strong> ou clique em <strong>Adicionar</strong>. Você também pode colar múltiplos nomes separados por vírgula.
+              </small>
+            </div>
+
+            <!-- Lista de Chips / Tags Cadastradas -->
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--text); margin: 0;">
+                  Cores Cadastradas (<span x-text="colorTags.length"></span>)
+                </label>
+                <button type="button"
+                        x-show="colorTags.length > 0"
+                        @click="colorTags = []; syncColorsString();"
+                        class="btn sm"
+                        style="color: #ef4444; font-size: 0.72rem; padding: 2px 8px; background: transparent; border: 1px solid rgba(239, 68, 68, 0.3);">
+                  Limpar todas
+                </button>
+              </div>
+
+              <!-- Mensagem quando vazio -->
+              <div x-show="colorTags.length === 0" style="padding: 24px; text-align: center; border: 1px dashed var(--line, #334155); border-radius: 10px; color: var(--muted, #94a3b8); font-size: 0.82rem;">
+                Nenhuma cor cadastrada para este produto.<br>
+                <small style="opacity: 0.7;">No modal do Atacado, o bloco de cores permanecerá oculto enquanto vazio.</small>
+              </div>
+
+              <!-- Grid de Tags/Chips Dinâmicos -->
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;" x-show="colorTags.length > 0">
+                <template x-for="(tag, idx) in colorTags" :key="idx">
+                  <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 204, 136, 0.12); border: 1px solid rgba(0, 204, 136, 0.35); color: var(--text, #f8fafc); padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #00cc88; display: inline-block;"></span>
+                    <span x-text="tag"></span>
+                    <button type="button"
+                            @click="removeColor(idx)"
+                            style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0; margin-left: 2px; font-size: 1rem; line-height: 1; display: flex; align-items: center;"
+                            title="Remover cor">
+                      &times;
+                    </button>
+                  </div>
+                </template>
+              </div>
             </div>
           </div>
 

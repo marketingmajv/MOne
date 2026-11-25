@@ -126,14 +126,18 @@ def propagate_product_to_channels(
                     update_fields.append("image_main = ?")
                     params.append(img_main)
 
+                if prod.get("colors"):
+                    update_fields.append("color = ?")
+                    params.append(prod["colors"])
+
                 params.append(at_id)
                 run_exec(conn, f"UPDATE atacado_items SET {', '.join(update_fields)} WHERE id = ?", tuple(params))
                 channels_updated.append("Atacado B2B")
             else:
                 # Cria novo item no Atacado B2B se não existir
                 run_exec(conn, """
-                    INSERT INTO atacado_items (slug, name, category, price_original, price_outlet, price_atacado_plus, specs_json, description, image_main, images_gallery, status, stock_qty, badge, location)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO atacado_items (slug, name, category, price_original, price_outlet, price_atacado_plus, specs_json, description, image_main, images_gallery, status, stock_qty, badge, location, color)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     at_slug,
                     prod["name"],
@@ -148,7 +152,8 @@ def propagate_product_to_channels(
                     prod.get("status") or "active",
                     prod.get("atacado_stock_qty") or 0,
                     "EXCLUSIVO CNPJ",
-                    "GALPÃO M-ONE / GALPÃO MAJ NOVO"
+                    "GALPÃO M-ONE / GALPÃO MAJ NOVO",
+                    prod.get("colors") or ""
                 ))
                 channels_updated.append("Atacado B2B (Novo)")
 

@@ -100,6 +100,32 @@ function atacadoV3App() {
       return [...new Set([item.image_main, ...gal].filter(Boolean))];
     },
 
+    getItemColors(item) {
+      if (!item) return [];
+      const raw = item.color || "";
+      if (!raw || raw.toLowerCase().includes("conforme lote") || raw.toLowerCase().includes("sob consulta")) {
+        return [];
+      }
+      return raw.split(",").map(c => c.trim()).filter(Boolean);
+    },
+
+    getColorHex(colorName) {
+      const c = (colorName || "").toLowerCase().trim();
+      if (c.includes("bege com vinho") || c.includes("vinho")) return "#800020";
+      if (c.includes("pérola") || c.includes("perola")) return "#eae6df";
+      if (c.includes("verde")) return "#2e7d32";
+      if (c.includes("bege")) return "#d4b996";
+      if (c.includes("branco") || c.includes("branca")) return "#f8fafc";
+      if (c.includes("preto") || c.includes("preta")) return "#1e293b";
+      if (c.includes("cinza") || c.includes("silver") || c.includes("titânio") || c.includes("titanio")) return "#94a3b8";
+      if (c.includes("azul") || c.includes("blue")) return "#38bdf8";
+      if (c.includes("vermelho") || c.includes("vermelha")) return "#ef4444";
+      if (c.includes("amarelo") || c.includes("amarela") || c.includes("dourado") || c.includes("dourada")) return "#e5a93b";
+      if (c.includes("laranja")) return "#f97316";
+      if (c.includes("creme")) return "#fef3c7";
+      return "#00cc88";
+    },
+
     formatPrice(val) {
       if (!val) return "0,00";
       return Number(val).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

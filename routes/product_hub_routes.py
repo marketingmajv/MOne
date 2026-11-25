@@ -137,6 +137,7 @@ def save_product():
             "image_main": request.form.get("image_main", "").strip(),
             "images_gallery": gallery,
             "banner_widescreen": request.form.get("banner_widescreen", "").strip(),
+            "colors": request.form.get("colors", "").strip(),
             "sync_atacado": sync_atacado,
             "sync_outlet": sync_outlet,
             "sync_showroom": sync_showroom,

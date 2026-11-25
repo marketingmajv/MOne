@@ -68,6 +68,7 @@ def ensure_master_products_schema():
                 sync_atacado BOOLEAN DEFAULT TRUE,
                 sync_outlet BOOLEAN DEFAULT TRUE,
                 sync_showroom BOOLEAN DEFAULT TRUE,
+                colors TEXT,
                 notes TEXT,
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -75,6 +76,7 @@ def ensure_master_products_schema():
         """)
         try:
             conn.execute("ALTER TABLE master_products ADD COLUMN IF NOT EXISTS sync_showroom BOOLEAN DEFAULT TRUE")
+            conn.execute("ALTER TABLE master_products ADD COLUMN IF NOT EXISTS colors TEXT")
         except Exception:
             pass
         conn.execute("CREATE INDEX IF NOT EXISTS idx_master_products_slug ON master_products(slug)")
@@ -362,7 +364,8 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                     slug = ?, name = ?, category = ?, brand = ?, sku = ?, status = ?,
                     specs_json = ?, copy_showroom = ?, copy_atacado = ?, copy_outlet = ?,
                     image_main = ?, images_gallery = ?, banner_widescreen = ?,
-                    sync_atacado = ?, sync_outlet = ?, sync_showroom = ?, updated_at = CURRENT_TIMESTAMP
+                    sync_atacado = ?, sync_outlet = ?, sync_showroom = ?,
+                    colors = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (
                 target_slug, data.get("name"), data.get("category", "Mobilidade Elétrica"),
@@ -371,6 +374,7 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                 data.get("image_main", ""), final_gal, data.get("banner_widescreen", ""),
                 bool(data.get("sync_atacado", True)), bool(data.get("sync_outlet", True)),
                 bool(data.get("sync_showroom", True)),
+                data.get("colors", ""),
                 product_id
             ))
             res_id = product_id
@@ -380,8 +384,8 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                     slug, name, category, brand, sku, status,
                     specs_json, copy_showroom, copy_atacado, copy_outlet,
                     image_main, images_gallery, banner_widescreen,
-                    sync_atacado, sync_outlet, sync_showroom
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    sync_atacado, sync_outlet, sync_showroom, colors
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
             """, (
                 target_slug, data.get("name"), data.get("category", "Mobilidade Elétrica"),
@@ -389,7 +393,8 @@ def save_master_product(data: Dict[str, Any], product_id: Optional[int] = None) 
                 specs_str, data.get("copy_showroom", ""), data.get("copy_atacado", ""), data.get("copy_outlet", ""),
                 data.get("image_main", ""), gallery_str, data.get("banner_widescreen", ""),
                 bool(data.get("sync_atacado", True)), bool(data.get("sync_outlet", True)),
-                bool(data.get("sync_showroom", True))
+                bool(data.get("sync_showroom", True)),
+                data.get("colors", "")
             ))
             ret = cur.fetchone()
             res_id = ret["id"] if isinstance(ret, dict) else (ret[0] if ret else 0)
