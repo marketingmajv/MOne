@@ -145,7 +145,7 @@ def propagate_product_to_channels(
                     copy_at,
                     img_main,
                     gallery_str,
-                    "inactive",
+                    prod.get("status") or "active",
                     prod.get("atacado_stock_qty") or 0,
                     "EXCLUSIVO CNPJ",
                     "GALPÃO M-ONE / GALPÃO MAJ NOVO"

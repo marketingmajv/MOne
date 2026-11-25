@@ -33,6 +33,7 @@ app = Flask(
     template_folder=str(BASE_DIR / "templates"),
     static_folder=None,
 )
+app.url_map.strict_slashes = False
 
 tpl_search_dirs = [str(BASE_DIR / "templates")]
 api_tpl_dir = BASE_DIR / "api" / "templates"

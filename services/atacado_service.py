@@ -708,11 +708,22 @@ def sync_atacado_catalog() -> Dict[str, Any]:
             updated_models.append(model)
 
         # Limpar registros antigos/obsoletos que não pertencem ao catálogo unificado atual
-        active_slugs = [slugify(m) for m in updated_models]
+        # Regra Anti-Reset: Preservar produtos vinculados à Central de Produtos (master_products) e produtos ativos
+        active_slugs_set = set(slugify(m) for m in updated_models)
+        try:
+            mp_rows = run_exec(conn, "SELECT slug FROM master_products WHERE sync_atacado = true OR sync_atacado = 1").fetchall()
+            for mpr in mp_rows:
+                mp_slug = mpr["slug"] if isinstance(mpr, dict) else mpr[0]
+                if mp_slug:
+                    active_slugs_set.add(mp_slug)
+        except Exception as e:
+            logger.warning("Erro ao carregar slugs da Central de Produtos para proteção anti-reset: %s", e)
+
+        active_slugs = list(active_slugs_set)
         if active_slugs:
             is_pg = hasattr(conn, "conn") or type(conn).__name__ == "PGConnWrapper"
             placeholders = ", ".join(["%s" if is_pg else "?"] * len(active_slugs))
-            run_exec(conn, f"DELETE FROM atacado_items WHERE slug NOT IN ({placeholders})", tuple(active_slugs))
+            run_exec(conn, f"DELETE FROM atacado_items WHERE slug NOT IN ({placeholders}) AND status != 'active'", tuple(active_slugs))
             conn.commit()
 
     return {
