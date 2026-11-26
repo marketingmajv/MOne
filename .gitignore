@@ -26,5 +26,7 @@ api/static/images/*
 !api/static/images/custom_catalogs/**
 gogoro_*
 backup_*.json
+static/img/outlet/ENSAIO MAJ out 2026/
+static/img/outlet/ENSAIO*
 
 

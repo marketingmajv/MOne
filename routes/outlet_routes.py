@@ -272,10 +272,9 @@ def save_item():
             f = request.files["main_image_file"]
             if f and f.filename:
                 try:
-                    UPLOAD_OUTLET_DIR.mkdir(parents=True, exist_ok=True)
-                    safe_name = f"main_{slugify(data['name'])}_{secure_filename(f.filename)}"
-                    f.save(UPLOAD_OUTLET_DIR / safe_name)
-                    data["image_main"] = f"/static/img/outlet/uploads/{safe_name}"
+                    from services.image_optimizer_service import optimize_uploaded_file
+                    saved_webp = optimize_uploaded_file(f, UPLOAD_OUTLET_DIR, filename_prefix=f"main_{slugify(data['name'])}")
+                    data["image_main"] = f"/static/img/outlet/uploads/{saved_webp}"
                 except Exception as upload_err:
                     logger.warning("Falha ao salvar no disco (%s). Convertendo para Base64 Data URL.", upload_err)
                     try:

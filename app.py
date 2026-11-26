@@ -157,6 +157,18 @@ def serve_public_images(filename):
                     return send_file(str(target))
             except Exception:
                 pass
+    # Fallback automático para versão .webp se a URL solicitada for .jpg/.png
+    stem, ext = os.path.splitext(filename)
+    if ext.lower() in ('.jpg', '.jpeg', '.png'):
+        webp_name = stem + '.webp'
+        for base in bases:
+            for sub in subs:
+                target = base / sub / webp_name
+                try:
+                    if target.is_file():
+                        return send_file(str(target), mimetype='image/webp')
+                except Exception:
+                    pass
     return redirect(f"https://raw.githubusercontent.com/marketingmajv/MOne/main/public/images/{filename}")
 
 
@@ -176,6 +188,14 @@ def custom_static(filename):
     for c in candidates:
         if c.is_file():
             return send_from_directory(str(c.parent), c.name)
+    # Fallback automático para versão .webp se o arquivo pedido for .jpg/.png
+    stem, ext = os.path.splitext(filename)
+    if ext.lower() in ('.jpg', '.jpeg', '.png'):
+        webp_filename = stem + '.webp'
+        for c in candidates:
+            webp_c = c.parent / (c.stem + '.webp')
+            if webp_c.is_file():
+                return send_from_directory(str(webp_c.parent), webp_c.name, mimetype='image/webp')
     # Fallback seguro para GitHub Raw caso o arquivo esteja commitado mas não empacotado no bundle serverless efêmero
     if any(filename.startswith(p) for p in ("uploads/", "images/", "img/", "css/", "js/")):
         return redirect(f"https://raw.githubusercontent.com/marketingmajv/MOne/main/static/{filename}")

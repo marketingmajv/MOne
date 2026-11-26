@@ -335,12 +335,11 @@ def admin_atacado_save():
 
         uploaded_files = request.files.getlist("gallery_files")
         if uploaded_files:
+            from services.image_optimizer_service import optimize_uploaded_file
             for file in uploaded_files:
                 if file and file.filename:
-                    safe_name = f"{slugify(Path(file.filename).stem)}_{int(float(request.form.get('price_outlet') or 0))}.{file.filename.rsplit('.', 1)[-1].lower()}"
-                    dest = UPLOAD_ATACADO_DIR / safe_name
-                    file.save(dest)
-                    rel_path = f"/static/img/atacado/uploads/{safe_name}"
+                    saved_webp = optimize_uploaded_file(file, UPLOAD_ATACADO_DIR, filename_prefix=slugify(Path(file.filename).stem))
+                    rel_path = f"/static/img/atacado/uploads/{saved_webp}"
                     gallery_imgs.append(rel_path)
 
         main_img = request.form.get("image_main") or request.form.get("image_main_selected")

@@ -205,17 +205,16 @@ def api_upload_gallery():
         if not f or not f.filename:
             continue
         try:
-            safe_name = f"gal_{int(time.time())}_{secure_filename(f.filename)}"
-            dest = upload_dir / safe_name
-            f.save(dest)
+            from services.image_optimizer_service import optimize_uploaded_file
+            saved_webp = optimize_uploaded_file(f, upload_dir, filename_prefix="gal")
             api_up = base_dir / "api" / "static" / "uploads" / "products"
             if api_up.exists():
                 try:
                     import shutil
-                    shutil.copy2(dest, api_up / safe_name)
+                    shutil.copy2(upload_dir / saved_webp, api_up / saved_webp)
                 except Exception:
                     pass
-            saved_urls.append(f"/static/uploads/products/{safe_name}")
+            saved_urls.append(f"/static/uploads/products/{saved_webp}")
         except Exception:
             try:
                 f.seek(0)
