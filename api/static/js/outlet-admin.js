@@ -473,6 +473,8 @@ function maskPhoneInput(val) {
   return '+' + d.slice(0, 2) + ' (' + d.slice(2, 4) + ') ' + (d.length <= 13 ? d.slice(4, d.length - 4) + '-' + d.slice(d.length - 4) : d.slice(4, 9) + '-' + d.slice(9, 13));
 }
 
+function closeOutletModal() { closeModal('outletModal'); }
+
 function outletAdmin() {
   return {
     searchTable: '',
@@ -487,6 +489,7 @@ function outletAdmin() {
 Object.assign(window, {
   openOutletNewModal, openNewOutletModal: openOutletNewModal,
   openOutletEditModal, editOutletItem: openOutletEditModal,
+  closeOutletModal,
   setAsCoverPhoto, removePhotoFromGallery, handleOutletGalleryUpload,
   validateOutletFormPayload, toggleOutletOnDemand, toggleOutletBestSeller, maskPhoneInput, outletAdmin,
   toggleColorVariationActive, setMainColorVariation,

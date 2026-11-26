@@ -22,17 +22,22 @@ function closeModal(id) {
   }
 }
 
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('modal')) {
-    // Não interferir com modais reativos gerenciados pelo Alpine.js ou que bloqueiam clique fora
-    if (e.target.hasAttribute('data-no-backdrop-close') || e.target.hasAttribute('x-show') || e.target.hasAttribute('x-cloak') || e.target.hasAttribute('x-data') || e.target._x_dataStack) {
-      return;
-    }
-    e.target.classList.remove('show');
-    e.target.style.display = 'none';
-    if (typeof stopLiveCamera === 'function') {
-      stopLiveCamera(e.target);
-    }
+function closeOutletModal() {
+  closeModal('outletModal');
+}
+
+// Suporte global à tecla ESC em todos os modais administrativos
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const activeModals = document.querySelectorAll('.modal.show, .modal[style*="display: grid"], .modal[style*="display: block"], .modal[style*="display: flex"]');
+    activeModals.forEach(m => {
+      if (m.id) {
+        closeModal(m.id);
+      } else {
+        m.classList.remove('show');
+        m.style.display = 'none';
+      }
+    });
   }
 });
 

@@ -216,7 +216,7 @@
 
   <!-- Modal Executivo de Atendimento do Fauzer (Teleportado para body) -->
   <template x-teleport="body">
-    <div x-show="isDetailModalOpen" x-cloak @click.self="closeTicketDetails()" class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
+    <div x-show="isDetailModalOpen" x-cloak class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
       <div class="modal-card" @click.stop style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:840px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
         
         <!-- Cabeçalho do Modal -->

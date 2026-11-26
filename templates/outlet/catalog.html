@@ -299,13 +299,18 @@
   </section>
 
   <!-- Modal Interativo de Ficha Técnica e Galeria -->
-  <div class="outlet-modal-backdrop" x-show="modalOpen" x-cloak @click.self="modalOpen = false"
-    @keydown.escape.window="modalOpen = false">
+  <div class="outlet-modal-backdrop" x-show="modalOpen" x-cloak @click.self="closeModal()"
+    @keydown.escape.window="closeModal()">
 
     <div class="outlet-modal-box">
       <!-- Botão Fechar Fixo na Rolagem -->
-      <button type="button" class="modal-close-btn" @click="modalOpen = false"
-        aria-label="Fechar Modal">&times;</button>
+      <button type="button" class="modal-close-btn" @click="closeModal()"
+        aria-label="Fechar Modal" style="cursor: pointer; z-index: 9999;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
 
       <div class="modal-scroll-body">
         <template x-if="selectedItem">
@@ -491,6 +496,11 @@
         selectedItem: null,
         activeImage: '',
         selectedInstallment: 12,
+
+        closeModal() {
+          this.modalOpen = false;
+          this.selectedItem = null;
+        },
 
         filteredItems() {
           let result = this.items.filter(item => {
@@ -716,6 +726,19 @@
         }
         };
       }
+
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const root = document.querySelector('[x-data]');
+        if (root && root._x_dataStack && root._x_dataStack[0]) {
+          if (typeof root._x_dataStack[0].closeModal === 'function') {
+            root._x_dataStack[0].closeModal();
+          } else {
+            root._x_dataStack[0].modalOpen = false;
+          }
+        }
+      }
+    });
   </script>
 </body>
 

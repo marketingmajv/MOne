@@ -81,6 +81,44 @@ def scan_modals(content: str, rel_path: str):
                 "snippet": line.strip()
             })
 
+        # 3. Auditoria de Fechamento por Clique Fora (Permitido APENAS em Canais Públicos e Lightboxes)
+        is_public_channel = any(pub in rel_path for pub in [
+            "outlet/", "atacado/catalog_modal", "custom_catalog/", "showroom/catalog"
+        ])
+        is_image_lightbox = "closeLightbox" in line or "lightbox" in line.lower()
+        is_dropdown_popover = any(drop in line for drop in [
+            "columns-customizer", "openCols", "copyDropdownIndex", "carrierDropdown", "menuOpen"
+        ]) or ('x-data="{ open: false }"' in line and 'modal' not in line.lower())
+
+        if not is_public_channel and not is_image_lightbox and not is_dropdown_popover:
+            # Inline onclick com event.target === this
+            if re.search(r'onclick\s*=\s*["\'].*(event\.target|target)\s*===?\s*this', line, re.IGNORECASE):
+                critical_errors.append({
+                    "file": rel_path,
+                    "line": idx,
+                    "type": "ADMIN_MODAL_CLICK_OUTSIDE",
+                    "message": "Modal administrativo com fechamento por clique fora (onclick target===this). O fechamento deve ser restrito ao botão 'X', 'Cancelar' ou tecla ESC para evitar perda de dados.",
+                    "snippet": line.strip()
+                })
+            # Alpine @click.away ou @click.outside em cards/modais
+            if re.search(r'@click\.(away|outside)\s*=', line, re.IGNORECASE) and any(m in line for m in ["modal-card", "modal", "fecharModal", "closeModal", "= false"]):
+                critical_errors.append({
+                    "file": rel_path,
+                    "line": idx,
+                    "type": "ADMIN_MODAL_CLICK_OUTSIDE",
+                    "message": "Modal administrativo com fechamento por clique fora (@click.away/@click.outside). O fechamento deve ser restrito ao botão 'X', 'Cancelar' ou tecla ESC para evitar perda de dados.",
+                    "snippet": line.strip()
+                })
+            # Alpine @click.self no backdrop do modal
+            if re.search(r'@click\.self\s*=', line, re.IGNORECASE) and any(m in line for m in ["modal", "Modal", "close", "fechar", "= false"]):
+                critical_errors.append({
+                    "file": rel_path,
+                    "line": idx,
+                    "type": "ADMIN_MODAL_CLICK_OUTSIDE",
+                    "message": "Backdrop de modal administrativo com fechamento por clique fora (@click.self). Fechamento por clique fora é exclusivo para canais públicos e visualizadores lightbox.",
+                    "snippet": line.strip()
+                })
+
     return critical_errors, warnings
 
 

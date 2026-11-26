@@ -3,7 +3,7 @@
 {% for u in users %}
 {% set eff_perms = get_user_effective_permissions(u) %}
 
-<div class="modal" id="userPerms_{{ u.id }}" onclick="if(event.target === this) closeModal('userPerms_{{ u.id }}')">
+<div class="modal" id="userPerms_{{ u.id }}">
   <div class="modal-card" style="max-width: 680px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; background: var(--surface-card, #121722); border: 1px solid var(--border-subtle, rgba(255,255,255,0.12)); border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); overflow: hidden; padding: 0;">
     
     <!-- Modal Header (Fixo) -->

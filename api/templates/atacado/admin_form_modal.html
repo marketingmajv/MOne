@@ -352,8 +352,7 @@
            x-transition:leave-end="opacity-0"
            style="position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); padding: 16px;"
            @keydown.escape.window="if (feedbackModal.open) confirmFeedbackModal()"
-           @keydown.enter.window="if (feedbackModal.open) confirmFeedbackModal()"
-           @click.self="confirmFeedbackModal()">
+           @keydown.enter.window="if (feedbackModal.open) confirmFeedbackModal()">
 
         <div class="modal-card"
              style="background: var(--panel, #0f172a); border: 1px solid var(--line, #334155); border-radius: 16px; width: 100%; max-width: 480px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.85); overflow: hidden;">

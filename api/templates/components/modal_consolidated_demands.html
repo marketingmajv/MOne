@@ -15,7 +15,6 @@
       @keydown.escape.window="closeModal()"
       style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;"
       :style="isOpen ? 'display: flex;' : 'display: none;'"
-      @click.self="closeModal()"
     >
       <div
         class="modal-card eval-modal-card"
