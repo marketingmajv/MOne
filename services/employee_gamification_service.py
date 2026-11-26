@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from database import db
+from services.date_utils import format_brasilia_dt, get_brasilia_now
 from services.employee_reports_data import REPORTING_EMPLOYEES, get_reporting_employee_meta
 from services.employee_reports_service import _is_pg, ensure_reports_schema
 
@@ -108,7 +109,7 @@ def award_report_points(cycle_id: int, employee_key: str, status: str) -> int:
 def mark_report_reviewed(cycle_id: int, employee_key: str, reviewer_name: str) -> bool:
     """Registra o carimbo de confirmação e análise da diretoria/moderador."""
     ensure_gamification_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
     with db() as conn:
         pg = _is_pg(conn)
         ph = "%s" if pg else "?"
@@ -192,9 +193,9 @@ def get_employee_gamification_profile(employee_key: str) -> Dict[str, Any]:
             stage = 3
 
         rev_at = d.get("reviewed_at")
-        rev_at_fmt = rev_at.strftime("%d/%m às %H:%M") if hasattr(rev_at, "strftime") else (str(rev_at)[:16] if rev_at else "")
+        rev_at_fmt = format_brasilia_dt(rev_at, "%d/%m às %H:%M")
         sub_at = d.get("submitted_at")
-        sub_at_fmt = sub_at.strftime("%d/%m às %H:%M") if hasattr(sub_at, "strftime") else (str(sub_at)[:16] if sub_at else "")
+        sub_at_fmt = format_brasilia_dt(sub_at, "%d/%m às %H:%M")
 
         timeline.append({
             "cycle_id": d.get("cycle_id"),

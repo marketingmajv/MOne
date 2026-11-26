@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from database import db
+from services.date_utils import format_brasilia_dt, get_brasilia_now, to_brasilia_naive
 from services.employee_reports_data import (
     REPORTING_EMPLOYEES,
     generate_whatsapp_charge_url,
@@ -65,7 +66,7 @@ def ensure_reports_schema():
 def get_or_create_current_cycle() -> Dict[str, Any]:
     """Retorna o ciclo semanal ativo corrente ou cria um novo para a semana atual."""
     ensure_reports_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
     iso_year, iso_week, _ = now.isocalendar()
     cycle_code = f"{iso_year}-W{iso_week:02d}"
 
@@ -173,7 +174,7 @@ def get_all_employees_history_map() -> Dict[str, List[Dict[str, Any]]]:
                 ans = {}
             d["answers"] = ans
             sub = d.get("submitted_at")
-            d["submitted_at_fmt"] = sub.strftime("%d/%m/%Y às %H:%M") if hasattr(sub, "strftime") else (str(sub)[:16] if sub else "")
+            d["submitted_at_fmt"] = format_brasilia_dt(sub)
             k = (d.get("employee_key") or "").lower().strip()
             if k in history_map:
                 idx = len(history_map[k])
@@ -213,6 +214,7 @@ def get_employee_report(cycle_id: int, employee_key: str) -> Dict[str, Any]:
         if not row:
             return {}
         data = dict(row)
+        data["submitted_at_fmt"] = format_brasilia_dt(data.get("submitted_at"))
         if isinstance(data.get("answers_json"), str):
             try:
                 data["answers"] = json.loads(data["answers_json"])
@@ -236,7 +238,7 @@ def save_or_submit_report(
     if not meta:
         raise ValueError(f"Colaborador inválido: {employee_key}")
 
-    now = datetime.now()
+    now = get_brasilia_now()
     answers_str = json.dumps(answers, ensure_ascii=False)
 
     with db() as conn:
@@ -257,13 +259,8 @@ def save_or_submit_report(
             status = "draft"
             submitted_at = None
         else:
-            # Se for datetime parseado ou string
-            deadline_dt = deadline
-            if isinstance(deadline, str):
-                try:
-                    deadline_dt = datetime.fromisoformat(deadline.replace("T", " "))
-                except Exception:
-                    deadline_dt = now
+            # Normaliza deadline para Horário Oficial de Brasília
+            deadline_dt = to_brasilia_naive(deadline) or now
 
             if is_fauzer or now <= deadline_dt:
                 status = "submitted_on_time"
@@ -410,9 +407,7 @@ def get_cycle_submissions_summary(cycle_id: int) -> Dict[str, Any]:
             )
 
         # Formatação amigável de data e lista estruturada de perguntas com respostas
-        submitted_at_fmt = ""
-        if submitted_at:
-            submitted_at_fmt = submitted_at.strftime("%d/%m/%Y às %H:%M") if hasattr(submitted_at, "strftime") else str(submitted_at)
+        submitted_at_fmt = format_brasilia_dt(submitted_at)
 
         q_list = []
         for q in meta.get("questions", []):

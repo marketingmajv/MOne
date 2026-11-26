@@ -12,6 +12,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, render_template, request, session, url_for, redirect
 
 from routes.helpers import current_user, login_required
+from services.date_utils import format_brasilia_dt, get_brasilia_now, to_brasilia_naive
 from services.employee_docx_importer_service import process_docx_upload
 from services.employee_gamification_service import (
     award_report_points,
@@ -86,14 +87,8 @@ def meu_relatorio():
     edit_request_reason = report.get("edit_request_reason") or ""
 
     deadline_val = current_cycle.get("deadline")
-    deadline_dt = deadline_val
-    if isinstance(deadline_val, str):
-        try:
-            deadline_dt = datetime.fromisoformat(deadline_val.replace("T", " "))
-        except Exception:
-            deadline_dt = datetime.now()
-
-    now = datetime.now()
+    deadline_dt = to_brasilia_naive(deadline_val) or get_brasilia_now()
+    now = get_brasilia_now()
     is_editable = True
     if is_fauzer:
         is_editable = True
@@ -173,13 +168,8 @@ def api_meu_relatorio_status():
     is_editable = True
     if not is_fauzer:
         deadline_val = current_cycle.get("deadline")
-        deadline_dt = deadline_val
-        if isinstance(deadline_val, str):
-            try:
-                deadline_dt = datetime.fromisoformat(deadline_val.replace("T", " "))
-            except Exception:
-                deadline_dt = datetime.now()
-        if datetime.now() > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
+        deadline_dt = to_brasilia_naive(deadline_val) or get_brasilia_now()
+        if get_brasilia_now() > deadline_dt and report.get("status") in ("submitted_on_time", "submitted_late"):
             is_editable = False
         if report.get("reviewed_at"):
             is_editable = False

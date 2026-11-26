@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from database import db
+from services.date_utils import format_brasilia_dt, get_brasilia_now
 from services.employee_reports_service import _is_pg, ensure_reports_schema, get_employee_report
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def request_report_edit(cycle_id: int, employee_key: str, reason: str, user_id: 
     if not clean_reason:
         clean_reason = "Solicitação de ajuste de relatório"
 
-    now = datetime.now()
+    now = get_brasilia_now()
     with db() as conn:
         pg = _is_pg(conn)
         ph = "%s" if pg else "?"
@@ -148,7 +149,7 @@ def decide_report_edit_request(
     key = employee_key.lower().strip()
     status = "approved" if approved else "rejected"
     is_unlocked = bool(approved)
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)
@@ -190,7 +191,7 @@ def toggle_report_edit_unlock(cycle_id: int, employee_key: str, is_unlocked: boo
     """Ativa ou desativa diretamente a permissão de edição para um colaborador em um ciclo."""
     ensure_governance_schema()
     key = employee_key.lower().strip()
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)
@@ -213,7 +214,7 @@ def toggle_report_edit_unlock(cycle_id: int, employee_key: str, is_unlocked: boo
 def toggle_cycle_feedback_release_all(cycle_id: int, is_released: bool) -> bool:
     """Libera ou bloqueia as deliberações e feedbacks de diretoria para TODOS os colaboradores do ciclo."""
     ensure_governance_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)
@@ -237,7 +238,7 @@ def toggle_cycle_feedback_release_all(cycle_id: int, is_released: bool) -> bool:
 def toggle_cycle_edit_unlock_all(cycle_id: int, is_unlocked: bool) -> bool:
     """Libera ou bloqueia a edição para TODOS os colaboradores do ciclo em lote."""
     ensure_governance_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)
@@ -309,7 +310,7 @@ def set_employee_exemption(
     key = employee_key.lower().strip()
     reason_clean = (exemption_reason or "").strip()
     type_clean = (exemption_type or "licenca").strip().lower()
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)
@@ -377,7 +378,7 @@ def remove_employee_exemption(
     """Remove a justificativa/licença e restaura o status original do colaborador no ciclo."""
     ensure_governance_schema()
     key = employee_key.lower().strip()
-    now = datetime.now()
+    now = get_brasilia_now()
 
     with db() as conn:
         pg = _is_pg(conn)

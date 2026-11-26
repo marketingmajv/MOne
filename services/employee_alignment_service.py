@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from database import db
+from services.date_utils import format_brasilia_dt, get_brasilia_now
 from services.employee_desired_templates import get_employee_default_desired_map
 from services.employee_reports_data import REPORTING_EMPLOYEES, get_reporting_employee_meta
 from services.employee_reports_service import _is_pg, ensure_reports_schema, get_employee_report
@@ -238,7 +239,7 @@ def get_employee_evaluation_data(cycle_id: int, employee_key: str) -> Dict[str, 
 def save_desired_answers(cycle_id: int, employee_key: str, desired_answers: Dict[str, str]) -> Dict[str, Any]:
     """Salva as respostas desejadas customizadas pela Diretoria no ciclo."""
     ensure_alignment_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
     desired_json = json.dumps(desired_answers, ensure_ascii=False)
 
     with db() as conn:
@@ -282,7 +283,7 @@ def save_director_alignment(
 ) -> Dict[str, Any]:
     """Salva os comentários de alinhamento por pergunta e os acordos de Jam/Geysa e Fauzer no ciclo."""
     ensure_alignment_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
     comments_json = json.dumps(director_comments, ensure_ascii=False)
 
     with db() as conn:
@@ -361,7 +362,7 @@ REGRAS:
 def toggle_feedback_release(cycle_id: int, employee_key: str, is_released: bool) -> bool:
     """Ativa ou desativa a liberação da visualização das respostas desejadas e pontuação no portal do colaborador."""
     ensure_alignment_schema()
-    now = datetime.now()
+    now = get_brasilia_now()
     with db() as conn:
         pg = _is_pg(conn)
         placeholder = "%s" if pg else "?"
@@ -449,7 +450,7 @@ def evaluate_employee_with_gemini(cycle_id: int, employee_key: str) -> Dict[str,
     score_badge = eval_result.get("score_badge", "yellow")
     suggestions = eval_result.get("alignment_suggestions", {})
 
-    now = datetime.now()
+    now = get_brasilia_now()
     eval_json_str = json.dumps(eval_result, ensure_ascii=False)
     sug_json_str = json.dumps(suggestions, ensure_ascii=False)
 
