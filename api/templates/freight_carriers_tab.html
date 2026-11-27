@@ -202,6 +202,11 @@
 
         <!-- Bloco de Ações e Status (Alinhado à Direita) -->
         <div class="flex items-center gap-2.5 shrink-0" onclick="event.stopPropagation();">
+          {% if t.file_url %}
+          <a href="{{ t.file_url if t.file_url.startswith('http') else url_for('freight_data_source.freight_table_download', table_id=t.table_id) }}" target="_blank" rel="noopener noreferrer" class="carrier-audit-btn" style="text-decoration: none; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);" title="Abrir planilha no Google Planilhas">
+            <span>📊 Planilha Google</span>
+          </a>
+          {% endif %}
           {% if t.notes and ('Ausência' in t.notes or 'pendência' in (t.notes|lower) or 'atenção' in (t.notes|lower)) %}
             <button type="button" onclick="openTableDetailsModal({{ t.table_id }});" class="carrier-audit-btn" title="Ponto de atenção no relatório da IA — clique para visualizar">
               <span>📋 Ficha & Parecer IA</span>

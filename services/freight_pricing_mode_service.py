@@ -111,7 +111,7 @@ def resolve_freight_items_and_insurance(
         if p_id and db_conn:
             try:
                 cur = db_conn.execute(
-                    "SELECT id, name, wholesale_price, retail_price FROM products WHERE id = %s",
+                    "SELECT id, name, wholesale_price, retail_price, weight_kg, length_cm, width_cm, height_cm FROM products WHERE id = %s",
                     (int(p_id),),
                 )
                 p = cur.fetchone()
@@ -121,10 +121,26 @@ def resolve_freight_items_and_insurance(
                         p_name = p_dict.get("name") or p_name
                         w_price = float(p_dict.get("wholesale_price") or 0)
                         r_price = float(p_dict.get("retail_price") or 0)
+                        if w <= 0:
+                            w = float(p_dict.get("weight_kg") or 0)
+                        if l_cm <= 0:
+                            l_cm = float(p_dict.get("length_cm") or 0)
+                        if w_dim <= 0:
+                            w_dim = float(p_dict.get("width_cm") or 0)
+                        if h_cm <= 0:
+                            h_cm = float(p_dict.get("height_cm") or 0)
                     else:
                         p_name = p_dict[1] or p_name
                         w_price = float(p_dict[2] or 0)
                         r_price = float(p_dict[3] or 0)
+                        if w <= 0 and len(p_dict) > 4:
+                            w = float(p_dict[4] or 0)
+                        if l_cm <= 0 and len(p_dict) > 5:
+                            l_cm = float(p_dict[5] or 0)
+                        if w_dim <= 0 and len(p_dict) > 6:
+                            w_dim = float(p_dict[6] or 0)
+                        if h_cm <= 0 and len(p_dict) > 7:
+                            h_cm = float(p_dict[7] or 0)
             except Exception as e:
                 print("[Freight Service] Erro ao buscar produto:", e)
                 if hasattr(db_conn, "rollback"):

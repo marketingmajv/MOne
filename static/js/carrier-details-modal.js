@@ -89,6 +89,16 @@ async function openTableDetailsModal(tableId) {
     const cubingVal = parseFloat(t.cubing_factor) || 300.0;
     document.getElementById("tdModalCubingFactorBadge").innerText = `📦 Cubagem: ${cubingVal.toFixed(0)} kg/m³`;
 
+    const sheetBtn = document.getElementById("btnModalGoogleSheet");
+    if (sheetBtn) {
+      if (t.file_url) {
+        sheetBtn.href = t.file_url.startsWith("http") ? t.file_url : `/freight/tables/${t.table_id}/download`;
+        sheetBtn.style.display = "inline-flex";
+      } else {
+        sheetBtn.style.display = "none";
+      }
+    }
+
     // Aba 1: Ficha Cadastral
     document.getElementById("vTradeName").innerText = t.trade_name || t.carrier_name;
     document.getElementById("editTradeName").value = t.trade_name || t.carrier_name;

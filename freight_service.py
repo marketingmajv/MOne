@@ -762,6 +762,12 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
 
     product_summary = ", ".join(item_descriptions) if item_descriptions else "Carga Geral"
 
+    if total_weight <= 0 and total_volume_m3 <= 0:
+        return {
+            "success": False,
+            "message": "⚠️ O peso da carga ou as medidas da caixa não foram informados (0 kg). Selecione um produto cadastrado ou digite o peso físico para cotar.",
+        }
+
     # 3. Buscar todas as regras de frete ativas
     if not db_conn:
         return {"success": False, "message": "Sem conexão com o banco de dados."}
@@ -770,9 +776,16 @@ def calculate_freight(db_conn, cep_dest: str, items: list = None, weight_kg: flo
         SELECT 
             c.id AS carrier_id,
             c.name AS carrier_name,
+            c.phone AS carrier_phone,
+            c.sales_rep_name AS carrier_sales_rep,
             t.id AS table_id,
             t.name AS table_name,
+            t.file_url AS table_file_url,
             t.cubing_factor,
+            t.tec_percent,
+            t.tas_fixed,
+            t.pos_fixed,
+            t.min_gris_value,
             r.uf,
             r.city,
             r.cep_start,

@@ -87,7 +87,15 @@ function changeCarrierRateVariant(idx, vIdxStr, evt) {
   opt.total_price = Number(chosenVar.total_price);
   opt.delivery_days = Number(chosenVar.delivery_days);
   opt.fixed_price = Number(chosenVar.fixed_price || opt.fixed_price || 0);
+  opt.base_freight = Number(chosenVar.base_freight || opt.base_freight || opt.fixed_price || 0);
   opt.insurance_cost = Number(chosenVar.insurance_cost || opt.insurance_cost || 0);
+  opt.surcharges_cost = Number(chosenVar.surcharges_cost || opt.surcharges_cost || 0);
+  opt.tec_cost = Number(chosenVar.tec_cost || opt.tec_cost || 0);
+  opt.tas_cost = Number(chosenVar.tas_cost || opt.tas_cost || 0);
+  opt.pos_cost = Number(chosenVar.pos_cost || opt.pos_cost || 0);
+  if (chosenVar.phone) opt.phone = chosenVar.phone;
+  if (chosenVar.sales_rep_name) opt.sales_rep_name = chosenVar.sales_rep_name;
+  if (chosenVar.download_url) opt.download_url = chosenVar.download_url;
 
   recomputeFreightBadges(data.options);
   renderFreightResultsEverywhere();
@@ -240,102 +248,17 @@ function syncAllCarrierCardViews() {
 }
 window.syncAllCarrierCardViews = syncAllCarrierCardViews;
 
-function buildCarrierRankingHtml(options, scopePrefix = "modal") {
-  if (!options || options.length === 0) {
-    return `<div style="padding: 14px; border-radius: 12px; background: var(--surface-subtle); border: 1px dashed var(--border-subtle); font-size: 0.78rem; color: var(--muted); text-align: center;">Nenhuma transportadora classificada automaticamente nesta faixa. Use a inclusão manual abaixo para definir valor e prazo.</div>`;
-  }
-  const recIdx = window.freightSelection.recommended;
-  const inc = window.freightSelection.included;
-  const editingIdx = window.freightSelection.editingIdx;
-
-  return options.map((opt, idx) => {
-    const isInc = inc.has(idx);
-    const isRec = (recIdx === idx);
-    const isEditing = (editingIdx === idx);
-    const isCheapest = opt.badges && opt.badges.some(b => b.includes("Barato"));
-    const isFastest = opt.badges && opt.badges.some(b => b.includes("Rápido"));
-    const rankBg = isCheapest ? "var(--brand-emerald)" : (isFastest ? "var(--brand-blue)" : "var(--primary)");
-    const rankColor = (isCheapest || isFastest) ? "#042211" : "var(--text)";
-    const badgeHtml = isCheapest ? `<span class="badge" style="background: rgba(0,229,153,0.12); color: var(--accent); border-color: rgba(0,229,153,0.25); font-size: 9px; padding: 2px 6px;">MAIS ECONÔMICA</span>`
-      : (isFastest ? `<span class="badge" style="background: rgba(56,189,248,0.12); color: var(--brand-blue); border-color: rgba(56,189,248,0.25); font-size: 9px; padding: 2px 6px;">MAIS RÁPIDA</span>` : "");
-
-    let variantSelectHtml = "";
-    if (Array.isArray(opt.rate_variants) && opt.rate_variants.length > 1) {
-      const vOpts = opt.rate_variants.map((v, vIdx) => {
-        const sel = (v.city_label === opt.city_label) ? "selected" : "";
-        return `<option value="${vIdx}" ${sel}>📍 ${v.city_label} — R$ ${Number(v.total_price).toFixed(2).replace('.', ',')} (${v.delivery_days}d)</option>`;
-      }).join("");
-      variantSelectHtml = `
-        <div style="margin-top: 6px;" onclick="event.stopPropagation();">
-          <select class="form-input" style="font-size: 0.72rem; padding: 3px 8px; height: auto; border-radius: 8px; max-width: 290px;" onchange="changeCarrierRateVariant(${idx}, this.value, event)" title="Alternar praça/faixa da tabela desta transportadora">
-            ${vOpts}
-          </select>
-        </div>
-      `;
-    } else if (opt.city_label) {
-      variantSelectHtml = `<span style="font-size: 0.72rem; color: var(--brand-blue);">📍 ${opt.city_label}</span>`;
-    }
-
-    const priceInputId = `${scopePrefix}_edit_price_${idx}`;
-    const daysInputId = `${scopePrefix}_edit_days_${idx}`;
-    const editBoxHtml = isEditing ? `
-      <div style="margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-subtle); border: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" onclick="event.stopPropagation();">
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <span style="font-size: 0.72rem; color: var(--muted); font-weight: 700;">R$</span>
-          <input type="number" step="0.01" id="${priceInputId}" value="${Number(opt.total_price).toFixed(2)}" class="form-input" style="width: 95px; padding: 4px 8px; font-size: 0.78rem; font-weight: 700; border-radius: 7px;">
-        </div>
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <input type="number" min="1" id="${daysInputId}" value="${opt.delivery_days}" class="form-input" style="width: 58px; padding: 4px 6px; font-size: 0.78rem; text-align: center; border-radius: 7px;">
-          <span style="font-size: 0.72rem; color: var(--muted);">dias</span>
-        </div>
-        <button type="button" class="btn sm primary" style="padding: 4px 10px; font-size: 0.72rem;" onclick="applyEditedCarrierRate(${idx}, '${priceInputId}', '${daysInputId}', event)">Salvar</button>
-        <button type="button" class="btn sm secondary" style="padding: 4px 8px; font-size: 0.72rem;" onclick="toggleEditCarrierRate(${idx}, event)">Cancelar</button>
+// buildCarrierRankingHtml is loaded from static/js/freight-ranking-render.js
+if (typeof window.buildCarrierRankingHtml !== "function") {
+  window.buildCarrierRankingHtml = function(options, scopePrefix = "modal") {
+    if (!options || !options.length) return `<div class="p-3 text-muted text-center">Nenhuma opção de frete disponível.</div>`;
+    return options.map((opt, idx) => `
+      <div class="rank-row modal-carrier-card" data-idx="${idx}" style="padding: 12px 14px; gap: 12px;">
+        <strong>${opt.carrier_name}</strong> - R$ ${Number(opt.total_price).toFixed(2)} (${opt.delivery_days}d)
       </div>
-    ` : "";
-
-    return `
-      <div class="rank-row modal-carrier-card ${isRec ? 'recommended selected' : ''} ${!isInc ? 'excluded' : ''}" data-idx="${idx}" style="padding: 12px 14px; gap: 12px; cursor: pointer; align-items: center;" onclick="toggleCarrierRecommendation(${idx}, event)">
-        <input type="checkbox" class="carrier-include-checkbox" title="${isInc ? 'Desmarcar para não enviar esta opção' : 'Marcar para incluir no envio'}" ${isInc ? 'checked' : ''} onclick="toggleCarrierInclusion(${idx}, event)">
-
-        <div class="rank-num" style="background: ${rankBg}; color: ${rankColor}; width: 24px; height: 24px; border-radius: 6px; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          ${idx + 1}
-        </div>
-
-        <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <strong style="color: var(--text); font-size: 0.95rem; letter-spacing: -0.01em;">${opt.carrier_name}</strong>
-            ${badgeHtml}
-            <span class="carrier-chosen-tag" style="background: rgba(0,229,153,0.15); color: var(--accent); border: 1px solid rgba(0,229,153,0.3); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px;">
-              ✓ RECOMENDADA
-            </span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.76rem; color: var(--muted); margin-top: 3px;">
-            <span>Tabela: <strong style="color: var(--text-secondary);">${opt.table_name}</strong></span>
-            <span>•</span>
-            <span>Prazo: <strong style="color: var(--text);">${opt.delivery_days} dia(s) útil(eis)</strong></span>
-          </div>
-          ${variantSelectHtml}
-          ${editBoxHtml}
-        </div>
-
-        <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-          <div style="font-size: 1.15rem; font-weight: 800; color: ${isCheapest ? 'var(--accent)' : 'var(--text)'}; letter-spacing: -0.02em;">
-            R$ ${Number(opt.total_price).toFixed(2).replace('.', ',')}
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="carrier-star-btn" style="padding: 2px 7px; font-size: 0.68rem;" onclick="toggleEditCarrierRate(${idx}, event)" title="Ajustar valor ou prazo manualmente">
-              ✏️ Valor/Prazo
-            </button>
-            <button type="button" class="carrier-star-btn ${isRec ? 'recommended' : ''}" onclick="toggleCarrierRecommendation(${idx}, event)" title="${isRec ? 'Remover recomendação' : 'Recomendar ao cliente'}">
-              ${isRec ? '⭐ Recomendada' : '☆ Recomendar'}
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
+    `).join("");
+  };
 }
-window.buildCarrierRankingHtml = buildCarrierRankingHtml;
 
 function buildUnservedCarriersHtml(unserved, scopePrefix = "modal") {
   const data = window.lastFreightCalculationResult || {};

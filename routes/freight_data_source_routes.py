@@ -6,10 +6,11 @@ Rotas de sincronização, atualização de link e ajuste manual da fonte de dado
 from __future__ import annotations
 
 import logging
-from flask import Blueprint, flash, redirect, request, url_for
+from pathlib import Path
+from flask import Blueprint, flash, redirect, request, send_from_directory, url_for
 
 from database import db
-from routes.helpers import audit, login_required, roles_required
+from routes.helpers import UPLOAD_DIR, audit, login_required, roles_required
 from services.freight_data_source_service import (
     sync_products_sheets,
     update_product_specs,
@@ -85,3 +86,44 @@ def quick_edit_product_specs(pid: int):
         flash(f"Erro ao salvar alterações: {e}", "danger")
 
     return redirect(url_for("freight", tab="data-sources"))
+
+
+@freight_data_source_bp.route("/freight/tables/<int:table_id>/download")
+@login_required
+def freight_table_download(table_id: int):
+    """Download seguro da planilha oficial de frete vinculada à tabela."""
+    with db() as conn:
+        row = conn.execute("SELECT file_url, name FROM freight_tables WHERE id = %s", (table_id,)).fetchone()
+    
+    if not row or not row["file_url"]:
+        flash("Planilha oficial não vinculada a esta tabela.", "warning")
+        return redirect(url_for("freight", tab="carriers"))
+    
+    filename = str(row["file_url"]).strip()
+    if filename.startswith("http://") or filename.startswith("https://"):
+        return redirect(filename)
+    file_path = UPLOAD_DIR / filename
+    
+    if not file_path.exists():
+        # Fallback para pasta local do Google Drive
+        drive_base = Path("/Users/macstudio-maj/Library/CloudStorage/GoogleDrive-marketingmajv@gmail.com/Meu Drive/M-ONE/FRETE")
+        for sub in ["TRASPORTADORAS CADASTRADAS", "PARA CADASTRAR", ""]:
+            cand = drive_base / sub / filename
+            if cand.exists():
+                file_path = cand
+                break
+    
+    if not file_path.exists():
+        flash("Arquivo da planilha não encontrado no servidor.", "danger")
+        return redirect(url_for("freight", tab="carriers"))
+    
+    clean_name = "".join(c for c in str(row["name"]) if c.isalnum() or c in ("-", "_")).strip() or f"tabela_{table_id}"
+    download_filename = f"{clean_name}{file_path.suffix}"
+    
+    return send_from_directory(
+        directory=file_path.parent,
+        path=file_path.name,
+        as_attachment=True,
+        download_name=download_filename
+    )
+

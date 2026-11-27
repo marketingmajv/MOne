@@ -2,16 +2,22 @@
 
 {% block title %}M-One • Painel de Suporte & Atendimento{% endblock %}
 {% block page_title %}Painel Executivo de Suporte & Chamados{% endblock %}
-{% block page_subtitle %}Triagem, atendimento e registro de alterações solicitadas pela equipe da MAJ Mobilidade.{% endblock %}
+{% block page_subtitle %}Triagem, atendimento e registro de alterações solicitadas pela equipe da MAJ Mobilidade.{%
+endblock %}
 
 {% block top_actions %}
-  <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-internal-correction'))" class="btn primary" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;">
-    ➕ Nova Correção
-  </button>
-  <button type="button" id="supportBannerToggleBtn" data-enabled="{{ 'true' if badges.banner_enabled else 'false' }}" onclick="toggleSupportBannerPref(this)" class="btn secondary" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;font-size:12px;font-weight:700;border-color:{{ '#10b981' if badges.banner_enabled else 'var(--line)' }};color:{{ '#10b981' if badges.banner_enabled else 'var(--muted)' }};" title="Ativar ou desativar o banner vermelho de alerta nas demais janelas">{{ '🔔 Banner: Ativo' if badges.banner_enabled else '🔕 Banner: Oculto' }}</button>
-  <a href="/suporte" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
-    👁️ Visão do Usuário
-  </a>
+<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-internal-correction'))" class="btn primary"
+  style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;">
+  ➕ Nova Correção
+</button>
+<button type="button" id="supportBannerToggleBtn" data-enabled="{{ 'true' if badges.banner_enabled else 'false' }}"
+  onclick="toggleSupportBannerPref(this)" class="btn secondary"
+  style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;font-size:12px;font-weight:700;border-color:{{ '#10b981' if badges.banner_enabled else 'var(--line)' }};color:{{ '#10b981' if badges.banner_enabled else 'var(--muted)' }};"
+  title="Ativar ou desativar o banner vermelho de alerta nas demais janelas">{{ '🔔 Banner: Ativo' if
+  badges.banner_enabled else '🔕 Banner: Oculto' }}</button>
+<a href="/suporte" class="btn secondary" style="display:inline-flex;align-items:center;gap:6px;">
+  👁️ Visão do Usuário
+</a>
 {% endblock %}
 
 {% block content %}
@@ -28,71 +34,91 @@
   isStaff: true,
   currentUserId: {{ me.id }},
   initialStatus: '{{ current_status or 'abertos' }}'
-})" @open-internal-correction.window="openInternalCorrectionModal()" class="support-admin-container" style="display:flex;flex-direction:column;gap:20px;">
+})" @open-internal-correction.window="openInternalCorrectionModal()" class="support-admin-container"
+  style="display:flex;flex-direction:column;gap:20px;">
 
   <!-- Barra de Sub-Abas Principal: Fila de Atendimento vs Nova Correção -->
-  <div class="sub-tabs-bar" style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px;flex-wrap:wrap;">
-    <button type="button"
-            class="tab-btn"
-            :class="{ 'active': adminTab === 'queue' }"
-            @click="adminTab = 'queue'">
+  <div class="sub-tabs-bar"
+    style="display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px;flex-wrap:wrap;">
+    <button type="button" class="tab-btn" :class="{ 'active': adminTab === 'queue' }" @click="adminTab = 'queue'">
       <span>📋 Fila de Atendimento</span>
-      <span class="badge" style="font-size:10px;padding:1px 7px;margin-left:4px;background:rgba(56,189,248,0.15);color:#38bdf8;border-color:rgba(56,189,248,0.3);">{{ tickets|length }}</span>
+      <span class="badge"
+        style="font-size:10px;padding:1px 7px;margin-left:4px;background:rgba(56,189,248,0.15);color:#38bdf8;border-color:rgba(56,189,248,0.3);">{{
+        tickets|length }}</span>
     </button>
-    <button type="button"
-            class="tab-btn"
-            :class="{ 'active': adminTab === 'create' }"
-            @click="openInternalCorrectionModal()">
+    <button type="button" class="tab-btn" :class="{ 'active': adminTab === 'create' }"
+      @click="openInternalCorrectionModal()">
       <span>➕ Nova Correção Interna</span>
       {% if can_sidebar_sectors %}
-        <span class="badge" style="font-size:9px;padding:1px 6px;margin-left:4px;background:rgba(245,158,11,0.16);color:#f59e0b;border-color:rgba(245,158,11,0.35);">Sidebar Beta</span>
+      <span class="badge"
+        style="font-size:9px;padding:1px 6px;margin-left:4px;background:rgba(245,158,11,0.16);color:#f59e0b;border-color:rgba(245,158,11,0.35);">Sidebar
+        Beta</span>
       {% endif %}
     </button>
   </div>
 
   <!-- Alerta de Chamado Urgente se houver -->
   {% if badges.has_urgent_pending and badges.latest_urgent %}
-  <div x-show="!isUrgentBannerDismissed" x-transition style="background:linear-gradient(90deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.15) 100%);border:1px solid #ef4444;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:pulseUrgent 2s infinite;">
+  <div x-show="!isUrgentBannerDismissed" x-transition
+    style="background:linear-gradient(90deg, rgba(239,68,68,0.2) 0%, rgba(245,158,11,0.15) 100%);border:1px solid #ef4444;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;animation:pulseUrgent 2s infinite;">
     <div style="display:flex;align-items:center;gap:12px;">
       <span style="font-size:24px;">🚨</span>
       <div>
         <div style="font-weight:800;color:var(--text);font-size:0.95rem;">
-          CHAMADO URGENTE PENDENTE: <span style="color:#fca5a5;">{{ badges.latest_urgent.ticket_code }}</span> — {{ badges.latest_urgent.title }}
+          CHAMADO URGENTE PENDENTE: <span style="color:#fca5a5;">{{ badges.latest_urgent.ticket_code }}</span> — {{
+          badges.latest_urgent.title }}
         </div>
         <div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">
-          Área afetada: <strong style="color:var(--text);">{{ badges.latest_urgent.module_label }}</strong> • Solicitado recentemente
+          Área afetada: <strong style="color:var(--text);">{{ badges.latest_urgent.module_label }}</strong> • Solicitado
+          recentemente
         </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button type="button" @click="dismissUrgentBanner()" class="btn" style="background:rgba(0,0,0,0.3);color:#fca5a5;border:1px solid rgba(239,68,68,0.5);font-size:0.82rem;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;" title="Ocultar esta tarja temporariamente (reaparece no próximo acesso)">
+      <button type="button" @click="dismissUrgentBanner()" class="btn"
+        style="background:rgba(0,0,0,0.3);color:#fca5a5;border:1px solid rgba(239,68,68,0.5);font-size:0.82rem;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;"
+        title="Ocultar esta tarja temporariamente (reaparece no próximo acesso)">
         👁️ Ocultar Tarja
       </button>
-      <a href="/admin/suporte?status=pendente" style="background:#ef4444;color:#fff;font-weight:700;padding:6px 16px;border:none;border-radius:6px;font-size:0.85rem;text-decoration:none;">
+      <a href="/admin/suporte?status=pendente"
+        style="background:#ef4444;color:#fff;font-weight:700;padding:6px 16px;border:none;border-radius:6px;font-size:0.85rem;text-decoration:none;">
         Atender Agora ⚡
       </a>
     </div>
   </div>
   <style>
     @keyframes pulseUrgent {
-      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
     }
   </style>
   {% endif %}
 
   <!-- Tabela de Chamados do Painel Executivo -->
-  <div x-show="adminTab === 'queue'" class="card" style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 24px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+  <div x-show="adminTab === 'queue'" class="card"
+    style="background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 24px;">
+    <div
+      style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
       <div>
         <h3 style="margin:0;font-size:1.1rem;font-weight:800;color:var(--text);">Fila de Atendimento & Alterações</h3>
-        <p style="margin:2px 0 0;font-size:0.82rem;color:var(--muted);">Clique em qualquer chamado para ver o print em alta resolução, marcar o checklist e responder.</p>
+        <p style="margin:2px 0 0;font-size:0.82rem;color:var(--muted);">Clique em qualquer chamado para ver o print em
+          alta resolução, marcar o checklist e responder.</p>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <input type="text" x-model="queueSearch" class="form-input" placeholder="🔍 Buscar código, título, setor..." style="width:230px;height:34px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:0.8rem;" />
+        <input type="text" x-model="queueSearch" class="form-input" placeholder="🔍 Buscar código, título, setor..."
+          style="width:230px;height:34px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:0.8rem;" />
         <template x-if="hiddenTicketIds.length > 0">
-          <button type="button" @click="unhideAllTickets()" class="btn" style="min-height:32px !important;padding:4px 10px !important;font-size:0.76rem;background:rgba(239,68,68,0.15) !important;border:1px solid #ef4444 !important;color:#fca5a5 !important;border-radius:8px;cursor:pointer;">
+          <button type="button" @click="unhideAllTickets()" class="btn"
+            style="min-height:32px !important;padding:4px 10px !important;font-size:0.76rem;background:rgba(239,68,68,0.15) !important;border:1px solid #ef4444 !important;color:#fca5a5 !important;border-radius:8px;cursor:pointer;">
             Restaurar <span x-text="hiddenTicketIds.length"></span> ocultado(s) ↩️
           </button>
         </template>
@@ -100,20 +126,20 @@
     </div>
 
     <!-- Pílulas de Filtro Instantâneo por Status -->
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line);">
+    <div
+      style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line);">
       {% set pill_defs = [
-        ('abertos', '📋 Em Aberto', status_counts.abertos, '#0070F3', '#fff'),
-        ('pendente', '⏳ Pendentes', status_counts.pendente, '#ef4444', '#fff'),
-        ('em_andamento', '⚡ Em Andamento', status_counts.em_andamento, '#3b82f6', '#fff'),
-        ('aguardando_conferencia', '⏸️ Aguard. Conferência', status_counts.aguardando_conferencia, '#9333ea', '#fff'),
-        ('resolvido', '✅ Resolvidos', status_counts.resolvido, '#10b981', '#000'),
-        ('todos', '🌐 Todos', status_counts.todos, '#38bdf8', '#000')
+      ('abertos', '📋 Em Aberto', status_counts.abertos, '#0070F3', '#fff'),
+      ('pendente', '⏳ Pendentes', status_counts.pendente, '#ef4444', '#fff'),
+      ('em_andamento', '⚡ Em Andamento', status_counts.em_andamento, '#3b82f6', '#fff'),
+      ('aguardando_conferencia', '⏸️ Aguard. Conferência', status_counts.aguardando_conferencia, '#9333ea', '#fff'),
+      ('resolvido', '✅ Resolvidos', status_counts.resolvido, '#10b981', '#000'),
+      ('todos', '🌐 Todos', status_counts.todos, '#38bdf8', '#000')
       ] %}
       {% for st_key, st_label, st_cnt, st_bg, st_fg in pill_defs %}
-      <button type="button"
-              @click="queueStatusFilter = '{{ st_key }}'"
-              :style="queueStatusFilter === '{{ st_key }}' ? 'background:{{ st_bg }} !important;color:{{ st_fg }} !important;border-color:{{ st_bg }} !important;font-weight:800;' : 'background:var(--panel2) !important;color:var(--muted) !important;border-color:var(--line) !important;font-weight:600;'"
-              style="min-height:32px !important;height:auto !important;padding:5px 12px !important;border-radius:99px;font-size:12px;border:1px solid var(--line);cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:none !important;transition:all 0.12s ease;">
+      <button type="button" @click="queueStatusFilter = '{{ st_key }}'"
+        :style="queueStatusFilter === '{{ st_key }}' ? 'background:{{ st_bg }} !important;color:{{ st_fg }} !important;border-color:{{ st_bg }} !important;font-weight:800;' : 'background:var(--panel2) !important;color:var(--muted) !important;border-color:var(--line) !important;font-weight:600;'"
+        style="min-height:32px !important;height:auto !important;padding:5px 12px !important;border-radius:99px;font-size:12px;border:1px solid var(--line);cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:none !important;transition:all 0.12s ease;">
         <span>{{ st_label }}</span>
         <span style="font-size:11px;padding:0 6px;border-radius:99px;background:rgba(0,0,0,0.22);">{{ st_cnt }}</span>
       </button>
@@ -121,117 +147,160 @@
     </div>
 
     {% if tickets|length == 0 %}
-      <div style="text-align:center;padding:50px 20px;color:var(--muted);">
-        <div style="font-size:36px;margin-bottom:10px;">🎉</div>
-        <div style="font-size:1rem;font-weight:700;color:var(--text);">Nenhum chamado cadastrado!</div>
-      </div>
+    <div style="text-align:center;padding:50px 20px;color:var(--muted);">
+      <div style="font-size:36px;margin-bottom:10px;">🎉</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--text);">Nenhum chamado cadastrado!</div>
+    </div>
     {% else %}
-      <div style="overflow-x:auto;">
-        <table class="table" style="width:100%;border-collapse:collapse;text-align:left;">
-          <thead>
-            <tr style="border-bottom:1px solid var(--line);color:var(--muted);font-size:0.75rem;text-transform:uppercase;">
-              <th style="padding:10px 10px;width:120px;">Código / Data</th>
-              <th style="padding:10px 10px;width:140px;">Solicitante</th>
-              <th style="padding:10px 10px;">Demanda & Setores</th>
-              <th style="padding:10px 10px;width:160px;">Urgência / Status</th>
-              <th style="padding:10px 10px;width:135px;text-align:right;">Atendimento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for t in tickets %}
-            {% set mod_names = t.modules | map(attribute='label') | join(' ') %}
-            <tr x-show="ticketMatchesQueue({{ t.id }}, '{{ t.status }}', {{ (t.ticket_code ~ ' ' ~ t.title ~ ' ' ~ t.user_name ~ ' ' ~ t.username ~ ' ' ~ mod_names) | tojson | forceescape }})"
-                style="border-bottom:1px solid var(--line);font-size:0.86rem;color:var(--text);cursor:pointer;"
-                @click="openTicketDetails({{ t.id }})">
-              <td style="padding:11px 10px;vertical-align:top;white-space:nowrap;">
-                <div style="font-family:monospace;font-weight:800;color:#00e599;font-size:0.86rem;">{{ t.ticket_code }}</div>
-                <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">{{ t.created_at.strftime('%d/%m %H:%M') if t.created_at else '' }}</div>
-              </td>
-              <td style="padding:11px 10px;vertical-align:top;">
-                {% if t.username == 'fauzer' %}
-                  <span style="display:inline-block;font-size:0.74rem;font-weight:700;background:rgba(0,229,153,0.14);color:#00e599;border:1px solid rgba(0,229,153,0.4);padding:2px 7px;border-radius:6px;white-space:nowrap;">🛠️ Interna</span>
-                  <div style="font-size:0.73rem;color:var(--muted);margin-top:3px;">Fauzer</div>
-                {% else %}
-                  <div style="font-weight:700;color:var(--text);font-size:0.84rem;">{{ t.user_name }}</div>
-                  <div style="font-size:0.74rem;color:var(--muted);display:flex;align-items:center;gap:5px;">
-                    <span>@{{ t.username }}</span>
-                    {% if t.user_phone %}
-                      <a href="https://wa.me/55{{ t.user_phone }}" target="_blank" @click.stop style="color:#00e599;text-decoration:none;" title="Chamar no WhatsApp">📱</a>
-                    {% endif %}
-                  </div>
+    <div style="overflow-x:auto;">
+      <table class="table" style="width:100%;border-collapse:collapse;text-align:left;">
+        <thead>
+          <tr
+            style="border-bottom:1px solid var(--line);color:var(--muted);font-size:0.75rem;text-transform:uppercase;">
+            <th style="padding:10px 10px;width:120px;">Código / Data</th>
+            <th style="padding:10px 10px;width:140px;">Solicitante</th>
+            <th style="padding:10px 10px;">Demanda & Setores</th>
+            <th style="padding:10px 10px;width:160px;">Urgência / Status</th>
+            <th style="padding:10px 10px;width:135px;text-align:right;">Atendimento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets %}
+          {% set mod_names = t.modules | map(attribute='label') | join(' ') %}
+          <tr
+            x-show="ticketMatchesQueue({{ t.id }}, '{{ t.status }}', {{ (t.ticket_code ~ ' ' ~ t.title ~ ' ' ~ t.user_name ~ ' ' ~ t.username ~ ' ' ~ mod_names) | tojson | forceescape }})"
+            style="border-bottom:1px solid var(--line);font-size:0.86rem;color:var(--text);cursor:pointer;"
+            @click="openTicketDetails({{ t.id }})">
+            <td style="padding:11px 10px;vertical-align:top;white-space:nowrap;">
+              <div style="font-family:monospace;font-weight:800;color:#00e599;font-size:0.86rem;">{{ t.ticket_code }}
+              </div>
+              <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">{{ t.created_at.strftime('%d/%m %H:%M')
+                if t.created_at else '' }}</div>
+            </td>
+            <td style="padding:11px 10px;vertical-align:top;">
+              {% if t.username == 'fauzer' %}
+              <span
+                style="display:inline-block;font-size:0.74rem;font-weight:700;background:rgba(0,229,153,0.14);color:#00e599;border:1px solid rgba(0,229,153,0.4);padding:2px 7px;border-radius:6px;white-space:nowrap;">🛠️
+                Interna</span>
+              <div style="font-size:0.73rem;color:var(--muted);margin-top:3px;">Fauzer</div>
+              {% else %}
+              <div style="font-weight:700;color:var(--text);font-size:0.84rem;">{{ t.user_name }}</div>
+              <div style="font-size:0.74rem;color:var(--muted);display:flex;align-items:center;gap:5px;">
+                <span>@{{ t.username }}</span>
+                {% if t.user_phone %}
+                <a href="https://wa.me/55{{ t.user_phone }}" target="_blank" @click.stop
+                  style="color:#00e599;text-decoration:none;" title="Chamar no WhatsApp">📱</a>
                 {% endif %}
-              </td>
-              <td style="padding:11px 10px;vertical-align:top;">
-                <div style="font-weight:700;color:var(--text);line-height:1.35;">
-                  {{ t.title }}
-                  {% if t.unread_user_messages > 0 %}
-                    <span style="margin-left:6px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;white-space:nowrap;">NOVA MENSAGEM</span>
-                  {% endif %}
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;" title="{{ t.modules | map(attribute='label') | join(', ') }}">
-                  {% for m in t.modules[:2] %}
-                  <span style="font-size:0.72rem;padding:1px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);white-space:nowrap;">
-                    {{ m.label.split(' (')[0] }}
-                  </span>
-                  {% endfor %}
-                  {% if t.modules|length > 2 %}
-                  <span style="font-size:0.72rem;padding:1px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:#38bdf8;font-weight:700;">+{{ t.modules|length - 2 }}</span>
-                  {% endif %}
-                </div>
-              </td>
-              <td style="padding:11px 10px;vertical-align:top;">
-                <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;">
-                  {% if t.urgency == 'urgente' %}
-                    <span style="background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">🚨 Urgente</span>
-                  {% elif t.urgency == 'alta' %}
-                    <span style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⚡ Alta</span>
-                  {% else %}
-                    <span style="background:var(--panel2);color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:6px;font-size:11px;white-space:nowrap;">{{ t.urgency|capitalize }}</span>
-                  {% endif %}
+              </div>
+              {% endif %}
+            </td>
+            <td style="padding:11px 10px;vertical-align:top;">
+              <div style="font-weight:700;color:var(--text);line-height:1.35;">
+                {{ t.title }}
+                {% if t.unread_user_messages > 0 %}
+                <span
+                  style="margin-left:6px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;white-space:nowrap;">NOVA
+                  MENSAGEM</span>
+                {% endif %}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;"
+                title="{{ t.modules | map(attribute='label') | join(', ') }}">
+                {% for m in t.modules[:2] %}
+                <span
+                  style="font-size:0.72rem;padding:1px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);white-space:nowrap;">
+                  {{ m.label.split(' (')[0] }}
+                </span>
+                {% endfor %}
+                {% if t.modules|length > 2 %}
+                <span
+                  style="font-size:0.72rem;padding:1px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:#38bdf8;font-weight:700;">+{{
+                  t.modules|length - 2 }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="padding:11px 10px;vertical-align:top;">
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;">
+                {% if t.urgency == 'urgente' %}
+                <span
+                  style="background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">🚨
+                  Urgente</span>
+                {% elif t.urgency == 'alta' %}
+                <span
+                  style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⚡
+                  Alta</span>
+                {% else %}
+                <span
+                  style="background:var(--panel2);color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:6px;font-size:11px;white-space:nowrap;">{{
+                  t.urgency|capitalize }}</span>
+                {% endif %}
 
-                  {% if t.status == 'pendente' %}
-                    <span style="background:#ffb703;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;">⏳ Pendente</span>
-                  {% elif t.status == 'em_andamento' %}
-                    <span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⚡ Em Andamento</span>
-                  {% elif t.status == 'aguardando_conferencia' %}
-                    <span style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⏸️ Aguard. Conf.</span>
-                  {% elif t.status == 'resolvido' %}
-                    <span style="background:#10b981;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;">✅ Resolvido</span>
-                  {% else %}
-                    <span style="background:#64748b;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;white-space:nowrap;">{{ t.status|capitalize }}</span>
-                  {% endif %}
-                </div>
-              </td>
-              <td style="padding:11px 10px;vertical-align:top;text-align:right;white-space:nowrap;">
-                <button type="button" @click.stop="hideTicket({{ t.id }})" class="btn" style="min-height:30px !important;height:30px !important;padding:0 9px !important;font-size:0.78rem;margin-right:4px;background:var(--panel2) !important;border:1px solid var(--line) !important;color:var(--muted) !important;border-radius:7px;" title="Ocultar temporariamente">👁️</button>
-                <button type="button" class="btn secondary" style="min-height:30px !important;height:30px !important;padding:0 11px !important;font-size:0.8rem;font-weight:700;border-radius:7px;">Atender 🛠️</button>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+                {% if t.status == 'pendente' %}
+                <span
+                  style="background:#ffb703;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;">⏳
+                  Pendente</span>
+                {% elif t.status == 'em_andamento' %}
+                <span
+                  style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⚡
+                  Em Andamento</span>
+                {% elif t.status == 'aguardando_conferencia' %}
+                <span
+                  style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.45);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">⏸️
+                  Aguard. Conf.</span>
+                {% elif t.status == 'resolvido' %}
+                <span
+                  style="background:#10b981;color:#000;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap;">✅
+                  Resolvido</span>
+                {% else %}
+                <span
+                  style="background:#64748b;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;white-space:nowrap;">{{
+                  t.status|capitalize }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td style="padding:11px 10px;vertical-align:top;text-align:right;white-space:nowrap;">
+              <button type="button" @click.stop="hideTicket({{ t.id }})" class="btn"
+                style="min-height:30px !important;height:30px !important;padding:0 9px !important;font-size:0.78rem;margin-right:4px;background:var(--panel2) !important;border:1px solid var(--line) !important;color:var(--muted) !important;border-radius:7px;"
+                title="Ocultar temporariamente">👁️</button>
+              <button type="button" class="btn secondary"
+                style="min-height:30px !important;height:30px !important;padding:0 11px !important;font-size:0.8rem;font-weight:700;border-radius:7px;">Atender
+                🛠️</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% endif %}
   </div>
 
   <!-- Modal Executivo de Atendimento do Fauzer (Teleportado para body) -->
   <template x-teleport="body">
-    <div x-show="isDetailModalOpen" x-cloak class="modal show" style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
-      <div class="modal-card" @click.stop style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:840px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
-        
+    <div x-show="isDetailModalOpen" x-cloak class="modal show"
+      style="display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);padding:16px;">
+      <div class="modal-card" @click.stop
+        style="background:var(--panel);border:1px solid var(--line);border-radius:16px;width:100%;max-width:840px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6);overflow:hidden;">
+
         <!-- Cabeçalho do Modal -->
-        <div class="modal-head" style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
+        <div class="modal-head"
+          style="padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--panel2);">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div style="font-family:monospace;font-size:1.15rem;font-weight:800;color:#00e599;" x-text="activeTicket?.ticket_code || 'Carregando...'"></div>
+            <div style="font-family:monospace;font-size:1.15rem;font-weight:800;color:#00e599;"
+              x-text="activeTicket?.ticket_code || 'Carregando...'"></div>
             <template x-for="m in activeTicket?.modules" :key="m.key">
-              <span style="font-size:0.78rem;padding:2px 8px;border-radius:6px;background:var(--panel);border:1px solid var(--line);color:var(--text);" x-text="m.label"></span>
+              <span
+                style="font-size:0.78rem;padding:2px 8px;border-radius:6px;background:var(--panel);border:1px solid var(--line);color:var(--text);"
+                x-text="m.label"></span>
             </template>
             <template x-if="activeTicket?.urgency">
-              <span style="font-size:0.75rem;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444;font-weight:700;" x-text="activeTicket?.urgency?.toUpperCase()"></span>
+              <span
+                style="font-size:0.75rem;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444;font-weight:700;"
+                x-text="activeTicket?.urgency?.toUpperCase()"></span>
             </template>
           </div>
-          <button type="button" class="modal-close-btn" @click="closeTicketDetails()" style="width:32px;height:32px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
+          <button type="button" class="modal-close-btn" @click="closeTicketDetails()"
+            style="width:32px;height:32px;border-radius:8px;background:var(--panel);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+            <svg viewBox="0 0 24 24"
+              style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -239,39 +308,51 @@
         </div>
 
         <!-- Estado de Carregamento -->
-        <div x-show="isLoadingTicket" style="padding:48px 24px;text-align:center;color:var(--muted);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+        <div x-show="isLoadingTicket"
+          style="padding:48px 24px;text-align:center;color:var(--muted);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
           <div style="font-size:28px;">⏳</div>
-          <div style="font-size:0.95rem;font-weight:700;color:var(--text);">Carregando detalhes e evidências do chamado...</div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text);">Carregando detalhes e evidências do
+            chamado...</div>
         </div>
 
         <!-- Conteúdo do Modal (Timeline e Detalhes) -->
-        <div x-show="!isLoadingTicket && activeTicket" id="ticketMessagesThread" style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;">
+        <div x-show="!isLoadingTicket && activeTicket" id="ticketMessagesThread"
+          style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px;">
           <!-- Card de Identificação da Demanda + Evidências -->
           <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <div style="font-size:1.1rem;font-weight:700;color:var(--text);" x-text="activeTicket?.title"></div>
               <div style="font-size:0.8rem;color:var(--muted);">
-                Aberto por <strong style="color:var(--text);" x-text="activeTicket?.user_name"></strong> (@<span x-text="activeTicket?.username"></span>) • <span x-text="activeTicket?.created_at"></span>
+                Aberto por <strong style="color:var(--text);" x-text="activeTicket?.user_name"></strong> (@<span
+                  x-text="activeTicket?.username"></span>) • <span x-text="activeTicket?.created_at"></span>
               </div>
             </div>
-            <div style="font-size:0.9rem;color:var(--text);margin-top:8px;white-space:pre-wrap;background:var(--panel);padding:12px;border-radius:8px;border:1px solid var(--line);" x-text="activeTicket?.description"></div>
+            <div
+              style="font-size:0.9rem;color:var(--text);margin-top:8px;white-space:pre-wrap;background:var(--panel);padding:12px;border-radius:8px;border:1px solid var(--line);"
+              x-text="activeTicket?.description"></div>
 
             <!-- Galeria Consolidada de Prints Anexados -->
             <template x-if="activeTicket?.all_attachments && activeTicket.all_attachments.length > 0">
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
                 <div style="font-size:0.78rem;font-weight:700;color:#00e599;margin-bottom:8px;">
-                  📸 PRINTS E EVIDÊNCIAS ANEXADAS (<span x-text="activeTicket.all_attachments.length"></span>) — Clique para ampliar
+                  📸 PRINTS E EVIDÊNCIAS ANEXADAS (<span x-text="activeTicket.all_attachments.length"></span>) — Clique
+                  para ampliar
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
                   <template x-for="(att, idx) in activeTicket.all_attachments" :key="idx">
-                    <img :src="att" @click="openLightbox(att)" @error="$event.target.style.display='none'" style="width:130px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;" alt="Print Anexo" />
+                    <img :src="att" @click="openLightbox(att)" @error="$event.target.style.display='none'"
+                      style="width:130px;height:92px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;"
+                      alt="Print Anexo" />
                   </template>
                 </div>
               </div>
             </template>
-            <template x-if="(!activeTicket?.all_attachments || activeTicket.all_attachments.length === 0) && activeTicket?.expired_attachments_count > 0">
-              <div style="margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px dashed var(--line);font-size:0.78rem;color:var(--muted);">
-                ℹ️ Print anexado antes da atualização de persistência Base64 expirou no diretório temporário (/tmp). Novos prints enviados com Ctrl+V agora ficam gravados permanentemente no banco.
+            <template
+              x-if="(!activeTicket?.all_attachments || activeTicket.all_attachments.length === 0) && activeTicket?.expired_attachments_count > 0">
+              <div
+                style="margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px dashed var(--line);font-size:0.78rem;color:var(--muted);">
+                ℹ️ Print anexado antes da atualização de persistência Base64 expirou no diretório temporário (/tmp).
+                Novos prints enviados com Ctrl+V agora ficam gravados permanentemente no banco.
               </div>
             </template>
           </div>
@@ -283,20 +364,20 @@
                 <div style="font-size:0.85rem;font-weight:700;color:var(--text);">
                   📋 CHECKLIST DE ALTERAÇÕES (Marque ao concluir cada item)
                 </div>
-                <span style="font-size:0.78rem;font-weight:700;color:#00e599;background:rgba(0,229,153,0.12);padding:3px 8px;border-radius:6px;border:1px solid #00e599;"
-                      x-text="activeTicket.items.filter(i => i.completed).length + ' de ' + activeTicket.items.length + ' concluído(s)'">
+                <span
+                  style="font-size:0.78rem;font-weight:700;color:#00e599;background:rgba(0,229,153,0.12);padding:3px 8px;border-radius:6px;border:1px solid #00e599;"
+                  x-text="activeTicket.items.filter(i => i.completed).length + ' de ' + activeTicket.items.length + ' concluído(s)'">
                 </span>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <template x-for="item in activeTicket.items" :key="item.id">
-                  <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;">
-                    <input type="checkbox"
-                           :checked="item.completed"
-                           @change="toggleItemCompletion(item)"
-                           style="width:18px;height:18px;accent-color:#00e599;cursor:pointer;" />
-                    <span :style="item.completed ? 'text-decoration:line-through;color:var(--muted);' : 'color:var(--text);font-weight:600;'"
-                          style="font-size:0.9rem;"
-                          x-text="item.title"></span>
+                  <label
+                    style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;">
+                    <input type="checkbox" :checked="item.completed" @change="toggleItemCompletion(item)"
+                      style="width:18px;height:18px;accent-color:#00e599;cursor:pointer;" />
+                    <span
+                      :style="item.completed ? 'text-decoration:line-through;color:var(--muted);' : 'color:var(--text);font-weight:600;'"
+                      style="font-size:0.9rem;" x-text="item.title"></span>
                   </label>
                 </template>
               </div>
@@ -306,16 +387,21 @@
           <!-- Timeline de Mensagens -->
           <template x-for="msg in activeTicket?.messages" :key="msg.id">
             <div :style="msg.is_staff ? 'align-self:flex-end;max-width:85%;' : 'align-self:flex-start;max-width:85%;'">
-              <div :style="msg.is_staff ? 'background:rgba(0,229,153,0.1);border:1px solid rgba(0,229,153,0.3);border-radius:12px 12px 2px 12px;padding:12px 16px;' : 'background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 12px 2px;padding:12px 16px;'">
+              <div
+                :style="msg.is_staff ? 'background:rgba(0,229,153,0.1);border:1px solid rgba(0,229,153,0.3);border-radius:12px 12px 2px 12px;padding:12px 16px;' : 'background:var(--panel2);border:1px solid var(--line);border-radius:12px 12px 12px 2px;padding:12px 16px;'">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;">
-                  <span style="font-size:0.75rem;font-weight:700;" :style="msg.is_staff ? 'color:#00e599;' : 'color:var(--muted);'" x-text="msg.is_staff ? '🛡️ Fauzer (Suporte)' : msg.sender_name"></span>
+                  <span style="font-size:0.75rem;font-weight:700;"
+                    :style="msg.is_staff ? 'color:#00e599;' : 'color:var(--muted);'"
+                    x-text="msg.is_staff ? '🛡️ Fauzer (Suporte)' : msg.sender_name"></span>
                   <span style="font-size:0.7rem;color:var(--muted);" x-text="msg.created_at"></span>
                 </div>
                 <div style="font-size:0.9rem;color:var(--text);white-space:pre-wrap;" x-text="msg.message_text"></div>
                 <template x-if="msg.attachments && msg.attachments.length > 0">
                   <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
                     <template x-for="(att, i) in msg.attachments" :key="i">
-                      <img :src="att" @error="$event.target.style.display='none'" style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;" @click="openLightbox(att)" alt="Print Anexo" />
+                      <img :src="att" @error="$event.target.style.display='none'"
+                        style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;"
+                        @click="openLightbox(att)" alt="Print Anexo" />
                     </template>
                   </div>
                 </template>
@@ -325,15 +411,20 @@
         </div>
 
         <!-- Painel de Resposta & Conclusão do Fauzer -->
-        <div x-show="!isLoadingTicket && activeTicket" style="padding:18px 24px;border-top:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;gap:12px;">
-          <div x-show="replyFeedback" x-cloak style="background:rgba(16,185,129,0.15);border:1px solid #10b981;color:#6ee7b7;padding:8px 12px;border-radius:8px;font-size:0.82rem;font-weight:600;" x-text="replyFeedback"></div>
+        <div x-show="!isLoadingTicket && activeTicket"
+          style="padding:18px 24px;border-top:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;gap:12px;">
+          <div x-show="replyFeedback" x-cloak
+            style="background:rgba(16,185,129,0.15);border:1px solid #10b981;color:#6ee7b7;padding:8px 12px;border-radius:8px;font-size:0.82rem;font-weight:600;"
+            x-text="replyFeedback"></div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
-              <label class="form-label" style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+              <label class="form-label"
+                style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
                 Status do Chamado
               </label>
-              <select x-model="replyStatus" class="form-input" style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;font-weight:700;">
+              <select x-model="replyStatus" class="form-input"
+                style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;font-weight:700;">
                 <option value="pendente">⏳ Pendente (Aguardando Atendimento)</option>
                 <option value="em_andamento">⚡ Em Andamento (Em Análise / Alteração)</option>
                 <option value="aguardando_conferencia">⏸️ Aguardando Conferência (Jhon / Terceiro)</option>
@@ -343,31 +434,42 @@
             </div>
 
             <div>
-              <label class="form-label" style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
+              <label class="form-label"
+                style="display:block;font-size:0.78rem;font-weight:600;color:var(--muted);margin-bottom:4px;">
                 Nota de Entrega da Alteração (O que foi ajustado?)
               </label>
-              <input type="text" x-model="resolutionNotes" class="form-input" placeholder="Ex: Preço ajustado e publicado no Vercel" style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;" />
+              <input type="text" x-model="resolutionNotes" class="form-input"
+                placeholder="Ex: Preço ajustado e publicado no Vercel"
+                style="width:100%;height:38px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:0 10px;font-size:0.85rem;" />
             </div>
           </div>
 
           <form @submit.prevent="sendReply" style="display:flex;flex-direction:column;gap:10px;">
-            <textarea x-model="replyText" rows="2" class="form-input" placeholder="Mensagem para o colaborador (ou cole prints com Ctrl+V)..." style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:0.9rem;resize:none;"></textarea>
+            <textarea x-model="replyText" rows="2" class="form-input"
+              placeholder="Mensagem para o colaborador (ou cole prints com Ctrl+V)..."
+              style="width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:0.9rem;resize:none;"></textarea>
 
             <div x-show="replyAttachments.length > 0" x-cloak style="display:flex;flex-wrap:wrap;gap:8px;">
               <template x-for="(att, idx) in replyAttachments" :key="idx">
-                <div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
+                <div
+                  style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--line);">
                   <img :src="att" style="width:100%;height:100%;object-fit:cover;" alt="Print Reply" />
-                  <button type="button" @click.stop="removeAttachment(idx, true)" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.8);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;">✕</button>
+                  <button type="button" @click.stop="removeAttachment(idx, true)"
+                    style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.8);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;">✕</button>
                 </div>
               </template>
             </div>
 
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <button type="button" class="btn secondary" onclick="document.getElementById('adminTicketReplyFileInput').click()" style="font-size:0.8rem;padding:4px 10px;">
+              <button type="button" class="btn secondary"
+                onclick="document.getElementById('adminTicketReplyFileInput').click()"
+                style="font-size:0.8rem;padding:4px 10px;">
                 📎 Anexar Print
-                <input type="file" id="adminTicketReplyFileInput" accept="image/*" multiple style="display:none;" @change="handleFileInput($event, true)" />
+                <input type="file" id="adminTicketReplyFileInput" accept="image/*" multiple style="display:none;"
+                  @change="handleFileInput($event, true)" />
               </button>
-              <button type="submit" class="btn primary" :disabled="isSendingReply" style="min-width:240px;min-height:40px;font-weight:700;padding:8px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
+              <button type="submit" class="btn primary" :disabled="isSendingReply"
+                style="min-width:240px;min-height:40px;font-weight:700;padding:8px 20px;display:inline-flex;align-items:center;justify-content:center;gap:8px;">
                 <span x-show="!isSendingReply">Salvar Alteração & Responder 🚀</span>
                 <span x-show="isSendingReply" x-cloak style="display:none;">Salvando...</span>
               </button>
@@ -381,14 +483,19 @@
 
   <!-- Lightbox de Visualização de Prints em Tela Cheia -->
   <template x-teleport="body">
-    <div x-show="lightboxImage" x-cloak @click="closeLightbox()" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;">
-      <button type="button" class="modal-close-btn" @click.stop="closeLightbox()" style="position:fixed;top:20px;right:24px;width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
-        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
+    <div x-show="lightboxImage" x-cloak @click="closeLightbox()"
+      style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;">
+      <button type="button" class="modal-close-btn" @click.stop="closeLightbox()"
+        style="position:fixed;top:20px;right:24px;width:38px;height:38px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg viewBox="0 0 24 24"
+          style="width:18px;height:18px;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-      <img :src="lightboxImage" @click.stop style="max-width:95vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);cursor:default;" alt="Visualização em alta resolução" />
+      <img :src="lightboxImage" @click.stop
+        style="max-width:95vw;max-height:92vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.8);cursor:default;"
+        alt="Visualização em alta resolução" />
     </div>
   </template>
 

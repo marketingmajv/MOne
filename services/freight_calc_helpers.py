@@ -242,9 +242,32 @@ def evaluate_carrier_rates(
         min_f = float(r.get("min_freight_price") or 0)
         days = int(r.get("delivery_days") or 1)
 
+        # Taxas acessórias oficiais
+        tec_pct = float(r.get("tec_percent") or 0)
+        tas_fixed = float(r.get("tas_fixed") or 0)
+        pos_fixed = float(r.get("pos_fixed") or 0)
+        min_gris = float(r.get("min_gris_value") or 0)
+
         weight_cost = check_w * w_per_kg
-        insurance_cost = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
-        total_price = max(fixed_p + weight_cost + insurance_cost, min_f)
+        base_freight = max(fixed_p + weight_cost, min_f)
+
+        calc_insurance = total_insurance_value * ((ad_val_pct + gris_pct) / 100.0)
+        insurance_cost = max(calc_insurance, min_gris) if (total_insurance_value > 0 or min_gris > 0) else 0.0
+
+        tec_cost = base_freight * (tec_pct / 100.0)
+        surcharges_cost = tec_cost + tas_fixed + pos_fixed
+        total_price = base_freight + insurance_cost + surcharges_cost
+
+        carrier_phone = str(r.get("carrier_phone") or "").strip()
+        sales_rep = str(r.get("carrier_sales_rep") or "").strip()
+        t_id = r.get("table_id")
+        file_url = str(r.get("table_file_url") or "").strip()
+        if file_url.startswith("http://") or file_url.startswith("https://"):
+            download_url = file_url
+        elif t_id and file_url:
+            download_url = f"/freight/tables/{t_id}/download"
+        else:
+            download_url = ""
 
         city_label = (r.get("city") or r_uf or "Padrão").strip()
         score = score_rate_for_destination(city_label, uf_dest, city_dest, match_cep)
@@ -252,12 +275,23 @@ def evaluate_carrier_rates(
         carrier_variants_map[c_id].append({
             "carrier_id": c_id,
             "carrier_name": c_name,
+            "table_id": t_id,
             "table_name": t_name,
             "city_label": city_label,
             "uf": r_uf or uf_dest,
             "total_price": round(total_price, 2),
+            "base_freight": round(base_freight, 2),
             "fixed_price": round(fixed_p, 2),
+            "weight_cost": round(weight_cost, 2),
             "insurance_cost": round(insurance_cost, 2),
+            "surcharges_cost": round(surcharges_cost, 2),
+            "tec_cost": round(tec_cost, 2),
+            "tas_cost": round(tas_fixed, 2),
+            "pos_cost": round(pos_fixed, 2),
+            "phone": carrier_phone,
+            "sales_rep_name": sales_rep,
+            "file_url": file_url,
+            "download_url": download_url,
             "delivery_days": days,
             "gross_weight_kg": round(total_weight, 2),
             "cubic_weight_kg": round(cubic_weight, 2),
@@ -293,8 +327,16 @@ def evaluate_carrier_rates(
                 "city_label": uv["city_label"],
                 "total_price": uv["total_price"],
                 "delivery_days": uv["delivery_days"],
+                "base_freight": uv.get("base_freight", uv["fixed_price"]),
                 "fixed_price": uv["fixed_price"],
                 "insurance_cost": uv["insurance_cost"],
+                "surcharges_cost": uv.get("surcharges_cost", 0.0),
+                "tec_cost": uv.get("tec_cost", 0.0),
+                "tas_cost": uv.get("tas_cost", 0.0),
+                "pos_cost": uv.get("pos_cost", 0.0),
+                "phone": uv.get("phone", ""),
+                "sales_rep_name": uv.get("sales_rep_name", ""),
+                "download_url": uv.get("download_url", ""),
             }
             clean_variants.append(cv)
 
