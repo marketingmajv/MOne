@@ -290,7 +290,8 @@ def freight_table_upload():
                 cur_ins = conn.execute("INSERT INTO carriers (name, trade_name) VALUES (%s, %s) RETURNING id", (c_name, meta.get("trade_name", c_name)))
                 carrier_id = cur_ins.fetchone()["id"]
 
-            file_urls_str = ", ".join([p.name for p in saved_paths])
+            sheet_url = str(request.form.get("google_sheet_url") or "").strip()
+            file_urls_str = sheet_url if sheet_url.startswith("http") else ", ".join([p.name for p in saved_paths])
             cur_t = conn.execute(
                 """INSERT INTO freight_tables 
                    (carrier_id, name, file_url, notes, origin_city, cubing_factor, tas_fixed) 
@@ -327,6 +328,15 @@ def freight_table_upload():
                         VALUES {', '.join(placeholders)}""",
                     tuple(params)
                 )
+
+        if not sheet_url or not sheet_url.startswith("http"):
+            try:
+                from services.freight_google_drive_sync_service import auto_create_and_link_google_sheet
+                g_url = auto_create_and_link_google_sheet(table_id, c_name, t_name, saved_paths)
+                if g_url:
+                    flash("📊 Google Planilha gerada e vinculada com sucesso para toda a equipe!", "info")
+            except Exception as g_err:
+                logger.warning("Sincronização automática com Google Drive: %s", g_err)
 
         mapped_txt = f", {meta.get('mapped_cities')} cidades com prazo" if meta.get("mapped_cities") else ""
         flash(f"✅ Tabela '{t_name}' da transportadora '{c_name}' importada com sucesso! ({len(rates)} regras{mapped_txt})", "success")
@@ -409,41 +419,27 @@ def freight_carrier_update(carrier_id: int):
         data = request.get_json() if request.is_json else request.form
         with db() as conn:
             conn.execute(
-                """
-                UPDATE carriers SET
-                    trade_name = %s, cnpj = %s, address = %s, city = %s, uf = %s,
-                    phone = %s, website = %s, sales_rep_name = %s, payment_terms = %s
-                WHERE id = %s
-                """,
-                (
-                    data.get("trade_name") or "", data.get("cnpj") or "",
-                    data.get("address") or "", data.get("city") or "",
-                    data.get("uf") or "", data.get("phone") or "",
-                    data.get("website") or "", data.get("sales_rep_name") or "",
-                    data.get("payment_terms") or "", carrier_id
-                )
+                """UPDATE carriers SET trade_name = %s, cnpj = %s, address = %s, city = %s, uf = %s,
+                   phone = %s, website = %s, sales_rep_name = %s, payment_terms = %s WHERE id = %s""",
+                (data.get("trade_name") or "", data.get("cnpj") or "", data.get("address") or "",
+                 data.get("city") or "", data.get("uf") or "", data.get("phone") or "",
+                 data.get("website") or "", data.get("sales_rep_name") or "", data.get("payment_terms") or "", carrier_id)
             )
             table_id = data.get("table_id")
             if table_id:
-                conn.execute(
-                    """
-                    UPDATE freight_tables SET
-                        origin_city = %s, cubing_factor = %s, tec_percent = %s,
-                        tas_fixed = %s, pos_fixed = %s, min_gris_value = %s,
-                        expiration_days = %s
-                    WHERE id = %s AND carrier_id = %s
-                    """,
-                    (
-                        data.get("origin_city") or "Cariacica",
-                        float(data.get("cubing_factor") or 300.0),
-                        float(data.get("tec_percent") or 0.0),
-                        float(data.get("tas_fixed") or 0.0),
-                        float(data.get("pos_fixed") or 0.0),
-                        float(data.get("min_gris_value") or 0.0),
-                        int(data.get("expiration_days") or 90),
-                        int(table_id), carrier_id
-                    )
-                )
+                f_url = str(data.get("file_url") or "").strip()
+                sql_tb = """UPDATE freight_tables SET origin_city = %s, cubing_factor = %s, tec_percent = %s,
+                            tas_fixed = %s, pos_fixed = %s, min_gris_value = %s, expiration_days = %s"""
+                p_tb = [data.get("origin_city") or "Cariacica", float(data.get("cubing_factor") or 300.0),
+                        float(data.get("tec_percent") or 0.0), float(data.get("tas_fixed") or 0.0),
+                        float(data.get("pos_fixed") or 0.0), float(data.get("min_gris_value") or 0.0),
+                        int(data.get("expiration_days") or 90)]
+                if f_url:
+                    sql_tb += ", file_url = %s"
+                    p_tb.append(f_url)
+                sql_tb += " WHERE id = %s AND carrier_id = %s"
+                p_tb.extend([int(table_id), carrier_id])
+                conn.execute(sql_tb, tuple(p_tb))
             if hasattr(conn, "commit"):
                 conn.commit()
             audit("carrier.updated", f"carrier_id={carrier_id}; trade_name={data.get('trade_name')}")

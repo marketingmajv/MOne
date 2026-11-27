@@ -189,6 +189,18 @@
                   <input type="text" id="editWebsite" name="website" placeholder="https://www.transportadora.com.br"
                     class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
                 </div>
+                <div>
+                  <label style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Planilha Oficial (Google Planilhas)</label>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="view-field text-xs truncate max-w-[200px]" id="vFileUrl">-</span>
+                    <a id="linkGoogleSheetOpen" href="#" target="_blank" rel="noopener noreferrer"
+                      class="view-field btn-action-pill" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1);" title="Abrir no Google Planilhas">📊 Acessar</a>
+                    <button type="button" id="btnGenerateGoogleSheet" onclick="generateGoogleSheetForCurrentTable()"
+                      class="view-field btn-action-pill" style="display: none; color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1); cursor: pointer;" title="Exportar e gerar Google Planilha no Drive">⚡ Gerar no Drive</button>
+                  </div>
+                  <input type="url" id="editFileUrl" name="file_url" placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                    class="edit-field form-input text-xs w-full rounded-lg" style="display: none;">
+                </div>
               </div>
             </div>
 

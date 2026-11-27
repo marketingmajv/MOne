@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from flask import Blueprint, flash, redirect, request, send_from_directory, url_for
+from flask import Blueprint, flash, jsonify, redirect, request, send_from_directory, url_for
 
 from database import db
 from routes.helpers import UPLOAD_DIR, audit, login_required, roles_required
@@ -126,4 +126,33 @@ def freight_table_download(table_id: int):
         as_attachment=True,
         download_name=download_filename
     )
+
+
+@freight_data_source_bp.route("/freight/tables/<int:table_id>/generate-google-sheet", methods=["POST"])
+@login_required
+@roles_required("admin", "support")
+def freight_table_generate_sheet(table_id: int):
+    """Gera e sincroniza a planilha oficial no Google Planilhas sob demanda."""
+    try:
+        with db() as conn:
+            t_row = conn.execute(
+                """SELECT t.id, t.name AS table_name, c.name AS carrier_name 
+                   FROM freight_tables t 
+                   JOIN carriers c ON c.id = t.carrier_id 
+                   WHERE t.id = %s""",
+                (table_id,)
+            ).fetchone()
+        if not t_row:
+            return jsonify({"success": False, "message": "Tabela não encontrada."}), 404
+
+        from services.freight_google_drive_sync_service import auto_create_and_link_google_sheet
+        sheet_url = auto_create_and_link_google_sheet(table_id, t_row["carrier_name"], t_row["table_name"])
+        if sheet_url:
+            audit("freight.sheet_generated", f"table_id={table_id}; url={sheet_url}")
+            return jsonify({"success": True, "message": "Google Planilha gerada com sucesso!", "sheet_url": sheet_url})
+        return jsonify({"success": False, "message": "Não foi possível gerar a planilha no Google Drive."}), 500
+    except Exception as e:
+        logger.error("Erro ao gerar Google Planilha sob demanda: %s", e)
+        return jsonify({"success": False, "message": str(e)}), 500
+
 

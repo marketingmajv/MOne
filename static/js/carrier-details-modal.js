@@ -136,6 +136,22 @@ async function openTableDetailsModal(tableId) {
       document.getElementById("linkWebsiteOpen").style.display = "none";
     }
 
+    const fUrl = t.file_url || "";
+    const isHttp = fUrl.startsWith("http");
+    const vFileEl = document.getElementById("vFileUrl");
+    if (vFileEl) vFileEl.innerText = isHttp ? fUrl : (fUrl ? "Arquivo local (.xlsx)" : "Não cadastrado");
+    const editFileEl = document.getElementById("editFileUrl");
+    if (editFileEl) editFileEl.value = isHttp ? fUrl : "";
+    const gLink = document.getElementById("linkGoogleSheetOpen");
+    const btnGen = document.getElementById("btnGenerateGoogleSheet");
+    if (gLink) {
+      gLink.href = isHttp ? fUrl : "#";
+      gLink.style.display = isHttp ? "inline-flex" : "none";
+    }
+    if (btnGen) {
+      btnGen.style.display = isHttp ? "none" : "inline-flex";
+    }
+
     document.getElementById("vSalesRepName").innerText = t.sales_rep_name || "Comercial Matriz";
     document.getElementById("editSalesRepName").value = t.sales_rep_name || "";
 
@@ -304,6 +320,41 @@ function closeTableDetailsModal() {
   }
 }
 
+async function generateGoogleSheetForCurrentTable() {
+  const tableId = document.getElementById("editTableId").value;
+  if (!tableId) return;
+  const btn = document.getElementById("btnGenerateGoogleSheet");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⚡ Gerando...";
+  }
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  try {
+    const resp = await fetch(`/freight/tables/${tableId}/generate-google-sheet`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken 
+      }
+    });
+    const res = await resp.json();
+    if (res.success && res.sheet_url) {
+      alert("✅ " + res.message);
+      openTableDetailsModal(tableId);
+    } else {
+      alert("⚠️ " + (res.message || "Erro ao gerar Google Planilha."));
+    }
+  } catch (err) {
+    alert("Falha de comunicação: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "⚡ Gerar no Drive";
+    }
+  }
+}
+
+window.generateGoogleSheetForCurrentTable = generateGoogleSheetForCurrentTable;
 window.openTableDetailsModal = openTableDetailsModal;
 window.closeTableDetailsModal = closeTableDetailsModal;
 window.switchCarrierModalTab = switchCarrierModalTab;
